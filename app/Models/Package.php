@@ -1,0 +1,225 @@
+<?php
+
+namespace App\Models;
+
+use App\Contracts\Bookable;
+use App\Enums\ListingStatus;
+use App\Models\Traits\HasCancellationPolicy;
+use App\Models\Traits\HasRating;
+use Database\Factories\PackageFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+
+/**
+ * @property string $id
+ * @property string $agent_id
+ * @property string $title
+ * @property string $slug
+ * @property string|null $description
+ * @property string|null $itinerary_text
+ * @property string|null $cover_photo
+ * @property array<string>|null $gallery
+ * @property string|null $location
+ * @property string|null $category
+ * @property string $price
+ * @property array<string>|null $inclusions
+ * @property array<string>|null $exclusions
+ * @property string|null $terms_and_conditions
+ * @property string $avg_rating
+ * @property int $free_cancellation_hours
+ * @property int $advance_booking_hours
+ * @property string|null $cancellation_terms
+ * @property ListingStatus $status
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Agent $agent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
+ */
+class Package extends Model implements Bookable
+{
+    use HasCancellationPolicy;
+
+    /** @use HasFactory<PackageFactory> */
+    use HasFactory;
+
+    use HasRating, HasUlids;
+
+    protected $fillable = [
+        'agent_id',
+        'title',
+        'slug',
+        'description',
+        'itinerary_text',
+        'cover_photo',
+        'gallery',
+        'location',
+        'category',
+        'price',
+        'inclusions',
+        'exclusions',
+        'terms_and_conditions',
+        'avg_rating',
+        'free_cancellation_hours',
+        'advance_booking_hours',
+        'cancellation_terms',
+        'status',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'gallery' => 'array',
+            'inclusions' => 'array',
+            'exclusions' => 'array',
+            'price' => 'decimal:2',
+            'avg_rating' => 'decimal:2',
+            'free_cancellation_hours' => 'integer',
+            'advance_booking_hours' => 'integer',
+            'status' => ListingStatus::class,
+        ];
+    }
+
+    /**
+     * @return BelongsTo<Agent, $this>
+     */
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    /**
+     * @return BelongsToMany<Product, $this, PackageProduct>
+     */
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'package_products')
+            ->using(PackageProduct::class)
+            ->withPivot('quantity_required')
+            ->withTimestamps();
+    }
+
+    /**
+     * @return MorphMany<Reservation, $this>
+     */
+    public function reservations(): MorphMany
+    {
+        return $this->morphMany(Reservation::class, 'bookable');
+    }
+
+    // --- Bookable Contract Implementation ---
+
+    public function getId(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function getAgent(): Agent
+    {
+        return $this->agent;
+    }
+
+    public function getAgentId(): string
+    {
+        return (string) $this->agent_id;
+    }
+
+    public function getPrice(): float
+    {
+        return (float) $this->price;
+    }
+
+    public function getFreeCancellationHours(): int
+    {
+        return (int) $this->free_cancellation_hours;
+    }
+
+    public function getAdvanceBookingHours(): int
+    {
+        return (int) $this->advance_booking_hours;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getInclusions(): array
+    {
+        return (array) ($this->inclusions ?? []);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getExclusions(): array
+    {
+        return (array) ($this->exclusions ?? []);
+    }
+
+    public function getTermsAndConditions(): ?string
+    {
+        return $this->terms_and_conditions;
+    }
+
+    /**
+     * Return all linked products and their quantity_required.
+     *
+     * @return Collection<int, array{product: Product, quantity: int}>
+     */
+    public function getRequiredProducts(): Collection
+    {
+        /** @var Collection<int, array{product: Product, quantity: int}> $result */
+        $result = $this->products->map(function (Product $product): array {
+            /** @var PackageProduct|null $pivot */
+            $pivot = $product->pivot;
+
+            return [
+                'product' => $product,
+                'quantity' => (int) ($pivot->quantity_required ?? 1),
+            ];
+        });
+
+        return $result;
+    }
+
+    public function isSellable(): bool
+    {
+        return true;
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === ListingStatus::Published;
+    }
+
+    public function getCachedAvgRating(): float
+    {
+        return (float) $this->avg_rating;
+    }
+
+    public function generateTermsSnapshot(): array
+    {
+        return [
+            'bookable_type' => 'package',
+            'bookable_id' => $this->getId(),
+            'title' => $this->getTitle(),
+            'price' => $this->getPrice(),
+            'free_cancellation_hours' => $this->getFreeCancellationHours(),
+            'advance_booking_hours' => $this->getAdvanceBookingHours(),
+            'cancellation_terms' => $this->cancellation_terms,
+            'inclusions' => $this->getInclusions(),
+            'exclusions' => $this->getExclusions(),
+            'terms_and_conditions' => $this->getTermsAndConditions(),
+            'frozen_at' => now()->toIso8601String(),
+        ];
+    }
+}

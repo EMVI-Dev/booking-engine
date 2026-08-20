@@ -1,0 +1,643 @@
+<?php
+
+use App\Models\Agent;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+new #[Title('Brand Settings')] class extends Component {
+    use WithFileUploads;
+
+    // Brand Logo
+    public $logo;
+    public ?string $existing_logo_path = null;
+
+    // Business & Brand identity fields
+    public string $agency_name = '';
+    public string $bio = '';
+    public string $brand_color = '#4f46e5';
+
+    // WhatsApp Storefront Integration & Schedule
+    public string $contact_whatsapp = '';
+    public string $whatsapp_prefilled_message = '';
+    public string $whatsapp_schedule_mode = 'schedule'; // schedule, always
+    public string $whatsapp_timezone = 'Asia/Makassar'; // Default UTC+8
+    public string $whatsapp_start_time = '08:00';
+    public string $whatsapp_end_time = '18:00';
+    /** @var array<int, string> */
+    public array $whatsapp_days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+
+    // Social Media & Web Links
+    public string $website_url = '';
+    public string $instagram_url = '';
+    public string $facebook_url = '';
+    public string $tiktok_url = '';
+    public string $youtube_url = '';
+
+    // Notification Channels
+    public string $booking_notification_email = '';
+    public string $billing_email = '';
+
+    public bool $saved = false;
+
+    /**
+     * Mount the component.
+     */
+    public function mount(): void
+    {
+        $user = Auth::user();
+
+        /** @var Agent|null $agent */
+        $agent = $user->agents()->first();
+        if ($agent) {
+            $this->agency_name = $agent->name;
+            $this->bio = $agent->bio ?? '';
+            $this->contact_whatsapp = $agent->contact_whatsapp ?? '';
+            $this->brand_color = $agent->brand_color ?? '#4f46e5';
+            $this->existing_logo_path = $agent->logo_path;
+            $this->booking_notification_email = $agent->booking_notification_email ?? $user->email;
+            $this->billing_email = $agent->billing_email ?? $user->email;
+
+            $settings = $agent->settings ?? [];
+            $this->whatsapp_prefilled_message = (string) ($settings['whatsapp_prefilled_message'] ?? 'Hi ' . $agent->name . ', I would like to inquire about your packages.');
+
+            $waSchedule = $settings['whatsapp_schedule'] ?? [];
+            $this->whatsapp_schedule_mode = (string) ($waSchedule['mode'] ?? 'schedule');
+            $this->whatsapp_timezone = (string) ($waSchedule['timezone'] ?? 'Asia/Makassar');
+            $this->whatsapp_start_time = (string) ($waSchedule['start_time'] ?? '08:00');
+            $this->whatsapp_end_time = (string) ($waSchedule['end_time'] ?? '18:00');
+            $this->whatsapp_days = (array) ($waSchedule['days'] ?? ['mon', 'tue', 'wed', 'thu', 'fri']);
+
+            $social = $settings['social_links'] ?? [];
+            $this->website_url = (string) ($social['website'] ?? '');
+            $this->instagram_url = (string) ($social['instagram'] ?? '');
+            $this->facebook_url = (string) ($social['facebook'] ?? '');
+            $this->tiktok_url = (string) ($social['tiktok'] ?? '');
+            $this->youtube_url = (string) ($social['youtube'] ?? '');
+        } else {
+            $this->booking_notification_email = $user->email;
+            $this->billing_email = $user->email;
+        }
+    }
+
+    /**
+     * Toggle a day in the active WhatsApp operating schedule.
+     */
+    public function toggleDay(string $day): void
+    {
+        if (in_array($day, $this->whatsapp_days, true)) {
+            $this->whatsapp_days = array_values(array_diff($this->whatsapp_days, [$day]));
+        } else {
+            $this->whatsapp_days[] = $day;
+        }
+    }
+
+    /**
+     * Remove uploaded logo.
+     */
+    public function removeLogo(): void
+    {
+        $this->logo = null;
+        $this->existing_logo_path = null;
+
+        $user = Auth::user();
+        /** @var Agent|null $agent */
+        $agent = $user->agents()->first();
+        if ($agent && $agent->logo_path) {
+            Storage::disk('public')->delete($agent->logo_path);
+            $agent->update(['logo_path' => null]);
+        }
+    }
+
+    /**
+     * Validate logo upon upload.
+     */
+    public function updatedLogo(): void
+    {
+        $this->validate([
+            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg,gif', 'max:10240'],
+        ]);
+    }
+
+    /**
+     * Update agent brand identity, logo, WhatsApp schedule, social links, and notifications.
+     */
+    public function updateBrandSettings(): void
+    {
+        $user = Auth::user();
+
+        $validated = $this->validate([
+            'agency_name' => ['required', 'string', 'max:255'],
+            'bio' => ['nullable', 'string', 'max:1000'],
+            'contact_whatsapp' => ['nullable', 'string', 'max:30'],
+            'whatsapp_prefilled_message' => ['nullable', 'string', 'max:255'],
+            'whatsapp_schedule_mode' => ['required', 'string', 'in:schedule,always'],
+            'whatsapp_timezone' => ['required', 'string', 'max:100'],
+            'whatsapp_start_time' => ['required', 'string', 'regex:/^\d{2}:\d{2}$/'],
+            'whatsapp_end_time' => ['required', 'string', 'regex:/^\d{2}:\d{2}$/'],
+            'whatsapp_days' => ['array'],
+            'brand_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/'],
+            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg,gif', 'max:10240'],
+            'website_url' => ['nullable', 'url', 'max:255'],
+            'instagram_url' => ['nullable', 'string', 'max:255'],
+            'facebook_url' => ['nullable', 'string', 'max:255'],
+            'tiktok_url' => ['nullable', 'string', 'max:255'],
+            'youtube_url' => ['nullable', 'string', 'max:255'],
+            'booking_notification_email' => ['required', 'email', 'max:255'],
+            'billing_email' => ['required', 'email', 'max:255'],
+        ]);
+
+        /** @var Agent|null $agent */
+        $agent = $user->agents()->first();
+        if ($agent) {
+            $logoPath = $this->existing_logo_path;
+            if ($this->logo) {
+                if ($agent->logo_path) {
+                    Storage::disk('public')->delete($agent->logo_path);
+                }
+                $logoPath = $this->logo->store('agents/logos', 'public');
+                $this->existing_logo_path = $logoPath;
+                $this->logo = null;
+            }
+
+            $settings = $agent->settings ?? [];
+            $settings['brand_color'] = $validated['brand_color'] ?? '#4f46e5';
+            $settings['whatsapp_prefilled_message'] = $validated['whatsapp_prefilled_message'] ?? '';
+            $settings['whatsapp_schedule'] = [
+                'mode' => $validated['whatsapp_schedule_mode'],
+                'timezone' => $validated['whatsapp_timezone'],
+                'start_time' => $validated['whatsapp_start_time'],
+                'end_time' => $validated['whatsapp_end_time'],
+                'days' => $this->whatsapp_days,
+            ];
+            $settings['social_links'] = [
+                'website' => $validated['website_url'] ?? null,
+                'instagram' => $validated['instagram_url'] ?? null,
+                'facebook' => $validated['facebook_url'] ?? null,
+                'tiktok' => $validated['tiktok_url'] ?? null,
+                'youtube' => $validated['youtube_url'] ?? null,
+            ];
+
+            $agent->update([
+                'name' => $validated['agency_name'],
+                'bio' => $validated['bio'] ?? null,
+                'contact_whatsapp' => $validated['contact_whatsapp'] ?? null,
+                'logo_path' => $logoPath,
+                'booking_notification_email' => $validated['booking_notification_email'],
+                'billing_email' => $validated['billing_email'],
+                'settings' => $settings,
+            ]);
+        }
+
+        $this->saved = true;
+        $this->dispatch('brand-updated');
+    }
+}; ?>
+
+<div class="space-y-6 max-w-5xl">
+    <!-- Standalone Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
+                    <i class="fa-solid fa-paintbrush text-lg"></i>
+                </span>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {{ __('Brand Settings') }}
+                </h1>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                {{ __('Customize your public storefront branding, logo, instant WhatsApp operating hours, and social media presence.') }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Settings Form -->
+    <form wire:submit="updateBrandSettings" class="w-full space-y-6">
+        <!-- Card 1: Brand Logo & Visual Assets -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+                    <i class="fa-solid fa-image"></i>
+                </span>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {{ __('Brand Logo & Visual Identity') }}
+                </h3>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-2">
+                <!-- Logo Preview -->
+                <div class="relative group">
+                    <div class="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 flex items-center justify-center overflow-hidden shadow-xs">
+                        @if ($logo)
+                            <img src="{{ $logo->temporaryUrl() }}" alt="Logo preview" class="w-full h-full object-cover" />
+                        @elseif ($existing_logo_path)
+                            <img src="{{ Storage::url($existing_logo_path) }}" alt="Logo" class="w-full h-full object-cover" />
+                        @else
+                            <div class="text-center p-2 text-slate-400 dark:text-slate-500">
+                                <i class="fa-solid fa-cloud-arrow-up text-2xl mb-1 block"></i>
+                                <span class="text-[10px] font-bold uppercase">{{ __('No Logo') }}</span>
+                            </div>
+                        @endif
+                    </div>
+
+                    @if ($logo || $existing_logo_path)
+                        <button
+                            type="button"
+                            wire:click="removeLogo"
+                            class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center text-xs shadow-md transition cursor-pointer"
+                            title="{{ __('Remove Logo') }}"
+                        >
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    @endif
+                </div>
+
+                <!-- Upload Input & Guidance -->
+                <div class="space-y-2 flex-1">
+                    <div class="flex items-center gap-3">
+                        <label class="h-10 px-4 inline-flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
+                            <i class="fa-solid fa-upload text-indigo-500"></i>
+                            <span>{{ __('Upload New Logo') }}</span>
+                            <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" class="hidden" />
+                        </label>
+
+                        <div wire:loading wire:target="logo" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            {{ __('Uploading...') }}
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                        {{ __('Supported formats: PNG (with transparency), JPG, WEBP, or SVG. Up to 10MB.') }}
+                    </p>
+                    <x-input-error :messages="$errors->get('logo')" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Brand Profile Details -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <span class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 text-xs">
+                    <i class="fa-solid fa-id-card"></i>
+                </span>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {{ __('Business Information & Colors') }}
+                </h3>
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <x-label for="agency_name" :value="__('Business / Brand Name')" required />
+                        <x-input id="agency_name" wire:model="agency_name" type="text" placeholder="e.g. Bali Snorkel & Treks" :error="$errors->has('agency_name')" />
+                        <x-input-error :messages="$errors->get('agency_name')" />
+                    </div>
+
+                    <div>
+                        <x-label for="brand_color" :value="__('Brand Accent Color (Hex)')" />
+                        <div class="space-y-2 mt-1">
+                            <div class="flex items-center gap-3">
+                                <input id="brand_color_picker" type="color" wire:model.live="brand_color" class="h-10 w-14 rounded-xl border border-slate-200 dark:border-zinc-700 cursor-pointer bg-transparent" />
+                                <x-input id="brand_color" wire:model.live.debounce.250ms="brand_color" type="text" placeholder="#4f46e5" class="font-mono text-xs uppercase" :error="$errors->has('brand_color')" />
+                            </div>
+
+                            <!-- Preset Curated Palette Swatches -->
+                            <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 mr-1">{{ __('Presets:') }}</span>
+                                @foreach ([
+                                    ['label' => 'Indigo', 'hex' => '#4f46e5'],
+                                    ['label' => 'Ocean Sky', 'hex' => '#0284c7'],
+                                    ['label' => 'Emerald Marine', 'hex' => '#059669'],
+                                    ['label' => 'Coral Sunset', 'hex' => '#ea580c'],
+                                    ['label' => 'Royal Purple', 'hex' => '#7c3aed'],
+                                    ['label' => 'Rose Pink', 'hex' => '#e11d48'],
+                                    ['label' => 'Amber Gold', 'hex' => '#d97706'],
+                                    ['label' => 'Slate Navy', 'hex' => '#334155'],
+                                ] as $palette)
+                                    <button
+                                        type="button"
+                                        wire:click="$set('brand_color', '{{ $palette['hex'] }}')"
+                                        class="h-6 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition border cursor-pointer {{ strtolower($brand_color) === strtolower($palette['hex']) ? 'ring-2 ring-offset-1 ring-slate-900 dark:ring-white border-transparent text-white' : 'border-slate-200 dark:border-zinc-700 hover:border-slate-300 bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-300' }}"
+                                        title="{{ $palette['label'] }} ({{ $palette['hex'] }})"
+                                    >
+                                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {{ $palette['hex'] }};"></span>
+                                        <span>{{ $palette['label'] }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <x-input-error :messages="$errors->get('brand_color')" />
+                    </div>
+                </div>
+
+                <!-- Live Color Theme Preview Box -->
+                @php
+                    $previewHex = preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $brand_color) ? $brand_color : '#4f46e5';
+                @endphp
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles text-xs" style="color: {{ $previewHex }}"></i>
+                            {{ __('Live Storefront Accent Preview') }}
+                        </span>
+                        <span class="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700">
+                            {{ $previewHex }}
+                        </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                        <!-- Preview Button -->
+                        <button type="button" style="background-color: {{ $previewHex }}; color: #ffffff;" class="h-9 px-4 rounded-xl font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-default">
+                            <i class="fa-solid fa-bolt text-[11px]"></i>
+                            <span>{{ __('Book Now Button') }}</span>
+                        </button>
+
+                        <!-- Preview Tag / Badge -->
+                        <span style="background-color: {{ $previewHex }}1a; color: {{ $previewHex }}; border-color: {{ $previewHex }}33;" class="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border">
+                            {{ __('Featured Package') }}
+                        </span>
+
+                        <!-- Preview Text Link -->
+                        <span style="color: {{ $previewHex }};" class="text-xs font-bold cursor-default hover:underline">
+                            {{ __('Text Link & Pricing Highlight') }} &rarr;
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <x-label for="bio" :value="__('Storefront Introduction / Bio')" required />
+                    <x-textarea id="bio" wire:model="bio" rows="3" placeholder="Tell guests about your experience, services, and local expertise..." :error="$errors->has('bio')" />
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Displayed prominently on your public storefront header.') }}</p>
+                    <x-input-error :messages="$errors->get('bio')" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: WhatsApp Storefront Integration & Online Hours Schedule -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <span class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
+                    <i class="fa-brands fa-whatsapp"></i>
+                </span>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {{ __('WhatsApp Instant Guest Chat & Online Hours') }}
+                </h3>
+            </div>
+
+            <!-- Basic WhatsApp Details -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-label for="contact_whatsapp" :value="__('WhatsApp Contact Number')" required />
+                    <x-input id="contact_whatsapp" wire:model="contact_whatsapp" type="text" placeholder="+62 812 3456 7890" :error="$errors->has('contact_whatsapp')" />
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Floating chat button will be active on your storefront.') }}</p>
+                    <x-input-error :messages="$errors->get('contact_whatsapp')" />
+                </div>
+
+                <div>
+                    <x-label for="whatsapp_prefilled_message" :value="__('Pre-filled Guest Greeting Message')" />
+                    <x-input id="whatsapp_prefilled_message" wire:model="whatsapp_prefilled_message" type="text" placeholder="Hi, I would like to inquire about your packages." :error="$errors->has('whatsapp_prefilled_message')" />
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Default greeting pre-filled when a guest taps the chat button.') }}</p>
+                    <x-input-error :messages="$errors->get('whatsapp_prefilled_message')" />
+                </div>
+            </div>
+
+            <!-- Operating Hours & Online Settings Schedule Box -->
+            <div class="p-5 rounded-2xl bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-800 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-zinc-700/60">
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-clock text-indigo-500"></i>
+                            {{ __('Online Support Schedule & Status Indicators') }}
+                        </h4>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {{ __('Controls the live Online / Away indicator dot and response expectation badge on your storefront.') }}
+                        </p>
+                    </div>
+
+                    <!-- Schedule Mode Toggle -->
+                    <div class="inline-flex rounded-xl bg-slate-200 dark:bg-zinc-700 p-1 shrink-0">
+                        <button
+                            type="button"
+                            wire:click="$set('whatsapp_schedule_mode', 'schedule')"
+                            class="px-3 py-1 text-xs font-bold rounded-lg transition {{ $whatsapp_schedule_mode === 'schedule' ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-300' }}"
+                        >
+                            {{ __('Custom Hours') }}
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="$set('whatsapp_schedule_mode', 'always')"
+                            class="px-3 py-1 text-xs font-bold rounded-lg transition {{ $whatsapp_schedule_mode === 'always' ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-300' }}"
+                        >
+                            {{ __('24/7 Always Online') }}
+                        </button>
+                    </div>
+                </div>
+
+                @if ($whatsapp_schedule_mode === 'schedule')
+                    <div class="space-y-4 animate-fade-in">
+                        <!-- Timezone & Daily Hours -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <!-- Timezone Selector (Defaults to UTC+8 WITA) -->
+                            <div>
+                                <x-label for="whatsapp_timezone" :value="__('Operating Timezone')" required />
+                                <x-select
+                                    id="whatsapp_timezone"
+                                    wire:model="whatsapp_timezone"
+                                    :searchable="true"
+                                    :options="[
+                                        'Asia/Makassar' => 'WITA (UTC+8 - Bali, Lombok, Makassar) [Default]',
+                                        'Asia/Jakarta' => 'WIB (UTC+7 - Jakarta, Surabaya, Sumatra)',
+                                        'Asia/Jayapura' => 'WIT (UTC+9 - Papua, Maluku)',
+                                        'Asia/Singapore' => 'SGT (UTC+8 - Singapore, Malaysia)',
+                                        'Asia/Bangkok' => 'ICT (UTC+7 - Bangkok, Indochina)',
+                                        'Asia/Tokyo' => 'JST (UTC+9 - Tokyo)',
+                                        'Australia/Perth' => 'AWST (UTC+8 - Western Australia)',
+                                        'UTC' => 'UTC (Universal Coordinated Time)',
+                                    ]"
+                                    :error="$errors->has('whatsapp_timezone')"
+                                />
+                                <x-input-error :messages="$errors->get('whatsapp_timezone')" />
+                            </div>
+
+                            <!-- Start Time -->
+                            <div>
+                                <x-label for="whatsapp_start_time" :value="__('Opening Time')" required />
+                                <x-input
+                                    id="whatsapp_start_time"
+                                    wire:model="whatsapp_start_time"
+                                    type="time"
+                                    :error="$errors->has('whatsapp_start_time')"
+                                />
+                                <x-input-error :messages="$errors->get('whatsapp_start_time')" />
+                            </div>
+
+                            <!-- End Time -->
+                            <div>
+                                <x-label for="whatsapp_end_time" :value="__('Closing Time')" required />
+                                <x-input
+                                    id="whatsapp_end_time"
+                                    wire:model="whatsapp_end_time"
+                                    type="time"
+                                    :error="$errors->has('whatsapp_end_time')"
+                                />
+                                <x-input-error :messages="$errors->get('whatsapp_end_time')" />
+                            </div>
+                        </div>
+
+                        <!-- Active Days Selector -->
+                        <div class="space-y-2">
+                            <x-label :value="__('Active Operating Days (e.g. Mon - Fri)')" />
+                            <div class="flex flex-wrap gap-2">
+                                @php
+                                    $dayOptions = [
+                                        'mon' => __('Mon'),
+                                        'tue' => __('Tue'),
+                                        'wed' => __('Wed'),
+                                        'thu' => __('Thu'),
+                                        'fri' => __('Fri'),
+                                        'sat' => __('Sat'),
+                                        'sun' => __('Sun'),
+                                    ];
+                                @endphp
+
+                                @foreach ($dayOptions as $key => $label)
+                                    @php
+                                        $isActive = in_array($key, $whatsapp_days, true);
+                                    @endphp
+                                    <button
+                                        type="button"
+                                        wire:click="toggleDay('{{ $key }}')"
+                                        class="h-9 px-3.5 rounded-xl text-xs font-bold border transition-all cursor-pointer select-none {{ $isActive ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300 hover:border-slate-300' }}"
+                                    >
+                                        {{ $label }}
+                                        @if ($isActive)
+                                            <i class="fa-solid fa-check ml-1 text-[10px]"></i>
+                                        @endif
+                                    </button>
+                                @endforeach
+                            </div>
+                            <x-input-error :messages="$errors->get('whatsapp_days')" />
+                        </div>
+                    </div>
+                @else
+                    <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-sm"></i>
+                        <span>{{ __('Your storefront WhatsApp chat widget will display an active "Online" green pulse indicator 24 hours a day, 7 days a week.') }}</span>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Card 4: Website & Social Media Links -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <span class="p-1.5 rounded-lg bg-pink-50 dark:bg-pink-950/70 text-pink-600 dark:text-pink-400 text-xs">
+                    <i class="fa-solid fa-share-nodes"></i>
+                </span>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {{ __('Website & Social Media Links') }}
+                </h3>
+            </div>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ __('Connect your official online presence and social media profiles to boost trust with prospective guests.') }}
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-label for="website_url" :value="__('Official Website Link')" />
+                    <div class="relative">
+                        <i class="fa-solid fa-globe absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <x-input id="website_url" wire:model="website_url" type="url" placeholder="https://www.yourdomain.com" class="pl-9" :error="$errors->has('website_url')" />
+                    </div>
+                    <x-input-error :messages="$errors->get('website_url')" />
+                </div>
+
+                <div>
+                    <x-label for="instagram_url" :value="__('Instagram Profile / URL')" />
+                    <div class="relative">
+                        <i class="fa-brands fa-instagram absolute left-3.5 top-1/2 -translate-y-1/2 text-pink-500 text-xs"></i>
+                        <x-input id="instagram_url" wire:model="instagram_url" type="text" placeholder="https://instagram.com/yourhandle" class="pl-9" :error="$errors->has('instagram_url')" />
+                    </div>
+                    <x-input-error :messages="$errors->get('instagram_url')" />
+                </div>
+
+                <div>
+                    <x-label for="facebook_url" :value="__('Facebook Page URL')" />
+                    <div class="relative">
+                        <i class="fa-brands fa-facebook absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600 text-xs"></i>
+                        <x-input id="facebook_url" wire:model="facebook_url" type="text" placeholder="https://facebook.com/yourpage" class="pl-9" :error="$errors->has('facebook_url')" />
+                    </div>
+                    <x-input-error :messages="$errors->get('facebook_url')" />
+                </div>
+
+                <div>
+                    <x-label for="tiktok_url" :value="__('TikTok Profile URL')" />
+                    <div class="relative">
+                        <i class="fa-brands fa-tiktok absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-900 dark:text-white text-xs"></i>
+                        <x-input id="tiktok_url" wire:model="tiktok_url" type="text" placeholder="https://tiktok.com/@yourhandle" class="pl-9" :error="$errors->has('tiktok_url')" />
+                    </div>
+                    <x-input-error :messages="$errors->get('tiktok_url')" />
+                </div>
+
+                <div class="sm:col-span-2">
+                    <x-label for="youtube_url" :value="__('YouTube Channel URL')" />
+                    <div class="relative">
+                        <i class="fa-brands fa-youtube absolute left-3.5 top-1/2 -translate-y-1/2 text-red-600 text-xs"></i>
+                        <x-input id="youtube_url" wire:model="youtube_url" type="text" placeholder="https://youtube.com/@yourchannel" class="pl-9" :error="$errors->has('youtube_url')" />
+                    </div>
+                    <x-input-error :messages="$errors->get('youtube_url')" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 5: Notification Channels -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+                    <i class="fa-solid fa-bell"></i>
+                </span>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {{ __('Notification Channels & Email Routing') }}
+                </h3>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-label for="booking_notification_email" :value="__('Guest Booking Notifications Email')" required />
+                    <x-input id="booking_notification_email" wire:model="booking_notification_email" type="email" placeholder="bookings@yourdomain.com" :error="$errors->has('booking_notification_email')" />
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Receives instant alerts for new guest bookings, cancellations, and schedule updates.') }}</p>
+                    <x-input-error :messages="$errors->get('booking_notification_email')" />
+                </div>
+
+                <div>
+                    <x-label for="billing_email" :value="__('Platform & Billing Statements Email')" required />
+                    <x-input id="billing_email" wire:model="billing_email" type="email" placeholder="finance@yourdomain.com" :error="$errors->has('billing_email')" />
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Receives payout settlement receipts, platform invoices, and critical account security notices.') }}</p>
+                    <x-input-error :messages="$errors->get('billing_email')" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button & Success Toast -->
+        <div class="flex items-center gap-4 pt-2">
+            <x-button variant="primary" type="submit" data-test="update-brand-button" class="shadow-sm">
+                <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
+                {{ __('Save Brand Settings') }}
+            </x-button>
+
+            <div x-data="{ shown: false, timeout: null }"
+                 x-init="@this.on('brand-updated', () => { clearTimeout(timeout); shown = true; timeout = setTimeout(() => { shown = false }, 2500); })"
+                 x-show.transition.out.opacity.duration.1500ms="shown"
+                 x-transition:leave.opacity.duration.1500ms
+                 style="display: none;"
+                 class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <i class="fa-solid fa-circle-check"></i>
+                {{ __('Brand settings saved successfully.') }}
+            </div>
+        </div>
+    </form>
+</div>

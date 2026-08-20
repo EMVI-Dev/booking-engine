@@ -1,0 +1,60 @@
+<?php
+
+use App\Http\Controllers\Api\DokuWebhookController;
+use App\Http\Controllers\StorefrontController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Support\Facades\Route;
+
+// Storefront & Platform Home
+Route::get('/', [StorefrontController::class, 'index'])->name('home');
+Route::get('/tours', [StorefrontController::class, 'allPackages'])->name('storefront.packages');
+Route::get('/services', [StorefrontController::class, 'allProducts'])->name('storefront.products');
+Route::get('/terms', [StorefrontController::class, 'showTerms'])->name('storefront.terms');
+Route::get('/robots.txt', [StorefrontController::class, 'robots'])->name('storefront.robots');
+Route::get('/sitemap.xml', [StorefrontController::class, 'sitemap'])->name('storefront.sitemap');
+Route::get('/llms.txt', [StorefrontController::class, 'llmsTxt'])->name('storefront.llms');
+Route::get('/llms-full.txt', [StorefrontController::class, 'llmsFullTxt'])->name('storefront.llms.full');
+Route::get('/checkout/simulate', [StorefrontController::class, 'simulatePayment'])->name('storefront.payment.simulate');
+Route::post('/checkout/simulate/confirm', [StorefrontController::class, 'confirmSimulatedPayment'])->name('storefront.payment.simulate.confirm');
+Route::get('/reservations/{reservation}/receipt', [StorefrontController::class, 'showReceipt'])->name('storefront.reservation.receipt');
+
+// DOKU Webhook Notification Endpoint
+Route::post('/api/v1/payments/doku/notify', [DokuWebhookController::class, 'handleNotification'])
+    ->name('doku.webhook')
+    ->withoutMiddleware([ValidateCsrfToken::class]);
+
+// Agent Dashboard & Tour Operator Catalog Management
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::view('dashboard', 'dashboard')->name('dashboard');
+
+    Route::livewire('packages', 'pages::packages.index')->name('packages.index');
+    Route::livewire('packages/create', 'pages::packages.create')->name('packages.create');
+    Route::livewire('packages/{package}/edit', 'pages::packages.edit')->name('packages.edit');
+
+    Route::livewire('products', 'pages::products.index')->name('products.index');
+    Route::livewire('products/create', 'pages::products.create')->name('products.create');
+    Route::livewire('products/{product}/edit', 'pages::products.edit')->name('products.edit');
+
+    Route::livewire('reservations', 'pages::reservations.index')->name('reservations.index');
+    Route::livewire('guests', 'pages::guests.index')->name('guests.index');
+    Route::livewire('calendar', 'pages::calendar.index')->name('calendar.index');
+    Route::livewire('reviews', 'pages::reviews.index')->name('reviews.index');
+});
+
+// Public Storefront Item Details (Wildcard Slugs)
+Route::get('/packages/{slug}', [StorefrontController::class, 'showPackage'])->name('storefront.package');
+Route::get('/products/{slug}', [StorefrontController::class, 'showProduct'])->name('storefront.product');
+
+// Platform Administration (Master Doku Keys, Platform Config & Separate Admin Auth)
+Route::middleware('guest')->group(function () {
+    Route::livewire('admin/login', 'pages::admin.login')->name('admin.login');
+});
+
+Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::redirect('/', '/admin/platform')->name('dashboard');
+    Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
+    Route::livewire('/payments', 'pages::admin.payments')->name('payments.edit');
+    Route::livewire('/agents', 'pages::admin.agents.index')->name('agents.index');
+});
+
+require __DIR__.'/settings.php';

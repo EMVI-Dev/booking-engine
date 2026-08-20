@@ -1,0 +1,392 @@
+<?php
+
+use App\Models\Agent;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+new #[Title('Payment Gateways')] class extends Component {
+    // Bank Payout Settlement
+    public string $bank_provider = 'BCA';
+    public string $bank_account_name = '';
+    public string $bank_account_number = '';
+    public string $bank_account_ref = '';
+
+    // Payment Processing Method: 'platform' (Built-in Doku Managed) vs 'custom' (BYO Merchant Account)
+    public string $payment_mode = 'platform';
+
+    // Custom Gateway Configuration
+    public string $selected_gateway_provider = 'doku'; // doku, midtrans, xendit
+    public string $gateway_environment = 'sandbox'; // sandbox, production
+    public string $gateway_client_id = '';
+    public string $gateway_shared_key = '';
+
+    public bool $saved = false;
+
+    /**
+     * Mount the component.
+     */
+    public function mount(): void
+    {
+        $user = Auth::user();
+
+        /** @var Agent|null $agent */
+        $agent = $user->agents()->first();
+        if ($agent) {
+            $this->bank_provider = $agent->bank_provider ?? 'BCA';
+            $this->bank_account_name = $agent->bank_account_name ?? '';
+            $this->bank_account_number = $agent->bank_account_number ?? '';
+            $this->bank_account_ref = $agent->bank_account_ref ?? '';
+
+            $settings = $agent->settings ?? [];
+            $gateway = $settings['payment_gateway'] ?? [];
+
+            $useCustom = (bool) ($gateway['use_custom_credentials'] ?? false);
+            $this->payment_mode = $useCustom ? 'custom' : 'platform';
+            $this->selected_gateway_provider = (string) ($gateway['provider'] ?? 'doku');
+            $this->gateway_environment = (string) ($gateway['environment'] ?? 'sandbox');
+            $this->gateway_client_id = (string) ($gateway['client_id'] ?? '');
+            $this->gateway_shared_key = (string) ($gateway['shared_key'] ?? '');
+        }
+    }
+
+    /**
+     * Update agent payment gateway and settlement details.
+     */
+    public function updatePaymentSettings(): void
+    {
+        $user = Auth::user();
+
+        $isCustom = $this->payment_mode === 'custom';
+
+        $validated = $this->validate([
+            'bank_provider' => ['required', 'string', 'max:100'],
+            'bank_account_name' => ['required', 'string', 'max:255'],
+            'bank_account_number' => ['required', 'string', 'max:50'],
+            'payment_mode' => ['required', 'string', 'in:platform,custom'],
+            'selected_gateway_provider' => [$isCustom ? 'required' : 'nullable', 'string', 'in:doku,midtrans,xendit'],
+            'gateway_environment' => [$isCustom ? 'required' : 'nullable', 'string', 'in:sandbox,production'],
+            'gateway_client_id' => [$isCustom ? 'required' : 'nullable', 'string', 'max:255'],
+            'gateway_shared_key' => [$isCustom ? 'required' : 'nullable', 'string', 'max:255'],
+        ]);
+
+        /** @var Agent|null $agent */
+        $agent = $user->agents()->first();
+        if ($agent) {
+            $settings = $agent->settings ?? [];
+            $settings['payment_gateway'] = [
+                'provider' => $isCustom ? $validated['selected_gateway_provider'] : 'doku',
+                'use_custom_credentials' => $isCustom,
+                'environment' => $isCustom ? $validated['gateway_environment'] : 'production',
+                'client_id' => $isCustom ? ($validated['gateway_client_id'] ?? null) : null,
+                'shared_key' => $isCustom ? ($validated['gateway_shared_key'] ?? null) : null,
+            ];
+
+            $bankRef = ($validated['bank_provider'] && $validated['bank_account_number'])
+                ? "{$validated['bank_provider']} - {$validated['bank_account_number']}" . ($validated['bank_account_name'] ? " ({$validated['bank_account_name']})" : '')
+                : null;
+
+            $agent->update([
+                'bank_provider' => $validated['bank_provider'],
+                'bank_account_name' => $validated['bank_account_name'],
+                'bank_account_number' => $validated['bank_account_number'],
+                'bank_account_ref' => $bankRef,
+                'settings' => $settings,
+            ]);
+        }
+
+        $this->saved = true;
+        $this->dispatch('payments-updated');
+    }
+}; ?>
+
+<div class="space-y-6 max-w-5xl">
+    <!-- Standalone Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <span class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400">
+                    <i class="fa-solid fa-credit-card text-lg"></i>
+                </span>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {{ __('Payment Gateways & Payouts') }}
+                </h1>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                {{ __('Choose your payment processing method and set your bank account for automated direct payout settlements.') }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Settings Form -->
+    <form wire:submit="updatePaymentSettings" class="w-full space-y-6">
+        <!-- Card 1: Bank Payout Settlement Account -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <span class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
+                    <i class="fa-solid fa-building-columns"></i>
+                </span>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {{ __('Bank Payout Settlement Account') }}
+                </h3>
+            </div>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ __('All customer payments processed via our built-in DOKU gateway are automatically disbursed into this designated Indonesian bank account.') }}
+            </p>
+
+            <!-- Bank Details Grid with Searchable Select -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- 1. Bank Provider -->
+                <div>
+                    <x-label for="bank_provider" :value="__('Bank Provider')" required />
+                    <x-select
+                        id="bank_provider"
+                        wire:model="bank_provider"
+                        :searchable="true"
+                        :options="[
+                            'BCA' => 'BCA (Bank Central Asia)',
+                            'Mandiri' => 'Bank Mandiri',
+                            'BRI' => 'BRI (Bank Rakyat Indonesia)',
+                            'BNI' => 'BNI (Bank Negara Indonesia)',
+                            'BSI' => 'BSI (Bank Syariah Indonesia)',
+                            'CIMB Niaga' => 'CIMB Niaga',
+                            'Permata' => 'Bank Permata',
+                            'Danamon' => 'Bank Danamon',
+                            'Bank Jago' => 'Bank Jago',
+                            'SeaBank' => 'SeaBank',
+                            'Other' => 'Other Bank',
+                        ]"
+                        :error="$errors->has('bank_provider')"
+                    />
+                    <x-input-error :messages="$errors->get('bank_provider')" />
+                </div>
+
+                <!-- 2. Account Name -->
+                <div>
+                    <x-label for="bank_account_name" :value="__('Beneficiary Account Name')" required />
+                    <x-input
+                        id="bank_account_name"
+                        wire:model="bank_account_name"
+                        type="text"
+                        placeholder="e.g. PT Bali Adventures / John Doe"
+                        :error="$errors->has('bank_account_name')"
+                    />
+                    <x-input-error :messages="$errors->get('bank_account_name')" />
+                </div>
+
+                <!-- 3. Account Number -->
+                <div>
+                    <x-label for="bank_account_number" :value="__('Account Number')" required />
+                    <x-input
+                        id="bank_account_number"
+                        wire:model="bank_account_number"
+                        type="text"
+                        placeholder="e.g. 1234567890"
+                        class="font-mono"
+                        :error="$errors->has('bank_account_number')"
+                    />
+                    <x-input-error :messages="$errors->get('bank_account_number')" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Payment Processing Method -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+                    <i class="fa-solid fa-wallet"></i>
+                </span>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {{ __('Payment Processing Method') }}
+                </h3>
+            </div>
+
+            <!-- Choice Grid: Built-in vs BYO Custom -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Option 1: Built-in Platform Managed DOKU Gateway -->
+                <div
+                    wire:click="$set('payment_mode', 'platform')"
+                    class="relative p-5 rounded-2xl border-2 transition-all cursor-pointer select-none space-y-3 {{ $payment_mode === 'platform' ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/40 dark:border-indigo-500 shadow-sm' : 'border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900' }}"
+                >
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                                <i class="fa-solid fa-building-circle-check text-sm"></i>
+                            </span>
+                            <div>
+                                <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">
+                                    {{ __('Built-in Platform Payment') }}
+                                </h4>
+                                <span class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                                    {{ __('Managed via DOKU Payment Gateway') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                            {{ __('Recommended') }}
+                        </span>
+                    </div>
+
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {{ __('We take care of all payment gateway contracts, technical compliance, and transaction routing for you. Zero API setup required.') }}
+                    </p>
+
+                    <!-- Supported Channels Badges -->
+                    <div class="pt-2 border-t border-slate-200/60 dark:border-zinc-700/60 space-y-1.5">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Channels Included') }}</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300">QRIS (All Banks & E-Wallets)</span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300">BCA, Mandiri, BRI, BNI VA</span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300">Visa / Mastercard / JCB</span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300">OVO, DANA, ShopeePay</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 2: BYO Custom Merchant Account -->
+                <div
+                    wire:click="$set('payment_mode', 'custom')"
+                    class="relative p-5 rounded-2xl border-2 transition-all cursor-pointer select-none space-y-3 {{ $payment_mode === 'custom' ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/40 dark:border-indigo-500 shadow-sm' : 'border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900' }}"
+                >
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="p-2 rounded-xl bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                                <i class="fa-solid fa-sliders text-sm"></i>
+                            </span>
+                            <div>
+                                <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">
+                                    {{ __('Custom Gateway (BYO Account)') }}
+                                </h4>
+                                <span class="text-[11px] text-slate-500">
+                                    {{ __('Bring Your Own Credentials') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-400">
+                            {{ __('Enterprise') }}
+                        </span>
+                    </div>
+
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {{ __('Connect your own direct merchant credentials if your business has an existing enterprise contract with DOKU, Midtrans, or Xendit.') }}
+                    </p>
+
+                    <div class="pt-2 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center gap-2 text-xs text-slate-500">
+                        <i class="fa-solid fa-code text-[11px]"></i>
+                        <span>{{ __('Requires API Client ID & Shared Secret Key') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Built-in Platform Mode Information Banner -->
+            @if ($payment_mode === 'platform')
+                <div class="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex items-start gap-3.5 animate-fade-in">
+                    <span class="p-1.5 rounded-xl bg-emerald-600 text-white shrink-0 mt-0.5">
+                        <i class="fa-solid fa-circle-check text-xs"></i>
+                    </span>
+                    <div class="space-y-1">
+                        <h5 class="text-xs sm:text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                            {{ __('Platform Managed DOKU Payment is Active') }}
+                        </h5>
+                        <p class="text-[11px] sm:text-xs text-emerald-800/90 dark:text-emerald-300/90 leading-relaxed">
+                            {{ __('Your storefront checkout will automatically route guest reservations through our verified DOKU payment engine. When a guest pays, transaction proceeds are deposited into your designated bank account above.') }}
+                        </p>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Custom Gateway BYO Config Fields -->
+            @if ($payment_mode === 'custom')
+                <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-5 animate-fade-in">
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                            {{ __('Select Your Custom Provider & Credentials') }}
+                        </h4>
+                        <p class="text-[11px] text-slate-500 mt-0.5">
+                            {{ __('Specify which payment engine credentials your agency uses.') }}
+                        </p>
+                    </div>
+
+                    <!-- Provider Selector Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button
+                            type="button"
+                            wire:click="$set('selected_gateway_provider', 'doku')"
+                            class="p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer {{ $selected_gateway_provider === 'doku' ? 'border-indigo-600 bg-white dark:bg-zinc-900 shadow-xs' : 'border-slate-200 dark:border-zinc-700 bg-transparent' }}"
+                        >
+                            <span class="font-bold text-xs text-slate-900 dark:text-white block">DOKU Checkout</span>
+                            <span class="text-[10px] text-slate-500">MALLID / Client Key</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            wire:click="$set('selected_gateway_provider', 'midtrans')"
+                            class="p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer {{ $selected_gateway_provider === 'midtrans' ? 'border-indigo-600 bg-white dark:bg-zinc-900 shadow-xs' : 'border-slate-200 dark:border-zinc-700 bg-transparent' }}"
+                        >
+                            <span class="font-bold text-xs text-slate-900 dark:text-white block">Midtrans Snap</span>
+                            <span class="text-[10px] text-slate-500">Merchant / Server Key</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            wire:click="$set('selected_gateway_provider', 'xendit')"
+                            class="p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer {{ $selected_gateway_provider === 'xendit' ? 'border-indigo-600 bg-white dark:bg-zinc-900 shadow-xs' : 'border-slate-200 dark:border-zinc-700 bg-transparent' }}"
+                        >
+                            <span class="font-bold text-xs text-slate-900 dark:text-white block">Xendit Invoice</span>
+                            <span class="text-[10px] text-slate-500">Public & Secret API Keys</span>
+                        </button>
+                    </div>
+
+                    <!-- Custom API Credential Inputs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                        <div>
+                            <x-label for="gateway_environment" :value="__('Gateway Environment')" required />
+                            <x-select
+                                id="gateway_environment"
+                                wire:model="gateway_environment"
+                                :options="[
+                                    'sandbox' => 'Sandbox (Testing & Demo)',
+                                    'production' => 'Production (Live Payments)',
+                                ]"
+                            />
+                            <x-input-error :messages="$errors->get('gateway_environment')" />
+                        </div>
+
+                        <div>
+                            <x-label for="gateway_client_id" :value="__('Merchant / Client ID')" required />
+                            <x-input id="gateway_client_id" wire:model="gateway_client_id" type="text" placeholder="e.g. MALLID / Client Key" :error="$errors->has('gateway_client_id')" />
+                            <x-input-error :messages="$errors->get('gateway_client_id')" />
+                        </div>
+
+                        <div>
+                            <x-label for="gateway_shared_key" :value="__('Secret / Shared Key')" required />
+                            <x-input id="gateway_shared_key" wire:model="gateway_shared_key" type="password" placeholder="••••••••••••" :error="$errors->has('gateway_shared_key')" />
+                            <x-input-error :messages="$errors->get('gateway_shared_key')" />
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <!-- Submit Button & Success Toast -->
+        <div class="flex items-center gap-4 pt-2">
+            <x-button variant="primary" type="submit" data-test="update-payments-button" class="shadow-sm">
+                <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
+                {{ __('Save Payment Settings') }}
+            </x-button>
+
+            <div x-data="{ shown: false, timeout: null }"
+                 x-init="@this.on('payments-updated', () => { clearTimeout(timeout); shown = true; timeout = setTimeout(() => { shown = false }, 2500); })"
+                 x-show.transition.out.opacity.duration.1500ms="shown"
+                 x-transition:leave.opacity.duration.1500ms
+                 style="display: none;"
+                 class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <i class="fa-solid fa-circle-check"></i>
+                {{ __('Payment & settlement settings saved successfully.') }}
+            </div>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,103 @@
+@import 'tailwindcss';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+    /* Base Palette */
+    --color-surface-50: #f8fafc;
+    --color-surface-100: #f1f5f9;
+    --color-surface-200: #e2e8f0;
+    --color-surface-300: #cbd5e1;
+    --color-surface-400: #94a3b8;
+    --color-surface-500: #64748b;
+    --color-surface-600: #475569;
+    --color-surface-700: #334155;
+    --color-surface-800: #1e293b;
+    --color-surface-900: #0f172a;
+    --color-surface-950: #090d16;
+
+    /* Accent & Brand Colors (Dynamically derived from Agent's Brand Hex) */
+    --color-brand-50: color-mix(in srgb, var(--brand-color, #4f46e5) 8%, white);
+    --color-brand-100: color-mix(in srgb, var(--brand-color, #4f46e5) 15%, white);
+    --color-brand-200: color-mix(in srgb, var(--brand-color, #4f46e5) 30%, white);
+    --color-brand-300: color-mix(in srgb, var(--brand-color, #4f46e5) 50%, white);
+    --color-brand-400: color-mix(in srgb, var(--brand-color, #4f46e5) 75%, white);
+    --color-brand-500: color-mix(in srgb, var(--brand-color, #4f46e5) 90%, white);
+    --color-brand-600: var(--brand-color, #4f46e5);
+    --color-brand-700: color-mix(in srgb, var(--brand-color, #4f46e5) 85%, black);
+    --color-brand-800: color-mix(in srgb, var(--brand-color, #4f46e5) 70%, black);
+    --color-brand-900: color-mix(in srgb, var(--brand-color, #4f46e5) 55%, black);
+    --color-brand-950: color-mix(in srgb, var(--brand-color, #4f46e5) 25%, black);
+
+    --color-emerald-500: #10b981;
+    --color-emerald-600: #059669;
+
+    --color-accent: var(--brand-color, #4f46e5);
+    --color-accent-foreground: var(--color-white);
+}
+
+@layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+
+    html {
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-surface-200, currentColor);
+    }
+
+    .dark *,
+    .dark ::after,
+    .dark ::before,
+    .dark ::backdrop,
+    .dark ::file-selector-button {
+        border-color: var(--color-surface-800, currentColor);
+    }
+}
+
+/* Custom Animation Utilities */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.98) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeInScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Date input indicator styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+}
+
