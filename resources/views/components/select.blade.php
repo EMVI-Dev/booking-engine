@@ -37,7 +37,7 @@
     $baseClasses = 'h-10 w-full rounded-xl border text-xs sm:text-sm shadow-xs transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:bg-slate-100 dark:disabled:bg-zinc-800 disabled:cursor-not-allowed';
     $stateClasses = $error
         ? 'border-rose-500 text-rose-900 focus:border-rose-500 focus:ring-rose-500/20 dark:border-rose-500 dark:text-rose-400'
-        : 'border-slate-200/80 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500/20 dark:border-zinc-700/80 dark:bg-zinc-800/60 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/20';
+        : 'border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-purple-600 focus:ring-purple-600/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-purple-400 dark:focus:ring-purple-400/10';
 
     $classes = "{$baseClasses} {$stateClasses}";
 @endphp

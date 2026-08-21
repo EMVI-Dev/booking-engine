@@ -1,7 +1,8 @@
 <?php
 
-use App\Models\Agent;
+use App\Models\Operator;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -21,19 +22,29 @@ new #[Title('Storefront Settings')] class extends Component {
 
     public bool $saved = false;
 
+    #[Computed]
+    public function currentOperator(): ?Operator
+    {
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
+    }
+
     /**
      * Mount the component.
      */
     public function mount(): void
     {
-        $user = Auth::user();
+        /** @var Operator|null $operator */
+        $operator = $this->currentOperator;
+        if ($operator) {
+            $this->terms_and_conditions = $operator->terms_and_conditions ?? '';
 
-        /** @var Agent|null $agent */
-        $agent = $user->agents()->first();
-        if ($agent) {
-            $this->terms_and_conditions = $agent->terms_and_conditions ?? '';
-
-            $settings = $agent->settings ?? [];
+            $settings = $operator->settings ?? [];
             $storefrontSettings = $settings['storefront'] ?? [];
 
             $this->allow_standalone_products = (bool) ($storefrontSettings['allow_standalone_products'] ?? true);
@@ -50,8 +61,6 @@ new #[Title('Storefront Settings')] class extends Component {
      */
     public function updateStorefrontSettings(): void
     {
-        $user = Auth::user();
-
         $validated = $this->validate([
             'allow_standalone_products' => ['boolean'],
             'show_reviews' => ['boolean'],
@@ -62,10 +71,10 @@ new #[Title('Storefront Settings')] class extends Component {
             'terms_and_conditions' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        /** @var Agent|null $agent */
-        $agent = $user->agents()->first();
-        if ($agent) {
-            $settings = $agent->settings ?? [];
+        /** @var Operator|null $operator */
+        $operator = $this->currentOperator;
+        if ($operator) {
+            $settings = $operator->settings ?? [];
             $settings['storefront'] = [
                 'allow_standalone_products' => $this->allow_standalone_products,
                 'show_reviews' => $this->show_reviews,
@@ -75,7 +84,7 @@ new #[Title('Storefront Settings')] class extends Component {
                 'hero_tagline' => $validated['hero_tagline'] ?? null,
             ];
 
-            $agent->update([
+            $operator->update([
                 'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
                 'settings' => $settings,
             ]);

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Bookable;
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Enums\ReservationStatus;
+use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Services\DokuPaymentService;
@@ -20,25 +22,33 @@ class StorefrontController extends Controller
     ) {}
 
     /**
-     * Resolve the active Agent from request attributes, container, or domain resolver.
+     * Resolve the active Operator from request attributes, container, or domain resolver.
      */
-    protected function resolveCurrentAgent(Request $request): ?Agent
+    protected function resolveCurrentOperator(Request $request): ?Operator
     {
-        /** @var Agent|null $agent */
-        $agent = $request->attributes->get('current_agent');
+        /** @var Operator|null $operator */
+        $operator = $request->attributes->get('current_operator') ?? $request->attributes->get('current_agent');
 
-        if ($agent instanceof Agent) {
-            return $agent;
+        if ($operator instanceof Operator) {
+            return $operator;
         }
 
-        if (app()->bound('current_agent')) {
-            $instance = app('current_agent');
-            if ($instance instanceof Agent) {
+        if (app()->bound('current_operator')) {
+            $instance = app('current_operator');
+            if ($instance instanceof Operator) {
                 return $instance;
             }
         }
 
-        return $this->domainResolver->resolveAgent($request);
+        return $this->domainResolver->resolveOperator($request);
+    }
+
+    /**
+     * @deprecated Use resolveCurrentOperator() instead.
+     */
+    protected function resolveCurrentAgent(Request $request): ?Operator
+    {
+        return $this->resolveCurrentOperator($request);
     }
 
     /**
@@ -272,14 +282,46 @@ class StorefrontController extends Controller
     /**
      * Show guest reservation confirmation receipt.
      */
-    public function showReceipt(Reservation $reservation): View
+    public function showReceipt(Reservation $reservation, DokuPaymentService $paymentService): View
     {
         $reservation->load(['agent', 'bookable', 'latestPayment']);
+
+        // Auto-check live status with DOKU if still pending
+        if ($reservation->status === ReservationStatus::PaymentPending && $reservation->latestPayment) {
+            $paymentService->syncPaymentStatus($reservation->latestPayment);
+            $reservation->refresh();
+            $reservation->load(['agent', 'bookable', 'latestPayment']);
+        }
 
         return view('storefront.confirmation', [
             'reservation' => $reservation,
             'agent' => $reservation->agent,
         ]);
+    }
+
+    /**
+     * Resume or initiate payment for a pending reservation hold.
+     */
+    public function payReservation(Reservation $reservation, DokuPaymentService $paymentService): RedirectResponse
+    {
+        $reservation->load(['agent', 'bookable', 'latestPayment']);
+
+        if ($reservation->status === ReservationStatus::Confirmed || $reservation->latestPayment?->isPaid()) {
+            return redirect()->route('storefront.reservation.receipt', $reservation);
+        }
+
+        // If hold has expired, redirect with error
+        if ($reservation->hold_expires_at && $reservation->hold_expires_at->isPast()) {
+            return redirect()->route('home')->with('error', __('This booking hold has expired. Please create a new reservation.'));
+        }
+
+        $latestPayment = $reservation->latestPayment;
+        $unitPrice = $reservation->bookable instanceof Bookable ? $reservation->bookable->getPrice() : 0.0;
+        $totalAmount = $latestPayment ? (float) $latestPayment->amount : ($reservation->pax_count * $unitPrice);
+
+        $session = $paymentService->createPaymentSession($reservation, $totalAmount);
+
+        return redirect($session['checkout_url']);
     }
 
     /**

@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
@@ -15,25 +15,31 @@ new #[Title('Tour Packages & Combos')] class extends Component {
     public string $statusFilter = 'all';
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->agents()->first();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     #[Computed]
     public function isProfileComplete(): bool
     {
-        return (bool) $this->currentAgent?->isProfileComplete();
+        return (bool) $this->currentOperator?->isProfileComplete();
     }
 
     #[Computed]
     public function packages()
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return collect();
         }
 
-        return $this->currentAgent->packages()
+        return $this->currentOperator->packages()
             ->with('products')
             ->when($this->search, fn ($q) => $q->where('title', 'like', "%{$this->search}%")->orWhere('category', 'like', "%{$this->search}%"))
             ->when($this->statusFilter !== 'all', fn ($q) => $q->where('status', $this->statusFilter))
@@ -116,6 +122,36 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                 <i class="fa-solid fa-paintbrush mr-1.5 text-xs"></i>
                 {{ __('Complete Brand Settings') }}
             </x-button>
+        </div>
+    @endif
+
+    @php
+        $agentPlan = $this->currentAgent?->getPlan();
+        $packageLimit = $agentPlan?->package_limit;
+        $totalPackages = $this->currentAgent?->packages()->count() ?? 0;
+        $hasReachedLimit = $packageLimit !== null && $totalPackages >= $packageLimit;
+    @endphp
+
+    <!-- Package Limit Banner -->
+    @if ($hasReachedLimit)
+        <div class="p-5 rounded-3xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+            <div class="flex items-start gap-3.5">
+                <div class="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <i class="fa-solid fa-crown text-sm"></i>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                        {{ __('Package Limit Reached (:count/:limit Listings)', ['count' => $totalPackages, 'limit' => $packageLimit]) }}
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        {{ __('You have reached the maximum number of tour listings allowed on your :plan plan. Upgrade your plan to list more tour packages.', ['plan' => $agentPlan?->name ?? 'Starter']) }}
+                    </p>
+                </div>
+            </div>
+            <a href="{{ route('settings.plan') }}" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition inline-flex items-center gap-1.5 shrink-0 shadow-xs" wire:navigate>
+                <i class="fa-solid fa-crown text-[10px] text-amber-300"></i>
+                <span>{{ __('Upgrade Plan') }}</span>
+            </a>
         </div>
     @endif
 

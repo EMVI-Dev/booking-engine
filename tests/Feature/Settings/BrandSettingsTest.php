@@ -1,8 +1,8 @@
 <?php
 
-use App\Enums\AgentStatus;
-use App\Enums\AgentUserRole;
-use App\Models\Agent;
+use App\Enums\OperatorStatus;
+use App\Enums\OperatorUserRole;
+use App\Models\Operator;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -13,15 +13,15 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->user = User::factory()->create();
-    $this->agent = Agent::factory()->create([
+    $this->operator = Operator::factory()->create([
         'name' => 'Original Agency',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
         'bio' => 'Original bio description.',
         'contact_whatsapp' => '+628123456789',
         'booking_notification_email' => 'bookings@original.com',
         'billing_email' => 'finance@original.com',
     ]);
-    $this->agent->users()->attach($this->user->id, ['role' => AgentUserRole::Owner]);
+    $this->operator->users()->attach($this->user->id, ['role' => OperatorUserRole::Owner]);
     $this->actingAs($this->user);
 });
 
@@ -56,26 +56,26 @@ test('brand settings can be updated with logo and social media links', function 
         ->call('updateBrandSettings')
         ->assertHasNoErrors();
 
-    $this->agent->refresh();
+    $this->operator->refresh();
 
-    expect($this->agent->name)->toBe('Sunrise Excursions')
-        ->and($this->agent->bio)->toBe('Premier marine and outdoor adventure operator.')
-        ->and($this->agent->contact_whatsapp)->toBe('+628987654321')
-        ->and($this->agent->booking_notification_email)->toBe('reservations@sunrise.com')
-        ->and($this->agent->billing_email)->toBe('accounting@sunrise.com')
-        ->and($this->agent->logo_path)->not->toBeNull()
-        ->and($this->agent->settings['brand_color'])->toBe('#0ea5e9')
-        ->and($this->agent->settings['whatsapp_schedule']['timezone'])->toBe('Asia/Makassar')
-        ->and($this->agent->settings['whatsapp_schedule']['start_time'])->toBe('08:00')
-        ->and($this->agent->settings['whatsapp_schedule']['end_time'])->toBe('18:00')
-        ->and($this->agent->settings['whatsapp_schedule']['days'])->toBe(['mon', 'tue', 'wed', 'thu', 'fri'])
-        ->and($this->agent->settings['social_links']['website'])->toBe('https://sunriseexcursions.com')
-        ->and($this->agent->settings['social_links']['instagram'])->toBe('https://instagram.com/sunriseexcursions')
-        ->and($this->agent->settings['social_links']['tiktok'])->toBe('https://tiktok.com/@sunriseexcursions');
+    expect($this->operator->name)->toBe('Sunrise Excursions')
+        ->and($this->operator->bio)->toBe('Premier marine and outdoor adventure operator.')
+        ->and($this->operator->contact_whatsapp)->toBe('+628987654321')
+        ->and($this->operator->booking_notification_email)->toBe('reservations@sunrise.com')
+        ->and($this->operator->billing_email)->toBe('accounting@sunrise.com')
+        ->and($this->operator->logo_path)->not->toBeNull()
+        ->and($this->operator->settings['brand_color'])->toBe('#0ea5e9')
+        ->and($this->operator->settings['whatsapp_schedule']['timezone'])->toBe('Asia/Makassar')
+        ->and($this->operator->settings['whatsapp_schedule']['start_time'])->toBe('08:00')
+        ->and($this->operator->settings['whatsapp_schedule']['end_time'])->toBe('18:00')
+        ->and($this->operator->settings['whatsapp_schedule']['days'])->toBe(['mon', 'tue', 'wed', 'thu', 'fri'])
+        ->and($this->operator->settings['social_links']['website'])->toBe('https://sunriseexcursions.com')
+        ->and($this->operator->settings['social_links']['instagram'])->toBe('https://instagram.com/sunriseexcursions')
+        ->and($this->operator->settings['social_links']['tiktok'])->toBe('https://tiktok.com/@sunriseexcursions');
 
-    expect($this->agent->getWhatsAppScheduleSummary())->toContain('08:00 - 18:00 (WITA');
+    expect($this->operator->getWhatsAppScheduleSummary())->toContain('08:00 - 18:00 (WITA');
 
-    Storage::disk('public')->assertExists($this->agent->logo_path);
+    Storage::disk('public')->assertExists($this->operator->logo_path);
 });
 
 test('brand settings validation enforces required fields and valid hex color', function () {

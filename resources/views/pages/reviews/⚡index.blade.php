@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Review;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,9 +14,15 @@ new #[Title('Guest Reviews')] class extends Component {
     public string $ratingFilter = 'all'; // all, 5, 4, 3, low
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->currentAgent();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     /**

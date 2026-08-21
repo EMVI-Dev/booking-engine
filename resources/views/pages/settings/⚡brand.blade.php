@@ -1,8 +1,9 @@
 <?php
 
-use App\Models\Agent;
+use App\Models\Operator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -36,11 +37,32 @@ new #[Title('Brand Settings')] class extends Component {
     public string $tiktok_url = '';
     public string $youtube_url = '';
 
+    // Custom Domain (Enterprise)
+    public string $custom_domain = '';
+
+    // Marketing, Tracking Pixels & Review Links
+    public string $google_analytics_id = '';
+    public string $meta_pixel_id = '';
+    public string $google_tag_manager_id = '';
+    public string $review_url = '';
+
     // Notification Channels
     public string $booking_notification_email = '';
     public string $billing_email = '';
 
     public bool $saved = false;
+
+    #[Computed]
+    public function currentOperator(): ?Operator
+    {
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
+    }
 
     /**
      * Mount the component.
@@ -49,19 +71,19 @@ new #[Title('Brand Settings')] class extends Component {
     {
         $user = Auth::user();
 
-        /** @var Agent|null $agent */
-        $agent = $user->agents()->first();
-        if ($agent) {
-            $this->agency_name = $agent->name;
-            $this->bio = $agent->bio ?? '';
-            $this->contact_whatsapp = $agent->contact_whatsapp ?? '';
-            $this->brand_color = $agent->brand_color ?? '#4f46e5';
-            $this->existing_logo_path = $agent->logo_path;
-            $this->booking_notification_email = $agent->booking_notification_email ?? $user->email;
-            $this->billing_email = $agent->billing_email ?? $user->email;
+        /** @var Operator|null $operator */
+        $operator = $this->currentOperator;
+        if ($operator) {
+            $this->agency_name = $operator->name;
+            $this->bio = $operator->bio ?? '';
+            $this->contact_whatsapp = $operator->contact_whatsapp ?? '';
+            $this->brand_color = $operator->brand_color ?? '#4f46e5';
+            $this->existing_logo_path = $operator->logo_path;
+            $this->booking_notification_email = $operator->booking_notification_email ?? $user->email;
+            $this->billing_email = $operator->billing_email ?? $user->email;
 
-            $settings = $agent->settings ?? [];
-            $this->whatsapp_prefilled_message = (string) ($settings['whatsapp_prefilled_message'] ?? 'Hi ' . $agent->name . ', I would like to inquire about your packages.');
+            $settings = $operator->settings ?? [];
+            $this->whatsapp_prefilled_message = (string) ($settings['whatsapp_prefilled_message'] ?? 'Hi ' . $operator->name . ', I would like to inquire about your packages.');
 
             $waSchedule = $settings['whatsapp_schedule'] ?? [];
             $this->whatsapp_schedule_mode = (string) ($waSchedule['mode'] ?? 'schedule');
@@ -76,6 +98,17 @@ new #[Title('Brand Settings')] class extends Component {
             $this->facebook_url = (string) ($social['facebook'] ?? '');
             $this->tiktok_url = (string) ($social['tiktok'] ?? '');
             $this->youtube_url = (string) ($social['youtube'] ?? '');
+
+            $tracking = $settings['tracking'] ?? [];
+            $this->google_analytics_id = (string) ($tracking['google_analytics_id'] ?? '');
+            $this->meta_pixel_id = (string) ($tracking['meta_pixel_id'] ?? '');
+            $this->google_tag_manager_id = (string) ($tracking['google_tag_manager_id'] ?? '');
+
+            $marketing = $settings['marketing'] ?? [];
+            $this->review_url = (string) ($marketing['review_url'] ?? '');
+
+            $customDomain = $operator->domains()->where('type', \App\Enums\DomainType::Custom)->first();
+            $this->custom_domain = $customDomain ? (string) $customDomain->domain : '';
         } else {
             $this->booking_notification_email = $user->email;
             $this->billing_email = $user->email;
@@ -102,12 +135,11 @@ new #[Title('Brand Settings')] class extends Component {
         $this->logo = null;
         $this->existing_logo_path = null;
 
-        $user = Auth::user();
-        /** @var Agent|null $agent */
-        $agent = $user->agents()->first();
-        if ($agent && $agent->logo_path) {
-            Storage::disk('public')->delete($agent->logo_path);
-            $agent->update(['logo_path' => null]);
+        /** @var Operator|null $operator */
+        $operator = $this->currentOperator;
+        if ($operator && $operator->logo_path) {
+            Storage::disk('public')->delete($operator->logo_path);
+            $operator->update(['logo_path' => null]);
         }
     }
 
@@ -145,24 +177,50 @@ new #[Title('Brand Settings')] class extends Component {
             'facebook_url' => ['nullable', 'string', 'max:255'],
             'tiktok_url' => ['nullable', 'string', 'max:255'],
             'youtube_url' => ['nullable', 'string', 'max:255'],
+            'google_analytics_id' => ['nullable', 'string', 'max:50'],
+            'meta_pixel_id' => ['nullable', 'string', 'max:50'],
+            'google_tag_manager_id' => ['nullable', 'string', 'max:50'],
+            'review_url' => ['nullable', 'url', 'max:500'],
             'booking_notification_email' => ['required', 'email', 'max:255'],
             'billing_email' => ['required', 'email', 'max:255'],
+            'custom_domain' => ['nullable', 'string', 'max:255'],
         ]);
 
-        /** @var Agent|null $agent */
-        $agent = $user->agents()->first();
-        if ($agent) {
+        /** @var Operator|null $operator */
+        $operator = $this->currentOperator;
+        if ($operator) {
+            if ($this->custom_domain !== '') {
+                if (! $operator->hasFeature('custom_domain')) {
+                    $this->addError('custom_domain', __('Custom domain connection requires the Enterprise subscription plan.'));
+                    return;
+                }
+
+                $cleanDomain = strtolower(trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/'))));
+                $existing = \App\Models\OperatorDomain::where('domain', $cleanDomain)->where('operator_id', '!=', $operator->id)->exists();
+                if ($existing) {
+                    $this->addError('custom_domain', __('This domain is already registered to another operator.'));
+                    return;
+                }
+
+                $operator->domains()->updateOrCreate(
+                    ['type' => \App\Enums\DomainType::Custom],
+                    ['domain' => $cleanDomain, 'status' => \App\Enums\DomainStatus::Pending]
+                );
+            } else {
+                $operator->domains()->where('type', \App\Enums\DomainType::Custom)->delete();
+            }
+
             $logoPath = $this->existing_logo_path;
             if ($this->logo) {
-                if ($agent->logo_path) {
-                    Storage::disk('public')->delete($agent->logo_path);
+                if ($operator->logo_path) {
+                    Storage::disk('public')->delete($operator->logo_path);
                 }
-                $logoPath = $this->logo->store('agents/logos', 'public');
+                $logoPath = $this->logo->store('operators/logos', 'public');
                 $this->existing_logo_path = $logoPath;
                 $this->logo = null;
             }
 
-            $settings = $agent->settings ?? [];
+            $settings = $operator->settings ?? [];
             $settings['brand_color'] = $validated['brand_color'] ?? '#4f46e5';
             $settings['whatsapp_prefilled_message'] = $validated['whatsapp_prefilled_message'] ?? '';
             $settings['whatsapp_schedule'] = [
@@ -179,8 +237,16 @@ new #[Title('Brand Settings')] class extends Component {
                 'tiktok' => $validated['tiktok_url'] ?? null,
                 'youtube' => $validated['youtube_url'] ?? null,
             ];
+            $settings['tracking'] = [
+                'google_analytics_id' => $validated['google_analytics_id'] ?? null,
+                'meta_pixel_id' => $validated['meta_pixel_id'] ?? null,
+                'google_tag_manager_id' => $validated['google_tag_manager_id'] ?? null,
+            ];
+            $settings['marketing'] = [
+                'review_url' => $validated['review_url'] ?? null,
+            ];
 
-            $agent->update([
+            $operator->update([
                 'name' => $validated['agency_name'],
                 'bio' => $validated['bio'] ?? null,
                 'contact_whatsapp' => $validated['contact_whatsapp'] ?? null,
@@ -594,7 +660,171 @@ new #[Title('Brand Settings')] class extends Component {
             </div>
         </div>
 
-        <!-- Card 5: Notification Channels -->
+        <!-- Card: Custom Website Domain (Enterprise) -->
+        @php
+            $hasCustomDomain = $this->currentOperator?->hasFeature('custom_domain') ?? false;
+        @endphp
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <div class="flex items-center gap-2.5">
+                    <span class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 text-xs">
+                        <i class="fa-solid fa-globe"></i>
+                    </span>
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        {{ __('Custom Website Domain (`yourbrand.com`)') }}
+                    </h3>
+                </div>
+                @if ($hasCustomDomain)
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        {{ __('Active & Unlocked') }}
+                    </span>
+                @else
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[9px]"></i>
+                        <span>{{ __('Agency Ultimate') }}</span>
+                    </span>
+                @endif
+            </div>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                {{ __('Point your own custom domain (e.g. tours.baliadventures.com or youragency.com) to your storefront with automated SSL security.') }}
+            </p>
+
+            @if (! $hasCustomDomain)
+                <div class="p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="p-2 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 text-xs">
+                            <i class="fa-solid fa-crown"></i>
+                        </span>
+                        <div>
+                            <p class="text-xs font-bold text-slate-900 dark:text-white">{{ __('Custom Domains Require Agency Ultimate Plan') }}</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ __('Upgrade to Agency Ultimate to white-label your storefront on your own .com domain.') }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('settings.plan') }}" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-xs" wire:navigate>
+                        <i class="fa-solid fa-crown text-[10px] text-amber-300"></i>
+                        <span>{{ __('Upgrade Plan') }}</span>
+                    </a>
+                </div>
+            @endif
+
+            <div class="{{ ! $hasCustomDomain ? 'opacity-50 pointer-events-none' : '' }} space-y-3">
+                <div>
+                    <x-label for="custom_domain" :value="__('Your Custom Domain')" />
+                    <div class="relative">
+                        <i class="fa-solid fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <x-input id="custom_domain" wire:model="custom_domain" type="text" placeholder="tours.yourdomain.com" class="pl-9 font-mono text-xs" :disabled="! $hasCustomDomain" :error="$errors->has('custom_domain')" />
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Enter the hostname where you want your booking storefront to load.') }}</p>
+                    <x-input-error :messages="$errors->get('custom_domain')" />
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 text-xs space-y-1">
+                    <span class="font-bold text-slate-700 dark:text-slate-300 block">{{ __('DNS CNAME Setup:') }}</span>
+                    <p class="text-slate-500 dark:text-slate-400 text-[11px]">
+                        {{ __('Add a CNAME record in your domain DNS manager pointing your custom host to:') }}
+                        <code class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-700 font-mono text-[10px] text-indigo-600 dark:text-indigo-400">{{ parse_url(config('app.url', 'https://emvi.test'), PHP_URL_HOST) ?? 'yourdomain.com' }}</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 5: Marketing, Tracking Pixels & Review Links -->
+        @php
+            $hasTracking = $this->currentOperator?->hasFeature('tracking_pixels') ?? false;
+        @endphp
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <div class="flex items-center gap-2.5">
+                    <span class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-xs">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </span>
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        {{ __('Marketing, Tracking Pixels & Review Links') }}
+                    </h3>
+                </div>
+                @if ($hasTracking)
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        {{ __('Active & Unlocked') }}
+                    </span>
+                @else
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[9px]"></i>
+                        <span>{{ __('Pro Operator') }}</span>
+                    </span>
+                @endif
+            </div>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                {{ __('Connect your marketing pixels to measure conversions on Facebook / Instagram Ads and automatically invite guests to review your business after their trip.') }}
+            </p>
+
+            @if (! $hasTracking)
+                <div class="p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="p-2 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 text-xs">
+                            <i class="fa-solid fa-crown"></i>
+                        </span>
+                        <div>
+                            <p class="text-xs font-bold text-slate-900 dark:text-white">{{ __('Requires Pro Operator or Agency Ultimate Tier') }}</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ __('Upgrade to unlock Google Analytics 4, Meta Pixel ROAS tracking, and automated 12-hour review request emails.') }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('settings.plan') }}" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-xs" wire:navigate>
+                        <i class="fa-solid fa-crown text-[10px] text-amber-300"></i>
+                        <span>{{ __('Upgrade Plan') }}</span>
+                    </a>
+                </div>
+            @endif
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 {{ ! $hasTracking ? 'opacity-50 pointer-events-none' : '' }}">
+                <!-- Meta / Facebook Pixel -->
+                <div>
+                    <x-label for="meta_pixel_id" :value="__('Meta / Facebook Pixel ID')" />
+                    <div class="relative">
+                        <i class="fa-brands fa-meta absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600 text-xs"></i>
+                        <x-input id="meta_pixel_id" wire:model="meta_pixel_id" type="text" placeholder="e.g. 123456789012345" class="pl-9 font-mono text-xs" :disabled="! $hasTracking" :error="$errors->has('meta_pixel_id')" />
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Tracks PageViews and Purchase events for Facebook & Instagram Ads.') }}</p>
+                    <x-input-error :messages="$errors->get('meta_pixel_id')" />
+                </div>
+
+                <!-- Google Analytics 4 -->
+                <div>
+                    <x-label for="google_analytics_id" :value="__('Google Analytics 4 Measurement ID')" />
+                    <div class="relative">
+                        <i class="fa-brands fa-google absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500 text-xs"></i>
+                        <x-input id="google_analytics_id" wire:model="google_analytics_id" type="text" placeholder="e.g. G-XXXXXXXXXX" class="pl-9 font-mono text-xs" :disabled="! $hasTracking" :error="$errors->has('google_analytics_id')" />
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Tracks visitor traffic and purchase conversions on your storefront.') }}</p>
+                    <x-input-error :messages="$errors->get('google_analytics_id')" />
+                </div>
+
+                <!-- Google Tag Manager -->
+                <div>
+                    <x-label for="google_tag_manager_id" :value="__('Google Tag Manager (GTM) Container ID')" />
+                    <div class="relative">
+                        <i class="fa-solid fa-tag absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-500 text-xs"></i>
+                        <x-input id="google_tag_manager_id" wire:model="google_tag_manager_id" type="text" placeholder="e.g. GTM-XXXXXXX" class="pl-9 font-mono text-xs" :disabled="! $hasTracking" :error="$errors->has('google_tag_manager_id')" />
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Optional custom tag manager container.') }}</p>
+                    <x-input-error :messages="$errors->get('google_tag_manager_id')" />
+                </div>
+
+                <!-- Google Maps / TripAdvisor Review URL -->
+                <div>
+                    <x-label for="review_url" :value="__('Google Maps or TripAdvisor Review URL')" />
+                    <div class="relative">
+                        <i class="fa-solid fa-star absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400 text-xs"></i>
+                        <x-input id="review_url" wire:model="review_url" type="url" placeholder="https://g.page/r/your-business/review" class="pl-9" :disabled="! $hasTracking" :error="$errors->has('review_url')" />
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Used in automated post-trip review invitation emails sent 12 hours after departure.') }}</p>
+                    <x-input-error :messages="$errors->get('review_url')" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 6: Notification Channels -->
         <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
             <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
                 <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">

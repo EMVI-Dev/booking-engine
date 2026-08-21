@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('agent_id')->constrained('agents')->cascadeOnDelete();
+            $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();
             $table->string('name');
             $table->string('slug');
             $table->text('description')->nullable();
@@ -34,13 +34,13 @@ return new class extends Migration
             $table->string('status')->default('draft'); // draft, published
             $table->timestamps();
 
-            $table->unique(['agent_id', 'slug']);
-            $table->index(['agent_id', 'status']);
+            $table->unique(['operator_id', 'slug']);
+            $table->index(['operator_id', 'status']);
         });
 
         Schema::create('packages', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('agent_id')->constrained('agents')->cascadeOnDelete();
+            $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();
             $table->string('title');
             $table->string('slug');
             $table->text('description')->nullable();
@@ -60,8 +60,8 @@ return new class extends Migration
             $table->string('status')->default('draft'); // draft, published
             $table->timestamps();
 
-            $table->unique(['agent_id', 'slug']);
-            $table->index(['agent_id', 'status']);
+            $table->unique(['operator_id', 'slug']);
+            $table->index(['operator_id', 'status']);
         });
 
         Schema::create('package_products', function (Blueprint $table) {

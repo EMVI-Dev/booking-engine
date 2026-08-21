@@ -73,29 +73,47 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * @return BelongsToMany<Agent, $this, AgentUser>
+     * @return BelongsToMany<Operator, $this, OperatorUser>
      */
-    public function agents(): BelongsToMany
+    public function operators(): BelongsToMany
     {
-        return $this->belongsToMany(Agent::class, 'agent_users')
-            ->using(AgentUser::class)
+        return $this->belongsToMany(Operator::class, 'operator_users')
+            ->using(OperatorUser::class)
             ->withPivot('role')
             ->withTimestamps();
     }
 
     /**
-     * Resolve the active agent for the current session.
-     * Supports session-based agent selection and impersonation for platform administrators.
+     * Resolve the active operator for the current session.
+     * Supports session-based operator selection and impersonation for platform administrators.
      */
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        if ($this->isAdmin() && session()->has('admin_impersonated_agent_id')) {
-            $agent = Agent::whereKey(session('admin_impersonated_agent_id'))->first();
-            if ($agent) {
-                return $agent;
+        if ($this->isAdmin() && session()->has('admin_impersonated_operator_id')) {
+            $operator = Operator::whereKey(session('admin_impersonated_operator_id'))->first();
+            if ($operator) {
+                return $operator;
             }
         }
 
-        return $this->agents()->first() ?? ($this->isAdmin() ? Agent::query()->first() : null);
+        return $this->operators()->first() ?? ($this->isAdmin() ? Operator::query()->first() : null);
+    }
+
+    /**
+     * @deprecated Use operators() instead.
+     *
+     * @return BelongsToMany<Operator, $this, OperatorUser>
+     */
+    public function agents(): BelongsToMany
+    {
+        return $this->operators();
+    }
+
+    /**
+     * @deprecated Use currentOperator() instead.
+     */
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator();
     }
 }

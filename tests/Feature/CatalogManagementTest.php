@@ -1,9 +1,9 @@
 <?php
 
-use App\Enums\AgentStatus;
-use App\Enums\AgentUserRole;
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Enums\OperatorStatus;
+use App\Enums\OperatorUserRole;
+use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use App\Models\User;
@@ -16,20 +16,20 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->user = User::factory()->create();
-    $this->agent = Agent::factory()->create([
-        'status' => AgentStatus::Approved,
-        'bio' => 'Verified booking agent providing curated experiences and services.',
+    $this->operator = Operator::factory()->create([
+        'status' => OperatorStatus::Approved,
+        'bio' => 'Verified tour operator providing curated experiences and services.',
         'contact_whatsapp' => '+628123456789',
         'bank_account_ref' => 'BCA-1234567890',
-        'terms_and_conditions' => 'Standard booking agent cancellation and safety policy.',
+        'terms_and_conditions' => 'Standard tour operator cancellation and safety policy.',
     ]);
-    $this->agent->users()->attach($this->user->id, ['role' => AgentUserRole::Owner]);
+    $this->operator->users()->attach($this->user->id, ['role' => OperatorUserRole::Owner]);
     $this->actingAs($this->user);
 });
 
-test('agent can view products and packages list, create and edit pages', function () {
-    $product = Product::factory()->create(['agent_id' => $this->agent->id]);
-    $package = Package::factory()->create(['agent_id' => $this->agent->id]);
+test('operator can view products and packages list, create and edit pages', function () {
+    $product = Product::factory()->create(['operator_id' => $this->operator->id]);
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
 
     $this->get(route('products.index'))->assertOk();
     $this->get(route('products.create'))->assertOk();
@@ -41,7 +41,7 @@ test('agent can view products and packages list, create and edit pages', functio
 });
 
 test('product creation is blocked if profile and terms are incomplete', function () {
-    $this->agent->update(['terms_and_conditions' => null]);
+    $this->operator->update(['terms_and_conditions' => null]);
 
     Livewire::test('pages::products.create')
         ->set('name', 'Equipment Unit')
@@ -52,7 +52,7 @@ test('product creation is blocked if profile and terms are incomplete', function
     expect(Product::where('name', 'Equipment Unit')->exists())->toBeFalse();
 });
 
-test('agent with completed profile can create an inventory product with cover and gallery images', function () {
+test('operator with completed profile can create an inventory product with cover and gallery images', function () {
     Storage::fake('public');
 
     $cover = UploadedFile::fake()->image('cover.jpg', 600, 400);
@@ -74,7 +74,7 @@ test('agent with completed profile can create an inventory product with cover an
         ->assertHasNoErrors()
         ->assertRedirect(route('products.index'));
 
-    $product = Product::where('agent_id', $this->agent->id)->where('name', 'Speedboat Transfer Slot')->first();
+    $product = Product::where('operator_id', $this->operator->id)->where('name', 'Speedboat Transfer Slot')->first();
     expect($product)->not->toBeNull()
         ->and($product->capacity_per_day)->toBe(15)
         ->and((float) $product->price)->toBe(250000.0)
@@ -87,11 +87,11 @@ test('agent with completed profile can create an inventory product with cover an
     Storage::disk('public')->assertExists($product->gallery[0]);
 });
 
-test('agent can edit product and delete gallery photos', function () {
+test('operator can edit product and delete gallery photos', function () {
     Storage::fake('public');
 
     $product = Product::factory()->create([
-        'agent_id' => $this->agent->id,
+        'operator_id' => $this->operator->id,
         'name' => 'Original Kayak',
         'cover_photo' => 'products/covers/sample.jpg',
         'gallery' => ['products/gallery/img1.jpg', 'products/gallery/img2.jpg'],
@@ -118,7 +118,7 @@ test('agent can edit product and delete gallery photos', function () {
 });
 
 test('package creation is blocked if profile and terms are incomplete', function () {
-    $this->agent->update(['terms_and_conditions' => null]);
+    $this->operator->update(['terms_and_conditions' => null]);
 
     Livewire::test('pages::packages.create')
         ->set('title', 'Island Excursion Package')
@@ -129,17 +129,17 @@ test('package creation is blocked if profile and terms are incomplete', function
     expect(Package::where('title', 'Island Excursion Package')->exists())->toBeFalse();
 });
 
-test('agent can create a package with product composition and cover image', function () {
+test('operator can create a package with product composition and cover image', function () {
     Storage::fake('public');
 
     $productA = Product::factory()->create([
-        'agent_id' => $this->agent->id,
+        'operator_id' => $this->operator->id,
         'name' => 'Speedboat Seat',
         'capacity_per_day' => 20,
     ]);
 
     $productB = Product::factory()->create([
-        'agent_id' => $this->agent->id,
+        'operator_id' => $this->operator->id,
         'name' => 'Certified Guide Slot',
         'capacity_per_day' => 8,
     ]);
@@ -163,7 +163,7 @@ test('agent can create a package with product composition and cover image', func
         ->assertHasNoErrors()
         ->assertRedirect(route('packages.index'));
 
-    $package = Package::where('agent_id', $this->agent->id)->where('title', 'All-Inclusive Island Safari')->first();
+    $package = Package::where('operator_id', $this->operator->id)->where('title', 'All-Inclusive Island Safari')->first();
     expect($package)->not->toBeNull()
         ->and((float) $package->price)->toBe(650000.0)
         ->and($package->products()->count())->toBe(2)
@@ -172,9 +172,9 @@ test('agent can create a package with product composition and cover image', func
     Storage::disk('public')->assertExists($package->cover_photo);
 });
 
-test('agent can edit a package and manage inventory composition', function () {
-    $product = Product::factory()->create(['agent_id' => $this->agent->id]);
-    $package = Package::factory()->create(['agent_id' => $this->agent->id, 'title' => 'Old Title']);
+test('operator can edit a package and manage inventory composition', function () {
+    $product = Product::factory()->create(['operator_id' => $this->operator->id]);
+    $package = Package::factory()->create(['operator_id' => $this->operator->id, 'title' => 'Old Title']);
     $package->products()->attach($product->id, ['quantity_required' => 1]);
 
     Livewire::test('pages::packages.edit', ['package' => $package])
@@ -190,11 +190,11 @@ test('agent can edit a package and manage inventory composition', function () {
         ->and((float) $package->price)->toBe(990000.0);
 });
 
-test('agent can delete product from inside edit page and index modal', function () {
+test('operator can delete product from inside edit page and index modal', function () {
     Storage::fake('public');
 
     $product = Product::factory()->create([
-        'agent_id' => $this->agent->id,
+        'operator_id' => $this->operator->id,
         'name' => 'To Delete Product',
         'cover_photo' => 'products/covers/sample.jpg',
     ]);
@@ -208,7 +208,7 @@ test('agent can delete product from inside edit page and index modal', function 
     Storage::disk('public')->assertMissing('products/covers/sample.jpg');
 
     // Test index modal deletion
-    $product2 = Product::factory()->create(['agent_id' => $this->agent->id, 'name' => 'Index Delete Product']);
+    $product2 = Product::factory()->create(['operator_id' => $this->operator->id, 'name' => 'Index Delete Product']);
     Livewire::test('pages::products.index')
         ->call('confirmDelete', $product2->id, $product2->name)
         ->assertSet('deletingProductId', $product2->id)
@@ -217,11 +217,11 @@ test('agent can delete product from inside edit page and index modal', function 
     expect(Product::where('id', $product2->id)->exists())->toBeFalse();
 });
 
-test('agent can delete package from inside edit page and index modal', function () {
+test('operator can delete package from inside edit page and index modal', function () {
     Storage::fake('public');
 
     $package = Package::factory()->create([
-        'agent_id' => $this->agent->id,
+        'operator_id' => $this->operator->id,
         'title' => 'To Delete Package',
         'cover_photo' => 'packages/covers/sample.jpg',
     ]);
@@ -235,7 +235,7 @@ test('agent can delete package from inside edit page and index modal', function 
     Storage::disk('public')->assertMissing('packages/covers/sample.jpg');
 
     // Test index modal deletion
-    $package2 = Package::factory()->create(['agent_id' => $this->agent->id, 'title' => 'Index Delete Package']);
+    $package2 = Package::factory()->create(['operator_id' => $this->operator->id, 'title' => 'Index Delete Package']);
     Livewire::test('pages::packages.index')
         ->call('confirmDelete', $package2->id, $package2->title)
         ->assertSet('deletingPackageId', $package2->id)

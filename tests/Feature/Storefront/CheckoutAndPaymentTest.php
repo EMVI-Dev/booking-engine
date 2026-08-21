@@ -1,13 +1,13 @@
 <?php
 
-use App\Enums\AgentStatus;
 use App\Enums\DomainStatus;
 use App\Enums\DomainType;
 use App\Enums\ListingStatus;
+use App\Enums\OperatorStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
-use App\Models\Agent;
-use App\Models\AgentDomain;
+use App\Models\Operator;
+use App\Models\OperatorDomain;
 use App\Models\Package;
 use App\Models\Payment;
 use App\Models\Reservation;
@@ -17,23 +17,23 @@ use Livewire\Livewire;
 beforeEach(function () {
     Cache::flush();
 
-    $this->agent = Agent::factory()->create([
+    $this->operator = Operator::factory()->create([
         'name' => 'Bali Sea Adventures',
         'slug' => 'bali-sea',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
         'terms_and_conditions' => 'Standard tour terms apply.',
         'contact_whatsapp' => '081234567890',
     ]);
 
-    $this->domain = AgentDomain::factory()->create([
-        'agent_id' => $this->agent->id,
+    $this->domain = OperatorDomain::factory()->create([
+        'operator_id' => $this->operator->id,
         'domain' => 'bali-sea.booking.test',
         'type' => DomainType::Subdomain,
         'status' => DomainStatus::Active,
     ]);
 
     $this->package = Package::factory()->create([
-        'agent_id' => $this->agent->id,
+        'operator_id' => $this->operator->id,
         'title' => 'Nusa Penida Snorkeling Safari',
         'price' => 750000.00,
         'advance_booking_hours' => 24,
@@ -52,7 +52,7 @@ test('storefront package page renders booking box', function () {
 test('guest cannot submit booking without accepting terms', function () {
     Livewire::test('storefront.booking-box', [
         'bookable' => $this->package,
-        'agent' => $this->agent,
+        'operator' => $this->operator,
     ])
         ->set('requested_date', now()->addDays(3)->format('Y-m-d'))
         ->set('pax_count', 2)
@@ -68,7 +68,7 @@ test('guest cannot submit booking without accepting terms', function () {
 test('guest submitting valid booking creates reservation, payment session, and redirects to checkout', function () {
     Livewire::test('storefront.booking-box', [
         'bookable' => $this->package,
-        'agent' => $this->agent,
+        'operator' => $this->operator,
     ])
         ->set('requested_date', now()->addDays(3)->format('Y-m-d'))
         ->set('pax_count', 2)
@@ -92,13 +92,13 @@ test('guest submitting valid booking creates reservation, payment session, and r
     $payment = Payment::first();
 
     expect($payment)->not->toBeNull()
-        ->and((float) $payment->amount)->toBe(1500000.00)
+        ->and((float) $payment->amount)->toBe(1575000.00) // 1.500.000 + 5% (75.000) guest service fee
         ->and($payment->status)->toBe(PaymentStatus::Pending);
 });
 
 test('doku webhook notification marks payment as paid and reservation as confirmed', function () {
     $reservation = Reservation::factory()->create([
-        'agent_id' => $this->agent->id,
+        'operator_id' => $this->operator->id,
         'bookable_type' => 'package',
         'bookable_id' => $this->package->id,
         'status' => ReservationStatus::PaymentPending,
@@ -128,7 +128,7 @@ test('doku webhook notification marks payment as paid and reservation as confirm
 
 test('guest can view confirmation receipt page', function () {
     $reservation = Reservation::factory()->confirmed()->create([
-        'agent_id' => $this->agent->id,
+        'operator_id' => $this->operator->id,
         'bookable_type' => 'package',
         'bookable_id' => $this->package->id,
         'guest_name' => 'Alex Turner',

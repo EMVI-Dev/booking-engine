@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
@@ -48,19 +48,25 @@ new #[Title('Edit Tour Package')] class extends Component {
     public array $galleryFiles = [];
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->agents()->first();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     #[Computed]
     public function availableProducts()
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return collect();
         }
 
-        return $this->currentAgent->products()
+        return $this->currentOperator->products()
             ->where('status', ListingStatus::Published)
             ->get();
     }
@@ -69,8 +75,8 @@ new #[Title('Edit Tour Package')] class extends Component {
     public function suggestedCategories(): array
     {
         $defaults = ['Day Tour', 'Marine Expedition', 'VIP Charter', 'Snorkel Safari', 'Sunset Cruise', 'Scuba Diving', 'Island Escape'];
-        if ($this->currentAgent) {
-            $existing = $this->currentAgent->packages()
+        if ($this->currentOperator) {
+            $existing = $this->currentOperator->packages()
                 ->whereNotNull('category')
                 ->distinct()
                 ->pluck('category')
@@ -84,7 +90,7 @@ new #[Title('Edit Tour Package')] class extends Component {
 
     public function mount(Package $package): void
     {
-        if (! $this->currentAgent || $package->agent_id !== $this->currentAgent->id) {
+        if (! $this->currentOperator || $package->operator_id !== $this->currentOperator->id) {
             abort(403, 'Unauthorized access to this package.');
         }
 
@@ -183,7 +189,7 @@ new #[Title('Edit Tour Package')] class extends Component {
 
     public function save(): void
     {
-        if (! $this->currentAgent || $this->package->agent_id !== $this->currentAgent->id) {
+        if (! $this->currentOperator || $this->package->operator_id !== $this->currentOperator->id) {
             abort(403);
         }
 
@@ -257,7 +263,7 @@ new #[Title('Edit Tour Package')] class extends Component {
 
     public function delete(): void
     {
-        if (! $this->currentAgent || $this->package->agent_id !== $this->currentAgent->id) {
+        if (! $this->currentOperator || $this->package->operator_id !== $this->currentOperator->id) {
             abort(403);
         }
 

@@ -240,7 +240,7 @@
         </form>
 
         <div class="text-sm text-center text-slate-600 dark:text-slate-400 pt-1">
-            <span>{{ __('Already have an agent account?') }}</span>
+            <span>{{ __('Already have an operator account?') }}</span>
             <a href="{{ route('login') }}"
                 class="font-semibold underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
                 wire:navigate>{{ __('Log in') }}</a>

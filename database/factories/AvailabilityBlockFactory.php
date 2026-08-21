@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Agent;
 use App\Models\AvailabilityBlock;
+use App\Models\Operator;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,7 +16,7 @@ class AvailabilityBlockFactory extends Factory
     public function definition(): array
     {
         return [
-            'agent_id' => Agent::factory(),
+            'operator_id' => Operator::factory(),
             'product_id' => null,
             'date_start' => now()->addDays(10)->format('Y-m-d'),
             'date_end' => now()->addDays(12)->format('Y-m-d'),

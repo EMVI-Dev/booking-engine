@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Enums\DomainStatus;
-use App\Models\Agent;
-use App\Models\AgentDomain;
+use App\Models\Operator;
+use App\Models\OperatorDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -21,9 +21,9 @@ class DomainResolverService
     }
 
     /**
-     * Resolve the active Agent from an incoming HTTP request or hostname string.
+     * Resolve the active Operator from an incoming HTTP request or hostname string.
      */
-    public function resolveAgent(Request|string $requestOrHost): ?Agent
+    public function resolveOperator(Request|string $requestOrHost): ?Operator
     {
         $rawHost = $requestOrHost instanceof Request
             ? ((string) ($requestOrHost->header('Host') ?: $requestOrHost->getHost()))
@@ -38,17 +38,17 @@ class DomainResolverService
 
         $platformDomain = $this->getPlatformDomain();
 
-        /** @var string|null $agentId */
-        $agentId = Cache::remember("resolved_agent_id_for_domain_{$host}", 60, function () use ($host, $platformDomain): ?string {
-            // 1. Check exact match in agent_domains (for custom domains or exact subdomains)
-            $domainRecord = AgentDomain::query()
+        /** @var string|null $operatorId */
+        $operatorId = Cache::remember("resolved_operator_id_for_domain_{$host}", 60, function () use ($host, $platformDomain): ?string {
+            // 1. Check exact match in operator_domains (for custom domains or exact subdomains)
+            $domainRecord = OperatorDomain::query()
                 ->where('domain', $host)
                 ->where('status', DomainStatus::Active)
-                ->with('agent')
+                ->with('operator')
                 ->first();
 
-            if ($domainRecord && $domainRecord->agent?->isApproved()) {
-                return (string) $domainRecord->agent->id;
+            if ($domainRecord && $domainRecord->operator?->isApproved()) {
+                return (string) $domainRecord->operator->id;
             }
 
             // 2. Check if it's a subdomain on the platform (e.g. {slug}.platform.com, {slug}.booking.test, {slug}.booking.emvi)
@@ -59,23 +59,31 @@ class DomainResolverService
                 str_ends_with($host, '.booking.emvi') ||
                 str_ends_with($host, '.platform.com')
             ) {
-                $agent = Agent::query()
+                $operator = Operator::query()
                     ->where('slug', $subdomain)
                     ->first();
 
-                if ($agent && $agent->isApproved()) {
-                    return (string) $agent->id;
+                if ($operator && $operator->isApproved()) {
+                    return (string) $operator->id;
                 }
             }
 
             return null;
         });
 
-        if (! $agentId) {
+        if (! $operatorId) {
             return null;
         }
 
-        return Agent::find($agentId);
+        return Operator::find($operatorId);
+    }
+
+    /**
+     * @deprecated Use resolveOperator() instead.
+     */
+    public function resolveAgent(Request|string $requestOrHost): ?Operator
+    {
+        return $this->resolveOperator($requestOrHost);
     }
 
     /**

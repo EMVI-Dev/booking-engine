@@ -2,7 +2,7 @@
 
 use App\Contracts\Bookable;
 use App\Enums\ReservationStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use App\Models\Reservation;
@@ -13,7 +13,8 @@ use Livewire\Component;
 
 new class extends Component {
     public Bookable $bookable;
-    public Agent $agent;
+    public Operator $operator;
+    public ?Operator $agent = null;
 
     public string $requested_date = '';
     public int $pax_count = 1;
@@ -26,10 +27,12 @@ new class extends Component {
     public bool $showSuccess = false;
     public ?string $checkoutUrl = null;
 
-    public function mount(Bookable $bookable, Agent $agent): void
+    public function mount(Bookable $bookable, Operator|null $operator = null, Operator|null $agent = null): void
     {
         $this->bookable = $bookable;
-        $this->agent = $agent;
+        $resolved = $operator ?? $agent ?? ($bookable instanceof \App\Contracts\Bookable ? $bookable->getOperator() : null);
+        $this->operator = $resolved;
+        $this->agent = $resolved;
 
         // Default requested trip date to 2 days ahead
         $this->requested_date = now()->addDays(2)->format('Y-m-d');
@@ -42,9 +45,31 @@ new class extends Component {
     }
 
     #[Computed]
-    public function totalPrice(): float
+    public function subtotal(): float
     {
         return $this->unitPrice * $this->pax_count;
+    }
+
+    #[Computed]
+    public function serviceFeeRate(): float
+    {
+        if ($this->operator->getPlan()->hasFeature('byo_gateway')) {
+            return 0.0;
+        }
+
+        return \App\Models\PlatformSetting::current()->getGuestServiceFeeRate();
+    }
+
+    #[Computed]
+    public function serviceFee(): float
+    {
+        return round($this->subtotal * $this->serviceFeeRate, 2);
+    }
+
+    #[Computed]
+    public function totalPrice(): float
+    {
+        return $this->subtotal + $this->serviceFee;
     }
 
     public function incrementPax(): void
@@ -79,23 +104,41 @@ new class extends Component {
             'requested_date.after_or_equal' => __('Please choose a date at least :hours hours in advance.', ['hours' => $this->bookable->advance_booking_hours ?? 0]),
         ]);
 
+        $termsSnapshot = $this->bookable->generateTermsSnapshot();
+        $termsSnapshot['unit_price'] = $this->unitPrice;
+        $termsSnapshot['pax_count'] = $this->pax_count;
+        $termsSnapshot['subtotal'] = $this->subtotal;
+        $termsSnapshot['service_fee'] = $this->serviceFee;
+        $termsSnapshot['service_fee_rate'] = $this->serviceFeeRate;
+        $termsSnapshot['total_price'] = $this->totalPrice;
+
         /** @var Reservation $reservation */
         $reservation = Reservation::query()->create([
             'bookable_type' => $this->bookable instanceof Package ? 'package' : 'product',
             'bookable_id' => $this->bookable->id,
-            'agent_id' => $this->agent->id,
+            'operator_id' => $this->operator->id,
             'guest_name' => $this->guest_name,
             'guest_contact' => $this->guest_contact,
             'guest_email' => $this->guest_email ?: null,
             'requested_date' => $this->requested_date,
             'pax_count' => $this->pax_count,
             'notes' => $this->notes ?: null,
-            'terms_snapshot' => $this->bookable->generateTermsSnapshot(),
+            'terms_snapshot' => $termsSnapshot,
             'status' => ReservationStatus::PaymentPending,
             'hold_expires_at' => now()->addMinutes(30),
         ]);
 
         $session = $paymentService->createPaymentSession($reservation, $this->totalPrice);
+
+        // Send initial booking hold and pay link email if email provided
+        if (! empty($reservation->guest_email)) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($reservation->guest_email)
+                    ->send(new \App\Mail\GuestBookingCreatedMail($reservation));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         $this->checkoutUrl = $session['checkout_url'];
         $this->showSuccess = true;
@@ -117,12 +160,11 @@ new class extends Component {
         <!-- Date Selection -->
         <div>
             <x-label for="requested_date" :value="__('Select Trip Date')" required />
-            <x-input
+            <x-date-picker
                 id="requested_date"
                 wire:model.live="requested_date"
-                type="date"
                 min="{{ now()->addHours($bookable->advance_booking_hours ?? 0)->format('Y-m-d') }}"
-                class="h-11 font-semibold text-xs sm:text-sm"
+                :placeholder="__('Choose trip departure date...')"
                 :error="$errors->has('requested_date')"
             />
             <x-input-error :messages="$errors->get('requested_date')" />
@@ -190,21 +232,32 @@ new class extends Component {
         </div>
 
         <!-- Price Summary Breakdown -->
-        <div class="p-4 rounded-2xl bg-brand-50/70 dark:bg-brand-950/40 border border-brand-100 dark:border-brand-900/60 space-y-1.5 text-xs">
+        <div class="p-4 rounded-2xl bg-brand-50/70 dark:bg-brand-950/40 border border-brand-100 dark:border-brand-900/60 space-y-2 text-xs">
             <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
                 <span>{{ __(':count x Rp :price', ['count' => $pax_count, 'price' => number_format($this->unitPrice, 0, ',', '.')]) }}</span>
-                <span class="font-semibold">Rp {{ number_format($this->totalPrice, 0, ',', '.') }}</span>
+                <span class="font-semibold">Rp {{ number_format($this->subtotal, 0, ',', '.') }}</span>
             </div>
+
+            @if ($this->serviceFee > 0)
+                <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                    <span class="flex items-center gap-1">
+                        <span>{{ __('Biaya Layanan & Pembayaran') }}</span>
+                        <span class="text-[10px] text-slate-400">({{ $this->serviceFeeRate * 100 }}%)</span>
+                    </span>
+                    <span class="font-semibold">Rp {{ number_format($this->serviceFee, 0, ',', '.') }}</span>
+                </div>
+            @endif
+
             <div class="flex items-center justify-between font-black text-sm text-slate-900 dark:text-white pt-2 border-t border-brand-200/60 dark:border-brand-900/60">
-                <span>{{ __('Total Due') }}</span>
-                <span class="text-brand-600 dark:text-brand-400 text-base">Rp {{ number_format($this->totalPrice, 0, ',', '.') }}</span>
+                <span>{{ __('Total Pembayaran') }}</span>
+                <span class="text-brand-600 dark:text-brand-400 text-base font-black">Rp {{ number_format($this->totalPrice, 0, ',', '.') }}</span>
             </div>
         </div>
 
         <!-- Mandatory Terms Checkbox -->
-        <div>
-            <x-checkbox id="agreed_terms" wire:model="agreed_terms" required :error="$errors->has('agreed_terms')">
-                <span class="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 select-none leading-relaxed">
+        <div class="p-3.5 rounded-2xl bg-slate-50/60 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-800 transition hover:border-slate-300 dark:hover:border-zinc-700">
+            <x-checkbox id="agreed_terms" wire:model.live="agreed_terms" required :error="$errors->has('agreed_terms')">
+                <span class="text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 select-none leading-relaxed">
                     {{ __('I agree to the booking terms, free cancellation up to :hours hours before departure, and payment policy.', ['hours' => $bookable->free_cancellation_hours ?? 24]) }}
                 </span>
             </x-checkbox>
@@ -214,8 +267,9 @@ new class extends Component {
         <!-- Submit Button with Loading State -->
         <button
             type="submit"
+            @if (! $agreed_terms) disabled @endif
             wire:loading.attr="disabled"
-            class="w-full h-12 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-black text-sm shadow-md shadow-brand-500/20 transition cursor-pointer disabled:opacity-50"
+            class="w-full h-12 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-black text-sm shadow-md shadow-brand-500/20 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-600 disabled:shadow-none"
         >
             <span wire:loading.remove wire:target="submitBooking" class="flex items-center gap-2">
                 <i class="fa-solid fa-lock text-xs"></i>
@@ -229,7 +283,7 @@ new class extends Component {
 
         <p class="text-[10px] text-center text-slate-400">
             <i class="fa-solid fa-shield-check mr-1 text-emerald-500"></i>
-            {{ __('Direct Payment via DOKU Payment Gateway') }}
+            {{ __('Instant Payment via QRIS, Virtual Account & Cards') }}
         </p>
     </form>
 </div>

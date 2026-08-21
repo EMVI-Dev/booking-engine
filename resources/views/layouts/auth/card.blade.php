@@ -7,8 +7,8 @@
         <div class="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div class="flex w-full max-w-md flex-col gap-6">
                 <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold">
-                        B
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white text-lg shadow-sm">
+                        <i class="fa-solid fa-compass"></i>
                     </span>
                     <span class="text-lg font-semibold">{{ config('app.name', 'Booking Engine') }}</span>
                 </a>

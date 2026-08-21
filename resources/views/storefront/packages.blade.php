@@ -116,6 +116,7 @@
 
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('storefront.partials.tracking-scripts', ['agent' => $agent])
     @livewireStyles
 </head>
 

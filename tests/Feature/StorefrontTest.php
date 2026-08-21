@@ -1,11 +1,11 @@
 <?php
 
-use App\Enums\AgentStatus;
 use App\Enums\DomainStatus;
 use App\Enums\DomainType;
 use App\Enums\ListingStatus;
-use App\Models\Agent;
-use App\Models\AgentDomain;
+use App\Enums\OperatorStatus;
+use App\Models\Operator;
+use App\Models\OperatorDomain;
 use App\Models\Package;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,35 +19,35 @@ test('root platform domain serves platform welcome page', function () {
 
     $response->assertOk()
         ->assertViewIs('welcome')
-        ->assertSee('Direct Branded Storefronts for Tour Operators');
+        ->assertSee('Instant Websites &amp; Booking Engine for Tour Guides &amp; Travel Operators', false);
 });
 
-test('agent subdomain serves agent storefront with published listings', function () {
+test('operator subdomain serves operator storefront with published listings', function () {
     Cache::flush();
 
-    $agent = Agent::factory()->create([
+    $operator = Operator::factory()->create([
         'name' => 'Lombok Coral Treks',
         'slug' => 'lombok-coral',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
         'contact_whatsapp' => '+62812345678',
     ]);
 
-    AgentDomain::factory()->create([
-        'agent_id' => $agent->id,
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
         'domain' => 'lombok-coral.booking.test',
         'type' => DomainType::Subdomain,
         'status' => DomainStatus::Active,
     ]);
 
     $package = Package::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'title' => 'Gili Trawangan 3 Island Snorkel Tour',
         'price' => 850000.00,
         'status' => ListingStatus::Published,
     ]);
 
     $draftPackage = Package::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'title' => 'Unpublished Hidden Volcano Trip',
         'status' => ListingStatus::Draft,
     ]);
@@ -62,23 +62,23 @@ test('agent subdomain serves agent storefront with published listings', function
         ->assertSee('application/ld+json', false);
 });
 
-test('agent storefront provides dedicated all packages catalog page with schema and filters', function () {
+test('operator storefront provides dedicated all packages catalog page with schema and filters', function () {
     Cache::flush();
 
-    $agent = Agent::factory()->create([
+    $operator = Operator::factory()->create([
         'name' => 'Nusa Marine Expeditions',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
     ]);
 
-    AgentDomain::factory()->create([
-        'agent_id' => $agent->id,
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
         'domain' => 'nusa-marine.booking.test',
         'type' => DomainType::Subdomain,
         'status' => DomainStatus::Active,
     ]);
 
     Package::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'title' => 'Manta Point Expedition',
         'category' => 'Snorkeling',
         'status' => ListingStatus::Published,
@@ -94,23 +94,23 @@ test('agent storefront provides dedicated all packages catalog page with schema 
         ->assertSee('TouristTrip');
 });
 
-test('agent storefront provides dedicated all products catalog page with schema and filters', function () {
+test('operator storefront provides dedicated all products catalog page with schema and filters', function () {
     Cache::flush();
 
-    $agent = Agent::factory()->create([
+    $operator = Operator::factory()->create([
         'name' => 'Nusa Marine Expeditions',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
     ]);
 
-    AgentDomain::factory()->create([
-        'agent_id' => $agent->id,
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
         'domain' => 'nusa-marine.booking.test',
         'type' => DomainType::Subdomain,
         'status' => DomainStatus::Active,
     ]);
 
     Product::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'name' => 'GoPro Hero 12 Rental',
         'sellable_standalone' => true,
         'category' => 'Equipment',
@@ -127,25 +127,25 @@ test('agent storefront provides dedicated all products catalog page with schema 
         ->assertSee('Product');
 });
 
-test('agent storefront serves AI discovery endpoints including robots.txt, sitemap.xml, and llms.txt', function () {
+test('operator storefront serves AI discovery endpoints including robots.txt, sitemap.xml, and llms.txt', function () {
     Cache::flush();
 
-    $agent = Agent::factory()->create([
+    $operator = Operator::factory()->create([
         'name' => 'Komodo Dragon Charters',
         'bio' => 'Private luxury liveaboard and speedboat charters across Komodo National Park.',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
         'contact_whatsapp' => '+628199988877',
     ]);
 
-    AgentDomain::factory()->create([
-        'agent_id' => $agent->id,
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
         'domain' => 'komodo.booking.test',
         'type' => DomainType::Subdomain,
         'status' => DomainStatus::Active,
     ]);
 
     $package = Package::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'title' => 'Padar Island & Pink Beach Cruise',
         'slug' => 'padar-island-cruise',
         'price' => 1750000.00,
@@ -154,7 +154,7 @@ test('agent storefront serves AI discovery endpoints including robots.txt, sitem
     ]);
 
     $product = Product::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'name' => 'Underwater Camera Rental',
         'slug' => 'underwater-camera-rental',
         'price' => 250000.00,
@@ -203,37 +203,37 @@ test('agent storefront serves AI discovery endpoints including robots.txt, sitem
 test('storefront reflects custom brand accent hex color in CSS variables and views', function () {
     Cache::flush();
 
-    $agent = Agent::factory()->create([
+    $operator = Operator::factory()->create([
         'name' => 'Komodo Dragon Charters',
         'slug' => 'komodo',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
         'settings' => [
             'brand_color' => '#0ea5e9',
         ],
     ]);
 
-    AgentDomain::factory()->create([
-        'agent_id' => $agent->id,
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
         'domain' => 'komodo.booking.test',
         'type' => DomainType::Subdomain,
         'status' => DomainStatus::Active,
     ]);
 
     $pkg = Package::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'title' => 'Padar Island Cruise',
         'slug' => 'padar-island-cruise',
         'status' => ListingStatus::Published,
     ]);
 
     $prod = Product::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'name' => 'Underwater Camera Rental',
         'slug' => 'underwater-camera-rental',
         'status' => ListingStatus::Published,
     ]);
 
-    expect($agent->brand_color)->toBe('#0ea5e9');
+    expect($operator->brand_color)->toBe('#0ea5e9');
 
     // Homepage
     $this->get('http://komodo.booking.test', ['Host' => 'komodo.booking.test'])
@@ -266,25 +266,25 @@ test('storefront reflects custom brand accent hex color in CSS variables and vie
         ->assertSee('--brand-color: #0ea5e9', false);
 });
 
-test('storefront displays agent logo and mobile hamburger navigation menu', function () {
+test('storefront displays operator logo and mobile hamburger navigation menu', function () {
     Cache::flush();
 
-    $agent = Agent::factory()->create([
+    $operator = Operator::factory()->create([
         'name' => 'Bali Coastal Adventures',
         'slug' => 'bali-coastal',
-        'logo_path' => 'agents/logos/bali-coastal-logo.png',
-        'status' => AgentStatus::Approved,
+        'logo_path' => 'operators/logos/bali-coastal-logo.png',
+        'status' => OperatorStatus::Approved,
     ]);
 
-    AgentDomain::factory()->create([
-        'agent_id' => $agent->id,
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
         'domain' => 'bali-coastal.booking.test',
         'type' => DomainType::Subdomain,
         'status' => DomainStatus::Active,
     ]);
 
     Package::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'title' => 'Nusa Penida Snorkel Safari',
         'slug' => 'nusa-penida-snorkel-safari',
         'status' => ListingStatus::Published,
@@ -293,7 +293,7 @@ test('storefront displays agent logo and mobile hamburger navigation menu', func
     $response = $this->get('http://bali-coastal.booking.test', ['Host' => 'bali-coastal.booking.test']);
 
     $response->assertOk()
-        ->assertSee('storage/agents/logos/bali-coastal-logo.png', false)
+        ->assertSee('storage/operators/logos/bali-coastal-logo.png', false)
         ->assertSee('mobileMenuOpen', false)
         ->assertSee('fa-bars', false)
         ->assertSee('All Tour Packages', false);

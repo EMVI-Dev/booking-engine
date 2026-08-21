@@ -14,19 +14,20 @@
         class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden"></div>
 
     @php
-        /** @var \App\Models\Agent|null $currentAgent */
-        $currentAgent = auth()->user()?->currentAgent();
+        /** @var \App\Models\Operator|null $currentOperator */
+        $currentOperator = auth()->user()?->currentOperator();
         $platformDomain = app(\App\Services\DomainResolverService::class)->getPlatformDomain();
-        $storefrontUrl = $currentAgent
-            ? request()->getScheme() . '://' . $currentAgent->slug . '.' . $platformDomain
+        $storefrontUrl = $currentOperator
+            ? request()->getScheme() . '://' . $currentOperator->slug . '.' . $platformDomain
             : '#';
-        $packagesCount = $currentAgent ? $currentAgent->packages()->count() : 0;
-        $productsCount = $currentAgent ? $currentAgent->products()->count() : 0;
-        $reservationsCount = $currentAgent ? $currentAgent->reservations()->whereIn('status', [
+        $packagesCount = $currentOperator ? $currentOperator->packages()->count() : 0;
+        $productsCount = $currentOperator ? $currentOperator->products()->count() : 0;
+        $reservationsCount = $currentOperator ? $currentOperator->reservations()->whereIn('status', [
             \App\Enums\ReservationStatus::Confirmed->value,
             \App\Enums\ReservationStatus::PendingConfirmation->value,
             \App\Enums\ReservationStatus::PaymentPending->value,
         ])->count() : 0;
+        $availableBalance = $currentOperator ? $currentOperator->getAvailableBalance() : 0;
     @endphp
 
     <!-- Sticky Desktop Sidebar / Slide-over Mobile Sidebar -->
@@ -37,22 +38,22 @@
             class="h-16 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-zinc-800 shrink-0">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 font-semibold text-sm group min-w-0"
                 wire:navigate>
-                @if ($currentAgent?->logo_url)
+                @if ($currentOperator?->logo_url)
                     <div class="h-9 w-9 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-0.5 shrink-0 shadow-2xs group-hover:scale-105 transition-transform duration-200 flex items-center justify-center">
-                        <img src="{{ $currentAgent->logo_url }}" alt="{{ $currentAgent->name }}" class="w-full h-full object-contain rounded-lg" />
+                        <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}" class="w-full h-full object-contain rounded-lg" />
                     </div>
                 @else
                     <span
                         class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-black text-sm shadow-sm group-hover:scale-105 transition-transform duration-200 shrink-0">
-                        {{ strtoupper(substr($currentAgent->name ?? config('app.name', 'B'), 0, 1)) }}
+                        {{ strtoupper(substr($currentOperator->name ?? config('app.name', 'T'), 0, 1)) }}
                     </span>
                 @endif
                 <div class="flex flex-col min-w-0">
                     <span class="font-bold text-sm truncate text-slate-900 dark:text-white leading-tight">
-                        {{ $currentAgent->name ?? config('app.name', 'Booking Engine') }}
+                        {{ $currentOperator->name ?? config('app.name', 'TravelEngine') }}
                     </span>
                     <span class="text-[11px] text-slate-400 dark:text-slate-500 font-normal truncate">
-                        {{ __('Agent Portal') }}
+                        {{ __('Operator Portal') }}
                     </span>
                 </div>
             </a>
@@ -157,6 +158,27 @@
                 </a>
             </div>
 
+            <!-- Section: Finance & Payouts -->
+            <div class="space-y-1">
+                <p class="px-3 text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
+                    {{ __('Finance') }}
+                </p>
+
+                <a href="{{ route('wallet.index') }}" wire:navigate
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('wallet.*') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <i
+                            class="fa-solid fa-wallet w-5 text-center text-sm shrink-0 {{ request()->routeIs('wallet.*') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                        <span class="truncate">{{ __('Wallet & Payouts') }}</span>
+                    </div>
+                    @if ($availableBalance > 0)
+                        <span class="h-5 px-2 text-[10px] font-extrabold flex items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 shrink-0">
+                            Rp {{ number_format($availableBalance / 1000, 0) }}k
+                        </span>
+                    @endif
+                </a>
+            </div>
+
             <!-- Section: Settings / Configuration -->
             <div class="space-y-1">
                 <p class="px-3 text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
@@ -183,13 +205,20 @@
                         class="fa-solid fa-credit-card w-5 text-center text-sm shrink-0 {{ request()->routeIs('payments.edit') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                     <span class="truncate">{{ __('Payment Gateways') }}</span>
                 </a>
+
+                <a href="{{ route('settings.plan') }}" wire:navigate
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('settings.plan') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i
+                        class="fa-solid fa-crown w-5 text-center text-sm shrink-0 {{ request()->routeIs('settings.plan') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                    <span class="truncate">{{ __('Subscription & Plan') }}</span>
+                </a>
             </div>
         </nav>
 
         <!-- Sidebar Footer: Storefront Action Button & User Profile -->
         <div class="p-3 border-t border-slate-200/80 dark:border-zinc-800 space-y-2 shrink-0 bg-white dark:bg-zinc-900">
             <!-- Storefront Button (Above Profile) -->
-            @if ($currentAgent)
+            @if ($currentOperator)
                 <a href="{{ $storefrontUrl }}" target="_blank"
                     class="h-10 px-3 flex items-center justify-between rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 transition-colors border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -256,16 +285,16 @@
             <div class="px-4 sm:px-6 py-2 bg-gradient-to-r from-purple-700 to-indigo-700 text-white text-xs font-semibold flex flex-wrap items-center justify-between gap-2 shadow-xs z-30 shrink-0">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="p-1 rounded-md bg-white/20 text-white text-[10px]">
-                        <i class="fa-brands fa-searchengin"></i>
+                        <i class="fa-solid fa-compass"></i>
                     </span>
                     <span class="truncate">
-                        {{ __('Admin Session: Managing Agent') }} <strong class="text-white underline font-bold">{{ $currentAgent->name ?? 'Default Agent' }}</strong>
+                        {{ __('Admin Session: Managing Operator') }} <strong class="text-white underline font-bold">{{ $currentOperator->name ?? 'Default Operator' }}</strong>
                     </span>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <a href="{{ route('admin.agents.index') }}" wire:navigate class="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold transition">
+                    <a href="{{ route('admin.operators.index') }}" wire:navigate class="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold transition">
                         <i class="fa-solid fa-users-gear mr-1"></i>
-                        {{ __('Switch Agent') }}
+                        {{ __('Switch Operator') }}
                     </a>
                     <a href="{{ route('admin.platform.edit') }}" wire:navigate class="px-2.5 py-1 rounded-lg bg-white text-purple-700 hover:bg-purple-50 text-[11px] font-bold transition shadow-xs">
                         <i class="fa-solid fa-arrow-left mr-1"></i>
@@ -274,30 +303,57 @@
                 </div>
             </div>
         @endif
-        <!-- Mobile Header -->
-        <header
-            class="h-16 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-zinc-800 lg:hidden bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md sticky top-0 z-30">
-            <button x-on:click="sidebarOpen = true" type="button"
-                class="h-10 w-10 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
-                <i class="fa-solid fa-bars text-base"></i>
-            </button>
-            <div class="flex items-center gap-2 min-w-0 px-2">
-                @if ($currentAgent?->logo_url)
-                    <img src="{{ $currentAgent->logo_url }}" alt="{{ $currentAgent->name }}" class="w-6 h-6 object-contain rounded-md shrink-0" />
-                @endif
-                <span class="font-bold text-sm text-slate-900 dark:text-white truncate">
-                    {{ $currentAgent->name ?? config('app.name', 'Booking Engine') }}
+        <!-- Desktop Top Header Bar -->
+        <header class="hidden lg:flex h-16 items-center justify-between px-6 lg:px-8 border-b border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-30 select-none">
+            <!-- Left: Storefront URL with 1-Click Copy -->
+            <div class="flex items-center gap-3 min-w-0" x-data="{ copied: false }">
+                <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 shrink-0">
+                    {{ __('Storefront:') }}
+                </span>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 text-xs font-mono text-slate-700 dark:text-slate-300">
+                    <i class="fa-solid fa-globe text-[11px] text-indigo-500"></i>
+                    <span class="truncate max-w-xs sm:max-w-md">{{ $storefrontUrl }}</span>
+                    <button
+                        type="button"
+                        @click="navigator.clipboard.writeText('{{ $storefrontUrl }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                        class="ml-1 p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
+                        title="{{ __('Copy Storefront Link') }}"
+                    >
+                        <i class="fa-solid" :class="copied ? 'fa-check text-emerald-500' : 'fa-copy'"></i>
+                    </button>
+                </div>
+                <span x-show="copied" x-cloak class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+                    {{ __('Copied!') }}
                 </span>
             </div>
-            @if ($currentAgent)
-                <a href="{{ $storefrontUrl }}" target="_blank"
-                    class="h-9 px-3 inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
-                    <i class="fa-solid fa-store text-xs"></i>
-                    <span class="hidden sm:inline">{{ __('Storefront') }}</span>
-                </a>
-            @else
-                <div class="w-10"></div>
-            @endif
+
+            <!-- Right: Plan Tier Pill & Live Storefront Button -->
+            <div class="flex items-center gap-3 shrink-0">
+                @if ($currentOperator)
+                    @php
+                        $operatorPlan = $currentOperator->getPlan();
+                    @endphp
+                    <a
+                        href="{{ route('settings.plan') }}"
+                        wire:navigate
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/60 hover:bg-purple-100 transition shadow-2xs"
+                        title="{{ __('Manage Plan') }}"
+                    >
+                        <i class="fa-solid fa-crown text-[10px] text-amber-500"></i>
+                        <span>{{ $operatorPlan->name }}</span>
+                    </a>
+
+                    <a
+                        href="{{ $storefrontUrl }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer"
+                    >
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+                        <span>{{ __('Live Storefront') }}</span>
+                    </a>
+                @endif
+            </div>
         </header>
 
         <main class="flex-1 p-6 lg:p-8">
@@ -306,13 +362,13 @@
             </div>
         </main>
 
-        <!-- Agent Dashboard Sticky Footer (Platform Advertisement & System Status) -->
+        <!-- Operator Dashboard Sticky Footer (Platform Advertisement & System Status) -->
         <footer class="sticky bottom-0 z-20 border-t border-slate-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md py-3 sm:py-3.5 px-4 sm:px-6 lg:px-8 mt-auto shadow-xs select-none">
             <div class="mx-auto w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
                 <!-- Left: Operator Copyright & Real-time Status -->
                 <div class="flex flex-wrap items-center gap-3 text-center sm:text-left">
                     <span class="font-medium">
-                        &copy; {{ date('Y') }} <strong class="text-slate-800 dark:text-slate-200">{{ $currentAgent->name ?? config('app.name', 'Booking Engine') }}</strong>
+                        &copy; {{ date('Y') }} <strong class="text-slate-800 dark:text-slate-200">{{ $currentOperator->name ?? config('app.name', 'TravelEngine') }}</strong>
                     </span>
                     <span class="hidden sm:inline text-slate-300 dark:text-zinc-700">&bull;</span>
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
@@ -327,8 +383,8 @@
                         {{ __('Powered by') }}
                     </span>
                     <a href="https://{{ $platformDomain }}" target="_blank" class="inline-flex items-center gap-1.5 font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition group" title="{{ __('Tour Operator & Direct Booking Engine Platform') }}">
-                        <i class="fa-solid fa-bolt text-indigo-500 text-xs group-hover:scale-110 transition-transform"></i>
-                        <span>{{ config('app.name', 'Booking Engine') }}</span>
+                        <i class="fa-solid fa-compass text-indigo-500 text-xs group-hover:scale-110 transition-transform"></i>
+                        <span>{{ config('app.name', 'TravelEngine') }}</span>
                         <span class="hidden md:inline font-normal text-slate-400 dark:text-slate-500">&mdash; {{ __('The Direct Booking & Tour Management Engine') }}</span>
                     </a>
                 </div>

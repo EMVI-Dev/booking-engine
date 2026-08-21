@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\ReservationStatus;
-use App\Models\Agent;
 use App\Models\AvailabilityBlock;
+use App\Models\Operator;
 use App\Models\Product;
 use App\Models\Reservation;
 use Carbon\CarbonImmutable;
@@ -38,9 +38,15 @@ new #[Title('Booking Calendar & Availability')] class extends Component {
     }
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->currentAgent();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     #[Computed]
@@ -229,7 +235,7 @@ new #[Title('Booking Calendar & Availability')] class extends Component {
      */
     public function saveBlock(): void
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return;
         }
 
@@ -241,7 +247,7 @@ new #[Title('Booking Calendar & Availability')] class extends Component {
         ]);
 
         AvailabilityBlock::query()->create([
-            'agent_id' => $this->currentAgent->id,
+            'operator_id' => $this->currentOperator->id,
             'product_id' => $this->block_product_id ?: null,
             'date_start' => $this->block_date_start,
             'date_end' => $this->block_date_end,
@@ -294,7 +300,18 @@ new #[Title('Booking Calendar & Availability')] class extends Component {
         </div>
 
         <!-- Header Actions -->
-        <div class="flex items-center gap-2.5">
+        <div class="flex flex-wrap items-center gap-2.5">
+            <x-button
+                type="button"
+                variant="secondary"
+                x-data=""
+                x-on:click.prevent="$dispatch('open-modal', 'google-calendar-sync')"
+                class="h-10 text-xs font-bold"
+            >
+                <i class="fa-brands fa-google mr-1.5 text-indigo-500"></i>
+                {{ __('Sync Calendar') }}
+            </x-button>
+
             <x-button
                 type="button"
                 variant="secondary"
@@ -558,26 +575,24 @@ new #[Title('Booking Calendar & Availability')] class extends Component {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="space-y-1.5">
                             <x-label for="block_date_start" :value="__('Start Date')" required />
-                            <x-input
+                            <x-date-picker
                                 id="block_date_start"
                                 wire:model="block_date_start"
-                                type="date"
-                                icon="<i class='fa-regular fa-calendar text-xs'></i>"
+                                :presets="false"
+                                :placeholder="__('Select start date...')"
                                 :error="$errors->has('block_date_start')"
-                                required
                             />
                             <x-input-error :messages="$errors->get('block_date_start')" />
                         </div>
 
                         <div class="space-y-1.5">
                             <x-label for="block_date_end" :value="__('End Date')" required />
-                            <x-input
+                            <x-date-picker
                                 id="block_date_end"
                                 wire:model="block_date_end"
-                                type="date"
-                                icon="<i class='fa-regular fa-calendar-check text-xs'></i>"
+                                :presets="false"
+                                :placeholder="__('Select end date...')"
                                 :error="$errors->has('block_date_end')"
-                                required
                             />
                             <x-input-error :messages="$errors->get('block_date_end')" />
                         </div>
@@ -654,5 +669,94 @@ new #[Title('Booking Calendar & Availability')] class extends Component {
                 </div>
             </form>
         </div>
+    </x-modal>
+
+    <!-- Google / Apple Calendar Live Sync Modal -->
+    <x-modal name="google-calendar-sync" :show="false" maxWidth="lg">
+        @if (!$this->currentAgent?->hasFeature('google_calendar'))
+            <div class="p-6">
+                <x-feature-gate
+                    :title="__('Google & Apple Calendar Sync')"
+                    :description="__('Subscribe your personal Google Calendar, Apple Calendar, or Outlook to all incoming confirmed reservations via a live private iCal feed.')"
+                    required-plan="Pro Operator"
+                    plan-slug="growth"
+                    icon="fa-brands fa-google"
+                    :features="[
+                        __('Real-time calendar updates when new bookings are paid'),
+                        __('Automatic trip details, guest headcount, and contact links in event descriptions'),
+                        __('Compatible with Google Calendar, iOS / macOS Calendar, and Microsoft Outlook'),
+                    ]"
+                />
+            </div>
+        @else
+            @php
+                $feedUrl = $this->currentAgent?->getCalendarFeedUrl() ?? '';
+            @endphp
+            <div class="p-6 space-y-5" x-data="{ copied: false }">
+                <div class="flex items-center gap-3">
+                    <span class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-lg">
+                        <i class="fa-brands fa-google"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                            {{ __('Sync with Google & Apple Calendar') }}
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            {{ __('Automatically display incoming reservations in your personal calendar in real-time.') }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Live Feed URL Box -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 space-y-2">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                        {{ __('Your Private Live Calendar Feed URL (iCal / .ics)') }}
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <input type="text" readonly value="{{ $feedUrl }}" id="calendarFeedUrlInput"
+                            class="h-9 w-full px-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono text-xs text-slate-700 dark:text-slate-300 select-all" />
+                        <button type="button"
+                            @click="navigator.clipboard.writeText('{{ $feedUrl }}'); copied = true; setTimeout(() => copied = false, 2500)"
+                            class="h-9 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-2xs transition shrink-0 flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid" :class="copied ? 'fa-check' : 'fa-copy'"></i>
+                            <span x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy') }}'"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- How to Add to Google Calendar Steps -->
+                <div class="space-y-3 text-xs">
+                    <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-indigo-500"></i>
+                        {{ __('How to subscribe in Google Calendar:') }}
+                    </h4>
+                    <ol class="list-decimal list-inside space-y-1.5 text-slate-600 dark:text-slate-300 pl-1">
+                        <li>{{ __('Open Google Calendar on your browser.') }}</li>
+                        <li>{{ __('On the left sidebar, click the "+" icon next to "Other calendars".') }}</li>
+                        <li>{{ __('Select "From URL".') }}</li>
+                        <li>{{ __('Paste the feed URL copied above and click "Add calendar".') }}</li>
+                    </ol>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-800">
+                    <a href="https://calendar.google.com/calendar/r/settings/addbyurl" target="_blank"
+                        class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        <span>{{ __('Open Google Calendar Settings') }}</span>
+                    </a>
+
+                    <x-button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        x-on:click="$dispatch('close-modal', 'google-calendar-sync')"
+                        class="font-semibold text-xs"
+                    >
+                        {{ __('Done') }}
+                    </x-button>
+                </div>
+            </div>
+        @endif
     </x-modal>
 </div>

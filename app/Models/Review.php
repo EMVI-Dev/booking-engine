@@ -16,14 +16,14 @@ use Illuminate\Support\Carbon;
  * @property string $reservation_id
  * @property string $bookable_type
  * @property string $bookable_id
- * @property string $agent_id
+ * @property string $operator_id
  * @property int $rating
  * @property string|null $comment
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Reservation|null $reservation
  * @property-read Bookable|Model|null $bookable
- * @property-read Agent|null $agent
+ * @property-read Operator|null $operator
  */
 class Review extends Model
 {
@@ -34,7 +34,7 @@ class Review extends Model
         'reservation_id',
         'bookable_type',
         'bookable_id',
-        'agent_id',
+        'operator_id',
         'rating',
         'comment',
     ];
@@ -63,10 +63,20 @@ class Review extends Model
     }
 
     /**
-     * @return BelongsTo<Agent, $this>
+     * @return BelongsTo<Operator, $this>
+     */
+    public function operator(): BelongsTo
+    {
+        return $this->belongsTo(Operator::class);
+    }
+
+    /**
+     * @deprecated Use operator() instead.
+     *
+     * @return BelongsTo<Operator, $this>
      */
     public function agent(): BelongsTo
     {
-        return $this->belongsTo(Agent::class);
+        return $this->operator();
     }
 }

@@ -13,8 +13,8 @@
             <div class="w-full max-w-lg space-y-6">
                 <!-- Platform Brand Header -->
                 <a href="{{ route('home') }}" class="flex items-center justify-center gap-3 font-semibold group" wire:navigate>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md font-black text-lg group-hover:scale-105 transition-transform duration-200">
-                        B
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-md text-lg group-hover:scale-105 transition-transform duration-200">
+                        <i class="fa-solid fa-compass"></i>
                     </span>
                     <div class="flex flex-col text-start">
                         <span class="text-base font-bold tracking-tight text-slate-900 dark:text-white">{{ config('app.name', 'Booking Engine') }}</span>

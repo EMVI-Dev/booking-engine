@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DokuWebhookController;
+use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\StorefrontController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,10 @@ Route::get('/llms-full.txt', [StorefrontController::class, 'llmsFullTxt'])->name
 Route::get('/checkout/simulate', [StorefrontController::class, 'simulatePayment'])->name('storefront.payment.simulate');
 Route::post('/checkout/simulate/confirm', [StorefrontController::class, 'confirmSimulatedPayment'])->name('storefront.payment.simulate.confirm');
 Route::get('/reservations/{reservation}/receipt', [StorefrontController::class, 'showReceipt'])->name('storefront.reservation.receipt');
+Route::get('/reservations/{reservation}/pay', [StorefrontController::class, 'payReservation'])->name('storefront.reservation.pay');
+
+// Live iCal Calendar Feed for Google / Apple / Outlook Subscriptions
+Route::get('/calendar/feed/{token}', [CalendarFeedController::class, 'feed'])->name('calendar.feed');
 
 // DOKU Webhook Notification Endpoint
 Route::post('/api/v1/payments/doku/notify', [DokuWebhookController::class, 'handleNotification'])
@@ -39,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('guests', 'pages::guests.index')->name('guests.index');
     Route::livewire('calendar', 'pages::calendar.index')->name('calendar.index');
     Route::livewire('reviews', 'pages::reviews.index')->name('reviews.index');
+    Route::livewire('wallet', 'pages::wallet.index')->name('wallet.index');
 });
 
 // Public Storefront Item Details (Wildcard Slugs)
@@ -52,9 +58,13 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::redirect('/', '/admin/platform')->name('dashboard');
-    Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
+    Route::livewire('/operators', 'pages::admin.operators.index')->name('operators.index');
+    Route::livewire('/agents', 'pages::admin.operators.index')->name('agents.index');
+    Route::livewire('/plans', 'pages::admin.plans')->name('plans.index');
+    Route::livewire('/domains', 'pages::admin.domains')->name('domains.index');
+    Route::livewire('/payouts', 'pages::admin.payouts')->name('payouts.index');
     Route::livewire('/payments', 'pages::admin.payments')->name('payments.edit');
-    Route::livewire('/agents', 'pages::admin.agents.index')->name('agents.index');
+    Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
 });
 
 require __DIR__.'/settings.php';

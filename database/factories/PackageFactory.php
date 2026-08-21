@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Package;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -21,7 +21,7 @@ class PackageFactory extends Factory
         $title = (is_array($words) ? implode(' ', $words) : $words).' Experience';
 
         return [
-            'agent_id' => Agent::factory(),
+            'operator_id' => Operator::factory(),
             'title' => ucwords($title),
             'slug' => Str::slug($title).'-'.fake()->unique()->numberBetween(100, 999),
             'description' => fake()->paragraph(),

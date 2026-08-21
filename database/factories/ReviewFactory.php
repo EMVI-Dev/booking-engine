@@ -21,7 +21,7 @@ class ReviewFactory extends Factory
             'reservation_id' => $reservation->id,
             'bookable_type' => $reservation->bookable_type,
             'bookable_id' => $reservation->bookable_id,
-            'agent_id' => $reservation->agent_id,
+            'operator_id' => $reservation->operator_id,
             'rating' => 5,
             'comment' => fake()->paragraph(),
         ];

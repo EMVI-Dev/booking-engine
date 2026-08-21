@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
  * @property string|null $guest_id
  * @property string $bookable_type
  * @property string $bookable_id
- * @property string $agent_id
+ * @property string $operator_id
  * @property string $guest_name
  * @property string $guest_contact
  * @property string|null $guest_email
@@ -33,7 +33,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $hold_expires_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Agent|null $agent
+ * @property-read Operator|null $operator
  * @property-read Guest|null $guest
  * @property-read Bookable|Model|null $bookable
  */
@@ -47,7 +47,7 @@ class Reservation extends Model
         'guest_id',
         'bookable_type',
         'bookable_id',
-        'agent_id',
+        'operator_id',
         'guest_name',
         'guest_contact',
         'guest_email',
@@ -57,6 +57,7 @@ class Reservation extends Model
         'terms_snapshot',
         'status',
         'hold_expires_at',
+        'review_request_sent_at',
     ];
 
     protected static function booted(): void
@@ -66,12 +67,12 @@ class Reservation extends Model
                 $reservation->code = static::generateUniqueCode();
             }
 
-            if (empty($reservation->guest_id) && ! empty($reservation->agent_id)) {
+            if (empty($reservation->guest_id) && ! empty($reservation->operator_id)) {
                 $email = trim((string) $reservation->guest_email);
                 $normalizedEmail = $email !== '' ? strtolower($email) : null;
                 $phone = trim((string) $reservation->guest_contact);
 
-                $guestQuery = Guest::query()->where('agent_id', $reservation->agent_id);
+                $guestQuery = Guest::query()->where('operator_id', $reservation->operator_id);
                 if ($normalizedEmail !== null) {
                     $guestQuery->where('email', $normalizedEmail);
                 } elseif ($phone !== '') {
@@ -84,7 +85,7 @@ class Reservation extends Model
 
                 if (! $guest) {
                     $guest = Guest::create([
-                        'agent_id' => $reservation->agent_id,
+                        'operator_id' => $reservation->operator_id,
                         'name' => $reservation->guest_name,
                         'email' => $normalizedEmail,
                         'phone' => $phone !== '' ? $phone : null,
@@ -116,6 +117,7 @@ class Reservation extends Model
             'terms_snapshot' => 'array',
             'status' => ReservationStatus::class,
             'hold_expires_at' => 'datetime',
+            'review_request_sent_at' => 'datetime',
         ];
     }
 
@@ -136,11 +138,21 @@ class Reservation extends Model
     }
 
     /**
-     * @return BelongsTo<Agent, $this>
+     * @return BelongsTo<Operator, $this>
+     */
+    public function operator(): BelongsTo
+    {
+        return $this->belongsTo(Operator::class);
+    }
+
+    /**
+     * @deprecated Use operator() instead.
+     *
+     * @return BelongsTo<Operator, $this>
      */
     public function agent(): BelongsTo
     {
-        return $this->belongsTo(Agent::class);
+        return $this->operator();
     }
 
     /**

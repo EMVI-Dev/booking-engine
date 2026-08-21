@@ -12,7 +12,7 @@
             <div class="flex items-center gap-3">
                 <span
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[11px] font-black uppercase tracking-wider border border-indigo-100 dark:border-indigo-900">
-                    <i class="fa-solid fa-bolt text-[10px]"></i>
+                    <i class="fa-solid fa-compass text-[10px]"></i>
                     {{ __('Powered by') }}
                 </span>
                 <div>

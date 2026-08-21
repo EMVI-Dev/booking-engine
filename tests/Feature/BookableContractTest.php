@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -8,10 +8,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 test('product implements bookable contract and returns self as required product', function () {
-    $agent = Agent::factory()->create();
+    $operator = Operator::factory()->create();
 
     $product = Product::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'name' => 'Snorkeling Adventure',
         'price' => 250000,
         'capacity_per_day' => 15,
@@ -36,22 +36,22 @@ test('product implements bookable contract and returns self as required product'
 });
 
 test('package links multiple products with quantity requirements', function () {
-    $agent = Agent::factory()->create();
+    $operator = Operator::factory()->create();
 
     $snorkel = Product::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'name' => 'Snorkel Gear',
         'capacity_per_day' => 20,
     ]);
 
     $boatSeat = Product::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'name' => 'Speedboat Seat',
         'capacity_per_day' => 10,
     ]);
 
     $package = Package::factory()->create([
-        'agent_id' => $agent->id,
+        'operator_id' => $operator->id,
         'title' => 'Full Day Island Snorkel Tour',
         'price' => 850000,
         'free_cancellation_hours' => 48,

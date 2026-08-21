@@ -19,7 +19,7 @@ use Illuminate\Support\Collection;
 
 /**
  * @property string $id
- * @property string $agent_id
+ * @property string $operator_id
  * @property string $name
  * @property string $slug
  * @property string|null $description
@@ -40,7 +40,7 @@ use Illuminate\Support\Collection;
  * @property ListingStatus $status
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Agent $agent
+ * @property-read Operator $operator
  * @property-read PackageProduct|null $pivot
  */
 class Product extends Model implements Bookable
@@ -53,7 +53,7 @@ class Product extends Model implements Bookable
     use HasRating, HasUlids;
 
     protected $fillable = [
-        'agent_id',
+        'operator_id',
         'name',
         'slug',
         'description',
@@ -91,11 +91,21 @@ class Product extends Model implements Bookable
     }
 
     /**
-     * @return BelongsTo<Agent, $this>
+     * @return BelongsTo<Operator, $this>
+     */
+    public function operator(): BelongsTo
+    {
+        return $this->belongsTo(Operator::class);
+    }
+
+    /**
+     * @deprecated Use operator() instead.
+     *
+     * @return BelongsTo<Operator, $this>
      */
     public function agent(): BelongsTo
     {
-        return $this->belongsTo(Agent::class);
+        return $this->operator();
     }
 
     /**
@@ -145,14 +155,30 @@ class Product extends Model implements Bookable
         return $this->name;
     }
 
-    public function getAgent(): Agent
+    public function getOperator(): Operator
     {
-        return $this->agent;
+        return $this->operator;
     }
 
+    public function getOperatorId(): string
+    {
+        return (string) $this->operator_id;
+    }
+
+    /**
+     * @deprecated Use getOperator() instead.
+     */
+    public function getAgent(): Operator
+    {
+        return $this->getOperator();
+    }
+
+    /**
+     * @deprecated Use getOperatorId() instead.
+     */
     public function getAgentId(): string
     {
-        return (string) $this->agent_id;
+        return $this->getOperatorId();
     }
 
     public function getPrice(): float

@@ -25,25 +25,27 @@
         <link rel="apple-touch-icon" href="{{ Storage::url($agent->logo) }}" />
     @endif
 
-    <!-- OpenGraph / Facebook -->
+    <!-- OpenGraph & WhatsApp Social Share Cards -->
+    @php
+        $ogImageUrl = $agent->logo
+            ? (Str::startsWith($agent->logo, ['http://', 'https://']) ? $agent->logo : url(Storage::url($agent->logo)))
+            : url('/favicon.png');
+        $ogDescription = Str::limit($agent->bio ?: __('Official online booking portal for :name. Explore tour packages, fast boats, and day trips.', ['name' => $agent->name]), 160);
+    @endphp
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ url()->current() }}" />
-    <meta property="og:title" content="{{ $agent->name }} &bull; {{ __('Direct Tour Bookings') }}" />
-    <meta property="og:description"
-        content="{{ Str::limit($agent->bio ?: __('Official online booking portal for :name. Explore packages & activities.', ['name' => $agent->name]), 160) }}" />
+    <meta property="og:title" content="{{ $agent->name }} — {{ __('Direct Tour Bookings') }}" />
+    <meta property="og:description" content="{{ $ogDescription }}" />
     <meta property="og:site_name" content="{{ $agent->name }} • {{ config('app.name') }}" />
-    @if ($agent->logo)
-        <meta property="og:image" content="{{ Storage::url($agent->logo) }}" />
-    @endif
+    <meta property="og:image" content="{{ $ogImageUrl }}" />
+    <meta property="og:image:secure_url" content="{{ $ogImageUrl }}" />
+    <meta property="og:image:alt" content="{{ $agent->name }}" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{{ $agent->name }} &bull; {{ __('Direct Tour Bookings') }}" />
-    <meta name="twitter:description"
-        content="{{ Str::limit($agent->bio ?: __('Official online booking portal for :name. Explore packages & activities.', ['name' => $agent->name]), 160) }}" />
-    @if ($agent->logo)
-        <meta name="twitter:image" content="{{ Storage::url($agent->logo) }}" />
-    @endif
+    <meta name="twitter:title" content="{{ $agent->name }} — {{ __('Direct Tour Bookings') }}" />
+    <meta name="twitter:description" content="{{ $ogDescription }}" />
+    <meta name="twitter:image" content="{{ $ogImageUrl }}" />
 
     <!-- Schema.org JSON-LD Structured Data (LocalBusiness / TravelAgency / ItemList) -->
     @php
@@ -139,6 +141,7 @@
 
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('storefront.partials.tracking-scripts', ['agent' => $agent])
     @livewireStyles
 </head>
 

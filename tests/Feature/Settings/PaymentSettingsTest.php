@@ -1,8 +1,9 @@
 <?php
 
-use App\Enums\AgentStatus;
-use App\Enums\AgentUserRole;
-use App\Models\Agent;
+use App\Enums\OperatorStatus;
+use App\Enums\OperatorUserRole;
+use App\Models\Operator;
+use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -11,15 +12,15 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->user = User::factory()->create();
-    $this->agent = Agent::factory()->create([
+    $this->operator = Operator::factory()->create([
         'name' => 'Paradise Expeditions',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
         'bank_provider' => 'BCA',
         'bank_account_name' => 'Original Owner',
         'bank_account_number' => '1234567890',
         'bank_account_ref' => 'BCA - 1234567890 (Original Owner)',
     ]);
-    $this->agent->users()->attach($this->user->id, ['role' => AgentUserRole::Owner]);
+    $this->operator->users()->attach($this->user->id, ['role' => OperatorUserRole::Owner]);
     $this->actingAs($this->user);
 });
 
@@ -36,16 +37,23 @@ test('payment settings can be configured to use built-in platform Doku payment',
         ->call('updatePaymentSettings')
         ->assertHasNoErrors();
 
-    $this->agent->refresh();
+    $this->operator->refresh();
 
-    expect($this->agent->bank_provider)->toBe('BCA')
-        ->and($this->agent->bank_account_name)->toBe('PT Paradise Expeditions')
-        ->and($this->agent->bank_account_number)->toBe('1234567890')
-        ->and($this->agent->settings['payment_gateway']['provider'])->toBe('doku')
-        ->and($this->agent->settings['payment_gateway']['use_custom_credentials'])->toBeFalse();
+    expect($this->operator->bank_provider)->toBe('BCA')
+        ->and($this->operator->bank_account_name)->toBe('PT Paradise Expeditions')
+        ->and($this->operator->bank_account_number)->toBe('1234567890')
+        ->and($this->operator->settings['payment_gateway']['provider'])->toBe('doku')
+        ->and($this->operator->settings['payment_gateway']['use_custom_credentials'])->toBeFalse();
 });
 
 test('payment settings can be updated with custom BYO merchant gateway', function () {
+    $enterprisePlan = Plan::factory()->create([
+        'slug' => 'enterprise',
+        'name' => 'Agency Ultimate',
+        'features' => ['byo_gateway' => true],
+    ]);
+    $this->operator->update(['plan_id' => $enterprisePlan->id]);
+
     Livewire::test('pages::settings.payments')
         ->set('bank_provider', 'Mandiri')
         ->set('bank_account_name', 'PT Paradise Expeditions')
@@ -58,15 +66,15 @@ test('payment settings can be updated with custom BYO merchant gateway', functio
         ->call('updatePaymentSettings')
         ->assertHasNoErrors();
 
-    $this->agent->refresh();
+    $this->operator->refresh();
 
-    expect($this->agent->bank_provider)->toBe('Mandiri')
-        ->and($this->agent->bank_account_name)->toBe('PT Paradise Expeditions')
-        ->and($this->agent->bank_account_number)->toBe('9876543210')
-        ->and($this->agent->bank_account_ref)->toBe('Mandiri - 9876543210 (PT Paradise Expeditions)')
-        ->and($this->agent->settings['payment_gateway']['provider'])->toBe('midtrans')
-        ->and($this->agent->settings['payment_gateway']['use_custom_credentials'])->toBeTrue()
-        ->and($this->agent->settings['payment_gateway']['environment'])->toBe('production')
-        ->and($this->agent->settings['payment_gateway']['client_id'])->toBe('MID-CLIENT-999')
-        ->and($this->agent->settings['payment_gateway']['shared_key'])->toBe('MID-SERVER-KEY-888');
+    expect($this->operator->bank_provider)->toBe('Mandiri')
+        ->and($this->operator->bank_account_name)->toBe('PT Paradise Expeditions')
+        ->and($this->operator->bank_account_number)->toBe('9876543210')
+        ->and($this->operator->bank_account_ref)->toBe('Mandiri - 9876543210 (PT Paradise Expeditions)')
+        ->and($this->operator->settings['payment_gateway']['provider'])->toBe('midtrans')
+        ->and($this->operator->settings['payment_gateway']['use_custom_credentials'])->toBeTrue()
+        ->and($this->operator->settings['payment_gateway']['environment'])->toBe('production')
+        ->and($this->operator->settings['payment_gateway']['client_id'])->toBe('MID-CLIENT-999')
+        ->and($this->operator->settings['payment_gateway']['shared_key'])->toBe('MID-SERVER-KEY-888');
 });

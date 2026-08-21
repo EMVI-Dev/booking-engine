@@ -2,8 +2,8 @@
 
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
-use App\Models\Agent;
 use App\Models\Guest;
+use App\Models\Operator;
 use App\Models\Reservation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -49,9 +49,15 @@ new #[Title('Guest Directory & CRM')] class extends Component {
     }
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->currentAgent();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     /**
@@ -264,23 +270,40 @@ new #[Title('Guest Directory & CRM')] class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    <!-- Page Header & Title -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
-                    <i class="fa-solid fa-address-book text-lg"></i>
-                </span>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Guest Directory & CRM') }}
-                </h1>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Dedicated customer directory with contact references, CRM notes, tags, and lifetime trip history.') }}
-            </p>
+    @if (!$this->currentAgent?->hasFeature('guest_crm'))
+        <div class="py-6">
+            <x-feature-gate
+                :title="__('Guest Directory CRM & Lifetime Tracking')"
+                :description="__('Unlock comprehensive customer profiles, VIP tagging, repeat booking history, and direct WhatsApp re-engagement.')"
+                required-plan="Pro Operator"
+                plan-slug="growth"
+                icon="fa-solid fa-address-book"
+                :features="[
+                    __('Lead guest profiles with automatic email and WhatsApp contact indexing'),
+                    __('Calculated lifetime value (LTV) and total completed trip counts'),
+                    __('Operator CRM notes, customized tags, and VIP categorization'),
+                    __('Direct 1-click WhatsApp messaging and personalized guest rebooking'),
+                ]"
+            />
         </div>
+    @else
+        <!-- Page Header & Title -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
+                        <i class="fa-solid fa-address-book text-lg"></i>
+                    </span>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                        {{ __('Guest Directory & CRM') }}
+                    </h1>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    {{ __('Dedicated customer directory with contact references, CRM notes, tags, and lifetime trip history.') }}
+                </p>
+            </div>
 
-        <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2">
             <a
                 href="{{ route('reservations.index') }}"
                 class="h-9 px-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
@@ -396,17 +419,16 @@ new #[Title('Guest Directory & CRM')] class extends Component {
             </div>
 
             <!-- Sort By Dropdown -->
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-slate-400 hidden sm:inline">{{ __('Sort:') }}</span>
-                <select
+            <div class="w-full sm:w-56">
+                <x-select
                     wire:model.live="sortBy"
-                    class="h-10 px-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
-                >
-                    <option value="recent">{{ __('Recently Active') }}</option>
-                    <option value="spent">{{ __('Highest Lifetime Spend') }}</option>
-                    <option value="bookings">{{ __('Most Bookings Count') }}</option>
-                    <option value="name">{{ __('Guest Name (A-Z)') }}</option>
-                </select>
+                    :options="[
+                        'recent' => __('Recently Active'),
+                        'spent' => __('Highest Lifetime Spend'),
+                        'bookings' => __('Most Bookings Count'),
+                        'name' => __('Guest Name (A-Z)'),
+                    ]"
+                />
             </div>
         </div>
 
@@ -623,294 +645,311 @@ new #[Title('Guest Directory & CRM')] class extends Component {
 
     <!-- Modal: CRM Notes & Tags Editor -->
     @if ($showEditModal && $this->selectedGuest)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
-            <div
-                @click.away="$wire.closeEdit()"
-                class="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl overflow-hidden space-y-6 animate-scale-up"
-            >
-                <div class="p-6 bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span class="p-2.5 rounded-xl bg-indigo-600 text-white text-base">
-                            <i class="fa-solid fa-user-pen"></i>
-                        </span>
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-                                {{ __('Edit CRM Profile: :name', ['name' => $this->selectedGuest->name]) }}
-                            </h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">
-                                {{ __('Manage internal customer notes, preferences, and tags.') }}
-                            </p>
+        @teleport('body')
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
+                <div
+                    @click.away="$wire.closeEdit()"
+                    class="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col my-8 animate-scale-up"
+                >
+                    <!-- Modal Header -->
+                    <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
+                        <div class="flex items-start gap-3.5 min-w-0">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                                <i class="fa-solid fa-user-pen"></i>
+                            </div>
+                            <div class="space-y-0.5 min-w-0">
+                                <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                                    {{ __('Edit CRM Profile: :name', ['name' => $this->selectedGuest->name]) }}
+                                </h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    {{ __('Manage internal customer notes, preferences, and tags.') }}
+                                </p>
+                            </div>
                         </div>
+
+                        <button
+                            type="button"
+                            wire:click="closeEdit"
+                            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0 -mr-1 -mt-1"
+                        >
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
                     </div>
 
-                    <button
-                        type="button"
-                        wire:click="closeEdit"
-                        class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition cursor-pointer"
-                    >
-                        <i class="fa-solid fa-xmark text-base"></i>
-                    </button>
+                    <form wire:submit="saveGuest" class="p-6 space-y-4">
+                        <div>
+                            <x-label for="editName" :value="__('Guest Full Name')" required />
+                            <x-input id="editName" wire:model="editName" type="text" required />
+                            <x-input-error :messages="$errors->get('editName')" />
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-label for="editEmail" :value="__('Email Address')" />
+                                <x-input id="editEmail" wire:model="editEmail" type="email" />
+                                <x-input-error :messages="$errors->get('editEmail')" />
+                            </div>
+                            <div>
+                                <x-label for="editPhone" :value="__('WhatsApp / Phone')" />
+                                <x-input id="editPhone" wire:model="editPhone" type="text" />
+                                <x-input-error :messages="$errors->get('editPhone')" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <x-label for="editTagsInput" :value="__('Custom Tags (comma separated)')" />
+                            <x-input id="editTagsInput" wire:model="editTagsInput" placeholder="VIP, Certified Diver, Vegetarian, Corporate" type="text" />
+                            <p class="text-[11px] text-slate-400 mt-1">{{ __('Example: VIP, Returning Guest, Vegetarian') }}</p>
+                            <x-input-error :messages="$errors->get('editTagsInput')" />
+                        </div>
+
+                        <div>
+                            <x-label for="editNotes" :value="__('Internal Operator CRM Notes')" />
+                            <x-textarea
+                                id="editNotes"
+                                wire:model="editNotes"
+                                rows="4"
+                                placeholder="{{ __('Add internal notes about allergies, preferred boat seating, passport info, etc...') }}"
+                            />
+                            <x-input-error :messages="$errors->get('editNotes')" />
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
+                            <x-button type="button" variant="secondary" wire:click="closeEdit" class="text-xs font-bold">
+                                {{ __('Cancel') }}
+                            </x-button>
+                            <x-button type="submit" variant="primary" class="text-xs font-bold">
+                                <i class="fa-solid fa-floppy-disk mr-1.5 text-xs"></i>
+                                {{ __('Save Profile') }}
+                            </x-button>
+                        </div>
+                    </form>
                 </div>
-
-                <form wire:submit="saveGuest" class="p-6 space-y-4">
-                    <div>
-                        <x-label for="editName" :value="__('Guest Full Name')" required />
-                        <x-input id="editName" wire:model="editName" type="text" class="h-10 text-xs font-semibold" required />
-                        <x-input-error :messages="$errors->get('editName')" />
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <x-label for="editEmail" :value="__('Email Address')" />
-                            <x-input id="editEmail" wire:model="editEmail" type="email" class="h-10 text-xs font-semibold" />
-                            <x-input-error :messages="$errors->get('editEmail')" />
-                        </div>
-                        <div>
-                            <x-label for="editPhone" :value="__('WhatsApp / Phone')" />
-                            <x-input id="editPhone" wire:model="editPhone" type="text" class="h-10 text-xs font-semibold" />
-                            <x-input-error :messages="$errors->get('editPhone')" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <x-label for="editTagsInput" :value="__('Custom Tags (comma separated)')" />
-                        <x-input id="editTagsInput" wire:model="editTagsInput" placeholder="VIP, Certified Diver, Vegetarian, Corporate" type="text" class="h-10 text-xs font-semibold" />
-                        <p class="text-[11px] text-slate-400 mt-1">{{ __('Example: VIP, Returning Guest, Vegetarian') }}</p>
-                        <x-input-error :messages="$errors->get('editTagsInput')" />
-                    </div>
-
-                    <div>
-                        <x-label for="editNotes" :value="__('Internal Operator CRM Notes')" />
-                        <textarea
-                            id="editNotes"
-                            wire:model="editNotes"
-                            rows="4"
-                            placeholder="{{ __('Add internal notes about allergies, preferred boat seating, passport info, etc...') }}"
-                            class="w-full rounded-2xl border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800 p-3 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                        ></textarea>
-                        <x-input-error :messages="$errors->get('editNotes')" />
-                    </div>
-
-                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-zinc-800">
-                        <x-button type="button" variant="secondary" wire:click="closeEdit" class="text-xs font-bold">
-                            {{ __('Cancel') }}
-                        </x-button>
-                        <x-button type="submit" variant="primary" class="text-xs font-bold">
-                            <i class="fa-solid fa-floppy-disk mr-1.5"></i>
-                            {{ __('Save Profile') }}
-                        </x-button>
-                    </div>
-                </form>
             </div>
-        </div>
+        @endteleport
     @endif
 
     <!-- Slide-over / Modal: Guest Profile & Booking History Timeline -->
     @if ($showHistoryModal && $this->selectedGuest)
-        @php
-            $guest = $this->selectedGuest;
-            $waUrl = $guest->getWhatsAppUrl($this->currentAgent->name ?? '');
-        @endphp
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
-            <div
-                @click.away="$wire.closeHistory()"
-                class="w-full max-w-2xl rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl overflow-hidden space-y-6 animate-scale-up"
-            >
-                <!-- Drawer Header -->
-                <div class="p-6 bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200 dark:border-zinc-800 flex items-start justify-between">
-                    <div class="flex items-center gap-3.5">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold text-base flex items-center justify-center shrink-0 shadow-md">
-                            {{ strtoupper(substr($guest->name, 0, 2)) }}
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-                                    {{ $guest->name }}
-                                </h3>
-                                @if ($guest->reservations->count() > 1)
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                        <i class="fa-solid fa-repeat mr-0.5"></i>
-                                        {{ __('Repeat Guest') }}
-                                    </span>
-                                @endif
+        @teleport('body')
+            @php
+                $guest = $this->selectedGuest;
+                $waUrl = $guest->getWhatsAppUrl($this->currentAgent->name ?? '');
+            @endphp
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
+                <div
+                    @click.away="$wire.closeHistory()"
+                    class="w-full max-w-2xl rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col my-8 animate-scale-up"
+                >
+                    <!-- Drawer Header -->
+                    <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
+                        <div class="flex items-start gap-3.5 min-w-0">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-bold text-base flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                                {{ strtoupper(substr($guest->name, 0, 2)) }}
                             </div>
-                            <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                @if ($guest->email)
-                                    <span class="flex items-center gap-1">
-                                        <i class="fa-solid fa-envelope text-[10px]"></i>
-                                        {{ $guest->email }}
-                                    </span>
-                                @endif
-                                @if ($guest->phone)
-                                    <span class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                                        <i class="fa-brands fa-whatsapp text-[11px]"></i>
-                                        {{ $guest->phone }}
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        wire:click="closeHistory"
-                        class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition cursor-pointer"
-                    >
-                        <i class="fa-solid fa-xmark text-base"></i>
-                    </button>
-                </div>
-
-                <!-- Drawer Content -->
-                <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-                    <!-- Guest Summary Stats Grid -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Total Trips') }}</span>
-                            <p class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">{{ $guest->reservations->count() }} Bookings</p>
-                        </div>
-                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Total Guests') }}</span>
-                            <p class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">{{ $guest->total_pax }} Pax</p>
-                        </div>
-                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 col-span-2">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Lifetime Spend') }}</span>
-                            <p class="text-base font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                                Rp {{ number_format($guest->total_spent, 0, ',', '.') }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Internal CRM Notes Box (if any) -->
-                    @if ($guest->notes)
-                        <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 space-y-1">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-note-sticky"></i>
-                                {{ __('Internal Operator Notes') }}
-                            </span>
-                            <p class="text-xs text-amber-900 dark:text-amber-200 whitespace-pre-line">{{ $guest->notes }}</p>
-                        </div>
-                    @endif
-
-                    <!-- Booking History Timeline -->
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                <i class="fa-solid fa-clock-rotate-left text-indigo-600 dark:text-indigo-400"></i>
-                                {{ __('Reservation History (:count)', ['count' => $guest->reservations->count()]) }}
-                            </h4>
-                            <span class="text-[11px] text-slate-400">
-                                {{ __('Latest to oldest') }}
-                            </span>
-                        </div>
-
-                        <div class="space-y-3">
-                            @foreach ($guest->reservations->sortByDesc('requested_date') as $res)
-                                @php
-                                    $bookable = $res->bookable;
-                                    $payment = $res->latestPayment;
-                                    $resCode = $res->code ?? ('RSV-' . strtoupper(substr($res->id, -8)));
-                                @endphp
-                                <div class="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900/60 transition space-y-2.5">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div class="space-y-1 min-w-0">
-                                            <div class="flex items-center gap-2">
-                                                <span class="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 px-2 py-0.5 rounded-lg">
-                                                    #{{ $resCode }}
-                                                </span>
-                                                <span class="font-bold text-sm text-slate-900 dark:text-white truncate">
-                                                    {{ $bookable->name ?? ($bookable->title ?? __('Direct Booking')) }}
-                                                </span>
-                                            </div>
-                                            <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                                                <span class="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
-                                                    <i class="fa-solid fa-calendar-day text-indigo-500 text-[10px]"></i>
-                                                    {{ $res->requested_date->format('M d, Y') }}
-                                                </span>
-                                                <span>&bull;</span>
-                                                <span class="flex items-center gap-1">
-                                                    <i class="fa-solid fa-users text-[10px]"></i>
-                                                    {{ __(':count Guests', ['count' => $res->pax_count]) }}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Status Badge -->
-                                        <div>
-                                            @if ($res->status === ReservationStatus::Confirmed)
-                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                                                    {{ __('Confirmed') }}
-                                                </span>
-                                            @elseif ($res->status === ReservationStatus::PendingConfirmation)
-                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 animate-pulse">
-                                                    {{ __('Needs Confirmation') }}
-                                                </span>
-                                            @elseif ($res->status === ReservationStatus::Completed)
-                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
-                                                    {{ __('Completed') }}
-                                                </span>
-                                            @elseif ($res->status === ReservationStatus::Declined)
-                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
-                                                    {{ __('Declined') }}
-                                                </span>
-                                            @elseif ($res->status === ReservationStatus::Cancelled)
-                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
-                                                    {{ __('Cancelled') }}
-                                                </span>
-                                            @else
-                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-slate-300">
-                                                    {{ $res->status->label() }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </div>
-
-                                    <!-- Bottom Details & Payment Amount -->
-                                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800/80 text-xs">
-                                        <div class="text-[11px] text-slate-400">
-                                            {{ __('Booked on :date', ['date' => $res->created_at?->format('M d, Y H:i') ?? '—']) }}
-                                        </div>
-                                        <div class="font-extrabold text-slate-900 dark:text-white">
-                                            @if ($payment)
-                                                <span class="{{ $payment->isPaid() ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500' }}">
-                                                    Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}
-                                                </span>
-                                            @else
-                                                <span class="text-slate-400 font-normal">—</span>
-                                            @endif
-                                        </div>
-                                    </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                                        {{ $guest->name }}
+                                    </h3>
+                                    @if ($guest->reservations->count() > 1)
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                            <i class="fa-solid fa-repeat mr-0.5"></i>
+                                            {{ __('Repeat Guest') }}
+                                        </span>
+                                    @endif
                                 </div>
-                            @endforeach
+                                <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    @if ($guest->email)
+                                        <span class="flex items-center gap-1">
+                                            <i class="fa-solid fa-envelope text-[10px]"></i>
+                                            {{ $guest->email }}
+                                        </span>
+                                    @endif
+                                    @if ($guest->phone)
+                                        <span class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                            <i class="fa-brands fa-whatsapp text-[11px]"></i>
+                                            {{ $guest->phone }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            wire:click="closeHistory"
+                            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0 -mr-1 -mt-1"
+                        >
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+
+                    <!-- Drawer Content -->
+                    <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                        <!-- Guest Summary Stats Grid -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Total Trips') }}</span>
+                                <p class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">{{ $guest->reservations->count() }} Bookings</p>
+                            </div>
+                            <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Total Guests') }}</span>
+                                <p class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">{{ $guest->total_pax }} Pax</p>
+                            </div>
+                            <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 col-span-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Lifetime Spend') }}</span>
+                                <p class="text-base font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                    Rp {{ number_format($guest->total_spent, 0, ',', '.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Internal CRM Notes Box (if any) -->
+                        @if ($guest->notes)
+                            <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 space-y-1">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-note-sticky"></i>
+                                    {{ __('Internal Operator Notes') }}
+                                </span>
+                                <p class="text-xs text-amber-900 dark:text-amber-200 whitespace-pre-line">{{ $guest->notes }}</p>
+                            </div>
+                        @endif
+
+                        <!-- Booking History Timeline -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                    <i class="fa-solid fa-clock-rotate-left text-indigo-600 dark:text-indigo-400"></i>
+                                    {{ __('Reservation History (:count)', ['count' => $guest->reservations->count()]) }}
+                                </h4>
+                                <span class="text-[11px] text-slate-400">
+                                    {{ __('Latest to oldest') }}
+                                </span>
+                            </div>
+
+                            <div class="space-y-3">
+                                @foreach ($guest->reservations->sortByDesc('requested_date') as $res)
+                                    @php
+                                        $bookable = $res->bookable;
+                                        $payment = $res->latestPayment;
+                                        $resCode = $res->code ?? ('RSV-' . strtoupper(substr($res->id, -8)));
+                                    @endphp
+                                    <div class="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900/60 transition space-y-2.5">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="space-y-1 min-w-0">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 px-2 py-0.5 rounded-lg">
+                                                        #{{ $resCode }}
+                                                    </span>
+                                                    <span class="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                                        {{ $bookable->name ?? ($bookable->title ?? __('Direct Booking')) }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                                    <span class="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                                                        <i class="fa-solid fa-calendar-day text-indigo-500 text-[10px]"></i>
+                                                        {{ $res->requested_date->format('M d, Y') }}
+                                                    </span>
+                                                    <span>&bull;</span>
+                                                    <span class="flex items-center gap-1">
+                                                        <i class="fa-solid fa-users text-[10px]"></i>
+                                                        {{ __(':count Guests', ['count' => $res->pax_count]) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Status Badge -->
+                                            <div>
+                                                @if ($res->status === ReservationStatus::Confirmed)
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                                        {{ __('Confirmed') }}
+                                                    </span>
+                                                @elseif ($res->status === ReservationStatus::PendingConfirmation)
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 animate-pulse">
+                                                        {{ __('Needs Confirmation') }}
+                                                    </span>
+                                                @elseif ($res->status === ReservationStatus::Completed)
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                                                        {{ __('Completed') }}
+                                                    </span>
+                                                @elseif ($res->status === ReservationStatus::Declined)
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                                                        {{ __('Declined') }}
+                                                    </span>
+                                                @elseif ($res->status === ReservationStatus::Cancelled)
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                                                        {{ __('Cancelled') }}
+                                                    </span>
+                                                @else
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-slate-300">
+                                                        {{ $res->status->label() }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <!-- Bottom Details & Payment Amount -->
+                                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800/80 text-xs">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[11px] text-slate-400">
+                                                    {{ __('Booked on :date', ['date' => $res->created_at?->format('M d, Y H:i') ?? '—']) }}
+                                                </span>
+                                                @if ($guest->phone)
+                                                    @php
+                                                        $resWaUrl = app(\App\Services\WhatsAppDispatchService::class)->getConfirmationUrl($res);
+                                                    @endphp
+                                                    <a href="{{ $resWaUrl }}" target="_blank"
+                                                        class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                                                        <i class="fa-brands fa-whatsapp text-xs"></i>
+                                                        <span>{{ __('Send Voucher') }}</span>
+                                                    </a>
+                                                @endif
+                                            </div>
+                                            <div class="font-extrabold text-slate-900 dark:text-white">
+                                                @if ($payment)
+                                                    <span class="{{ $payment->isPaid() ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500' }}">
+                                                        Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-slate-400 font-normal">—</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Drawer Footer -->
-                <div class="p-5 bg-slate-50 dark:bg-zinc-800/60 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-3">
-                    @if ($guest->phone)
-                        <a
-                            href="{{ $waUrl }}"
-                            target="_blank"
-                            class="h-9 px-4 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition"
-                        >
-                            <i class="fa-brands fa-whatsapp text-sm"></i>
-                            <span>{{ __('Contact on WhatsApp') }}</span>
-                        </a>
-                    @else
-                        <div></div>
-                    @endif
+                    <!-- Drawer Footer -->
+                    <div class="p-5 bg-slate-50 dark:bg-zinc-800/60 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-3">
+                        @if ($guest->phone)
+                            <a
+                                href="{{ $waUrl }}"
+                                target="_blank"
+                                class="h-9 px-4 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition"
+                            >
+                                <i class="fa-brands fa-whatsapp text-sm"></i>
+                                <span>{{ __('Contact on WhatsApp') }}</span>
+                            </a>
+                        @else
+                            <div></div>
+                        @endif
 
-                    <div class="flex items-center gap-2">
-                        <x-button size="sm" variant="secondary" wire:click="editGuest('{{ $guest->id }}')" class="font-bold text-xs">
-                            <i class="fa-solid fa-pen mr-1"></i>
-                            {{ __('Edit CRM Profile') }}
-                        </x-button>
-                        <x-button size="sm" variant="secondary" wire:click="closeHistory" class="font-bold text-xs">
-                            {{ __('Close') }}
-                        </x-button>
+                        <div class="flex items-center gap-2">
+                            <x-button size="sm" variant="secondary" wire:click="editGuest('{{ $guest->id }}')" class="font-bold text-xs">
+                                <i class="fa-solid fa-pen mr-1"></i>
+                                {{ __('Edit CRM Profile') }}
+                            </x-button>
+                            <x-button size="sm" variant="secondary" wire:click="closeHistory" class="font-bold text-xs">
+                                {{ __('Close') }}
+                            </x-button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        @endteleport
+    @endif
     @endif
 </div>

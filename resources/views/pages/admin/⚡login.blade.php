@@ -126,7 +126,7 @@ new #[Title('Platform Admin Login')] #[Layout('layouts.auth')] class extends Com
     </form>
 
     <div class="text-xs text-center text-zinc-500 dark:text-zinc-400 border-t border-slate-200/80 dark:border-zinc-800 pt-4">
-        <span>{{ __('Looking for your travel agent account?') }}</span>
-        <a href="{{ route('login') }}" class="font-semibold underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 ml-1" wire:navigate>{{ __('Agent Sign In') }}</a>
+        <span>{{ __('Looking for your tour operator portal?') }}</span>
+        <a href="{{ route('login') }}" class="font-semibold underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 ml-1" wire:navigate>{{ __('Operator Sign In') }}</a>
     </div>
 </div>

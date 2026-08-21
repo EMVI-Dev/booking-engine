@@ -20,27 +20,29 @@
             <link rel="apple-touch-icon" href="{{ Storage::url($agent->logo) }}" />
         @endif
 
-        <!-- OpenGraph -->
+        <!-- OpenGraph & WhatsApp Social Share Cards -->
+        @php
+            $ogImageUrl = $package->cover_photo 
+                ? (Str::startsWith($package->cover_photo, ['http://', 'https://']) ? $package->cover_photo : url(Storage::url($package->cover_photo)))
+                : ($agent->logo ? (Str::startsWith($agent->logo, ['http://', 'https://']) ? $agent->logo : url(Storage::url($agent->logo))) : url('/favicon.png'));
+            $ogDescription = Str::limit($package->description ?: __('Book :title with :agent. Official online direct booking with instant confirmation.', ['title' => $package->title, 'agent' => $agent->name]), 160);
+        @endphp
         <meta property="og:type" content="product" />
         <meta property="og:url" content="{{ route('storefront.package', $package->slug) }}" />
-        <meta property="og:title" content="{{ $package->title }} &bull; {{ $agent->name }}" />
-        <meta property="og:description" content="{{ Str::limit($package->description ?: __('Book :title with :agent.', ['title' => $package->title, 'agent' => $agent->name]), 160) }}" />
+        <meta property="og:title" content="{{ $package->title }} — {{ $agent->name }}" />
+        <meta property="og:description" content="{{ $ogDescription }}" />
         <meta property="og:site_name" content="{{ $agent->name }} • {{ config('app.name') }}" />
-        @if ($package->cover_photo)
-            <meta property="og:image" content="{{ Storage::url($package->cover_photo) }}" />
-        @elseif ($agent->logo)
-            <meta property="og:image" content="{{ Storage::url($agent->logo) }}" />
-        @endif
+        <meta property="og:image" content="{{ $ogImageUrl }}" />
+        <meta property="og:image:secure_url" content="{{ $ogImageUrl }}" />
+        <meta property="og:image:alt" content="{{ $package->title }}" />
+        <meta property="product:price:amount" content="{{ $package->price }}" />
+        <meta property="product:price:currency" content="IDR" />
 
-        <!-- Twitter -->
+        <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="{{ $package->title }} &bull; {{ $agent->name }}" />
-        <meta name="twitter:description" content="{{ Str::limit($package->description ?: __('Book :title with :agent.', ['title' => $package->title, 'agent' => $agent->name]), 160) }}" />
-        @if ($package->cover_photo)
-            <meta name="twitter:image" content="{{ Storage::url($package->cover_photo) }}" />
-        @elseif ($agent->logo)
-            <meta name="twitter:image" content="{{ Storage::url($agent->logo) }}" />
-        @endif
+        <meta name="twitter:title" content="{{ $package->title }} — {{ $agent->name }}" />
+        <meta name="twitter:description" content="{{ $ogDescription }}" />
+        <meta name="twitter:image" content="{{ $ogImageUrl }}" />
 
         <!-- Schema.org JSON-LD Structured Data -->
         @php
@@ -126,6 +128,7 @@
 
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @include('storefront.partials.tracking-scripts', ['agent' => $agent])
         @livewireStyles
     </head>
     <body

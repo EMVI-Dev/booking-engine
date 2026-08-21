@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
@@ -41,25 +41,31 @@ new #[Title('Create Tour Package')] class extends Component {
     public array $galleryFiles = [];
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->agents()->first();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     #[Computed]
     public function isProfileComplete(): bool
     {
-        return (bool) $this->currentAgent?->isProfileComplete();
+        return (bool) $this->currentOperator?->isProfileComplete();
     }
 
     #[Computed]
     public function availableProducts()
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return collect();
         }
 
-        return $this->currentAgent->products()
+        return $this->currentOperator->products()
             ->where('status', ListingStatus::Published)
             ->get();
     }
@@ -68,8 +74,8 @@ new #[Title('Create Tour Package')] class extends Component {
     public function suggestedCategories(): array
     {
         $defaults = ['Day Tour', 'Marine Expedition', 'VIP Charter', 'Snorkel Safari', 'Sunset Cruise', 'Scuba Diving', 'Island Escape'];
-        if ($this->currentAgent) {
-            $existing = $this->currentAgent->packages()
+        if ($this->currentOperator) {
+            $existing = $this->currentOperator->packages()
                 ->whereNotNull('category')
                 ->distinct()
                 ->pluck('category')
@@ -144,7 +150,15 @@ new #[Title('Create Tour Package')] class extends Component {
             return;
         }
 
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
+            return;
+        }
+
+        if (! $this->currentOperator->canAddPackage()) {
+            $this->addError('profile', __('You have reached the maximum package limit (:limit listings) for your :plan plan. Please upgrade your subscription to create more packages.', [
+                'limit' => $this->currentOperator->getPlan()->package_limit,
+                'plan' => $this->currentOperator->getPlan()->name,
+            ]));
             return;
         }
 
@@ -182,7 +196,7 @@ new #[Title('Create Tour Package')] class extends Component {
         $incArray = ! empty($this->inclusions) ? array_map('trim', explode(',', $this->inclusions)) : null;
         $excArray = ! empty($this->exclusions) ? array_map('trim', explode(',', $this->exclusions)) : null;
 
-        $package = $this->currentAgent->packages()->create([
+        $package = $this->currentOperator->packages()->create([
             'title' => $this->title,
             'slug' => Str::slug($this->title),
             'category' => $this->category ?: null,
@@ -213,38 +227,55 @@ new #[Title('Create Tour Package')] class extends Component {
 }; ?>
 
 <div class="space-y-6 max-w-5xl">
-    <!-- Breadcrumb & Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                <a href="{{ route('packages.index') }}" wire:navigate class="hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1">
-                    <i class="fa-solid fa-arrow-left text-[10px]"></i>
-                    <span>{{ __('Tour Packages') }}</span>
-                </a>
-                <span>&bull;</span>
-                <span class="text-slate-900 dark:text-white">{{ __('Create New') }}</span>
+    @if ($this->currentAgent && ! $this->currentAgent->canAddPackage())
+        <div class="py-6">
+            <x-feature-gate
+                :title="__('Package Limit Reached (:limit Listings)', ['limit' => $this->currentAgent->getPlan()->package_limit])"
+                :description="__('You have reached the maximum allowed tour packages on your :plan plan. Upgrade your plan to list more tour packages and expand your offerings.', ['plan' => $this->currentAgent->getPlan()->name])"
+                required-plan="Pro Operator"
+                plan-slug="growth"
+                icon="fa-solid fa-cubes"
+                :features="[
+                    __('Up to 25 tour listings on Pro Operator (or Unlimited on Agency Ultimate)'),
+                    __('Google & Apple Calendar live syncing for tour bookings'),
+                    __('Automated 12-hour review request emails'),
+                    __('Customer Directory CRM and WhatsApp ticket dispatch'),
+                ]"
+            />
+        </div>
+    @else
+        <!-- Breadcrumb & Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    <a href="{{ route('packages.index') }}" wire:navigate class="hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                        <span>{{ __('Tour Packages') }}</span>
+                    </a>
+                    <span>&bull;</span>
+                    <span class="text-slate-900 dark:text-white">{{ __('Create New') }}</span>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {{ __('Create Tour Package / Expedition') }}
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                    {{ __('Bundle activities, boat transfers, and equipment into an all-inclusive public package.') }}
+                </p>
             </div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {{ __('Create Tour Package / Expedition') }}
-            </h1>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                {{ __('Bundle activities, boat transfers, and equipment into an all-inclusive public package.') }}
-            </p>
+
+            <div class="flex items-center gap-2">
+                <x-button :href="route('packages.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
+                    {{ __('Cancel') }}
+                </x-button>
+                <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs" :disabled="! $this->isProfileComplete">
+                    <i class="fa-solid fa-check mr-1.5 text-xs"></i>
+                    {{ __('Save & Publish') }}
+                </x-button>
+            </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <x-button :href="route('packages.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
-                {{ __('Cancel') }}
-            </x-button>
-            <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs" :disabled="! $this->isProfileComplete">
-                <i class="fa-solid fa-check mr-1.5 text-xs"></i>
-                {{ __('Save & Publish') }}
-            </x-button>
-        </div>
-    </div>
-
-    <!-- Main Create Form -->
-    <form wire:submit="save" class="space-y-6">
+        <!-- Main Create Form -->
+        <form wire:submit="save" class="space-y-6">
         @if ($errors->has('profile'))
             <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center gap-2.5">
                 <i class="fa-solid fa-circle-exclamation text-rose-500"></i>
@@ -580,4 +611,5 @@ new #[Title('Create Tour Package')] class extends Component {
             </x-button>
         </div>
     </form>
+    @endif
 </div>

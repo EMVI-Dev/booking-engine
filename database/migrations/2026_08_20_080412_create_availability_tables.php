@@ -23,14 +23,14 @@ return new class extends Migration
 
         Schema::create('availability_blocks', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('agent_id')->constrained('agents')->cascadeOnDelete();
+            $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();
             $table->foreignUlid('product_id')->nullable()->constrained('products')->cascadeOnDelete();
             $table->date('date_start');
             $table->date('date_end');
             $table->string('reason')->nullable();
             $table->timestamps();
 
-            $table->index(['agent_id', 'date_start', 'date_end']);
+            $table->index(['operator_id', 'date_start', 'date_end']);
             $table->index('product_id');
         });
     }

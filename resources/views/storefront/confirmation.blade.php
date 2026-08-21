@@ -17,15 +17,27 @@
     @endif
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php
+        $latestPayment = $reservation->latestPayment;
+        $isPaid = $latestPayment && $latestPayment->isPaid();
+        $reservationCode = $reservation->code ?? ('RSV-' . strtoupper(substr($reservation->id, -8)));
+    @endphp
+    @include('storefront.partials.tracking-scripts', [
+        'agent' => $agent,
+        'isConversion' => $isPaid,
+        'conversionAmount' => (float) ($latestPayment?->amount ?? $reservation->total_amount ?? 0),
+        'conversionTransactionId' => $reservationCode,
+    ])
 </head>
 <body class="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-brand-600 selection:text-white antialiased">
     @php
         $latestPayment = $reservation->latestPayment;
         $isPaid = $latestPayment && $latestPayment->isPaid();
         $reservationCode = $reservation->code ?? ('RSV-' . strtoupper(substr($reservation->id, -8)));
-        $cleanPhone = preg_replace('/[^0-9]/', '', (string) ($agent->contact_whatsapp ?? ''));
+        $waService = app(\App\Services\WhatsAppDispatchService::class);
+        $cleanPhone = $waService->normalizePhoneNumber($agent->contact_whatsapp);
         $waMessage = 'Hello ' . ($agent->name ?? 'Agent') . ', I have confirmed booking #' . $reservationCode . ' for ' . $reservation->guest_name;
-        $waUrl = $cleanPhone !== '' ? 'https://wa.me/' . $cleanPhone . '?text=' . urlencode($waMessage) : '#';
+        $waUrl = $cleanPhone !== '' ? $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage) : '#';
     @endphp
 
     <div class="w-full max-w-lg space-y-6">
@@ -104,7 +116,39 @@
             </div>
 
             <!-- Actions -->
-            <div class="space-y-3 pt-2">
+            <div class="space-y-2.5 pt-2">
+                @php
+                    $tripTitle = ($reservation->bookable->name ?? ($reservation->bookable->title ?? 'Tour Experience')) . ' - ' . $agent->name;
+                    $calendarStart = $reservation->requested_date->copy()->setTime(8, 0)->format('Ymd\THis');
+                    $calendarEnd = $reservation->requested_date->copy()->setTime(17, 0)->format('Ymd\THis');
+                    $calendarDetails = "Booking Code: #" . $reservationCode . "\nGuest: " . $reservation->guest_name . " (" . $reservation->pax_count . " Persons)\nProvider: " . $agent->name . "\nPhone/WA: " . ($agent->contact_whatsapp ?? '-');
+                    $calendarLocation = $agent->name;
+                    $googleCalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' . urlencode($tripTitle) . '&dates=' . $calendarStart . '/' . $calendarEnd . '&details=' . urlencode($calendarDetails) . '&location=' . urlencode($calendarLocation);
+                    $icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//" . config('app.name', 'Emvi') . "//Booking Engine//EN\r\nBEGIN:VEVENT\r\nSUMMARY:" . addcslashes($tripTitle, ",;") . "\r\nDESCRIPTION:" . addcslashes($calendarDetails, ",;\n") . "\r\nLOCATION:" . addcslashes($calendarLocation, ",;") . "\r\nDTSTART:" . $calendarStart . "\r\nDTEND:" . $calendarEnd . "\r\nSTATUS:CONFIRMED\r\nEND:VEVENT\r\nEND:VCALENDAR";
+                    $icsDataUri = 'data:text/calendar;charset=utf8,' . rawurlencode($icsContent);
+                @endphp
+
+                <!-- Add to Calendar Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <a
+                        href="{{ $googleCalUrl }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="h-10 px-3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition border border-slate-200 dark:border-zinc-700 shadow-2xs"
+                    >
+                        <i class="fa-brands fa-google text-xs text-rose-500"></i>
+                        <span>{{ __('Google Calendar') }}</span>
+                    </a>
+                    <a
+                        href="{{ $icsDataUri }}"
+                        download="tour-booking-{{ $reservationCode }}.ics"
+                        class="h-10 px-3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition border border-slate-200 dark:border-zinc-700 shadow-2xs"
+                    >
+                        <i class="fa-brands fa-apple text-xs text-slate-700 dark:text-slate-300"></i>
+                        <span>{{ __('Apple / Outlook') }}</span>
+                    </a>
+                </div>
+
                 @if ($cleanPhone)
                     <a
                         href="{{ $waUrl }}"
@@ -116,12 +160,16 @@
                     </a>
                 @endif
 
+                @php
+                    $storefrontUrl = $agent ? $agent->getStorefrontUrl() : route('home');
+                    $agentStoreName = $agent->name ?? __('Storefront');
+                @endphp
                 <a
-                    href="{{ route('home') }}"
+                    href="{{ $storefrontUrl }}"
                     class="w-full h-10 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition"
                 >
                     <i class="fa-solid fa-store text-xs"></i>
-                    <span>{{ __('Return to Storefront') }}</span>
+                    <span>{{ __('Return to :agent Storefront', ['agent' => $agentStoreName]) }}</span>
                 </a>
             </div>
         </div>

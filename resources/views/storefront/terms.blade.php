@@ -95,6 +95,7 @@
 
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @include('storefront.partials.tracking-scripts', ['agent' => $agent])
         @livewireStyles
     </head>
     <body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white">

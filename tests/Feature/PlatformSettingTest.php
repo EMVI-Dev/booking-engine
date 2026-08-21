@@ -9,7 +9,8 @@ uses(RefreshDatabase::class);
 test('platform setting returns default values when none exist', function () {
     $settings = PlatformSetting::current();
 
-    expect($settings->getCommissionRate())->toBe(0.10)
+    expect($settings->getCommissionRate())->toBe(0.00)
+        ->and($settings->getGuestServiceFeeRate())->toBe(0.05)
         ->and($settings->getBookingHoldMinutes())->toBe(30)
         ->and($settings->getDokuMode())->toBe(DokuMode::Sandbox);
 });

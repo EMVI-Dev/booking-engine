@@ -14,6 +14,7 @@ $maxWidth = [
 ][$maxWidth];
 @endphp
 
+@teleport('body')
 <div
     x-data="{
         show: @js($show),
@@ -73,3 +74,4 @@ $maxWidth = [
         {{ $slot }}
     </div>
 </div>
+@endteleport

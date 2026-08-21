@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -10,15 +10,15 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-new #[Title('Create Activity / Inventory Item')] class extends Component {
+new #[Title('Create Activity Item')] class extends Component {
     use WithFileUploads;
 
     public string $name = '';
-    public string $category = 'Equipment';
-    public int $capacity_per_day = 10;
-    public bool $sellable_standalone = false;
-    public ?float $price = null;
-    public string $location = '';
+    public string $category = 'Snorkeling Gear';
+    public int $capacity_per_day = 20;
+    public bool $sellable_standalone = true;
+    public ?float $price = 75000;
+    public string $location = 'Nusa Penida & Bali';
     public string $description = '';
     public string $inclusions = '';
     public string $exclusions = '';
@@ -34,23 +34,29 @@ new #[Title('Create Activity / Inventory Item')] class extends Component {
     public array $galleryFiles = [];
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->agents()->first();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     #[Computed]
     public function isProfileComplete(): bool
     {
-        return (bool) $this->currentAgent?->isProfileComplete();
+        return (bool) $this->currentOperator?->isProfileComplete();
     }
 
     #[Computed]
     public function suggestedCategories(): array
     {
         $defaults = ['Snorkeling Gear', 'Scuba Equipment', 'Boat Seat', 'Vehicle Rental', 'Local Guide', 'Water Sport', 'Ticket / Pass'];
-        if ($this->currentAgent) {
-            $existing = $this->currentAgent->products()
+        if ($this->currentOperator) {
+            $existing = $this->currentOperator->products()
                 ->whereNotNull('category')
                 ->distinct()
                 ->pluck('category')
@@ -103,7 +109,7 @@ new #[Title('Create Activity / Inventory Item')] class extends Component {
             return;
         }
 
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return;
         }
 
@@ -140,7 +146,7 @@ new #[Title('Create Activity / Inventory Item')] class extends Component {
         $incArray = ! empty($this->inclusions) ? array_map('trim', explode(',', $this->inclusions)) : null;
         $excArray = ! empty($this->exclusions) ? array_map('trim', explode(',', $this->exclusions)) : null;
 
-        $product = $this->currentAgent->products()->create([
+        $product = $this->currentOperator->products()->create([
             'name' => $this->name,
             'slug' => Str::slug($this->name),
             'category' => $this->category ?: null,

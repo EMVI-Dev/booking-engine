@@ -7,9 +7,9 @@
         <div class="relative grid min-h-screen flex-col items-center justify-center lg:max-w-none lg:grid-cols-2 lg:px-0">
             <div class="relative hidden h-full flex-col bg-zinc-900 p-10 text-white dark:border-r dark:border-zinc-800 lg:flex">
                 <div class="absolute inset-0 bg-zinc-900"></div>
-                <a href="{{ route('home') }}" class="relative z-20 flex items-center gap-2 text-lg font-bold" wire:navigate>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-zinc-900 font-bold">
-                        B
+                <a href="{{ route('home') }}" class="relative z-20 flex items-center gap-2.5 text-lg font-bold" wire:navigate>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white text-sm">
+                        <i class="fa-solid fa-compass"></i>
                     </span>
                     {{ config('app.name', 'Booking Engine') }}
                 </a>

@@ -1,8 +1,8 @@
 <?php
 
-use App\Enums\AgentStatus;
-use App\Enums\AgentUserRole;
-use App\Models\Agent;
+use App\Enums\OperatorStatus;
+use App\Enums\OperatorUserRole;
+use App\Models\Operator;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -11,9 +11,9 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->user = User::factory()->create();
-    $this->agent = Agent::factory()->create([
+    $this->operator = Operator::factory()->create([
         'name' => 'Paradise Expeditions',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
         'terms_and_conditions' => 'Original booking terms.',
         'settings' => [
             'storefront' => [
@@ -25,7 +25,7 @@ beforeEach(function () {
             ],
         ],
     ]);
-    $this->agent->users()->attach($this->user->id, ['role' => AgentUserRole::Owner]);
+    $this->operator->users()->attach($this->user->id, ['role' => OperatorUserRole::Owner]);
     $this->actingAs($this->user);
 });
 
@@ -44,12 +44,12 @@ test('storefront settings can be updated', function () {
         ->call('updateStorefrontSettings')
         ->assertHasNoErrors();
 
-    $this->agent->refresh();
+    $this->operator->refresh();
 
-    expect($this->agent->terms_and_conditions)->toBe('Updated cancellation policy: 48h free cancellation.')
-        ->and($this->agent->settings['storefront']['allow_standalone_products'])->toBeFalse()
-        ->and($this->agent->settings['storefront']['show_reviews'])->toBeTrue()
-        ->and($this->agent->settings['storefront']['show_inclusions_preview'])->toBeFalse()
-        ->and($this->agent->settings['storefront']['hero_headline'])->toBe('Exclusive Island Journeys')
-        ->and($this->agent->settings['storefront']['hero_tagline'])->toBe('Direct private bookings with expert crew');
+    expect($this->operator->terms_and_conditions)->toBe('Updated cancellation policy: 48h free cancellation.')
+        ->and($this->operator->settings['storefront']['allow_standalone_products'])->toBeFalse()
+        ->and($this->operator->settings['storefront']['show_reviews'])->toBeTrue()
+        ->and($this->operator->settings['storefront']['show_inclusions_preview'])->toBeFalse()
+        ->and($this->operator->settings['storefront']['hero_headline'])->toBe('Exclusive Island Journeys')
+        ->and($this->operator->settings['storefront']['hero_tagline'])->toBe('Direct private bookings with expert crew');
 });

@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 
 /**
  * @property string $id
- * @property string $agent_id
+ * @property string $operator_id
  * @property string $name
  * @property string|null $email
  * @property string|null $phone
@@ -24,7 +24,7 @@ use Illuminate\Support\Collection;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Agent|null $agent
+ * @property-read Operator|null $operator
  * @property-read Collection<int, Reservation> $reservations
  */
 class Guest extends Model
@@ -33,7 +33,7 @@ class Guest extends Model
     use HasFactory, HasUlids;
 
     protected $fillable = [
-        'agent_id',
+        'operator_id',
         'name',
         'email',
         'phone',
@@ -51,11 +51,21 @@ class Guest extends Model
     }
 
     /**
-     * @return BelongsTo<Agent, $this>
+     * @return BelongsTo<Operator, $this>
+     */
+    public function operator(): BelongsTo
+    {
+        return $this->belongsTo(Operator::class);
+    }
+
+    /**
+     * @deprecated Use operator() instead.
+     *
+     * @return BelongsTo<Operator, $this>
      */
     public function agent(): BelongsTo
     {
-        return $this->belongsTo(Agent::class);
+        return $this->operator();
     }
 
     /**

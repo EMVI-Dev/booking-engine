@@ -1,7 +1,7 @@
 <?php
 
-use App\Enums\AgentStatus;
-use App\Models\Agent;
+use App\Enums\OperatorStatus;
+use App\Models\Operator;
 use App\Models\PlatformSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -76,7 +76,7 @@ test('platform admin can update global platform settings', function () {
     $this->actingAs($this->adminUser);
 
     Livewire::test('pages::admin.platform')
-        ->set('platform_name', 'Emvi Global Travel Platform')
+        ->set('platform_name', 'TravelEngine Global Platform')
         ->set('support_email', 'ops@emvi.dev')
         ->set('commission_percentage', 12.5)
         ->set('booking_hold_minutes', 45)
@@ -87,7 +87,7 @@ test('platform admin can update global platform settings', function () {
 
     $settings = PlatformSetting::current()->fresh();
 
-    expect($settings->getPlatformName())->toBe('Emvi Global Travel Platform')
+    expect($settings->getPlatformName())->toBe('TravelEngine Global Platform')
         ->and($settings->getSupportEmail())->toBe('ops@emvi.dev')
         ->and($settings->getCommissionRate())->toBe(0.125)
         ->and($settings->getBookingHoldMinutes())->toBe(45);
@@ -132,58 +132,58 @@ test('platform admin can update DOKU payment credentials', function () {
         ->and($settings->getDokuLiveSecretKey())->toBe('KEY_LIVE_PROD');
 });
 
-test('platform admin can view operators and agents management directory', function () {
-    $agent = Agent::factory()->create([
+test('platform admin can view operators management directory', function () {
+    $operator = Operator::factory()->create([
         'name' => 'Nusa Penida Charters',
         'slug' => 'penida-charters',
-        'status' => AgentStatus::Approved,
+        'status' => OperatorStatus::Approved,
         'bank_provider' => 'BCA',
         'bank_account_number' => '555111222',
         'bank_account_name' => 'PT Penida Charters',
     ]);
 
     $this->actingAs($this->adminUser)
-        ->get(route('admin.agents.index'))
+        ->get(route('admin.operators.index'))
         ->assertOk()
-        ->assertSee('Agents Management')
+        ->assertSee('Operators Management')
         ->assertSee('Nusa Penida Charters')
         ->assertSee('555111222');
 });
 
-test('platform admin can search agents and update approval status', function () {
-    $agent = Agent::factory()->create([
+test('platform admin can search operators and update approval status', function () {
+    $operator = Operator::factory()->create([
         'name' => 'Komodo Diving Co',
         'slug' => 'komodo-diving',
-        'status' => AgentStatus::Pending,
+        'status' => OperatorStatus::Pending,
     ]);
 
     $this->actingAs($this->adminUser);
 
-    Livewire::test('pages::admin.agents.index')
+    Livewire::test('pages::admin.operators.index')
         ->set('search', 'Komodo')
         ->assertSee('Komodo Diving Co')
-        ->call('updateStatus', $agent->id, 'approved')
+        ->call('updateStatus', $operator->id, 'approved')
         ->assertHasNoErrors();
 
-    expect($agent->fresh()->status)->toBe(AgentStatus::Approved);
+    expect($operator->fresh()->status)->toBe(OperatorStatus::Approved);
 
-    Livewire::test('pages::admin.agents.index')
-        ->call('updateStatus', $agent->id, 'suspended')
+    Livewire::test('pages::admin.operators.index')
+        ->call('updateStatus', $operator->id, 'suspended')
         ->assertHasNoErrors();
 
-    expect($agent->fresh()->status)->toBe(AgentStatus::Suspended);
+    expect($operator->fresh()->status)->toBe(OperatorStatus::Suspended);
 });
 
-test('platform admin can choose which agent to manage and switch into their portal', function () {
-    $agentA = Agent::factory()->create(['name' => 'Agent Alpha', 'slug' => 'agent-alpha']);
-    $agentB = Agent::factory()->create(['name' => 'Agent Beta', 'slug' => 'agent-beta']);
+test('platform admin can choose which operator to manage and switch into their portal', function () {
+    $operatorA = Operator::factory()->create(['name' => 'Operator Alpha', 'slug' => 'operator-alpha']);
+    $operatorB = Operator::factory()->create(['name' => 'Operator Beta', 'slug' => 'operator-beta']);
 
     $this->actingAs($this->adminUser);
 
-    Livewire::test('pages::admin.agents.index')
-        ->call('manageAgent', $agentB->id)
+    Livewire::test('pages::admin.operators.index')
+        ->call('manageOperator', $operatorB->id)
         ->assertRedirect(route('dashboard'));
 
-    expect(session('admin_impersonated_agent_id'))->toBe($agentB->id)
-        ->and($this->adminUser->currentAgent()->id)->toBe($agentB->id);
+    expect(session('admin_impersonated_operator_id'))->toBe($operatorB->id)
+        ->and($this->adminUser->currentOperator()->id)->toBe($operatorB->id);
 });

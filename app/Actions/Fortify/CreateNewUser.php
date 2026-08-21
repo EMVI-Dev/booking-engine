@@ -5,7 +5,7 @@ namespace App\Actions\Fortify;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
-use App\Services\AgentOnboardingService;
+use App\Services\OperatorOnboardingService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -15,36 +15,39 @@ class CreateNewUser implements CreatesNewUsers
     use PasswordValidationRules, ProfileValidationRules;
 
     public function __construct(
-        protected AgentOnboardingService $onboardingService
+        protected OperatorOnboardingService $onboardingService
     ) {}
 
     /**
-     * Validate and create a newly registered user and their agent storefront.
+     * Validate and create a newly registered user and their operator storefront.
      *
      * @param  array<string, string>  $input
      */
     public function create(array $input): User
     {
-        Validator::make($input, [
+        $businessName = $input['operator_name'] ?? $input['agency_name'] ?? '';
+
+        Validator::make(array_merge($input, ['business_name' => $businessName]), [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
-            'agency_name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:64', 'alpha_dash', Rule::unique('agents', 'slug')],
+            'business_name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:64', 'alpha_dash', Rule::unique('operators', 'slug')],
             'contact_whatsapp' => ['nullable', 'string', 'max:30'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'bank_account_ref' => ['nullable', 'string', 'max:100'],
             'terms' => ['accepted'],
         ], [
-            'agency_name.required' => 'Please provide your agency or tour business name.',
+            'business_name.required' => 'Please provide your tour operator or guide business name.',
             'slug.unique' => 'This storefront subdomain is already taken. Please choose another.',
             'terms.accepted' => 'You must accept the Storefront Terms & Protection to launch your storefront.',
         ])->validate();
 
-        $result = $this->onboardingService->registerAgent([
+        $result = $this->onboardingService->registerOperator([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
-            'agency_name' => $input['agency_name'],
+            'operator_name' => $businessName,
+            'agency_name' => $businessName,
             'slug' => $input['slug'] ?? null,
             'contact_whatsapp' => $input['contact_whatsapp'] ?? null,
             'bio' => $input['bio'] ?? null,
@@ -52,7 +55,7 @@ class CreateNewUser implements CreatesNewUsers
         ]);
 
         session()->flash('welcome_onboarding', true);
-        session()->flash('status', 'Welcome to your tour portal! Please complete your brand logo, theme color, and business details.');
+        session()->flash('status', 'Welcome to your tour operator portal! Please complete your brand logo, theme color, and business details.');
 
         return $result['user'];
     }

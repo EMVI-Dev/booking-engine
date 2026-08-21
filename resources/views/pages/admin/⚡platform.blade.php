@@ -1,8 +1,8 @@
 <?php
 
-use App\Enums\AgentStatus;
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Enums\OperatorStatus;
+use App\Models\Operator;
 use App\Models\Package;
 use App\Models\PlatformSetting;
 use App\Models\Product;
@@ -13,16 +13,17 @@ use Livewire\Component;
 
 new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Component {
     // Global Platform Parameters
-    public string $platform_name = 'Emvi Booking Platform';
+    public string $platform_name = 'TravelEngine';
     public string $support_email = 'admin@emvi.dev';
-    public float $commission_percentage = 10.0; // 10%
+    public float $commission_percentage = 0.0; // 0% operator commission
+    public float $guest_service_fee_percentage = 5.0; // 5% guest service fee
     public int $booking_hold_minutes = 30;
     public string $currency_code = 'IDR';
     public string $currency_symbol = 'Rp';
 
     // Dashboard Overview Counts
-    public int $total_agents = 0;
-    public int $approved_agents = 0;
+    public int $total_operators = 0;
+    public int $approved_operators = 0;
     public int $total_packages = 0;
     public int $total_products = 0;
     public int $total_reservations = 0;
@@ -37,16 +38,17 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
         $platform = PlatformSetting::current();
         $settings = $platform->settings ?? [];
 
-        $this->platform_name = (string) ($settings['platform_name'] ?? 'Emvi Booking Platform');
+        $this->platform_name = (string) ($settings['platform_name'] ?? 'TravelEngine');
         $this->support_email = (string) ($settings['support_email'] ?? 'admin@emvi.dev');
-        $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.10) * 100);
+        $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.00) * 100);
+        $this->guest_service_fee_percentage = (float) (($settings['guest_service_fee_rate'] ?? 0.05) * 100);
         $this->booking_hold_minutes = (int) ($settings['booking_hold_minutes'] ?? 30);
         $this->currency_code = (string) ($settings['currency_code'] ?? 'IDR');
         $this->currency_symbol = (string) ($settings['currency_symbol'] ?? 'Rp');
 
         // Load Platform Overview Stats
-        $this->total_agents = Agent::count();
-        $this->approved_agents = Agent::where('status', AgentStatus::Approved)->count();
+        $this->total_operators = Operator::count();
+        $this->approved_operators = Operator::where('status', OperatorStatus::Approved)->count();
         $this->total_packages = Package::where('status', ListingStatus::Published)->count();
         $this->total_products = Product::where('status', ListingStatus::Published)->count();
         $this->total_reservations = Reservation::count();
@@ -61,6 +63,7 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
             'platform_name' => ['required', 'string', 'max:255'],
             'support_email' => ['required', 'email', 'max:255'],
             'commission_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+            'guest_service_fee_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'booking_hold_minutes' => ['required', 'integer', 'min:5', 'max:1440'],
             'currency_code' => ['required', 'string', 'max:10'],
             'currency_symbol' => ['required', 'string', 'max:10'],
@@ -71,20 +74,21 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
 
         $settings['platform_name'] = $validated['platform_name'];
         $settings['support_email'] = $validated['support_email'];
-        $settings['commission_rate'] = (float) ($validated['commission_percentage'] / 100);
+        $settings['commission_rate'] = round($validated['commission_percentage'] / 100, 4);
+        $settings['guest_service_fee_rate'] = round($validated['guest_service_fee_percentage'] / 100, 4);
         $settings['booking_hold_minutes'] = $validated['booking_hold_minutes'];
-        $settings['currency_code'] = $validated['currency_code'];
+        $settings['currency_code'] = strtoupper($validated['currency_code']);
         $settings['currency_symbol'] = $validated['currency_symbol'];
 
         $platform->update(['settings' => $settings]);
 
         $this->saved = true;
-        $this->dispatch('platform-settings-updated');
+        $this->dispatch('platform-settings-saved');
     }
 }; ?>
 
-<div class="space-y-6 max-w-6xl mx-auto">
-    <!-- Header -->
+<div class="space-y-6">
+    <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2.5">
@@ -106,10 +110,10 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
     <!-- Platform Stats Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Registered Agents') }}</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Registered Operators') }}</span>
             <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-black text-slate-900 dark:text-white">{{ $approved_agents }}</span>
-                <span class="text-xs text-slate-400">/ {{ $total_agents }} total</span>
+                <span class="text-2xl font-black text-slate-900 dark:text-white">{{ $approved_operators }}</span>
+                <span class="text-xs text-slate-400">/ {{ $total_operators }} total</span>
             </div>
         </div>
 
@@ -166,6 +170,17 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                     </div>
                     <p class="text-[11px] text-slate-500 mt-1">{{ __('Default platform revenue cut on customer bookings.') }}</p>
                     <x-input-error :messages="$errors->get('commission_percentage')" />
+                </div>
+
+                <!-- Guest Service Fee (%) -->
+                <div>
+                    <x-label for="guest_service_fee_percentage" :value="__('Guest Service Fee (%) — Added at Checkout')" required />
+                    <div class="relative">
+                        <x-input id="guest_service_fee_percentage" wire:model="guest_service_fee_percentage" type="number" step="0.1" min="0" max="100" class="pr-8" :error="$errors->has('guest_service_fee_percentage')" />
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Convenience fee added to guest checkout (100% net goes to operator).') }}</p>
+                    <x-input-error :messages="$errors->get('guest_service_fee_percentage')" />
                 </div>
 
                 <!-- Unpaid Booking Hold Window -->

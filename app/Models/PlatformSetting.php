@@ -35,7 +35,8 @@ class PlatformSetting extends Model
     {
         return static::firstOrCreate([], [
             'settings' => [
-                'commission_rate' => 0.10, // 10% platform take-rate
+                'commission_rate' => 0.00, // Default 0% commission from operator
+                'guest_service_fee_rate' => 0.05, // 5% Guest Service Fee added at checkout
                 'booking_hold_minutes' => 30, // 30-minute hold window for unpaid reservations
                 'doku_mode' => config('doku.default_mode', 'sandbox'),
                 'currency_code' => 'IDR',
@@ -71,7 +72,12 @@ class PlatformSetting extends Model
 
     public function getCommissionRate(): float
     {
-        return (float) ($this->settings['commission_rate'] ?? 0.10);
+        return (float) ($this->settings['commission_rate'] ?? 0.00);
+    }
+
+    public function getGuestServiceFeeRate(): float
+    {
+        return (float) ($this->settings['guest_service_fee_rate'] ?? 0.05);
     }
 
     public function getBookingHoldMinutes(): int

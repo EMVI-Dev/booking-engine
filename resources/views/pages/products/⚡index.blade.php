@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -14,25 +14,31 @@ new #[Title('Activities & Inventory')] class extends Component {
     public string $statusFilter = 'all';
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->agents()->first();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     #[Computed]
     public function isProfileComplete(): bool
     {
-        return (bool) $this->currentAgent?->isProfileComplete();
+        return (bool) $this->currentOperator?->isProfileComplete();
     }
 
     #[Computed]
     public function products()
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return collect();
         }
 
-        return $this->currentAgent->products()
+        return $this->currentOperator->products()
             ->withCount('packages')
             ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%")->orWhere('category', 'like', "%{$this->search}%"))
             ->when($this->statusFilter !== 'all', fn ($q) => $q->where('status', $this->statusFilter))

@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +11,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-new #[Title('Edit Activity / Inventory Item')] class extends Component {
+new #[Title('Edit Activity Item')] class extends Component {
     use WithFileUploads;
 
     public Product $product;
@@ -41,17 +41,23 @@ new #[Title('Edit Activity / Inventory Item')] class extends Component {
     public array $galleryFiles = [];
 
     #[Computed]
-    public function currentAgent(): ?Agent
+    public function currentOperator(): ?Operator
     {
-        return Auth::user()?->agents()->first();
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
     }
 
     #[Computed]
     public function suggestedCategories(): array
     {
         $defaults = ['Snorkeling Gear', 'Scuba Equipment', 'Boat Seat', 'Vehicle Rental', 'Local Guide', 'Water Sport', 'Ticket / Pass'];
-        if ($this->currentAgent) {
-            $existing = $this->currentAgent->products()
+        if ($this->currentOperator) {
+            $existing = $this->currentOperator->products()
                 ->whereNotNull('category')
                 ->distinct()
                 ->pluck('category')
@@ -65,7 +71,7 @@ new #[Title('Edit Activity / Inventory Item')] class extends Component {
 
     public function mount(Product $product): void
     {
-        if (! $this->currentAgent || $product->agent_id !== $this->currentAgent->id) {
+        if (! $this->currentOperator || $product->operator_id !== $this->currentOperator->id) {
             abort(403, 'Unauthorized access to this product.');
         }
 
@@ -139,7 +145,7 @@ new #[Title('Edit Activity / Inventory Item')] class extends Component {
 
     public function save(): void
     {
-        if (! $this->currentAgent || $this->product->agent_id !== $this->currentAgent->id) {
+        if (! $this->currentOperator || $this->product->operator_id !== $this->currentOperator->id) {
             abort(403);
         }
 
@@ -189,7 +195,7 @@ new #[Title('Edit Activity / Inventory Item')] class extends Component {
             'location' => $this->location ?: null,
             'description' => $this->description ?: null,
             'cover_photo' => $coverPath,
-            'gallery' => ! empty($galleryPaths) ? $galleryPaths : null,
+            'gallery' => ! empty($galleryPaths) ? array_values($galleryPaths) : null,
             'inclusions' => $incArray,
             'exclusions' => $excArray,
             'terms_and_conditions' => $this->terms_and_conditions ?: null,
@@ -198,17 +204,17 @@ new #[Title('Edit Activity / Inventory Item')] class extends Component {
             'status' => $this->status,
         ]);
 
+        $this->existingCoverPhoto = $coverPath;
+        $this->existingGallery = $galleryPaths;
         $this->coverPhoto = null;
         $this->galleryFiles = [];
-        $this->existingCoverPhoto = $this->product->fresh()->cover_photo;
-        $this->existingGallery = $this->product->fresh()->gallery ?? [];
 
         session()->flash('success', __('Activity item ":name" updated successfully.', ['name' => $this->name]));
     }
 
     public function delete(): void
     {
-        if (! $this->currentAgent || $this->product->agent_id !== $this->currentAgent->id) {
+        if (! $this->currentOperator || $this->product->operator_id !== $this->currentOperator->id) {
             abort(403);
         }
 

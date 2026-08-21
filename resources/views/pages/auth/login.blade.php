@@ -1,19 +1,48 @@
-<x-layouts::auth :title="__('Agent Log in')">
-    <div class="flex flex-col gap-6">
+<x-layouts::auth :title="__('Operator Log in')">
+    <div class="flex flex-col gap-6" x-data="{
+        fillCredentials(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+        }
+    }">
         <div class="text-center space-y-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-                {{ __('Agent Portal') }}
+            <span
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                <i class="fa-solid fa-compass text-xs text-indigo-600 dark:text-indigo-400"></i>
+                {{ __('Operator Portal') }}
             </span>
             <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
                 {{ __('Welcome back') }}
             </h1>
             <p class="text-sm text-zinc-500 dark:text-zinc-400">
-                {{ __('Sign in to manage your tour packages, reservations, and availability.') }}
+                {{ __('Sign in to manage your tour packages, reservations, calendar, and payouts.') }}
             </p>
         </div>
+
+        <!-- Demo Accounts Quick Fill (Local / Development Helper) -->
+        @if (app()->environment('local', 'testing', 'staging'))
+            <div
+                class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700 text-xs space-y-2">
+                <span
+                    class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">{{ __('Demo Test Accounts (Click to Fill)') }}</span>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" @click="fillCredentials('baliridetours@gmail.com', 'password')"
+                        class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600 text-left transition cursor-pointer group shadow-2xs">
+                        <span
+                            class="font-bold text-slate-800 dark:text-zinc-200 block text-[11px] group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Operator</span>
+                        <span
+                            class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">baliridetours@gmail.com</span>
+                    </button>
+                    <button type="button" @click="fillCredentials('admin@emvi.dev', 'password')"
+                        class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600 text-left transition cursor-pointer group shadow-2xs">
+                        <span
+                            class="font-bold text-slate-800 dark:text-zinc-200 block text-[11px] group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Platform
+                            Admin</span>
+                        <span class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">admin@emvi.dev</span>
+                    </button>
+                </div>
+            </div>
+        @endif
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -26,17 +55,8 @@
             <!-- Email Address -->
             <div>
                 <x-label for="email" :value="__('Email address')" required />
-                <x-input
-                    id="email"
-                    name="email"
-                    :value="old('email')"
-                    type="email"
-                    required
-                    autofocus
-                    autocomplete="email"
-                    placeholder="agent@example.com"
-                    :error="$errors->has('email')"
-                />
+                <x-input id="email" name="email" :value="old('email')" type="email" required autofocus
+                    autocomplete="email" placeholder="baliridetours@gmail.com" :error="$errors->has('email')" />
                 <x-input-error :messages="$errors->get('email')" />
             </div>
 
@@ -45,20 +65,14 @@
                 <div class="flex items-center justify-between mb-1">
                     <x-label for="password" :value="__('Password')" required />
                     @if (Route::has('password.request'))
-                        <a class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium" href="{{ route('password.request') }}" wire:navigate>
+                        <a class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                            href="{{ route('password.request') }}" wire:navigate>
                             {{ __('Forgot password?') }}
                         </a>
                     @endif
                 </div>
-                <x-input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    autocomplete="current-password"
-                    placeholder="••••••••"
-                    :error="$errors->has('password')"
-                />
+                <x-input id="password" name="password" type="password" required autocomplete="current-password"
+                    placeholder="••••••••" :error="$errors->has('password')" />
                 <x-input-error :messages="$errors->get('password')" />
             </div>
 
@@ -68,15 +82,18 @@
             </div>
 
             <div>
-                <x-button variant="primary" type="submit" class="w-full shadow-sm font-semibold" data-test="login-button">
-                    {{ __('Sign In to Storefront') }}
+                <x-button variant="primary" type="submit" class="w-full shadow-sm font-semibold"
+                    data-test="login-button">
+                    {{ __('Sign In to Operator Portal') }}
                 </x-button>
             </div>
         </form>
 
         <div class="text-sm text-center text-zinc-600 dark:text-zinc-400">
             <span>{{ __('New tour operator or guide?') }}</span>
-            <a href="{{ route('register') }}" class="font-semibold underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-500" wire:navigate>{{ __('Create storefront') }}</a>
+            <a href="{{ route('register') }}"
+                class="font-semibold underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+                wire:navigate>{{ __('Create operator account') }}</a>
         </div>
     </div>
 </x-layouts::auth>

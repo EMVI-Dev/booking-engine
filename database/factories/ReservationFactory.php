@@ -21,7 +21,7 @@ class ReservationFactory extends Factory
         return [
             'bookable_type' => 'package',
             'bookable_id' => $package->id,
-            'agent_id' => $package->agent_id,
+            'operator_id' => $package->operator_id,
             'guest_name' => fake()->name(),
             'guest_contact' => fake()->phoneNumber(),
             'guest_email' => fake()->safeEmail(),

@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Product;
 use Illuminate\Support\Collection;
 
@@ -12,7 +12,11 @@ interface Bookable
 
     public function getTitle(): string;
 
-    public function getAgent(): Agent;
+    public function getOperator(): Operator;
+
+    public function getOperatorId(): string;
+
+    public function getAgent(): Operator;
 
     public function getAgentId(): string;
 

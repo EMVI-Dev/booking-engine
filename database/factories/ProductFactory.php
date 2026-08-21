@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ListingStatus;
-use App\Models\Agent;
+use App\Models\Operator;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -21,7 +21,7 @@ class ProductFactory extends Factory
         $name = is_array($words) ? implode(' ', $words) : $words;
 
         return [
-            'agent_id' => Agent::factory(),
+            'operator_id' => Operator::factory(),
             'name' => ucfirst($name),
             'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(100, 999),
             'description' => fake()->paragraph(),

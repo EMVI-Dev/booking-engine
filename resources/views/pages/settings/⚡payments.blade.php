@@ -1,7 +1,8 @@
 <?php
 
-use App\Models\Agent;
+use App\Models\Operator;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -23,22 +24,32 @@ new #[Title('Payment Gateways')] class extends Component {
 
     public bool $saved = false;
 
+    #[Computed]
+    public function currentOperator(): ?Operator
+    {
+        return Auth::user()?->currentOperator();
+    }
+
+    #[Computed]
+    public function currentAgent(): ?Operator
+    {
+        return $this->currentOperator;
+    }
+
     /**
      * Mount the component.
      */
     public function mount(): void
     {
-        $user = Auth::user();
+        /** @var Operator|null $operator */
+        $operator = $this->currentOperator;
+        if ($operator) {
+            $this->bank_provider = $operator->bank_provider ?? 'BCA';
+            $this->bank_account_name = $operator->bank_account_name ?? '';
+            $this->bank_account_number = $operator->bank_account_number ?? '';
+            $this->bank_account_ref = $operator->bank_account_ref ?? '';
 
-        /** @var Agent|null $agent */
-        $agent = $user->agents()->first();
-        if ($agent) {
-            $this->bank_provider = $agent->bank_provider ?? 'BCA';
-            $this->bank_account_name = $agent->bank_account_name ?? '';
-            $this->bank_account_number = $agent->bank_account_number ?? '';
-            $this->bank_account_ref = $agent->bank_account_ref ?? '';
-
-            $settings = $agent->settings ?? [];
+            $settings = $operator->settings ?? [];
             $gateway = $settings['payment_gateway'] ?? [];
 
             $useCustom = (bool) ($gateway['use_custom_credentials'] ?? false);
@@ -51,13 +62,16 @@ new #[Title('Payment Gateways')] class extends Component {
     }
 
     /**
-     * Update agent payment gateway and settlement details.
+     * Update operator payment gateway and settlement details.
      */
     public function updatePaymentSettings(): void
     {
-        $user = Auth::user();
-
         $isCustom = $this->payment_mode === 'custom';
+
+        if ($isCustom && ! $this->currentOperator?->hasFeature('byo_gateway')) {
+            $this->addError('payment_mode', __('Connecting a custom payment gateway requires the Agency Ultimate subscription plan.'));
+            return;
+        }
 
         $validated = $this->validate([
             'bank_provider' => ['required', 'string', 'max:100'],
@@ -70,10 +84,10 @@ new #[Title('Payment Gateways')] class extends Component {
             'gateway_shared_key' => [$isCustom ? 'required' : 'nullable', 'string', 'max:255'],
         ]);
 
-        /** @var Agent|null $agent */
-        $agent = $user->agents()->first();
-        if ($agent) {
-            $settings = $agent->settings ?? [];
+        /** @var Operator|null $operator */
+        $operator = $this->currentOperator;
+        if ($operator) {
+            $settings = $operator->settings ?? [];
             $settings['payment_gateway'] = [
                 'provider' => $isCustom ? $validated['selected_gateway_provider'] : 'doku',
                 'use_custom_credentials' => $isCustom,
@@ -86,7 +100,7 @@ new #[Title('Payment Gateways')] class extends Component {
                 ? "{$validated['bank_provider']} - {$validated['bank_account_number']}" . ($validated['bank_account_name'] ? " ({$validated['bank_account_name']})" : '')
                 : null;
 
-            $agent->update([
+            $operator->update([
                 'bank_provider' => $validated['bank_provider'],
                 'bank_account_name' => $validated['bank_account_name'],
                 'bank_account_number' => $validated['bank_account_number'],
@@ -266,12 +280,12 @@ new #[Title('Payment Gateways')] class extends Component {
                         </div>
 
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-400">
-                            {{ __('Enterprise') }}
+                            {{ __('Agency Ultimate') }}
                         </span>
                     </div>
 
                     <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                        {{ __('Connect your own direct merchant credentials if your business has an existing enterprise contract with DOKU, Midtrans, or Xendit.') }}
+                        {{ __('Connect your own direct merchant credentials if your business has an existing contract with DOKU, Midtrans, or Xendit.') }}
                     </p>
 
                     <div class="pt-2 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center gap-2 text-xs text-slate-500">
@@ -300,7 +314,25 @@ new #[Title('Payment Gateways')] class extends Component {
 
             <!-- Custom Gateway BYO Config Fields -->
             @if ($payment_mode === 'custom')
-                <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-5 animate-fade-in">
+                @if (! $this->currentAgent?->hasFeature('byo_gateway'))
+                    <div class="p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+                        <div class="flex items-center gap-2.5">
+                            <span class="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 text-sm">
+                                <i class="fa-solid fa-crown"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-bold text-slate-900 dark:text-white">{{ __('Custom Gateway Requires Agency Ultimate Tier') }}</p>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ __('Upgrade to Agency Ultimate to connect your own direct merchant credentials (DOKU, Midtrans, or Xendit).') }}</p>
+                            </div>
+                        </div>
+                        <a href="{{ route('settings.plan') }}" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-xs" wire:navigate>
+                            <i class="fa-solid fa-crown text-[10px] text-amber-300"></i>
+                            <span>{{ __('Upgrade to Agency Ultimate') }}</span>
+                        </a>
+                    </div>
+                @endif
+
+                <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-5 animate-fade-in {{ ! $this->currentAgent?->hasFeature('byo_gateway') ? 'opacity-50 pointer-events-none' : '' }}">
                     <div>
                         <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                             {{ __('Select Your Custom Provider & Credentials') }}

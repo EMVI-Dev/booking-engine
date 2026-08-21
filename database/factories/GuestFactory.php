@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Agent;
 use App\Models\Guest;
+use App\Models\Operator;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,7 +16,7 @@ class GuestFactory extends Factory
     public function definition(): array
     {
         return [
-            'agent_id' => Agent::factory(),
+            'operator_id' => Operator::factory(),
             'name' => fake()->name(),
             'email' => fake()->safeEmail(),
             'phone' => fake()->phoneNumber(),
