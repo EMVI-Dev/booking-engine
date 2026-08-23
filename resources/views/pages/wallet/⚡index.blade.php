@@ -658,7 +658,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
                     <!-- Modal Header -->
                     <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
                         <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
                                 <i class="fa-solid fa-arrow-up-from-bracket"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
@@ -723,7 +723,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
                                     <button type="button" wire:click="quickFillAmount(50)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 transition cursor-pointer">
                                         50%
                                     </button>
-                                    <button type="button" wire:click="quickFillAmount(100)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 text-purple-700 dark:text-purple-300 transition cursor-pointer">
+                                    <button type="button" wire:click="quickFillAmount(100)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 transition cursor-pointer">
                                         100% (Max)
                                     </button>
                                 </div>

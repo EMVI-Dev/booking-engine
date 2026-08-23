@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property string $id
@@ -148,6 +149,37 @@ class Product extends Model implements Bookable
     public function getId(): string
     {
         return (string) $this->id;
+    }
+
+    public function getCoverPhotoUrlAttribute(): ?string
+    {
+        if (! $this->cover_photo) {
+            return null;
+        }
+
+        if (str_starts_with($this->cover_photo, 'http://') || str_starts_with($this->cover_photo, 'https://')) {
+            return $this->cover_photo;
+        }
+
+        return Storage::url($this->cover_photo);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getGalleryUrlsAttribute(): array
+    {
+        if (! is_array($this->gallery)) {
+            return [];
+        }
+
+        return array_map(function (string $path) {
+            if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+                return $path;
+            }
+
+            return Storage::url($path);
+        }, $this->gallery);
     }
 
     public function getTitle(): string

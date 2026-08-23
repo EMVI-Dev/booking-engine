@@ -3,11 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Enums\ReservationStatus;
-use App\Mail\GuestReviewRequestMail;
+use App\Jobs\ProcessReviewRequestJob;
 use App\Models\Reservation;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
-use Throwable;
 
 class SendPostTripReviewRequestsCommand extends Command
 {
@@ -62,20 +60,9 @@ class SendPostTripReviewRequestsCommand extends Command
                 continue;
             }
 
-            try {
-                Mail::to($reservation->guest_email)
-                    ->send(new GuestReviewRequestMail($reservation, $reviewUrl));
-
-                $reservation->update([
-                    'review_request_sent_at' => now(),
-                ]);
-
-                $sentCount++;
-                $this->line("Sent review request to {$reservation->guest_email} for #{$reservation->code}");
-            } catch (Throwable $e) {
-                $this->error("Failed sending review request for #{$reservation->code}: {$e->getMessage()}");
-                report($e);
-            }
+            ProcessReviewRequestJob::dispatch($reservation, $reviewUrl);
+            $sentCount++;
+            $this->line("Dispatched review request job for #{$reservation->code} ({$reservation->guest_email})");
         }
 
         $this->info("Completed: {$sentCount} review emails sent, {$skippedCount} skipped.");

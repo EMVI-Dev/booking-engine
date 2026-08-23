@@ -134,9 +134,9 @@ new #[Title('Tour Packages & Combos')] class extends Component {
 
     <!-- Package Limit Banner -->
     @if ($hasReachedLimit)
-        <div class="p-5 rounded-3xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+        <div class="p-5 rounded-3xl bg-gradient-to-r from-indigo-500/10 via-indigo-500/5 to-transparent border border-indigo-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
             <div class="flex items-start gap-3.5">
-                <div class="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
                     <i class="fa-solid fa-crown text-sm"></i>
                 </div>
                 <div class="space-y-1">
@@ -148,12 +148,33 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                     </p>
                 </div>
             </div>
-            <a href="{{ route('settings.plan') }}" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition inline-flex items-center gap-1.5 shrink-0 shadow-xs" wire:navigate>
+            <a href="{{ route('settings.plan') }}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition inline-flex items-center gap-1.5 shrink-0 shadow-xs" wire:navigate>
                 <i class="fa-solid fa-crown text-[10px] text-amber-300"></i>
                 <span>{{ __('Upgrade Plan') }}</span>
             </a>
         </div>
     @endif
+
+    <!-- Catalog Sub-navigation Toggle -->
+    <div class="flex items-center gap-1.5 p-1.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-x-auto select-none">
+        <a
+            href="{{ route('packages.index') }}"
+            wire:navigate
+            class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 {{ request()->routeIs('packages.*') ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}"
+        >
+            <i class="fa-solid fa-cubes text-xs {{ request()->routeIs('packages.*') ? 'text-white' : 'text-indigo-500' }}"></i>
+            <span>{{ __('Tour Packages & Combos') }}</span>
+        </a>
+
+        <a
+            href="{{ route('products.index') }}"
+            wire:navigate
+            class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 {{ request()->routeIs('products.*') ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}"
+        >
+            <i class="fa-solid fa-box-open text-xs {{ request()->routeIs('products.*') ? 'text-white' : 'text-slate-400' }}"></i>
+            <span>{{ __('Activities & Inventory Items') }}</span>
+        </a>
+    </div>
 
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -237,8 +258,8 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                             <tr class="hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 transition-colors" wire:key="pkg-{{ $package->id }}">
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-3">
-                                        @if ($package->cover_photo)
-                                            <img src="{{ Storage::url($package->cover_photo) }}" alt="{{ $package->title }}" class="w-12 h-10 rounded-xl object-cover border border-slate-200/80 dark:border-zinc-700 shrink-0" />
+                                        @if ($package->cover_photo_url)
+                                            <img src="{{ $package->cover_photo_url }}" alt="{{ $package->title }}" class="w-12 h-10 rounded-xl object-cover border border-slate-200/80 dark:border-zinc-700 shrink-0" />
                                         @else
                                             <div class="w-12 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
                                                 <i class="fa-solid fa-cubes"></i>

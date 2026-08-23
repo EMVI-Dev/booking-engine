@@ -115,6 +115,16 @@ new #[Title('Payment Gateways')] class extends Component {
 }; ?>
 
 <div class="space-y-6 max-w-5xl">
+    <!-- Desktop Notice on Mobile -->
+    <x-desktop-only-notice
+        :title="__('Payment Gateway Setup Best Managed on Desktop')"
+        :description="__('Configuring merchant credentials, webhook secrets, and bank payout details is best performed on desktop.')"
+    />
+
+    <div class="hidden lg:block space-y-6">
+        <!-- Unified Settings Navigation -->
+        <x-settings-nav />
+
     <!-- Standalone Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -421,4 +431,5 @@ new #[Title('Payment Gateways')] class extends Component {
             </div>
         </div>
     </form>
+    </div>
 </div>

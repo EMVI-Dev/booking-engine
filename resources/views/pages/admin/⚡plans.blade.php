@@ -440,6 +440,18 @@ new #[Title('Subscription Plans & Tiers')] #[Layout('layouts.admin')] class exte
                                     <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('1-Click Direct Booking & Payment Links') }}</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
+                                    <input type="checkbox" wire:model="features.advanced_calendar" class="rounded text-purple-600 focus:ring-purple-500" />
+                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Advanced Fleet Calendar & Resource Matrix') }}</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
+                                    <input type="checkbox" wire:model="features.daily_manifest_export" class="rounded text-purple-600 focus:ring-purple-500" />
+                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Daily Run-Sheet & Manifest Export') }}</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
+                                    <input type="checkbox" wire:model="features.capacity_heatmap" class="rounded text-purple-600 focus:ring-purple-500" />
+                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Monthly Capacity Heatmap Analytics') }}</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
                                     <input type="checkbox" wire:model="features.tracking_pixels" class="rounded text-purple-600 focus:ring-purple-500" />
                                     <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Meta Pixel & Google Analytics 4 (ROAS)') }}</span>
                                 </label>

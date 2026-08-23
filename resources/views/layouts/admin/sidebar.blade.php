@@ -179,7 +179,7 @@
             <div class="w-10"></div>
         </header>
 
-        <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <main class="flex-1 px-3 py-4 sm:p-6 lg:p-8 overflow-y-auto w-full">
             <div class="mx-auto w-full max-w-7xl">
                 {{ $slot }}
             </div>

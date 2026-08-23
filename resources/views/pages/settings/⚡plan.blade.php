@@ -63,6 +63,9 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 }; ?>
 
 <div class="max-w-6xl mx-auto space-y-8" x-data="{ billing_interval: 'monthly' }">
+    <!-- Unified Settings Navigation -->
+    <x-settings-nav />
+
     <!-- Header & Navigation Breadcrumb -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-zinc-800">
         <div>
@@ -112,12 +115,12 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
     <!-- Active Plan Summary Card -->
     <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl shadow-xs shrink-0">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl shadow-xs shrink-0">
                 <i class="fa-solid fa-crown"></i>
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">{{ __('Active Subscription') }}</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">{{ __('Active Subscription') }}</span>
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                         {{ __('Active & Verified') }}
                     </span>
@@ -132,7 +135,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         <div class="flex items-center gap-6 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800/80 self-stretch sm:self-auto justify-between sm:justify-end">
             <div>
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Platform Fee') }}</span>
-                <span class="font-mono font-black text-lg {{ $agent->getEffectiveCommissionRate() == 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400' }}">
+                <span class="font-mono font-black text-lg {{ $agent->getEffectiveCommissionRate() == 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400' }}">
                     {{ $agent->getEffectiveCommissionRate() == 0 ? __('0% (Zero Fee)') : ($agent->getEffectiveCommissionRate() * 100).'% '.__('All-Inclusive') }}
                 </span>
             </div>
@@ -154,7 +157,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 $priceMonthly = (float) $plan->price_monthly;
                 $priceYearly = (float) $plan->price_yearly;
             @endphp
-            <div class="rounded-3xl bg-white dark:bg-zinc-900 border {{ $isCurrent ? 'border-purple-600 ring-2 ring-purple-600/30 shadow-xl' : ($plan->is_popular ? 'border-purple-400 dark:border-purple-700 shadow-md' : 'border-slate-200/80 dark:border-zinc-800 shadow-sm') }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
+            <div class="rounded-3xl bg-white dark:bg-zinc-900 border {{ $isCurrent ? 'border-indigo-600 ring-2 ring-indigo-600/30 shadow-xl' : ($plan->is_popular ? 'border-indigo-400 dark:border-indigo-700 shadow-md' : 'border-slate-200/80 dark:border-zinc-800 shadow-sm') }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
                 
                 <div class="space-y-5">
                     <!-- Top Header with Badge Alignment -->
@@ -169,7 +172,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                 <span>{{ __('Current Plan') }}</span>
                             </span>
                         @elseif ($plan->is_popular)
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-purple-600 text-white shadow-xs shrink-0">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-indigo-600 text-white shadow-xs shrink-0">
                                 {{ __('Most Popular') }}
                             </span>
                         @endif
@@ -232,6 +235,18 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                 <i class="fa-solid {{ $plan->hasFeature('quick_booking_links') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
                                 <span>{{ __('1-Click Direct Booking & Payment Links') }}</span>
                             </li>
+                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('advanced_calendar') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
+                                <i class="fa-solid {{ $plan->hasFeature('advanced_calendar') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
+                                <span>{{ __('Advanced Fleet Calendar & Resource Matrix') }}</span>
+                            </li>
+                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('daily_manifest_export') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
+                                <i class="fa-solid {{ $plan->hasFeature('daily_manifest_export') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
+                                <span>{{ __('Daily Run-Sheet & Manifest Export') }}</span>
+                            </li>
+                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('capacity_heatmap') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
+                                <i class="fa-solid {{ $plan->hasFeature('capacity_heatmap') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
+                                <span>{{ __('Monthly Capacity Heatmap Analytics') }}</span>
+                            </li>
                             <li class="flex items-start gap-2.5 {{ $plan->hasFeature('tracking_pixels') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
                                 <i class="fa-solid {{ $plan->hasFeature('tracking_pixels') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
                                 <span>{{ __('Meta Pixel & Google Analytics 4 (ROAS)') }}</span>
@@ -279,7 +294,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                         <button
                             type="button"
                             wire:click="selectPlan('{{ $plan->id }}')"
-                            class="w-full h-12 rounded-2xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            class="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                         >
                             <i class="fa-solid fa-bolt text-amber-300 text-xs"></i>
                             <span>{{ __('Switch to :plan', ['plan' => $plan->name]) }}</span>
@@ -299,13 +314,13 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 @click="showComparison = !showComparison"
                 class="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 text-xs sm:text-sm font-bold transition-all shadow-xs group cursor-pointer"
             >
-                <span class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
                     <i class="fa-solid fa-table-list text-xs"></i>
                 </span>
                 <span x-text="showComparison ? '{{ __('Hide Detailed Plan Comparison') }}' : '{{ __('Compare All Plan Features & Capabilities') }}'">
                     {{ __('Compare All Plan Features & Capabilities') }}
                 </span>
-                <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-zinc-400 transition-transform duration-300" :class="showComparison ? 'rotate-180 text-purple-600 dark:text-purple-400' : ''"></i>
+                <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-zinc-400 transition-transform duration-300" :class="showComparison ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : ''"></i>
             </button>
         </div>
 
@@ -330,9 +345,9 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                 <span>Starter Essential</span>
                                 <span class="block text-[10px] font-normal text-slate-500 dark:text-zinc-500 mt-0.5">{{ __('Free Forever') }}</span>
                             </th>
-                            <th class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-purple-600 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-500/5 rounded-t-2xl">
+                            <th class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5 rounded-t-2xl">
                                 <span>Pro Operator</span>
-                                <span class="block text-[10px] font-normal text-purple-600/80 dark:text-purple-300/80 mt-0.5">Rp 299.000 / mo</span>
+                                <span class="block text-[10px] font-normal text-indigo-600/80 dark:text-indigo-300/80 mt-0.5">Rp 299.000 / mo</span>
                             </th>
                             <th class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-indigo-600 dark:text-indigo-400">
                                 <span>Agency Ultimate</span>
@@ -343,137 +358,143 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                     <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/60">
                         <!-- Category: Commercials -->
                         <tr class="bg-slate-50/80 dark:bg-zinc-950/60">
-                            <td colspan="4" class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-purple-700 dark:text-purple-400">
+                            <td colspan="4" class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
                                 {{ __('1. Commercials & Payouts') }}
                             </td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Operator Commission Cut') }}</td>
                             <td class="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">0% (100% Net)</td>
-                            <td class="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400 bg-purple-50/50 dark:bg-purple-500/5">0% (100% Net)</td>
+                            <td class="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400 bg-indigo-50/50 dark:bg-indigo-500/5">0% (100% Net)</td>
                             <td class="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">0% (100% Net)</td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Guest Online Booking Fee') }}</td>
                             <td class="py-3.5 px-4 text-center text-slate-600 dark:text-zinc-400">5.0%</td>
-                            <td class="py-3.5 px-4 text-center text-slate-600 dark:text-zinc-400 bg-purple-50/50 dark:bg-purple-500/5">5.0%</td>
+                            <td class="py-3.5 px-4 text-center text-slate-600 dark:text-zinc-400 bg-indigo-50/50 dark:bg-indigo-500/5">5.0%</td>
                             <td class="py-3.5 px-4 text-center font-bold text-indigo-600 dark:text-indigo-400">0% (BYO Gateway)</td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Direct Payouts to Indonesian Bank') }}</td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
 
                         <!-- Category: Storefront & Web Presence -->
                         <tr class="bg-slate-50/80 dark:bg-zinc-950/60">
-                            <td colspan="4" class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-purple-700 dark:text-purple-400">
+                            <td colspan="4" class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
                                 {{ __('2. Storefront & Website') }}
                             </td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Branded Tour Storefront') }}</td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Free Subdomain (`slug.booking.emvi`)') }}</td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Custom Website Domain (`yourbrand.com`) + Auto-SSL') }}</td>
                             <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600 bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-minus"></i></td>
+                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600 bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-minus"></i></td>
                             <td class="py-3.5 px-4 text-center font-bold text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i> Included</td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Custom Brand Hex Accent Color & Logo') }}</td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
 
                         <!-- Category: Booking Engine & Inventory -->
                         <tr class="bg-slate-50/80 dark:bg-zinc-950/60">
-                            <td colspan="4" class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-purple-700 dark:text-purple-400">
+                            <td colspan="4" class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
                                 {{ __('3. Booking Engine & Inventory') }}
                             </td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Tour Package Listings Limit') }}</td>
                             <td class="py-3.5 px-4 text-center font-semibold text-slate-700 dark:text-zinc-300">5 Packages</td>
-                            <td class="py-3.5 px-4 text-center font-bold text-purple-600 dark:text-purple-300 bg-purple-50/50 dark:bg-purple-500/5">25 Packages</td>
+                            <td class="py-3.5 px-4 text-center font-bold text-indigo-600 dark:text-indigo-300 bg-indigo-50/50 dark:bg-indigo-500/5">25 Packages</td>
                             <td class="py-3.5 px-4 text-center font-extrabold text-emerald-600 dark:text-emerald-400">Unlimited</td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Team Staff Seats & Role Accounts') }}</td>
                             <td class="py-3.5 px-4 text-center font-semibold text-emerald-600 dark:text-emerald-400">Unlimited</td>
-                            <td class="py-3.5 px-4 text-center font-semibold text-emerald-600 dark:text-emerald-400 bg-purple-50/50 dark:bg-purple-500/5">Unlimited</td>
+                            <td class="py-3.5 px-4 text-center font-semibold text-emerald-600 dark:text-emerald-400 bg-indigo-50/50 dark:bg-indigo-500/5">Unlimited</td>
                             <td class="py-3.5 px-4 text-center font-semibold text-emerald-600 dark:text-emerald-400">Unlimited</td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('1-Click Direct Booking & Payment Links') }}</td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Instant QRIS & Bank Virtual Accounts (BCA, Mandiri, BRI, BNI)') }}</td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
 
                         <!-- Category: Operations & Automations -->
                         <tr class="bg-slate-50/80 dark:bg-zinc-950/60">
-                            <td colspan="4" class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-purple-700 dark:text-purple-400">
+                            <td colspan="4" class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
                                 {{ __('4. Automation & Integrations') }}
                             </td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('WhatsApp Floating Chat Widget & Operating Schedule') }}</td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Google & Apple Calendar Live Sync (iCal Feed)') }}</td>
                             <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
+                            <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Monthly Capacity Heatmap Analytics') }}</td>
+                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
+                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600 bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-minus"></i></td>
+                            <td class="py-3.5 px-4 text-center font-bold text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i> Included</td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Customer Directory & Guest CRM (LTV & Trip History)') }}</td>
                             <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('1-Click WhatsApp Tickets & Location Pins Dispatch') }}</td>
                             <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Meta Pixel (Ads ROAS) & Google Analytics 4') }}</td>
                             <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('Automated 12-Hour Review Request Emails') }}</td>
                             <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
+                            <td class="py-3.5 px-4 text-center bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                             <td class="py-3.5 px-4 text-center"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i></td>
                         </tr>
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition">
                             <td class="py-3.5 pr-4 text-slate-800 dark:text-zinc-300 font-medium">{{ __('BYO Custom Payment Gateway (DOKU, Midtrans, Xendit)') }}</td>
                             <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600 bg-purple-50/50 dark:bg-purple-500/5"><i class="fa-solid fa-minus"></i></td>
+                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600 bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-minus"></i></td>
                             <td class="py-3.5 px-4 text-center font-bold text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-check text-emerald-500 dark:text-emerald-400"></i> Included</td>
                         </tr>
                     </tbody>

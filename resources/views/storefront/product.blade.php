@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth overflow-x-clip w-full max-w-full">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
@@ -14,6 +14,7 @@
         <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
         <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
         <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
+        <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
         <!-- Favicon & Brand Icons -->
         @if ($agent->logo)
             <link rel="icon" href="{{ Storage::url($agent->logo) }}" />
@@ -127,105 +128,28 @@
     </head>
     <body
         x-data="{ mobileBookingOpen: false, mobileMenuOpen: false }"
-        class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white"
+        class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white overflow-x-clip w-full max-w-full"
     >
-        <!-- Header -->
-        <header class="sticky top-0 z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-zinc-800">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
-                <a href="{{ route('home') }}" class="flex items-center gap-2.5 min-w-0 group">
-                    @if ($agent->logo_path)
-                        <img src="{{ Storage::url($agent->logo_path) }}" alt="{{ $agent->name }}" class="h-8 w-8 rounded-xl object-cover border border-slate-200/80 dark:border-zinc-800 shadow-xs shrink-0 group-hover:scale-105 transition-transform bg-white dark:bg-zinc-800" />
-                    @else
-                        <span class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                            <i class="fa-solid fa-arrow-left text-xs"></i>
-                        </span>
-                    @endif
-                    <span class="truncate max-w-[140px] sm:max-w-xs font-black text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-brand-600 transition">{{ $agent->name }}</span>
-                </a>
-
-                <div class="flex items-center gap-2">
-                    <span class="hidden sm:inline-block text-[10px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-xl bg-sky-50 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300">
-                        {{ $product->category ?? __('Service') }}
-                    </span>
-
-                    <!-- Desktop Nav Links -->
-                    <div class="hidden md:flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 mr-2">
-                        <a href="{{ route('home') }}" class="hover:text-brand-600 transition px-2 py-1">{{ __('Catalog') }}</a>
-                        <a href="{{ route('storefront.terms') }}" class="hover:text-brand-600 transition px-2 py-1">{{ __('Terms') }}</a>
-                    </div>
-
-                    <!-- Mobile Header Book Action -->
-                    <button
-                        type="button"
-                        @click="mobileBookingOpen = true"
-                        class="lg:hidden h-9 px-3.5 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
-                    >
-                        <i class="fa-solid fa-calendar-check text-[11px]"></i>
-                        <span>{{ __('Book Now') }}</span>
-                    </button>
-
-                    <!-- Mobile Hamburger Button -->
-                    <button
-                        type="button"
-                        @click="mobileMenuOpen = !mobileMenuOpen"
-                        class="md:hidden h-9 w-9 inline-flex items-center justify-center rounded-xl border border-slate-200/80 dark:border-zinc-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer"
-                        aria-label="Toggle navigation menu"
-                    >
-                        <i class="fa-solid text-sm" :class="mobileMenuOpen ? 'fa-xmark' : 'fa-bars'"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Mobile Navigation Dropdown Menu -->
-            <div
-                x-show="mobileMenuOpen"
-                x-cloak
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 -translate-y-2"
-                x-transition:enter-end="opacity-100 translate-y-0"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 translate-y-0"
-                x-transition:leave-end="opacity-0 -translate-y-2"
-                @click.away="mobileMenuOpen = false"
-                class="md:hidden border-b border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-4 py-3 space-y-1 shadow-xl"
-            >
-                <a href="{{ route('home') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-brand-600 transition">
-                    <i class="fa-solid fa-store w-4 text-slate-400"></i>
-                    <span>{{ __('Home Storefront') }}</span>
-                </a>
-                <a href="{{ route('storefront.packages') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-brand-600 transition">
-                    <i class="fa-solid fa-cubes w-4 text-slate-400"></i>
-                    <span>{{ __('All Tour Packages') }}</span>
-                </a>
-                <a href="{{ route('storefront.products') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-brand-600 transition">
-                    <i class="fa-solid fa-box-open w-4 text-slate-400"></i>
-                    <span>{{ __('Activities & Rentals') }}</span>
-                </a>
-                <a href="{{ route('storefront.terms') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-brand-600 transition">
-                    <i class="fa-solid fa-file-contract w-4 text-slate-400"></i>
-                    <span>{{ __('Terms & Policies') }}</span>
-                </a>
-            </div>
-        </header>
+        @include('storefront.partials.navbar', ['bookAction' => true])
 
         <!-- Main Product Content -->
-        <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-6">
+        <main class="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-16 lg:pb-12 space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                 <!-- Left Details -->
                 <div class="lg:col-span-2 space-y-6">
                     <!-- Product Cover & Gallery Photos -->
-                    @if ($product->cover_photo || !empty($product->gallery))
+                    @if ($product->cover_photo_url || !empty($product->gallery))
                         <div class="overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2 p-2">
-                            @if ($product->cover_photo)
+                            @if ($product->cover_photo_url)
                                 <div class="aspect-video sm:aspect-21/9 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-zinc-800">
-                                    <img src="{{ Storage::url($product->cover_photo) }}" alt="{{ $product->name }}" class="w-full h-full object-cover" />
+                                    <img src="{{ $product->cover_photo_url }}" alt="{{ $product->name }}" fetchpriority="high" decoding="async" class="w-full h-full object-cover" />
                                 </div>
                             @endif
-                            @if (!empty($product->gallery))
+                            @if (!empty($product->gallery_urls))
                                 <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
-                                    @foreach ($product->gallery as $gImg)
+                                    @foreach ($product->gallery_urls as $gUrl)
                                         <div class="aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700">
-                                            <img src="{{ Storage::url($gImg) }}" alt="{{ $product->name }}" class="w-full h-full object-cover hover:scale-105 transition-transform" />
+                                            <img src="{{ $gUrl }}" alt="{{ $product->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover hover:scale-105 transition-transform" />
                                         </div>
                                     @endforeach
                                 </div>
@@ -233,7 +157,7 @@
                         </div>
                     @endif
 
-                    <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                    <div class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
                         @if ($product->location)
                             <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 text-xs font-bold">
                                 <i class="fa-solid fa-location-dot text-[11px]"></i>
@@ -241,7 +165,7 @@
                             </div>
                         @endif
 
-                        <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+                        <h1 class="text-xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
                             {{ $product->name }}
                         </h1>
 
@@ -296,6 +220,25 @@
         </main>
 
         @include('storefront.partials.footer')
+
+        <!-- Sticky Mobile Bottom Booking Bar -->
+        <div class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800 p-3 sm:p-4 shadow-xl select-none flex items-center justify-between gap-3">
+            <div class="min-w-0">
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block leading-none">{{ __('Price per unit') }}</span>
+                <div class="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate mt-0.5">
+                    Rp {{ number_format((float) $product->price, 0, ',', '.') }}
+                </div>
+            </div>
+
+            <button
+                type="button"
+                @click="mobileBookingOpen = true"
+                class="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-black text-xs sm:text-sm shadow-md shadow-brand-500/25 transition cursor-pointer shrink-0"
+            >
+                <i class="fa-solid fa-calendar-check text-xs"></i>
+                <span>{{ __('Book Now') }}</span>
+            </button>
+        </div>
 
         <!-- Mobile Slide-over Bottom Sheet Booking Modal -->
         <div

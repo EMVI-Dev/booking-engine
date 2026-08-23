@@ -296,5 +296,5 @@ test('storefront displays operator logo and mobile hamburger navigation menu', f
         ->assertSee('storage/operators/logos/bali-coastal-logo.png', false)
         ->assertSee('mobileMenuOpen', false)
         ->assertSee('fa-bars', false)
-        ->assertSee('All Tour Packages', false);
+        ->assertSee('Tour Packages', false);
 });

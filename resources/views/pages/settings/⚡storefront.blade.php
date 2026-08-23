@@ -96,6 +96,16 @@ new #[Title('Storefront Settings')] class extends Component {
 }; ?>
 
 <div class="space-y-6 max-w-5xl">
+    <!-- Desktop Notice on Mobile -->
+    <x-desktop-only-notice
+        :title="__('Storefront Policies Best Managed on Desktop')"
+        :description="__('Configuring cancellation rules, selling permissions, and comprehensive terms & conditions is best performed on desktop.')"
+    />
+
+    <div class="hidden lg:block space-y-6">
+        <!-- Unified Settings Navigation -->
+        <x-settings-nav />
+
     <!-- Standalone Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -104,7 +114,7 @@ new #[Title('Storefront Settings')] class extends Component {
                     <i class="fa-solid fa-store text-lg"></i>
                 </span>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Storefront Settings') }}
+                    {{ __('Storefront & Policies') }}
                 </h1>
             </div>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -305,4 +315,5 @@ new #[Title('Storefront Settings')] class extends Component {
             </div>
         </div>
     </form>
+    </div>
 </div>

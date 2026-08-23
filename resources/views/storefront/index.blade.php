@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth overflow-x-clip w-full max-w-full">
 
 <head>
     <meta charset="utf-8" />
@@ -146,134 +146,8 @@
 </head>
 
 <body x-data="{ activeTab: 'all', mobileMenuOpen: false }"
-    class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white">
-    <!-- Ambient Top Glow -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div
-            class="absolute -top-32 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[500px] bg-gradient-to-b from-brand-500/15 via-sky-500/10 to-transparent rounded-full blur-3xl dark:from-brand-600/20 dark:via-sky-500/10">
-        </div>
-    </div>
-
-    <!-- Sticky Header Navigation -->
-    <header
-        class="sticky top-0 z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-zinc-800 transition-all">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-            <!-- Brand Avatar & Title -->
-            <a href="{{ route('home') }}" class="flex items-center gap-3 min-w-0 group">
-                @if ($agent->logo_path)
-                    <img src="{{ Storage::url($agent->logo_path) }}" alt="{{ $agent->name }}"
-                        class="h-10 w-10 rounded-2xl object-cover border border-slate-200/80 dark:border-zinc-800 shadow-xs shrink-0 group-hover:scale-105 transition-transform bg-white dark:bg-zinc-800" />
-                @else
-                    <span
-                        class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 text-white font-black text-base shadow-sm shrink-0 group-hover:scale-105 transition-transform">
-                        {{ strtoupper(substr($agent->name, 0, 1)) }}
-                    </span>
-                @endif
-                <div class="flex flex-col min-w-0">
-                    <span
-                        class="font-black text-base tracking-tight text-slate-900 dark:text-white truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                        {{ $agent->name }}
-                    </span>
-                    <div
-                        class="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold leading-none">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        {{ __('Verified Operator') }}
-                    </div>
-                </div>
-            </a>
-
-            <!-- Desktop Nav Links & Actions -->
-            <nav class="flex items-center gap-2 sm:gap-4">
-                <div class="hidden md:flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-400">
-                    <button type="button" @click="activeTab = 'all'"
-                        class="px-3 py-1.5 rounded-lg hover:text-brand-600 dark:hover:text-white transition cursor-pointer"
-                        :class="activeTab === 'all' ? 'text-brand-600 dark:text-white font-black' : ''">
-                        {{ __('All') }}
-                    </button>
-                    @if ($packages->isNotEmpty())
-                        <a href="{{ route('storefront.packages') }}"
-                            class="px-3 py-1.5 rounded-lg hover:text-brand-600 dark:hover:text-white transition">
-                            {{ __('All Packages') }}
-                        </a>
-                    @endif
-                    @if ($standaloneProducts->isNotEmpty())
-                        <a href="{{ route('storefront.products') }}"
-                            class="px-3 py-1.5 rounded-lg hover:text-brand-600 dark:hover:text-white transition">
-                            {{ __('Activities & Rentals') }}
-                        </a>
-                    @endif
-                    @if ($reviews->isNotEmpty())
-                        <button type="button" @click="activeTab = 'reviews'"
-                            class="px-3 py-1.5 rounded-lg hover:text-brand-600 dark:hover:text-white transition cursor-pointer"
-                            :class="activeTab === 'reviews' ? 'text-brand-600 dark:text-white font-black' : ''">
-                            {{ __('Reviews') }}
-                        </button>
-                    @endif
-                </div>
-
-                <a href="{{ route('storefront.terms') }}"
-                    class="hidden sm:inline-flex h-9 px-3.5 items-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition">
-                    <i class="fa-solid fa-file-contract text-xs"></i>
-                    <span>{{ __('Terms & Policies') }}</span>
-                </a>
-
-                <!-- Mobile-Only Header WhatsApp Icon -->
-                @if ($agent->contact_whatsapp)
-                    @php
-                        $waNumber = preg_replace('/[^0-9]/', '', $agent->contact_whatsapp);
-                        if (str_starts_with($waNumber, '0')) {
-                            $waNumber = '62' . substr($waNumber, 1);
-                        }
-                    @endphp
-                    <a href="https://wa.me/{{ $waNumber }}?text={{ urlencode('Hello ' . $agent->name . ', I am browsing your storefront and have an inquiry.') }}"
-                        target="_blank"
-                        class="md:hidden h-9 w-9 inline-flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition"
-                        title="{{ __('Chat on WhatsApp') }}">
-                        <i class="fa-brands fa-whatsapp text-sm"></i>
-                    </a>
-                @endif
-
-                <!-- Mobile Hamburger Button -->
-                <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
-                    class="md:hidden h-9 w-9 inline-flex items-center justify-center rounded-xl border border-slate-200/80 dark:border-zinc-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer"
-                    aria-label="Toggle navigation menu">
-                    <i class="fa-solid text-sm" :class="mobileMenuOpen ? 'fa-xmark' : 'fa-bars'"></i>
-                </button>
-            </nav>
-        </div>
-
-        <!-- Mobile Navigation Dropdown Menu -->
-        <div x-show="mobileMenuOpen" x-cloak x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
-            x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0"
-            x-transition:leave-end="opacity-0 -translate-y-2" @click.away="mobileMenuOpen = false"
-            class="md:hidden border-b border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-4 py-3 space-y-1 shadow-xl">
-            <a href="{{ route('home') }}"
-                class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-brand-600 transition">
-                <i class="fa-solid fa-store w-4 text-slate-400"></i>
-                <span>{{ __('Home Storefront') }}</span>
-            </a>
-            @if ($packages->isNotEmpty())
-                <a href="{{ route('storefront.packages') }}"
-                    class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-brand-600 transition">
-                    <i class="fa-solid fa-cubes w-4 text-slate-400"></i>
-                    <span>{{ __('All Tour Packages') }} ({{ $packages->count() }})</span>
-                </a>
-            @endif
-            @if ($standaloneProducts->isNotEmpty())
-                <a href="{{ route('storefront.products') }}"
-                    class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-brand-600 transition">
-                    <i class="fa-solid fa-box-open w-4 text-slate-400"></i>
-                    <span>{{ __('Activities & Rentals') }} ({{ $standaloneProducts->count() }})</span>
-                </a>
-            @endif
-            <a href="{{ route('storefront.terms') }}"
-                class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-brand-600 transition">
-                <i class="fa-solid fa-file-contract w-4 text-slate-400"></i>
-                <span>{{ __('Terms & Policies') }}</span>
-            </a>
-        </div>
-    </header>
+    class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white overflow-x-clip w-full max-w-full">
+    @include('storefront.partials.navbar')
 
     <!-- Hero Section (Responsive 2-Column Banner on Desktop) -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
@@ -441,7 +315,7 @@
     </div>
 
     <!-- Main Listings Section -->
-    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 space-y-12">
+    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-10 sm:space-y-12">
         <!-- Packages Section (3 on mobile, 5 on desktop) -->
         <section x-show="activeTab === 'all' || activeTab === 'packages'" class="space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
@@ -473,8 +347,9 @@
                             <!-- Card Media Header -->
                             <div
                                 class="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-brand-950 via-slate-900 to-zinc-900 shrink-0">
-                                @if ($pkg->cover_photo)
-                                    <img src="{{ Storage::url($pkg->cover_photo) }}" alt="{{ $pkg->title }}"
+                                @if ($pkg->cover_photo_url)
+                                    <img src="{{ $pkg->cover_photo_url }}" alt="{{ $pkg->title }}"
+                                        loading="lazy" decoding="async"
                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                 @else
                                     <div class="w-full h-full flex items-center justify-center text-brand-400/30">
@@ -625,8 +500,9 @@
                             <!-- Card Media Header -->
                             <div
                                 class="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 shrink-0">
-                                @if ($prod->cover_photo)
-                                    <img src="{{ Storage::url($prod->cover_photo) }}" alt="{{ $prod->name }}"
+                                @if ($prod->cover_photo_url)
+                                    <img src="{{ $prod->cover_photo_url }}" alt="{{ $prod->name }}"
+                                        loading="lazy" decoding="async"
                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                 @else
                                     <div class="w-full h-full flex items-center justify-center text-sky-400/30">
@@ -844,9 +720,14 @@
 
     <!-- Floating WhatsApp Support Button for Desktop Only -->
     @if ($agent->contact_whatsapp)
+        @php
+            $waService = app(\App\Services\WhatsAppDispatchService::class);
+            $floatingWaUrl = $waService->buildWhatsAppUrl($agent->contact_whatsapp, "Hello {$agent->name}, I have a question about your tours.");
+        @endphp
         <div class="hidden lg:block fixed bottom-6 right-6 z-50">
-            <a href="https://wa.me/{{ $waNumber }}?text={{ urlencode('Hello ' . $agent->name . ', I have a question about your tours.') }}"
+            <a href="{{ $floatingWaUrl }}"
                 target="_blank"
+                rel="noopener"
                 class="h-13 px-5 inline-flex items-center gap-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black text-sm shadow-2xl shadow-emerald-500/30 transition-transform hover:scale-105"
                 title="{{ __('Direct WhatsApp Chat') }}">
                 <i class="fa-brands fa-whatsapp text-xl"></i>

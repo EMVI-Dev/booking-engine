@@ -124,6 +124,27 @@ new #[Title('Activities & Inventory')] class extends Component {
         </div>
     @endif
 
+    <!-- Catalog Sub-navigation Toggle -->
+    <div class="flex items-center gap-1.5 p-1.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-x-auto select-none">
+        <a
+            href="{{ route('packages.index') }}"
+            wire:navigate
+            class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 {{ request()->routeIs('packages.*') ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}"
+        >
+            <i class="fa-solid fa-cubes text-xs {{ request()->routeIs('packages.*') ? 'text-white' : 'text-slate-400' }}"></i>
+            <span>{{ __('Tour Packages & Combos') }}</span>
+        </a>
+
+        <a
+            href="{{ route('products.index') }}"
+            wire:navigate
+            class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 {{ request()->routeIs('products.*') ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}"
+        >
+            <i class="fa-solid fa-box-open text-xs {{ request()->routeIs('products.*') ? 'text-white' : 'text-indigo-500' }}"></i>
+            <span>{{ __('Activities & Inventory Items') }}</span>
+        </a>
+    </div>
+
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -207,8 +228,8 @@ new #[Title('Activities & Inventory')] class extends Component {
                             <tr class="hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 transition-colors" wire:key="prod-{{ $product->id }}">
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-3">
-                                        @if ($product->cover_photo)
-                                            <img src="{{ Storage::url($product->cover_photo) }}" alt="{{ $product->name }}" class="w-10 h-10 rounded-xl object-cover border border-slate-200/80 dark:border-zinc-700 shrink-0" />
+                                        @if ($product->cover_photo_url)
+                                            <img src="{{ $product->cover_photo_url }}" alt="{{ $product->name }}" class="w-10 h-10 rounded-xl object-cover border border-slate-200/80 dark:border-zinc-700 shrink-0" />
                                         @else
                                             <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-xs shrink-0">
                                                 <i class="fa-solid fa-box"></i>

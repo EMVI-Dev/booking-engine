@@ -171,7 +171,14 @@ new #[Title('Create Activity Item')] class extends Component {
 }; ?>
 
 <div class="space-y-6 max-w-5xl">
-    <!-- Breadcrumb & Header -->
+    <!-- Desktop Notice on Mobile -->
+    <x-desktop-only-notice
+        :title="__('Activity & Inventory Setup Best Managed on Desktop')"
+        :description="__('Setting daily inventory capacity, equipment photos, and fine-tuning pricing rules are best managed on a computer or laptop screen.')"
+    />
+
+    <div class="hidden lg:block space-y-6">
+        <!-- Breadcrumb & Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
@@ -482,4 +489,5 @@ new #[Title('Create Activity Item')] class extends Component {
             </x-button>
         </div>
     </form>
+    </div>
 </div>

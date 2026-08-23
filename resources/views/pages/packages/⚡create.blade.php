@@ -227,7 +227,14 @@ new #[Title('Create Tour Package')] class extends Component {
 }; ?>
 
 <div class="space-y-6 max-w-5xl">
-    @if ($this->currentAgent && ! $this->currentAgent->canAddPackage())
+    <!-- Desktop Notice on Mobile -->
+    <x-desktop-only-notice
+        :title="__('Tour Package Creation Best Managed on Desktop')"
+        :description="__('Uploading multiple photo galleries, building itinerary timelines, and configuring custom inclusion pricing are designed for computer or laptop screens.')"
+    />
+
+    <div class="hidden lg:block space-y-6">
+        @if ($this->currentAgent && ! $this->currentAgent->canAddPackage())
         <div class="py-6">
             <x-feature-gate
                 :title="__('Package Limit Reached (:limit Listings)', ['limit' => $this->currentAgent->getPlan()->package_limit])"
@@ -612,4 +619,5 @@ new #[Title('Create Tour Package')] class extends Component {
         </div>
     </form>
     @endif
+    </div>
 </div>

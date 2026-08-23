@@ -241,7 +241,7 @@ new class extends Component {
             @if ($this->serviceFee > 0)
                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
                     <span class="flex items-center gap-1">
-                        <span>{{ __('Biaya Layanan & Pembayaran') }}</span>
+                        <span>{{ __('Service & Payment Fee') }}</span>
                         <span class="text-[10px] text-slate-400">({{ $this->serviceFeeRate * 100 }}%)</span>
                     </span>
                     <span class="font-semibold">Rp {{ number_format($this->serviceFee, 0, ',', '.') }}</span>
@@ -249,7 +249,7 @@ new class extends Component {
             @endif
 
             <div class="flex items-center justify-between font-black text-sm text-slate-900 dark:text-white pt-2 border-t border-brand-200/60 dark:border-brand-900/60">
-                <span>{{ __('Total Pembayaran') }}</span>
+                <span>{{ __('Total Amount') }}</span>
                 <span class="text-brand-600 dark:text-brand-400 text-base font-black">Rp {{ number_format($this->totalPrice, 0, ',', '.') }}</span>
             </div>
         </div>

@@ -112,18 +112,22 @@ class Plan extends Model
     {
         self::updateOrCreate(['slug' => 'starter'], [
             'name' => 'Starter Essential',
-            'tagline' => 'Free forever with 100% net payout to operator. Unlimited staff seats and up to 5 listings.',
+            'tagline' => 'Launch your tour business with zero monthly subscription cost and pay-as-you-book model.',
             'price_monthly' => 0.00,
             'price_yearly' => 0.00,
             'commission_rate' => 0.0000, // 100% Net to Operator
             'package_limit' => 5,
-            'team_member_limit' => null, // Unlimited staff
+            'team_member_limit' => null, // unlimited
             'features' => [
                 'custom_subdomain' => true,
                 'standard_checkout' => true,
                 'reservations_management' => true,
                 'whatsapp_chat_widget' => true,
                 'quick_booking_links' => true,
+                'basic_calendar' => true,
+                'advanced_calendar' => false,
+                'daily_manifest_export' => false,
+                'capacity_heatmap' => false,
                 'google_calendar' => false,
                 'guest_crm' => false,
                 'whatsapp_dispatch' => false,
@@ -140,18 +144,22 @@ class Plan extends Model
 
         self::updateOrCreate(['slug' => 'growth'], [
             'name' => 'Pro Operator',
-            'tagline' => 'For active tour operators who want Google Calendar sync, Guest CRM insights, and WhatsApp dispatch.',
+            'tagline' => 'Designed for growing tour operators and activity companies needing Fleet Timeline Matrix, CRM, and automation.',
             'price_monthly' => 299000.00,
             'price_yearly' => 2990000.00,
             'commission_rate' => 0.0000, // 100% Net to Operator
             'package_limit' => 25,
-            'team_member_limit' => null, // Unlimited staff
+            'team_member_limit' => null, // unlimited
             'features' => [
                 'custom_subdomain' => true,
                 'standard_checkout' => true,
                 'reservations_management' => true,
                 'whatsapp_chat_widget' => true,
                 'quick_booking_links' => true,
+                'basic_calendar' => true,
+                'advanced_calendar' => true,
+                'daily_manifest_export' => true,
+                'capacity_heatmap' => false,
                 'google_calendar' => true,
                 'guest_crm' => true,
                 'whatsapp_dispatch' => true,
@@ -168,7 +176,7 @@ class Plan extends Model
 
         self::updateOrCreate(['slug' => 'enterprise'], [
             'name' => 'Agency Ultimate',
-            'tagline' => 'White-label branding on your custom domain with SSL, BYO payment gateway, and unlimited packages.',
+            'tagline' => 'White-label branding on your custom domain with SSL, BYO payment gateway, Capacity Heatmap Analytics, and unlimited listings.',
             'price_monthly' => 699000.00,
             'price_yearly' => 6990000.00,
             'commission_rate' => 0.0000, // 100% Net to Operator
@@ -180,6 +188,10 @@ class Plan extends Model
                 'reservations_management' => true,
                 'whatsapp_chat_widget' => true,
                 'quick_booking_links' => true,
+                'basic_calendar' => true,
+                'advanced_calendar' => true,
+                'daily_manifest_export' => true,
+                'capacity_heatmap' => true,
                 'google_calendar' => true,
                 'guest_crm' => true,
                 'whatsapp_dispatch' => true,

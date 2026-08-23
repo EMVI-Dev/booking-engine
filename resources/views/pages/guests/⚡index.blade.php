@@ -75,7 +75,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
     #[Computed]
     public function metrics(): array
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return [
                 'total_unique_guests' => 0,
                 'repeat_guests_count' => 0,
@@ -86,7 +86,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
             ];
         }
 
-        $guests = $this->currentAgent->guests()
+        $guests = $this->currentOperator->guests()
             ->with(['reservations.payments'])
             ->withCount('reservations')
             ->get();
@@ -121,16 +121,18 @@ new #[Title('Guest Directory & CRM')] class extends Component {
     }
 
     /**
-     * Get paginated guest records with filters applied.
+     * Get paginated guests with active filtering.
+     *
+     * @return LengthAwarePaginator
      */
     #[Computed]
     public function guests(): LengthAwarePaginator
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return new LengthAwarePaginator([], 0, 15);
         }
 
-        $query = $this->currentAgent->guests()
+        $query = $this->currentOperator->guests()
             ->with(['reservations.bookable', 'reservations.latestPayment', 'reservations.payments'])
             ->withCount('reservations');
 
@@ -180,11 +182,11 @@ new #[Title('Guest Directory & CRM')] class extends Component {
     #[Computed]
     public function selectedGuest(): ?Guest
     {
-        if (! $this->selectedGuestId || ! $this->currentAgent) {
+        if (! $this->selectedGuestId || ! $this->currentOperator) {
             return null;
         }
 
-        return $this->currentAgent->guests()
+        return $this->currentOperator->guests()
             ->with(['reservations.bookable', 'reservations.latestPayment', 'reservations.payments'])
             ->find($this->selectedGuestId);
     }
@@ -270,7 +272,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    @if (!$this->currentAgent?->hasFeature('guest_crm'))
+    @if (!$this->currentOperator?->hasFeature('guest_crm'))
         <div class="py-6">
             <x-feature-gate
                 :title="__('Guest Directory CRM & Lifetime Tracking')"
@@ -381,7 +383,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {{ __('Avg. Guest Value') }}
                 </span>
-                <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 text-xs">
+                <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs">
                     <i class="fa-solid fa-rupiah-sign"></i>
                 </span>
             </div>
@@ -472,7 +474,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                 <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
                     @forelse ($this->guests as $guest)
                         @php
-                            $waUrl = $guest->getWhatsAppUrl($this->currentAgent->name ?? '');
+                            $waUrl = $guest->getWhatsAppUrl($this->currentOperator->name ?? '');
                             $initials = strtoupper(substr($guest->name, 0, 2));
                             $totalSpent = $guest->total_spent;
                             $isRepeat = $guest->reservations_count > 1;
@@ -654,7 +656,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                     <!-- Modal Header -->
                     <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
                         <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
                                 <i class="fa-solid fa-user-pen"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
@@ -734,7 +736,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
         @teleport('body')
             @php
                 $guest = $this->selectedGuest;
-                $waUrl = $guest->getWhatsAppUrl($this->currentAgent->name ?? '');
+                $waUrl = $guest->getWhatsAppUrl($this->currentOperator->name ?? '');
             @endphp
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
                 <div
@@ -744,7 +746,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                     <!-- Drawer Header -->
                     <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
                         <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-bold text-base flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-bold text-base flex items-center justify-center shrink-0 shadow-xs mt-0.5">
                                 {{ strtoupper(substr($guest->name, 0, 2)) }}
                             </div>
                             <div>

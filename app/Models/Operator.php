@@ -187,7 +187,30 @@ class Operator extends Model
     {
         $path = $this->logo_path ?: $this->photo;
 
-        return $path ? Storage::url($path) : null;
+        if (! $path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return Storage::url($path);
+    }
+
+    public function getBannerUrlAttribute(): ?string
+    {
+        $path = $this->banner_path;
+
+        if (! $path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return Storage::url($path);
     }
 
     public function getBrandColorAttribute(): string

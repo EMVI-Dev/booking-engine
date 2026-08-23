@@ -37,9 +37,9 @@ test('operator can view calendar with month days and scheduled reservations', fu
 
     $this->get(route('calendar.index'))
         ->assertOk()
-        ->assertSee('Booking Calendar & Availability');
+        ->assertSee('Booking Calendar &amp; Availability', false);
 
-    Livewire::test('pages::calendar.index')
+    Livewire::test('calendar.month-grid')
         ->assertSee(now()->format('F Y'))
         ->call('selectDate', $tripDate)
         ->assertSee('Michael Scott')
@@ -52,13 +52,13 @@ test('operator can navigate calendar months', function () {
     $nextMonthLabel = now()->addMonth()->format('F Y');
     $prevMonthLabel = now()->subMonth()->format('F Y');
 
-    Livewire::test('pages::calendar.index')
+    Livewire::test('calendar.month-grid')
         ->call('nextMonth')
         ->assertSee($nextMonthLabel)
         ->call('prevMonth')
         ->call('prevMonth')
         ->assertSee($prevMonthLabel)
-        ->call('goToToday')
+        ->call('currentMonth')
         ->assertSee(now()->format('F Y'));
 });
 
@@ -67,14 +67,14 @@ test('operator can create and delete availability date blocks', function () {
 
     $product = Product::factory()->create(['operator_id' => $this->operator->id]);
 
-    Livewire::test('pages::calendar.index')
-        ->set('block_product_id', $product->id)
-        ->set('block_date_start', now()->addDays(10)->format('Y-m-d'))
-        ->set('block_date_end', now()->addDays(12)->format('Y-m-d'))
-        ->set('block_reason', 'Boat Drydock Maintenance')
-        ->call('saveBlock')
+    Livewire::test('calendar.month-grid')
+        ->set('blockProductIds', [$product->id])
+        ->set('blockStartDate', now()->addDays(10)->format('Y-m-d'))
+        ->set('blockEndDate', now()->addDays(12)->format('Y-m-d'))
+        ->set('blockReason', 'Boat Drydock Maintenance')
+        ->call('saveBlackoutBlock')
         ->assertHasNoErrors()
-        ->assertSee('Boat Drydock Maintenance');
+        ->assertSee('Blackout block saved successfully.');
 
     $block = AvailabilityBlock::where('operator_id', $this->operator->id)->first();
 
@@ -82,8 +82,9 @@ test('operator can create and delete availability date blocks', function () {
         ->and($block->reason)->toBe('Boat Drydock Maintenance')
         ->and($block->product_id)->toBe($product->id);
 
-    Livewire::test('pages::calendar.index')
-        ->call('deleteBlock', $block->id);
+    Livewire::test('calendar.month-grid')
+        ->call('deleteBlackoutBlock', $block->id)
+        ->assertSee('Blackout block removed.');
 
     expect(AvailabilityBlock::count())->toBe(0);
 });

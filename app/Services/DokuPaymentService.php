@@ -316,9 +316,16 @@ class DokuPaymentService
                 'status' => PaymentStatus::Failed,
             ]);
 
-            $payment->reservation?->update([
-                'status' => ReservationStatus::Declined,
-            ]);
+            // Only mark reservation as Declined if hold is expired; otherwise keep PaymentPending so guest can retry payment
+            if ($payment->reservation && $payment->reservation->hold_expires_at && $payment->reservation->hold_expires_at->isPast()) {
+                $payment->reservation->update([
+                    'status' => ReservationStatus::Declined,
+                ]);
+            } else {
+                $payment->reservation?->update([
+                    'status' => ReservationStatus::PaymentPending,
+                ]);
+            }
 
             return true;
         }

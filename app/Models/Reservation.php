@@ -58,6 +58,7 @@ class Reservation extends Model
         'status',
         'hold_expires_at',
         'review_request_sent_at',
+        'departure_reminder_sent_at',
     ];
 
     protected static function booted(): void
@@ -118,6 +119,7 @@ class Reservation extends Model
             'status' => ReservationStatus::class,
             'hold_expires_at' => 'datetime',
             'review_request_sent_at' => 'datetime',
+            'departure_reminder_sent_at' => 'datetime',
         ];
     }
 

@@ -317,7 +317,18 @@ class StorefrontController extends Controller
 
         $latestPayment = $reservation->latestPayment;
         $unitPrice = $reservation->bookable instanceof Bookable ? $reservation->bookable->getPrice() : 0.0;
-        $totalAmount = $latestPayment ? (float) $latestPayment->amount : ($reservation->pax_count * $unitPrice);
+        $termsSnapshot = $reservation->terms_snapshot ?? [];
+        $totalAmount = isset($termsSnapshot['total_price'])
+            ? (float) $termsSnapshot['total_price']
+            : ($latestPayment ? (float) $latestPayment->amount : ($reservation->pax_count * $unitPrice));
+
+        // When guest retries payment, ensure status is PaymentPending and hold is active
+        if ($reservation->status !== ReservationStatus::Confirmed) {
+            $reservation->update([
+                'status' => ReservationStatus::PaymentPending,
+                'hold_expires_at' => now()->addMinutes(30),
+            ]);
+        }
 
         $session = $paymentService->createPaymentSession($reservation, $totalAmount);
 

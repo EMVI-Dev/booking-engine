@@ -6,8 +6,8 @@
 </title>
 
 @php
-    $portalAgent = auth()->user()?->currentAgent();
-    $portalFavicon = $portalAgent?->logo_url;
+    $portalOperator = auth()->user()?->currentOperator();
+    $portalFavicon = $portalOperator?->logo_url;
 @endphp
 @if ($portalFavicon)
     <link rel="icon" href="{{ $portalFavicon }}">

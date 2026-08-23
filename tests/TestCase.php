@@ -14,6 +14,20 @@ abstract class TestCase extends BaseTestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Boot the testing environment and force SQLite in-memory before RefreshDatabase runs.
+     */
+    public function createApplication()
+    {
+        $app = parent::createApplication();
+
+        // Hard-enforce sqlite :memory: regardless of cached config or environment
+        $app['config']->set('database.default', 'sqlite');
+        $app['config']->set('database.connections.sqlite.database', ':memory:');
+
+        return $app;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

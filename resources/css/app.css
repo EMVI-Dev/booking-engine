@@ -46,6 +46,13 @@
         display: none !important;
     }
 
+    html,
+    body {
+        overflow-x: clip;
+        max-width: 100%;
+        width: 100%;
+    }
+
     html {
         font-feature-settings: "cv02", "cv03", "cv04", "cv11";
         text-rendering: optimizeLegibility;

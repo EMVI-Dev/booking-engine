@@ -88,11 +88,11 @@
         @endif
 
         <!-- Welcome Hero Banner -->
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl border border-slate-800/60">
             <div class="absolute right-0 top-0 -mt-12 -mr-12 w-96 h-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none"></div>
 
-            <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div class="space-y-2 max-w-xl">
+            <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
+                <div class="space-y-2.5 max-w-xl">
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/10 text-indigo-200">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -107,17 +107,17 @@
                     <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
                         {{ __('Welcome back, :name!', ['name' => auth()->user()->name]) }}
                     </h1>
-                    <p class="text-xs sm:text-sm text-slate-300">
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
                         {{ __('Track live tour schedules, review guest reservations, and manage your direct booking storefront.') }}
                     </p>
                 </div>
 
                 @if ($agent)
-                    <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <div class="grid grid-cols-2 sm:flex items-center gap-2.5 w-full sm:w-auto shrink-0">
                         <a
                             href="{{ $storefrontUrl }}"
                             target="_blank"
-                            class="h-10 px-4 inline-flex items-center gap-2 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs shadow-md transition"
+                            class="h-10 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs shadow-md transition"
                         >
                             <i class="fa-solid fa-arrow-up-right-from-square text-indigo-600 text-xs"></i>
                             <span>{{ __('Live Storefront') }}</span>
@@ -126,7 +126,7 @@
                         <button
                             type="button"
                             x-on:click="navigator.clipboard.writeText('{{ $storefrontUrl }}'); copied = true; setTimeout(() => copied = false, 2500)"
-                            class="h-10 px-3.5 inline-flex items-center gap-2 rounded-2xl bg-white/15 hover:bg-white/25 text-white border border-white/20 text-xs font-semibold backdrop-blur-md transition cursor-pointer"
+                            class="h-10 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white/15 hover:bg-white/25 text-white border border-white/20 text-xs font-semibold backdrop-blur-md transition cursor-pointer"
                         >
                             <i class="fa-solid" :class="copied ? 'fa-check text-emerald-400' : 'fa-copy text-slate-300'"></i>
                             <span x-text="copied ? '{{ __('Link Copied!') }}' : '{{ __('Copy Link') }}'"></span>
@@ -137,106 +137,106 @@
         </div>
 
         <!-- 4 Key Operational Metrics Grid -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <!-- Metric 1: Lifetime Revenue -->
-            <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+            <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {{ __('Direct Revenue') }}
                     </span>
-                    <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs">
+                    <span class="p-1.5 sm:p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs">
                         <i class="fa-solid fa-rupiah-sign"></i>
                     </span>
                 </div>
-                <p class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white truncate">
+                <p class="text-lg sm:text-2xl font-black text-slate-900 dark:text-white truncate">
                     Rp {{ number_format($totalRevenue, 0, ',', '.') }}
                 </p>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate">
                     <i class="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
                     {{ __(':count Total Bookings', ['count' => $reservationsCount]) }}
                 </p>
             </div>
 
             <!-- Metric 2: Today's Departures -->
-            <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+            <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {{ __('Today\'s Trips') }}
                     </span>
-                    <span class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs">
+                    <span class="p-1.5 sm:p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs">
                         <i class="fa-solid fa-calendar-day"></i>
                     </span>
                 </div>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                <div class="flex items-baseline gap-1.5 sm:gap-2">
+                    <p class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white">
                         {{ $todayDepartures->count() }}
                     </p>
-                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    <span class="text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400">
                         ({{ (int) $todayDepartures->sum('pax_count') }} Pax)
                     </span>
                 </div>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
                     {{ __('Departing today (:date)', ['date' => now()->format('M d')]) }}
                 </p>
             </div>
 
             <!-- Metric 3: Total Passengers Served & Guests -->
-            <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+            <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {{ __('Guests Served') }}
                     </span>
-                    <span class="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 text-xs">
+                    <span class="p-1.5 sm:p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 text-xs">
                         <i class="fa-solid fa-person-walking-luggage"></i>
                     </span>
                 </div>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                <div class="flex items-baseline gap-1.5 sm:gap-2">
+                    <p class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white">
                         {{ number_format($totalPaxServed) }}
                     </p>
-                    <span class="text-xs font-bold text-slate-400">
+                    <span class="text-[11px] sm:text-xs font-bold text-slate-400">
                         {{ __('Pax') }}
                     </span>
                 </div>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
                     {{ __(':count Distinct Guest Profiles', ['count' => $totalGuestsCount]) }}
                 </p>
             </div>
 
             <!-- Metric 4: Published Catalog Items -->
-            <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+            <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {{ __('Live Catalog') }}
                     </span>
-                    <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 text-xs">
+                    <span class="p-1.5 sm:p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 text-xs">
                         <i class="fa-solid fa-cubes"></i>
                     </span>
                 </div>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                <div class="flex items-baseline gap-1.5 sm:gap-2">
+                    <p class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white">
                         {{ $packagesCount }}
                     </p>
-                    <span class="text-xs font-bold text-slate-400">
+                    <span class="text-[11px] sm:text-xs font-bold text-slate-400">
                         {{ __('Packages') }}
                     </span>
                 </div>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                    {{ __(':count Inventory Activities / Products', ['count' => $productsCount]) }}
+                <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    {{ __(':count Inventory Activities', ['count' => $productsCount]) }}
                 </p>
             </div>
         </div>
 
-        <!-- Main 2-Column Section (8 cols left + 4 cols right) -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Two Columns Layout: Operations (8 cols) & Platform Management (4 cols) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Left Column: Upcoming Departures & Recent Activity (8 cols) -->
             <div class="lg:col-span-8 space-y-6">
                 <!-- Card: Upcoming Departures (Next 7 Days) -->
                 <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs p-5 sm:p-6 space-y-4">
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                        <div class="flex items-center gap-2.5">
-                            <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs">
-                                <i class="fa-solid fa-calendar-days"></i>
+                        <div class="flex items-center gap-3">
+                            <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 text-xs">
+                                <i class="fa-solid fa-calendar-week"></i>
                             </span>
                             <div>
                                 <h3 class="font-bold text-base text-slate-900 dark:text-white">
@@ -263,34 +263,34 @@
                                 $isTomorrow = $res->requested_date->isTomorrow();
                                 $resCode = $res->code ?? ('RSV-' . strtoupper(substr($res->id, -8)));
                             @endphp
-                            <div class="p-4 rounded-2xl border transition-all duration-150 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 {{ $isToday ? 'bg-indigo-50/40 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/60' : 'bg-slate-50/50 dark:bg-zinc-800/40 border-slate-200 dark:border-zinc-800' }}">
-                                <div class="flex items-center gap-3.5 min-w-0">
+                            <div class="p-3.5 sm:p-4 rounded-2xl border transition-all duration-150 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 {{ $isToday ? 'bg-indigo-50/40 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/60' : 'bg-slate-50/50 dark:bg-zinc-800/40 border-slate-200 dark:border-zinc-800' }}">
+                                <div class="flex items-start sm:items-center gap-3 min-w-0 w-full sm:w-auto">
                                     <!-- Date Badge -->
-                                    <div class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 text-center font-bold {{ $isToday ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-slate-200' }}">
-                                        <span class="text-[10px] uppercase leading-none">{{ $res->requested_date->format('M') }}</span>
-                                        <span class="text-base leading-tight font-extrabold">{{ $res->requested_date->format('d') }}</span>
+                                    <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 text-center font-bold {{ $isToday ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-slate-200' }}">
+                                        <span class="text-[9px] sm:text-[10px] uppercase leading-none">{{ $res->requested_date->format('M') }}</span>
+                                        <span class="text-sm sm:text-base leading-tight font-extrabold">{{ $res->requested_date->format('d') }}</span>
                                     </div>
 
-                                    <div class="space-y-1 min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 px-1.5 py-0.2 rounded">
+                                    <div class="space-y-1 min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <span class="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 px-1.5 py-0.2 rounded shrink-0">
                                                 #{{ $resCode }}
                                             </span>
-                                            <span class="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                            <span class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-[130px] xs:max-w-[200px]">
                                                 {{ $res->guest_name }}
                                             </span>
                                             @if ($isToday)
-                                                <span class="px-2 py-0.2 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 animate-pulse">
+                                                <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 animate-pulse shrink-0">
                                                     {{ __('Today') }}
                                                 </span>
                                             @elseif ($isTomorrow)
-                                                <span class="px-2 py-0.2 rounded-full text-[10px] font-bold uppercase bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300">
+                                                <span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold uppercase bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 shrink-0">
                                                     {{ __('Tomorrow') }}
                                                 </span>
                                             @endif
                                         </div>
 
-                                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                        <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
                                             <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $bookable->name ?? ($bookable->title ?? __('Tour Booking')) }}</span>
                                             &bull;
                                             <span>{{ __(':count Pax', ['count' => $res->pax_count]) }}</span>
@@ -298,14 +298,14 @@
                                     </div>
                                 </div>
 
-                                <div class="flex items-center gap-2.5 self-end sm:self-center shrink-0">
+                                <div class="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-zinc-800 shrink-0">
                                     <span class="text-xs font-bold text-slate-900 dark:text-white">
                                         {{ $payment && $payment->isPaid() ? 'Rp ' . number_format((float) $payment->amount, 0, ',', '.') : '—' }}
                                     </span>
                                     <a
                                         href="{{ route('reservations.index') }}"
                                         wire:navigate
-                                        class="h-8 px-3 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-700 text-xs font-bold inline-flex items-center transition"
+                                        class="h-7 sm:h-8 px-2.5 sm:px-3 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-700 text-xs font-bold inline-flex items-center transition"
                                     >
                                         {{ __('View') }}
                                     </a>
