@@ -4,7 +4,7 @@ use App\Enums\ListingStatus;
 use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
-use Illuminate\Support\Facades\Auth;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -13,6 +13,7 @@ use Livewire\WithFileUploads;
 
 new #[Title('Create Tour Package')] class extends Component {
     use WithFileUploads;
+    use ResolvesCurrentOperator;
 
     public string $title = '';
     public string $category = 'Day Tour';
@@ -40,17 +41,6 @@ new #[Title('Create Tour Package')] class extends Component {
     /** @var array<\Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
     public array $galleryFiles = [];
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     #[Computed]
     public function isProfileComplete(): bool
@@ -234,11 +224,11 @@ new #[Title('Create Tour Package')] class extends Component {
     />
 
     <div class="hidden lg:block space-y-6">
-        @if ($this->currentAgent && ! $this->currentAgent->canAddPackage())
+        @if ($this->currentOperator && ! $this->currentOperator->canAddPackage())
         <div class="py-6">
             <x-feature-gate
-                :title="__('Package Limit Reached (:limit Listings)', ['limit' => $this->currentAgent->getPlan()->package_limit])"
-                :description="__('You have reached the maximum allowed tour packages on your :plan plan. Upgrade your plan to list more tour packages and expand your offerings.', ['plan' => $this->currentAgent->getPlan()->name])"
+                :title="__('Package Limit Reached (:limit Listings)', ['limit' => $this->currentOperator->getPlan()->package_limit])"
+                :description="__('You have reached the maximum allowed tour packages on your :plan plan. Upgrade your plan to list more tour packages and expand your offerings.', ['plan' => $this->currentOperator->getPlan()->name])"
                 required-plan="Pro Operator"
                 plan-slug="growth"
                 icon="fa-solid fa-cubes"

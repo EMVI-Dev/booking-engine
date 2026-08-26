@@ -3,7 +3,7 @@
 use App\Enums\ListingStatus;
 use App\Models\Operator;
 use App\Models\Product;
-use Illuminate\Support\Facades\Auth;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -12,6 +12,7 @@ use Livewire\WithFileUploads;
 
 new #[Title('Create Activity Item')] class extends Component {
     use WithFileUploads;
+    use ResolvesCurrentOperator;
 
     public string $name = '';
     public string $category = 'Snorkeling Gear';
@@ -33,17 +34,6 @@ new #[Title('Create Activity Item')] class extends Component {
     /** @var array<\Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
     public array $galleryFiles = [];
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     #[Computed]
     public function isProfileComplete(): bool

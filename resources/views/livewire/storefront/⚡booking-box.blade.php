@@ -4,6 +4,7 @@ use App\Contracts\Bookable;
 use App\Enums\ReservationStatus;
 use App\Models\Operator;
 use App\Models\Package;
+use App\Models\PlatformCoupon;
 use App\Models\Product;
 use App\Models\Reservation;
 use App\Services\DokuPaymentService;
@@ -23,6 +24,13 @@ new class extends Component {
     public string $guest_email = '';
     public string $notes = '';
     public bool $agreed_terms = false;
+
+    // Coupon Engine State
+    public string $couponCode = '';
+    public ?string $appliedCouponCode = null;
+    public float $discountAmount = 0.0;
+    public string $couponMessage = '';
+    public bool $couponValid = false;
 
     public bool $showSuccess = false;
     public ?string $checkoutUrl = null;
@@ -69,18 +77,90 @@ new class extends Component {
     #[Computed]
     public function totalPrice(): float
     {
-        return $this->subtotal + $this->serviceFee;
+        return max(0, $this->subtotal + $this->serviceFee - $this->discountAmount);
     }
 
     public function incrementPax(): void
     {
         $this->pax_count++;
+        $this->revalidateAppliedCoupon();
     }
 
     public function decrementPax(): void
     {
         if ($this->pax_count > 1) {
             $this->pax_count--;
+            $this->revalidateAppliedCoupon();
+        }
+    }
+
+    /**
+     * Validate and apply entered promotional coupon code.
+     */
+    public function applyCoupon(): void
+    {
+        $cleanCode = strtoupper(trim($this->couponCode));
+
+        if (empty($cleanCode)) {
+            $this->couponMessage = __('Please enter a promo code.');
+            $this->couponValid = false;
+
+            return;
+        }
+
+        $coupon = PlatformCoupon::where('code', $cleanCode)->first();
+
+        if (! $coupon) {
+            $this->couponMessage = __('Invalid promo code.');
+            $this->couponValid = false;
+            $this->removeCoupon();
+
+            return;
+        }
+
+        $result = $coupon->validateFor($this->subtotal, $this->operator->id);
+
+        if (! $result['valid']) {
+            $this->couponMessage = $result['reason'] ?? __('Promo code cannot be applied.');
+            $this->couponValid = false;
+            $this->removeCoupon();
+
+            return;
+        }
+
+        $this->appliedCouponCode = $coupon->code;
+        $this->discountAmount = (float) $result['discount'];
+        $this->couponValid = true;
+        $this->couponMessage = __('Code :code applied! Saved Rp :amount', [
+            'code' => $coupon->code,
+            'amount' => number_format($this->discountAmount, 0, ',', '.'),
+        ]);
+    }
+
+    /**
+     * Remove applied coupon.
+     */
+    public function removeCoupon(): void
+    {
+        $this->appliedCouponCode = null;
+        $this->discountAmount = 0.0;
+        $this->couponCode = '';
+    }
+
+    protected function revalidateAppliedCoupon(): void
+    {
+        if ($this->appliedCouponCode) {
+            $coupon = PlatformCoupon::where('code', $this->appliedCouponCode)->first();
+            if ($coupon) {
+                $result = $coupon->validateFor($this->subtotal, $this->operator->id);
+                if ($result['valid']) {
+                    $this->discountAmount = (float) $result['discount'];
+                } else {
+                    $this->removeCoupon();
+                    $this->couponMessage = $result['reason'] ?? '';
+                    $this->couponValid = false;
+                }
+            }
         }
     }
 
@@ -110,6 +190,8 @@ new class extends Component {
         $termsSnapshot['subtotal'] = $this->subtotal;
         $termsSnapshot['service_fee'] = $this->serviceFee;
         $termsSnapshot['service_fee_rate'] = $this->serviceFeeRate;
+        $termsSnapshot['coupon_code'] = $this->appliedCouponCode;
+        $termsSnapshot['discount_amount'] = $this->discountAmount;
         $termsSnapshot['total_price'] = $this->totalPrice;
 
         /** @var Reservation $reservation */
@@ -127,6 +209,11 @@ new class extends Component {
             'status' => ReservationStatus::PaymentPending,
             'hold_expires_at' => now()->addMinutes(30),
         ]);
+
+        // Increment coupon usage count if applied
+        if ($this->appliedCouponCode) {
+            PlatformCoupon::where('code', $this->appliedCouponCode)->first()?->incrementUsage();
+        }
 
         $session = $paymentService->createPaymentSession($reservation, $this->totalPrice);
 
@@ -231,6 +318,65 @@ new class extends Component {
             </div>
         </div>
 
+        <!-- Promo Code Input -->
+        <div class="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-1.5" x-data="{ open: @entangle('appliedCouponCode').live || @entangle('couponCode').live }">
+            <div class="flex items-center justify-between">
+                <button
+                    type="button"
+                    @click="open = !open"
+                    class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                    <i class="fa-solid fa-ticket text-[10px]"></i>
+                    <span>{{ __('Have a promo code?') }}</span>
+                </button>
+                @if ($appliedCouponCode)
+                    <span class="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 rounded-full">
+                        {{ $appliedCouponCode }}
+                    </span>
+                @endif
+            </div>
+
+            <div x-show="open" x-cloak class="space-y-1.5 pt-1">
+                @if (! $appliedCouponCode)
+                    <div class="flex items-center gap-2">
+                        <input
+                            type="text"
+                            wire:model="couponCode"
+                            placeholder="{{ __('ENTER CODE') }}"
+                            class="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono uppercase font-black text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500"
+                        />
+                        <button
+                            type="button"
+                            wire:click="applyCoupon"
+                            class="h-9 px-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
+                        >
+                            {{ __('Apply') }}
+                        </button>
+                    </div>
+                @else
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs">
+                        <div class="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+                            <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400"></i>
+                            <span>{{ $appliedCouponCode }} (-Rp {{ number_format($discountAmount, 0, ',', '.') }})</span>
+                        </div>
+                        <button
+                            type="button"
+                            wire:click="removeCoupon"
+                            class="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold cursor-pointer"
+                        >
+                            {{ __('Remove') }}
+                        </button>
+                    </div>
+                @endif
+
+                @if ($couponMessage && ! $appliedCouponCode)
+                    <p class="text-[11px] font-semibold {{ $couponValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                        {{ $couponMessage }}
+                    </p>
+                @endif
+            </div>
+        </div>
+
         <!-- Price Summary Breakdown -->
         <div class="p-4 rounded-2xl bg-brand-50/70 dark:bg-brand-950/40 border border-brand-100 dark:border-brand-900/60 space-y-2 text-xs">
             <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
@@ -245,6 +391,16 @@ new class extends Component {
                         <span class="text-[10px] text-slate-400">({{ $this->serviceFeeRate * 100 }}%)</span>
                     </span>
                     <span class="font-semibold">Rp {{ number_format($this->serviceFee, 0, ',', '.') }}</span>
+                </div>
+            @endif
+
+            @if ($this->discountAmount > 0)
+                <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span class="flex items-center gap-1">
+                        <i class="fa-solid fa-tag text-[10px]"></i>
+                        <span>{{ __('Promo Discount (:code)', ['code' => $this->appliedCouponCode]) }}</span>
+                    </span>
+                    <span>- Rp {{ number_format($this->discountAmount, 0, ',', '.') }}</span>
                 </div>
             @endif
 

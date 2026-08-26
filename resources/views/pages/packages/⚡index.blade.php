@@ -4,27 +4,18 @@ use App\Enums\ListingStatus;
 use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
-use Illuminate\Support\Facades\Auth;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Tour Packages & Combos')] class extends Component {
+    use ResolvesCurrentOperator;
+
     public string $search = '';
     public string $statusFilter = 'all';
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     #[Computed]
     public function isProfileComplete(): bool
@@ -71,7 +62,7 @@ new #[Title('Tour Packages & Combos')] class extends Component {
 
     public function deletePackage(string $id): void
     {
-        $package = $this->currentAgent?->packages()->findOrFail($id);
+        $package = $this->currentOperator?->packages()->findOrFail($id);
 
         if ($package) {
             if ($package->cover_photo) {
@@ -126,9 +117,9 @@ new #[Title('Tour Packages & Combos')] class extends Component {
     @endif
 
     @php
-        $agentPlan = $this->currentAgent?->getPlan();
+        $agentPlan = $this->currentOperator?->getPlan();
         $packageLimit = $agentPlan?->package_limit;
-        $totalPackages = $this->currentAgent?->packages()->count() ?? 0;
+        $totalPackages = $this->currentOperator?->packages()->count() ?? 0;
         $hasReachedLimit = $packageLimit !== null && $totalPackages >= $packageLimit;
     @endphp
 

@@ -5,10 +5,10 @@ use App\Enums\ReservationStatus;
 use App\Models\Guest;
 use App\Models\Operator;
 use App\Models\Reservation;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -16,6 +16,7 @@ use Livewire\WithPagination;
 
 new #[Title('Guest Directory & CRM')] class extends Component {
     use WithPagination;
+    use ResolvesCurrentOperator;
 
     public string $search = '';
     public string $filter = 'all'; // all, repeat, vip, with_notes
@@ -48,17 +49,6 @@ new #[Title('Guest Directory & CRM')] class extends Component {
         $this->resetPage();
     }
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     /**
      * Compute directory metrics.

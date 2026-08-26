@@ -11,4 +11,12 @@ enum ListingStatus: string
     {
         return $this === self::Published;
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Draft => 'Draft',
+            self::Published => 'Published',
+        };
+    }
 }

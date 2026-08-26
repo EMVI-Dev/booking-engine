@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Operator;
+use App\Concerns\ResolvesCurrentOperator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -8,6 +9,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] class extends Component {
+    use ResolvesCurrentOperator;
     #[Url(as: 'view')]
     public string $viewMode = 'month'; // 'month' | 'timeline' | 'manifest' | 'heatmap'
 

@@ -1,12 +1,23 @@
 <?php
 
-use App\Models\Agent;
+use App\Mail\SubscriptionRenewalReminderMail;
+use App\Models\Operator;
 use App\Models\Plan;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
-new #[Title('Subscription Plans & Tiers')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class extends Component {
+    #[Url]
+    public string $tab = 'plans'; // 'plans' or 'renewals'
+
+    // Renewals Tab State
+    public string $renewalsSearch = '';
+    public string $renewalsFilter = 'all'; // 'all', 'active', 'expiring_soon', 'expired'
+
     // Edit / Create Modal State
     public bool $show_modal = false;
     public ?string $editing_plan_id = null;
@@ -132,7 +143,7 @@ new #[Title('Subscription Plans & Tiers')] #[Layout('layouts.admin')] class exte
      */
     public function savePlan(): void
     {
-        $validated = $this->validate([
+        $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:plans,slug,' . ($this->editing_plan_id ?: 'NULL') . ',id'],
             'tagline' => ['nullable', 'string', 'max:500'],
@@ -182,52 +193,195 @@ new #[Title('Subscription Plans & Tiers')] #[Layout('layouts.admin')] class exte
     }
 
     /**
+     * Send email renewal reminder to operator.
+     */
+    public function sendRenewalReminder(string $operatorId): void
+    {
+        $operator = Operator::with('plan')->find($operatorId);
+
+        if (! $operator || ! $operator->plan) {
+            session()->flash('error', __('Operator or active plan not found.'));
+
+            return;
+        }
+
+        $recipient = $operator->billing_email ?: ($operator->booking_notification_email ?: $operator->users->first()?->email);
+
+        if (! $recipient) {
+            session()->flash('error', __('No billing email configured for :name.', ['name' => $operator->name]));
+
+            return;
+        }
+
+        $daysRemaining = $operator->plan_expires_at ? (int) now()->diffInDays($operator->plan_expires_at, false) : 30;
+
+        try {
+            Mail::to($recipient)->send(new SubscriptionRenewalReminderMail($operator, $operator->plan, $daysRemaining));
+            session()->flash('success', __('Renewal reminder email sent successfully to :email for :name.', [
+                'email' => $recipient,
+                'name' => $operator->name,
+            ]));
+        } catch (\Throwable $e) {
+            session()->flash('error', __('Failed to send email: :message', ['message' => $e->getMessage()]));
+        }
+    }
+
+    /**
+     * Extend operator subscription by given number of days.
+     */
+    public function extendSubscription(string $operatorId, int $days = 30): void
+    {
+        $operator = Operator::find($operatorId);
+
+        if (! $operator) {
+            return;
+        }
+
+        $currentExpires = $operator->plan_expires_at && $operator->plan_expires_at->isFuture()
+            ? $operator->plan_expires_at
+            : now();
+
+        $newExpires = (clone $currentExpires)->addDays($days);
+
+        $operator->update([
+            'plan_expires_at' => $newExpires,
+        ]);
+
+        session()->flash('success', __('Subscription extended by :days days for :name (New expiry: :date).', [
+            'days' => $days,
+            'name' => $operator->name,
+            'date' => $newExpires->format('d M Y'),
+        ]));
+    }
+
+    /**
+     * Toggle operator auto-renew status.
+     */
+    public function toggleAutoRenew(string $operatorId): void
+    {
+        $operator = Operator::find($operatorId);
+
+        if (! $operator) {
+            return;
+        }
+
+        $operator->update([
+            'subscription_auto_renew' => ! (bool) $operator->subscription_auto_renew,
+        ]);
+
+        session()->flash('success', __('Auto-renew updated for :name.', ['name' => $operator->name]));
+    }
+
+    /**
      * Render plans component.
      */
     public function render()
     {
-        $plans = Plan::withCount(['operators', 'agents'])->orderBy('sort_order')->get();
-        $totalOperators = \App\Models\Operator::count();
+        $plans = Plan::withCount(['operators'])->orderBy('sort_order')->get();
+        $totalOperators = Operator::count();
+
+        // Query for Renewals Tab
+        $renewalsQuery = Operator::query()
+            ->with(['plan', 'users'])
+            ->whereNotNull('plan_id');
+
+        if (! empty($this->renewalsSearch)) {
+            $s = '%' . trim($this->renewalsSearch) . '%';
+            $renewalsQuery->where(function ($q) use ($s) {
+                $q->where('name', 'like', $s)
+                    ->orWhere('slug', 'like', $s)
+                    ->orWhere('billing_email', 'like', $s)
+                    ->orWhereHas('users', fn ($uq) => $uq->where('email', 'like', $s)->orWhere('name', 'like', $s));
+            });
+        }
+
+        if ($this->renewalsFilter === 'expiring_soon') {
+            $renewalsQuery->whereBetween('plan_expires_at', [now(), now()->addDays(7)]);
+        } elseif ($this->renewalsFilter === 'expired') {
+            $renewalsQuery->where('plan_expires_at', '<', now());
+        } elseif ($this->renewalsFilter === 'active') {
+            $renewalsQuery->where(function ($q) {
+                $q->whereNull('plan_expires_at')->orWhere('plan_expires_at', '>=', now());
+            });
+        }
+
+        $subscribedOperators = $renewalsQuery->latest('subscribed_at')->get();
+
+        // Renewals Stats
+        $activeSubCount = Operator::whereNotNull('plan_id')->count();
+        $expiringSoonCount = Operator::whereNotNull('plan_id')->whereBetween('plan_expires_at', [now(), now()->addDays(7)])->count();
+        $expiredCount = Operator::whereNotNull('plan_id')->where('plan_expires_at', '<', now())->count();
 
         return view('pages.admin.⚡plans', [
             'plans' => $plans,
             'totalOperators' => $totalOperators,
-            'totalAgents' => $totalOperators,
+            'subscribedOperators' => $subscribedOperators,
+            'activeSubCount' => $activeSubCount,
+            'expiringSoonCount' => $expiringSoonCount,
+            'expiredCount' => $expiredCount,
         ]);
     }
 }; ?>
 
 <div class="space-y-6">
-    <!-- Page Header -->
+    <!-- Page Header & Tab Navigation -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                {{ __('Subscription Plans & Feature Limits') }}
+                {{ __('Subscription Plans & Lifecycle Management') }}
             </h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Configure operator pricing tiers, platform commission overrides, package limits, and feature gating.') }}
+                {{ __('Configure operator pricing tiers, feature gating, and monitor upcoming subscription expirations & renewals.') }}
             </p>
         </div>
 
         <div class="flex items-center gap-2">
-            <button
-                type="button"
-                wire:click="resetDefaultPlans"
-                class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
-            >
-                <i class="fa-solid fa-rotate-left mr-1 text-[10px]"></i>
-                {{ __('Reset Default Tiers') }}
-            </button>
+            @if ($tab === 'plans')
+                <button
+                    type="button"
+                    wire:click="resetDefaultPlans"
+                    class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                >
+                    <i class="fa-solid fa-rotate-left mr-1 text-[10px]"></i>
+                    {{ __('Reset Default Tiers') }}
+                </button>
 
-            <button
-                type="button"
-                wire:click="createPlan"
-                class="h-9 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-            >
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>{{ __('New Plan Tier') }}</span>
-            </button>
+                <button
+                    type="button"
+                    wire:click="createPlan"
+                    class="h-9 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                >
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                    <span>{{ __('New Plan Tier') }}</span>
+                </button>
+            @endif
         </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-200 dark:border-zinc-800">
+        <button
+            type="button"
+            wire:click="$set('tab', 'plans')"
+            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'plans' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}"
+        >
+            <i class="fa-solid fa-layer-group text-xs"></i>
+            <span>{{ __('Plan Tiers & Features') }}</span>
+        </button>
+
+        <button
+            type="button"
+            wire:click="$set('tab', 'renewals')"
+            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'renewals' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}"
+        >
+            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+            <span>{{ __('Renewals & Expiries') }}</span>
+            @if ($expiringSoonCount > 0)
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white">
+                    {{ $expiringSoonCount }}
+                </span>
+            @endif
+        </button>
     </div>
 
     <!-- Feedback Alerts -->
@@ -238,121 +392,307 @@ new #[Title('Subscription Plans & Tiers')] #[Layout('layouts.admin')] class exte
         </div>
     @endif
 
-    <!-- Plans Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
-        @foreach ($plans as $plan)
-            <div class="rounded-3xl bg-white dark:bg-zinc-900 border {{ $plan->is_popular ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-slate-200/80 dark:border-zinc-800 shadow-sm' }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
-                
-                <div class="space-y-5">
-                    <!-- Top Header with Badge Alignment -->
-                    <div class="flex items-start justify-between gap-3 min-h-[32px]">
-                        <h3 class="font-black text-xl text-slate-900 dark:text-white tracking-tight">
-                            {{ $plan->name }}
-                        </h3>
+    @if (session()->has('error'))
+        <div class="p-4 rounded-2xl bg-rose-50 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation text-sm text-rose-600 dark:text-rose-400"></i>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
 
-                        @if ($plan->is_popular)
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-purple-600 text-white shadow-xs shrink-0">
-                                {{ __('Most Popular') }}
-                            </span>
+    <!-- TAB 1: PLANS TIERS CONFIGURATION -->
+    @if ($tab === 'plans')
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+            @foreach ($plans as $plan)
+                <div class="rounded-3xl bg-white dark:bg-zinc-900 border {{ $plan->is_popular ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-slate-200/80 dark:border-zinc-800 shadow-sm' }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
+                    <div class="space-y-5">
+                        <!-- Top Header with Badge Alignment -->
+                        <div class="flex items-start justify-between gap-3 min-h-[32px]">
+                            <h3 class="font-black text-xl text-slate-900 dark:text-white tracking-tight">
+                                {{ $plan->name }}
+                            </h3>
+                            @if ($plan->is_popular)
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
+                                    {{ __('Popular') }}
+                                </span>
+                            @elseif (!$plan->is_active)
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-slate-400 shrink-0">
+                                    {{ __('Archived') }}
+                                </span>
+                            @endif
+                        </div>
+
+                        <!-- Tagline -->
+                        @if ($plan->tagline)
+                            <p class="text-xs text-slate-500 dark:text-slate-400 min-h-[32px]">
+                                {{ $plan->tagline }}
+                            </p>
                         @endif
+
+                        <!-- Pricing Breakdown -->
+                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 space-y-2">
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-2xl font-black text-slate-900 dark:text-white">
+                                    Rp {{ number_format((float) $plan->price_monthly, 0, ',', '.') }}
+                                </span>
+                                <span class="text-xs font-semibold text-slate-400">/ {{ __('mo') }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60 dark:border-zinc-700/60 pt-2 font-medium">
+                                <span>{{ __('Yearly Plan:') }}</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Rp {{ number_format((float) $plan->price_yearly, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                                <span>{{ __('Platform Take Rate:') }}</span>
+                                <span class="font-black text-purple-600 dark:text-purple-400 font-mono">{{ $plan->commission_rate * 100 }}%</span>
+                            </div>
+                        </div>
+
+                        <!-- Active Operators Count -->
+                        <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+                            <span>{{ __('Active Operators:') }}</span>
+                            <span class="font-extrabold text-slate-800 dark:text-slate-200">
+                                {{ $plan->operators_count }} {{ __('operators') }}
+                            </span>
+                        </div>
+
+                        <!-- Features Summary List -->
+                        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Included Capabilities') }}</span>
+                            
+                            <div class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-cube text-[10px] text-purple-600"></i>
+                                    <span>{{ $plan->package_limit ? __(':count Packages Max', ['count' => $plan->package_limit]) : __('Unlimited Packages') }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-users text-[10px] text-purple-600"></i>
+                                    <span>{{ $plan->team_member_limit ? __(':count Team Seats', ['count' => $plan->team_member_limit]) : __('Unlimited Team Seats') }}</span>
+                                </div>
+                                @if ($plan->hasFeature('custom_domain'))
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-globe text-[10px] text-emerald-500"></i>
+                                        <span>{{ __('Custom Domain') }}</span>
+                                    </div>
+                                @endif
+                                @if ($plan->hasFeature('byo_gateway'))
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-credit-card text-[10px] text-indigo-500"></i>
+                                        <span>{{ __('BYO Custom Payment Gateway') }}</span>
+                                    </div>
+                                @endif
+                                @if ($plan->hasFeature('tracking_pixels'))
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-chart-line text-[10px] text-sky-500"></i>
+                                        <span>{{ __('Tracking Pixels (Meta & GA4)') }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Tagline Description -->
-                    <p class="text-xs text-slate-500 dark:text-slate-400 min-h-[40px] leading-relaxed">
-                        {{ $plan->tagline ?: __('Standard platform subscription tier.') }}
-                    </p>
-
-                    <!-- Pricing & Platform Take Rate -->
-                    <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-800/80 space-y-2.5">
-                        <div class="flex items-baseline gap-1.5">
-                            <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                                Rp {{ number_format((float) $plan->price_monthly, 0, ',', '.') }}
-                            </span>
-                            <span class="text-xs font-semibold text-slate-400">/ {{ __('month') }}</span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs pt-2.5 border-t border-slate-200/60 dark:border-zinc-700/60">
-                            <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('Operator Payout') }}</span>
-                            <span class="font-black font-mono text-sm text-emerald-600 dark:text-emerald-400">
-                                {{ __('100% Net to Operator') }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Limits -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="p-3 rounded-xl bg-slate-50/80 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{{ __('Package Limit') }}</span>
-                            <span class="font-extrabold text-xs text-slate-900 dark:text-white mt-0.5 block">
-                                {{ $plan->package_limit ? __(':count Packages', ['count' => $plan->package_limit]) : __('Unlimited') }}
-                            </span>
-                        </div>
-                        <div class="p-3 rounded-xl bg-slate-50/80 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{{ __('Team Seats') }}</span>
-                            <span class="font-extrabold text-xs text-slate-900 dark:text-white mt-0.5 block">
-                                {{ $plan->team_member_limit ? __(':count Staff', ['count' => $plan->team_member_limit]) : __('Unlimited Staff') }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Feature Checklist -->
-                    <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Included Capabilities') }}</span>
-                        <ul class="space-y-2.5 text-xs">
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('quick_booking_links') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('quick_booking_links') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('1-Click Direct Booking & Payment Links') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('tracking_pixels') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('tracking_pixels') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Meta Pixel & Google Analytics 4 (ROAS)') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('automated_review_requests') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('automated_review_requests') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('12-Hour Automated Post-Trip Review Emails') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('google_calendar') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('google_calendar') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Google Calendar & iCal Feed Sync') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('guest_crm') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('guest_crm') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Guest Directory CRM & Analytics') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('whatsapp_dispatch') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('whatsapp_dispatch') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('1-Click WhatsApp Dispatch Center') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('custom_domain') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('custom_domain') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Custom Domain (`yourbrand.com`) + SSL') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('byo_gateway') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('byo_gateway') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('BYO Merchant Gateway Keys') }}</span>
-                            </li>
-                        </ul>
+                    <!-- Bottom Edit Action -->
+                    <div class="pt-6 border-t border-slate-100 dark:border-zinc-800 mt-6">
+                        <button
+                            type="button"
+                            wire:click="editPlan('{{ $plan->id }}')"
+                            class="w-full h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 text-slate-700 dark:text-slate-300 font-bold text-xs transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            <span>{{ __('Edit Tier') }}</span>
+                        </button>
                     </div>
                 </div>
+            @endforeach
+        </div>
+    @endif
 
-                <!-- Card Footer: Subscribers Count & Edit Button -->
-                <div class="pt-6 border-t border-slate-100 dark:border-zinc-800 mt-6 flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-users text-slate-400 text-xs"></i>
-                        {{ __(':count Subscribers', ['count' => $plan->agents_count]) }}
-                    </span>
+    <!-- TAB 2: RENEWALS & EXPIRIES -->
+    @if ($tab === 'renewals')
+        <div class="space-y-6">
+            <!-- Renewals Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Total Active Subscriptions') }}</span>
+                    <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $activeSubCount }}</div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Operators on configured plans') }}</p>
+                </div>
 
-                    <button
-                        type="button"
-                        wire:click="editPlan('{{ $plan->id }}')"
-                        class="h-9 px-3.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-xs transition cursor-pointer flex items-center gap-1.5"
-                    >
-                        <i class="fa-solid fa-pen-to-square text-[11px]"></i>
-                        <span>{{ __('Edit Tier') }}</span>
-                    </button>
+                <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400">{{ __('Expiring Within 7 Days') }}</span>
+                    <div class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">{{ $expiringSoonCount }}</div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Needs renewal notification') }}</p>
+                </div>
+
+                <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400">{{ __('Expired / Lapsed') }}</span>
+                    <div class="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">{{ $expiredCount }}</div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Past due date') }}</p>
                 </div>
             </div>
-        @endforeach
-    </div>
+
+            <!-- Filters & Search Bar -->
+            <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                <!-- Search -->
+                <div class="relative w-full sm:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <x-input
+                        wire:model.live.debounce.300ms="renewalsSearch"
+                        type="text"
+                        placeholder="{{ __('Search by operator name, slug or email...') }}"
+                        class="pl-9 text-xs"
+                    />
+                </div>
+
+                <!-- Status Filter Pills -->
+                <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                    @php
+                        $renewalTabs = [
+                            'all' => __('All (:count)', ['count' => $activeSubCount]),
+                            'expiring_soon' => __('Expiring Soon (7d) (:count)', ['count' => $expiringSoonCount]),
+                            'expired' => __('Expired / Lapsed (:count)', ['count' => $expiredCount]),
+                        ];
+                    @endphp
+
+                    @foreach ($renewalTabs as $val => $label)
+                        <button
+                            type="button"
+                            wire:click="$set('renewalsFilter', '{{ $val }}')"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $renewalsFilter === $val ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}"
+                        >
+                            {{ $label }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Operators Subscription Table -->
+            <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                <th class="py-3.5 px-4 sm:px-6">{{ __('Operator') }}</th>
+                                <th class="py-3.5 px-4">{{ __('Plan & Billing') }}</th>
+                                <th class="py-3.5 px-4">{{ __('Subscribed Date') }}</th>
+                                <th class="py-3.5 px-4">{{ __('Expiration / Next Billing') }}</th>
+                                <th class="py-3.5 px-4 text-center">{{ __('Auto-Renew') }}</th>
+                                <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                            @forelse ($subscribedOperators as $op)
+                                @php
+                                    $isExpired = $op->plan_expires_at && $op->plan_expires_at->isPast();
+                                    $isExpiringSoon = $op->plan_expires_at && ! $isExpired && $op->plan_expires_at->diffInDays(now()) <= 7;
+                                    $email = $op->billing_email ?: ($op->booking_notification_email ?: $op->users->first()?->email);
+                                @endphp
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition">
+                                    <!-- Operator -->
+                                    <td class="py-3.5 px-4 sm:px-6">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                                                {{ strtoupper(substr($op->name, 0, 2)) }}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <a href="{{ route('admin.operators.show', $op->id) }}" wire:navigate class="font-bold text-sm text-slate-900 dark:text-white hover:text-purple-600 transition truncate block">
+                                                    {{ $op->name }}
+                                                </a>
+                                                <span class="text-xs text-slate-500 dark:text-slate-400 truncate block">{{ $email ?? '-' }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Plan & Billing -->
+                                    <td class="py-3.5 px-4">
+                                        <div class="space-y-0.5">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                                {{ $op->plan?->name ?? 'Custom' }}
+                                            </span>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                                {{ ucfirst($op->subscription_interval ?? 'monthly') }} &bull; Rp {{ number_format((float) ($op->plan?->price_monthly ?? 0), 0, ',', '.') }}
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Subscribed Date -->
+                                    <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-xs">
+                                        {{ $op->subscribed_at?->format('d M Y') ?? '-' }}
+                                    </td>
+
+                                    <!-- Expiration / Status -->
+                                    <td class="py-3.5 px-4">
+                                        @if ($op->plan_expires_at)
+                                            <div class="space-y-0.5">
+                                                <div class="font-mono text-xs font-bold {{ $isExpired ? 'text-rose-600 dark:text-rose-400' : ($isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white') }}">
+                                                    {{ $op->plan_expires_at->format('d M Y') }}
+                                                </div>
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase {{ $isExpired ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : ($isExpiringSoon ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300') }}">
+                                                    {{ $isExpired ? __('Expired') : ($isExpiringSoon ? __('Expiring Soon') : __('Active')) }}
+                                                </span>
+                                            </div>
+                                        @else
+                                            <span class="text-slate-400 text-xs font-semibold">{{ __('No Expiry Set') }}</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Auto Renew -->
+                                    <td class="py-3.5 px-4 text-center">
+                                        <button
+                                            type="button"
+                                            wire:click="toggleAutoRenew('{{ $op->id }}')"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase transition cursor-pointer {{ $op->subscription_auto_renew ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800' }}"
+                                            title="{{ __('Click to toggle auto-renewal') }}"
+                                        >
+                                            <i class="fa-solid {{ $op->subscription_auto_renew ? 'fa-check' : 'fa-xmark' }} text-[10px]"></i>
+                                            <span>{{ $op->subscription_auto_renew ? __('On') : __('Off') }}</span>
+                                        </button>
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="py-3.5 px-4 sm:px-6 text-right">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <button
+                                                type="button"
+                                                wire:click="sendRenewalReminder('{{ $op->id }}')"
+                                                class="h-8 px-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-xs font-bold transition border border-purple-200 dark:border-purple-800/50"
+                                                title="{{ __('Send Renewal Reminder Email') }}"
+                                            >
+                                                <i class="fa-solid fa-paper-plane mr-1 text-[10px]"></i>
+                                                <span>{{ __('Remind') }}</span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                wire:click="extendSubscription('{{ $op->id }}', 30)"
+                                                class="h-8 px-2.5 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
+                                                title="{{ __('Extend subscription by +30 days') }}"
+                                            >
+                                                <span>+30d</span>
+                                            </button>
+
+                                            <a
+                                                href="{{ route('admin.operators.show', $op->id) }}"
+                                                wire:navigate
+                                                class="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 text-xs transition"
+                                                title="{{ __('View Operator Details') }}"
+                                            >
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="py-8 text-center text-slate-400">
+                                        {{ __('No subscribed operators match your search or filter.') }}
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Edit / Create Plan Modal -->
     @if ($show_modal)
@@ -435,54 +775,113 @@ new #[Title('Subscription Plans & Tiers')] #[Layout('layouts.admin')] class exte
                         <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
                             <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block">{{ __('Included Feature Permissions') }}</span>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.quick_booking_links" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('1-Click Direct Booking & Payment Links') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.advanced_calendar" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Advanced Fleet Calendar & Resource Matrix') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.daily_manifest_export" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Daily Run-Sheet & Manifest Export') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.capacity_heatmap" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Monthly Capacity Heatmap Analytics') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.tracking_pixels" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Meta Pixel & Google Analytics 4 (ROAS)') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.automated_review_requests" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('12-Hour Automated Post-Trip Review Emails') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.google_calendar" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Google Calendar Sync & iCal Feed') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.guest_crm" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Guest Directory CRM & Metrics') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.whatsapp_dispatch" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('1-Click WhatsApp Dispatch') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.custom_domain" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Custom Domain (`yourbrand.com`)') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="features.byo_gateway" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('BYO Custom Payment Gateway') }}</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    <input type="checkbox" wire:model="is_popular" class="rounded text-purple-600 focus:ring-purple-500" />
-                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ __('Highlight as Most Popular') }}</span>
-                                </label>
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_quick_links"
+                                        wire:model="features.quick_booking_links"
+                                        :label="__('1-Click Booking Links')"
+                                        :description="__('Direct payment and reservation links')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_adv_calendar"
+                                        wire:model="features.advanced_calendar"
+                                        :label="__('Advanced Fleet Matrix')"
+                                        :description="__('Fleet calendar & resource timeline')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_manifest"
+                                        wire:model="features.daily_manifest_export"
+                                        :label="__('Daily Run-Sheet Export')"
+                                        :description="__('Daily passenger manifest downloads')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_heatmap"
+                                        wire:model="features.capacity_heatmap"
+                                        :label="__('Capacity Heatmap')"
+                                        :description="__('Monthly fleet utilization analytics')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_pixels"
+                                        wire:model="features.tracking_pixels"
+                                        :label="__('Marketing Pixels')"
+                                        :description="__('Meta Pixel & GA4 tracking')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_reviews"
+                                        wire:model="features.automated_review_requests"
+                                        :label="__('Automated Review Emails')"
+                                        :description="__('Post-trip customer feedback loop')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_gcal"
+                                        wire:model="features.google_calendar"
+                                        :label="__('Google Calendar Sync')"
+                                        :description="__('iCal live reservation sync feed')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_crm"
+                                        wire:model="features.guest_crm"
+                                        :label="__('Guest Directory CRM')"
+                                        :description="__('Customer history and profiles')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_whatsapp"
+                                        wire:model="features.whatsapp_dispatch"
+                                        :label="__('1-Click WhatsApp')"
+                                        :description="__('Instant dispatch to guests & drivers')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_custom_domain"
+                                        wire:model="features.custom_domain"
+                                        :label="__('Custom Domain')"
+                                        :description="__('SSL on brand domain')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox
+                                        id="feat_byo_gateway"
+                                        wire:model="features.byo_gateway"
+                                        :label="__('BYO Custom Gateway')"
+                                        :description="__('Direct merchant account settlement')"
+                                    />
+                                </div>
+
+                                <div class="p-3 rounded-2xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/40 dark:bg-purple-950/30 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition">
+                                    <x-checkbox
+                                        id="feat_is_popular"
+                                        wire:model="is_popular"
+                                        :label="__('Highlight as Popular')"
+                                        :description="__('Show popular badge on tier card')"
+                                    />
+                                </div>
                             </div>
                         </div>
 

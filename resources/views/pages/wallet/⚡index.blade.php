@@ -5,9 +5,9 @@ use App\Enums\WalletTransactionStatus;
 use App\Models\Operator;
 use App\Models\PayoutRequest;
 use App\Models\WalletTransaction;
+use App\Concerns\ResolvesCurrentOperator;
 use App\Services\WalletService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -16,6 +16,7 @@ use Livewire\WithPagination;
 
 new #[Title('Wallet & Payouts')] class extends Component {
     use WithPagination;
+    use ResolvesCurrentOperator;
 
     public string $activeTab = 'ledger'; // 'ledger' or 'payouts'
     public string $statusFilter = 'all';
@@ -41,17 +42,6 @@ new #[Title('Wallet & Payouts')] class extends Component {
         $this->resetPage();
     }
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     /**
      * Get wallet summary statistics.
@@ -67,7 +57,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
     #[Computed]
     public function metrics(): array
     {
-        $agent = $this->currentAgent;
+        $agent = $this->currentOperator;
         if (! $agent) {
             return [
                 'available' => 0.0,
@@ -97,7 +87,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
     #[Computed]
     public function transactions(): LengthAwarePaginator
     {
-        $agent = $this->currentAgent;
+        $agent = $this->currentOperator;
         if (! $agent) {
             return new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
         }
@@ -126,7 +116,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
     #[Computed]
     public function payoutRequests(): LengthAwarePaginator
     {
-        $agent = $this->currentAgent;
+        $agent = $this->currentOperator;
         if (! $agent) {
             return new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
         }
@@ -152,7 +142,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
 
     public function openPayoutModal(): void
     {
-        $agent = $this->currentAgent;
+        $agent = $this->currentOperator;
         if (! $agent) {
             return;
         }
@@ -166,7 +156,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
 
     public function quickFillAmount(int $percent): void
     {
-        $agent = $this->currentAgent;
+        $agent = $this->currentOperator;
         if (! $agent) {
             return;
         }
@@ -183,7 +173,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
 
     public function submitPayoutRequest(WalletService $walletService): void
     {
-        $agent = $this->currentAgent;
+        $agent = $this->currentOperator;
         if (! $agent) {
             return;
         }
@@ -246,7 +236,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
     </div>
 
     <!-- Bank Account Status Banner -->
-    @if ($this->currentAgent && ! $this->currentAgent->hasValidBankAccount())
+    @if ($this->currentOperator && ! $this->currentOperator->hasValidBankAccount())
         <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-900 dark:text-amber-200">
             <div class="flex items-center gap-3">
                 <span class="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 shrink-0">
@@ -274,7 +264,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
                 <div class="text-xs">
                     <span class="text-slate-400 dark:text-zinc-500 font-semibold">{{ __('Payout Bank Account:') }}</span>
                     <span class="font-bold text-slate-900 dark:text-white ml-1">
-                        {{ $this->currentAgent?->bank_provider }} &bull; {{ $this->currentAgent?->bank_account_number }} (a/n {{ $this->currentAgent?->bank_account_name }})
+                        {{ $this->currentOperator?->bank_provider }} &bull; {{ $this->currentOperator?->bank_account_number }} (a/n {{ $this->currentOperator?->bank_account_name }})
                     </span>
                 </div>
             </div>
@@ -684,10 +674,10 @@ new #[Title('Wallet & Payouts')] class extends Component {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="font-extrabold text-sm text-slate-900 dark:text-white">
-                                        {{ $this->currentAgent?->bank_provider }} &bull; {{ $this->currentAgent?->bank_account_number }}
+                                        {{ $this->currentOperator?->bank_provider }} &bull; {{ $this->currentOperator?->bank_account_number }}
                                     </p>
                                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                                        a/n {{ $this->currentAgent?->bank_account_name }}
+                                        a/n {{ $this->currentOperator?->bank_account_name }}
                                     </p>
                                 </div>
                                 <a href="{{ route('payments.edit') }}" wire:navigate class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">

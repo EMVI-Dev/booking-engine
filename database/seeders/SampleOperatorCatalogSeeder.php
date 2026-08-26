@@ -58,8 +58,8 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'subscribed_at' => now(),
                 'bio' => 'Premier marine expeditions, daily manta ray snorkeling safaris, sunset cruises, and fast boat charters across Nusa Penida, Lembongan, and the Gili Islands.',
                 'contact_whatsapp' => '087761317159',
-                'booking_notification_email' => 'bookings@baliride.test',
-                'billing_email' => 'finance@baliride.test',
+                'booking_notification_email' => 'bookings@baliridetour@gmail.com',
+                'billing_email' => 'finance@baliridetour@gmail.com',
                 'bank_provider' => 'BCA',
                 'bank_account_name' => 'PT Bali Ride Tours',
                 'bank_account_number' => '5670660961',
@@ -68,7 +68,7 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'banner_path' => 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1600&auto=format&fit=crop&q=80',
                 'terms_and_conditions' => "1. Free cancellation is available up to the stated cutoff window.\n2. In case of extreme weather or port authority closure, guests may reschedule or receive a full refund.\n3. Please arrive at Sanur Harbour Terminal at least 30 minutes prior to departure.\n4. Snorkeling equipment and life jackets are provided for all guests.",
                 'settings' => [
-                    'brand_color' => '#4f46e5',
+                    'brand_color' => '#1C5358',
                     'whatsapp_prefilled_message' => 'Hi Bali Ride Tours, I would like to inquire about your tour packages.',
                     'whatsapp_schedule' => [
                         'mode' => 'schedule',
@@ -109,7 +109,7 @@ class SampleOperatorCatalogSeeder extends Seeder
         OperatorDomain::firstOrCreate(
             ['operator_id' => $operator->id, 'type' => DomainType::Subdomain],
             [
-                'domain' => 'bali-ride-tours.booking.test',
+                'domain' => 'bali-ride-tours.booking.emvi',
                 'is_primary' => true,
                 'status' => DomainStatus::Active,
                 'verified_at' => now(),
@@ -542,7 +542,7 @@ class SampleOperatorCatalogSeeder extends Seeder
             [
                 'amount' => 1300000.00,
                 'gateway' => 'doku',
-                'gateway_ref' => 'INV-SARAH-'.time(),
+                'gateway_ref' => 'INV-SARAH-' . time(),
                 'split_details' => [
                     'commission_rate' => 0.00,
                     'platform_commission' => 0.00,
@@ -562,7 +562,7 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'balance_snapshot' => 1300000.00,
                 'status' => 'cleared',
                 'available_at' => now(),
-                'description' => 'Direct guest booking: #'.$res1->code.' - Sarah Miller (2 pax)',
+                'description' => 'Direct guest booking: #' . $res1->code . ' - Sarah Miller (2 pax)',
             ]
         );
 
@@ -588,7 +588,7 @@ class SampleOperatorCatalogSeeder extends Seeder
             [
                 'amount' => 5800000.00,
                 'gateway' => 'doku',
-                'gateway_ref' => 'INV-DAVID-'.time(),
+                'gateway_ref' => 'INV-DAVID-' . time(),
                 'split_details' => [
                     'commission_rate' => 0.00,
                     'platform_commission' => 0.00,
@@ -608,7 +608,7 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'balance_snapshot' => 7100000.00,
                 'status' => 'cleared',
                 'available_at' => now(),
-                'description' => 'Direct guest booking: #'.$res2->code.' - David Clark (6 pax)',
+                'description' => 'Direct guest booking: #' . $res2->code . ' - David Clark (6 pax)',
             ]
         );
 

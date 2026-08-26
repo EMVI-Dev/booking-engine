@@ -1,21 +1,21 @@
-<x-layouts::app :title="__('Agent Dashboard')">
+<x-layouts::app :title="__('Operator Dashboard')">
     @php
-        /** @var \App\Models\Agent|null $agent */
-        $agent = auth()->user()?->currentAgent();
+        /** @var \App\Models\Operator|null $operator */
+        $operator = auth()->user()?->currentOperator();
 
-        $packagesCount = $agent ? $agent->packages()->count() : 0;
-        $productsCount = $agent ? $agent->products()->count() : 0;
-        $reservationsCount = $agent ? $agent->reservations()->count() : 0;
+        $packagesCount = $operator ? $operator->packages()->count() : 0;
+        $productsCount = $operator ? $operator->products()->count() : 0;
+        $reservationsCount = $operator ? $operator->reservations()->count() : 0;
 
-        $pendingConfirmationCount = $agent ? $agent->reservations()->where('status', \App\Enums\ReservationStatus::PendingConfirmation)->count() : 0;
+        $pendingConfirmationCount = $operator ? $operator->reservations()->where('status', \App\Enums\ReservationStatus::PendingConfirmation)->count() : 0;
 
-        $todayDepartures = $agent ? $agent->reservations()
+        $todayDepartures = $operator ? $operator->reservations()
             ->with(['bookable', 'latestPayment'])
             ->whereDate('requested_date', now()->toDateString())
             ->whereIn('status', [\App\Enums\ReservationStatus::Confirmed, \App\Enums\ReservationStatus::PendingConfirmation])
             ->get() : collect();
 
-        $upcomingDepartures = $agent ? $agent->reservations()
+        $upcomingDepartures = $operator ? $operator->reservations()
             ->with(['bookable', 'latestPayment'])
             ->whereDate('requested_date', '>=', now()->toDateString())
             ->whereDate('requested_date', '<=', now()->addDays(7)->toDateString())
@@ -24,36 +24,37 @@
             ->take(5)
             ->get() : collect();
 
-        $recentBookings = $agent ? $agent->reservations()
+        $recentBookings = $operator ? $operator->reservations()
             ->with(['bookable', 'latestPayment'])
             ->latest('created_at')
             ->take(6)
             ->get() : collect();
 
-        $totalRevenue = $agent ? (float) \App\Models\Payment::whereIn('reservation_id', $agent->reservations()->pluck('id'))
-            ->where('status', \App\Enums\PaymentStatus::Paid)
+        // Single correlated subquery — no PHP-side pluck() needed
+        $totalRevenue = $operator ? (float) \App\Models\Payment::where('status', \App\Enums\PaymentStatus::Paid)
+            ->whereHas('reservation', fn ($q) => $q->where('operator_id', $operator->id))
             ->sum('amount') : 0.0;
 
-        $totalPaxServed = $agent ? (int) $agent->reservations()
+        $totalPaxServed = $operator ? (int) $operator->reservations()
             ->whereIn('status', [\App\Enums\ReservationStatus::Confirmed, \App\Enums\ReservationStatus::Completed])
             ->sum('pax_count') : 0;
 
-        $totalGuestsCount = $agent ? $agent->guests()->count() : 0;
+        $totalGuestsCount = $operator ? $operator->guests()->count() : 0;
 
         // Onboarding checklist calculation
-        $hasProfile = $agent && !empty($agent->contact_whatsapp) && !empty($agent->bio);
-        $hasTerms = $agent && !empty($agent->terms_and_conditions);
-        $hasBank = $agent && (!empty($agent->formatted_bank_account) || $agent->hasCustomPaymentGateway());
+        $hasProfile = $operator && !empty($operator->contact_whatsapp) && !empty($operator->bio);
+        $hasTerms = $operator && !empty($operator->terms_and_conditions);
+        $hasBank = $operator && (!empty($operator->formatted_bank_account) || $operator->hasCustomPaymentGateway());
         $hasProducts = $productsCount > 0;
         $hasPackages = $packagesCount > 0;
-        $isProfileComplete = $agent?->isProfileComplete() ?? false;
+        $isProfileComplete = $operator?->isProfileComplete() ?? false;
 
         $completedSteps = ($hasProfile ? 1 : 0) + ($hasTerms ? 1 : 0) + ($hasBank ? 1 : 0) + (($hasProducts && $hasPackages) ? 1 : 0);
         $progressPercent = ($completedSteps / 4) * 100;
 
         $platformDomain = app(\App\Services\DomainResolverService::class)->getPlatformDomain();
-        $storefrontUrl = $agent ? (request()->getScheme() . '://' . $agent->slug . '.' . $platformDomain) : '#';
-        $isManualConfirmation = $agent?->isManualConfirmationEnabled() ?? false;
+        $storefrontUrl = $operator ? (request()->getScheme() . '://' . $operator->slug . '.' . $platformDomain) : '#';
+        $isManualConfirmation = $operator?->isManualConfirmationEnabled() ?? false;
     @endphp
 
     <div class="space-y-6 animate-fade-in" x-data="{ copied: false }">
@@ -96,7 +97,7 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/10 text-indigo-200">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            {{ $agent ? $agent->name : 'Tour Operator' }}
+                            {{ $operator ? $operator->name : 'Tour Operator' }}
                         </div>
                         <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $isManualConfirmation ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30' }}">
                             <i class="fa-solid {{ $isManualConfirmation ? 'fa-user-check' : 'fa-bolt' }} mr-1 text-[10px]"></i>
@@ -112,7 +113,7 @@
                     </p>
                 </div>
 
-                @if ($agent)
+                @if ($operator)
                     <div class="grid grid-cols-2 sm:flex items-center gap-2.5 w-full sm:w-auto shrink-0">
                         <a
                             href="{{ $storefrontUrl }}"
@@ -470,7 +471,7 @@
                 </div>
 
                 <!-- Storefront Share Card -->
-                @if ($agent)
+                @if ($operator)
                     <div class="rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-5 sm:p-6 text-white shadow-lg space-y-3">
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-share-nodes text-indigo-200 text-sm"></i>

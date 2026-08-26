@@ -87,6 +87,14 @@ class Plan extends Model
     }
 
     /**
+     * Determine if this plan is free (zero monthly and yearly cost).
+     */
+    public function isFree(): bool
+    {
+        return (float) $this->price_monthly <= 0 && (float) $this->price_yearly <= 0;
+    }
+
+    /**
      * Get or create the default Starter plan.
      */
     public static function getDefaultPlan(): self

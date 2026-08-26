@@ -57,13 +57,15 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::redirect('/', '/admin/platform')->name('dashboard');
+    Route::livewire('/', 'pages::admin.dashboard')->name('dashboard');
+    Route::livewire('/dashboard', 'pages::admin.dashboard');
     Route::livewire('/operators', 'pages::admin.operators.index')->name('operators.index');
-    Route::livewire('/agents', 'pages::admin.operators.index')->name('agents.index');
+    Route::livewire('/operators/{operator}', 'pages::admin.operators.show')->name('operators.show');
     Route::livewire('/plans', 'pages::admin.plans')->name('plans.index');
-    Route::livewire('/domains', 'pages::admin.domains')->name('domains.index');
+    Route::livewire('/announcements', 'pages::admin.announcements')->name('announcements.index');
+    Route::livewire('/coupons', 'pages::admin.coupons')->name('coupons.index');
     Route::livewire('/payouts', 'pages::admin.payouts')->name('payouts.index');
-    Route::livewire('/payments', 'pages::admin.payments')->name('payments.edit');
+    Route::livewire('/payments', 'pages::admin.payments')->name('payments.index');
     Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
 });
 

@@ -64,6 +64,10 @@ class Operator extends Model
         'plan_id',
         'subscribed_at',
         'plan_expires_at',
+        'subscription_interval',
+        'pending_plan_id',
+        'pending_plan_action_at',
+        'subscription_auto_renew',
         'terms_and_conditions',
         'bank_provider',
         'bank_account_name',
@@ -81,6 +85,8 @@ class Operator extends Model
             'status' => OperatorStatus::class,
             'subscribed_at' => 'datetime',
             'plan_expires_at' => 'datetime',
+            'pending_plan_action_at' => 'datetime',
+            'subscription_auto_renew' => 'boolean',
             'settings' => 'array',
         ];
     }
@@ -102,6 +108,22 @@ class Operator extends Model
             ->using(OperatorUser::class)
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /**
+     * @return BelongsTo<Plan, $this>
+     */
+    public function pendingPlan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class, 'pending_plan_id');
+    }
+
+    /**
+     * @return HasMany<SubscriptionPayment, $this>
+     */
+    public function subscriptionPayments(): HasMany
+    {
+        return $this->hasMany(SubscriptionPayment::class);
     }
 
     /**
@@ -372,6 +394,34 @@ class Operator extends Model
         }
 
         return Plan::getDefaultPlan();
+    }
+
+    /**
+     * Check if operator has a scheduled plan change pending execution.
+     */
+    public function hasPendingPlanChange(): bool
+    {
+        return ! empty($this->pending_plan_id) && $this->pending_plan_id !== $this->plan_id;
+    }
+
+    /**
+     * Get the scheduled pending plan.
+     */
+    public function getPendingPlan(): ?Plan
+    {
+        return $this->pendingPlan;
+    }
+
+    /**
+     * Cancel any scheduled pending plan change.
+     */
+    public function cancelPendingPlanChange(): void
+    {
+        $this->update([
+            'pending_plan_id' => null,
+            'pending_plan_action_at' => null,
+        ]);
+        $this->unsetRelation('pendingPlan');
     }
 
     /**

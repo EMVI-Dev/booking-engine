@@ -52,10 +52,16 @@
                     {{ __('Platform Control') }}
                 </p>
 
+                <a href="{{ route('admin.dashboard') }}" wire:navigate
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.dashboard') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i class="fa-solid fa-chart-pie w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.dashboard') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                    <span class="truncate">{{ __('Revenue Dashboard') }}</span>
+                </a>
+
                 <a href="{{ route('admin.operators.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ (request()->routeIs('admin.operators.*') || request()->routeIs('admin.agents.*')) ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.operators.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <div class="flex items-center gap-3 min-w-0">
-                        <i class="fa-solid fa-users-gear w-5 text-center text-sm shrink-0 {{ (request()->routeIs('admin.operators.*') || request()->routeIs('admin.agents.*')) ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                        <i class="fa-solid fa-users-gear w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.operators.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                         <span class="truncate">{{ __('Operators Management') }}</span>
                     </div>
                     @if ($totalOperators > 0)
@@ -71,10 +77,26 @@
                     <span class="truncate">{{ __('Subscription Plans') }}</span>
                 </a>
 
-                <a href="{{ route('admin.domains.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.domains.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-globe w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.domains.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
-                    <span class="truncate">{{ __('Custom Domains & DNS') }}</span>
+                <a href="{{ route('admin.announcements.index') }}" wire:navigate
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.announcements.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <i class="fa-solid fa-bullhorn w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.announcements.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                        <span class="truncate">{{ __('Broadcast Notices') }}</span>
+                    </div>
+                    @php
+                        $activeAnnouncements = \App\Models\PlatformAnnouncement::active()->count();
+                    @endphp
+                    @if ($activeAnnouncements > 0)
+                        <span class="h-5 px-2 text-[11px] font-bold flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 shrink-0">
+                            {{ $activeAnnouncements }}
+                        </span>
+                    @endif
+                </a>
+
+                <a href="{{ route('admin.coupons.index') }}" wire:navigate
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.coupons.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i class="fa-solid fa-ticket w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.coupons.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                    <span class="truncate">{{ __('Promo Codes') }}</span>
                 </a>
 
                 <a href="{{ route('admin.payouts.index') }}" wire:navigate
@@ -99,7 +121,7 @@
                     <span class="truncate">{{ __('Platform Settings') }}</span>
                 </a>
 
-                <a href="{{ route('admin.payments.edit') }}" wire:navigate
+                <a href="{{ route('admin.payments.index') }}" wire:navigate
                     class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.payments.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <i class="fa-solid fa-credit-card w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.payments.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                     <span class="truncate">{{ __('Payment Gateways') }}</span>

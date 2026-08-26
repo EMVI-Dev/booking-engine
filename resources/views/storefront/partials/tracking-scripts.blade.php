@@ -1,5 +1,5 @@
 @php
-    /** @var \App\Models\Agent|null $agent */
+    /** @var \App\Models\Operator|null $agent */
     $agent = $agent ?? null;
     $gaId = $agent?->getGoogleAnalyticsId();
     $metaPixelId = $agent?->getMetaPixelId();

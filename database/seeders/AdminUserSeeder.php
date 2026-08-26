@@ -17,7 +17,7 @@ class AdminUserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@emvi.dev'],
             [
-                'name' => 'Platform Admin',
+                'name' => 'EMVI',
                 'password' => Hash::make('password'),
                 'is_admin' => true,
                 'email_verified_at' => now(),

@@ -1,12 +1,12 @@
 <?php
 
 use App\Models\Operator;
-use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Computed;
+use App\Concerns\ResolvesCurrentOperator;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Payment Gateways')] class extends Component {
+    use ResolvesCurrentOperator;
     // Bank Payout Settlement
     public string $bank_provider = 'BCA';
     public string $bank_account_name = '';
@@ -24,17 +24,6 @@ new #[Title('Payment Gateways')] class extends Component {
 
     public bool $saved = false;
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     /**
      * Mount the component.
@@ -324,7 +313,7 @@ new #[Title('Payment Gateways')] class extends Component {
 
             <!-- Custom Gateway BYO Config Fields -->
             @if ($payment_mode === 'custom')
-                @if (! $this->currentAgent?->hasFeature('byo_gateway'))
+                @if (! $this->currentOperator?->hasFeature('byo_gateway'))
                     <div class="p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
                         <div class="flex items-center gap-2.5">
                             <span class="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 text-sm">
@@ -342,7 +331,7 @@ new #[Title('Payment Gateways')] class extends Component {
                     </div>
                 @endif
 
-                <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-5 animate-fade-in {{ ! $this->currentAgent?->hasFeature('byo_gateway') ? 'opacity-50 pointer-events-none' : '' }}">
+                <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-5 animate-fade-in {{ ! $this->currentOperator?->hasFeature('byo_gateway') ? 'opacity-50 pointer-events-none' : '' }}">
                     <div>
                         <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                             {{ __('Select Your Custom Provider & Credentials') }}

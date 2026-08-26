@@ -95,7 +95,7 @@ test('platform admin can update global platform settings', function () {
 
 test('platform admin can access payment gateways settings page', function () {
     $this->actingAs($this->adminUser)
-        ->get(route('admin.payments.edit'))
+        ->get(route('admin.payments.index'))
         ->assertOk()
         ->assertSee('Payment Gateways')
         ->assertSee('Central DOKU Payment Credentials');
@@ -147,6 +147,11 @@ test('platform admin can view operators management directory', function () {
         ->assertOk()
         ->assertSee('Operators Management')
         ->assertSee('Nusa Penida Charters')
+        ->assertSee('penida-charters');
+
+    $this->actingAs($this->adminUser)
+        ->get(route('admin.operators.show', $operator->id))
+        ->assertOk()
         ->assertSee('555111222');
 });
 
@@ -186,4 +191,46 @@ test('platform admin can choose which operator to manage and switch into their p
 
     expect(session('admin_impersonated_operator_id'))->toBe($operatorB->id)
         ->and($this->adminUser->currentOperator()->id)->toBe($operatorB->id);
+});
+
+test('platform admin can access dedicated operator details page and view insights', function () {
+    $operator = Operator::factory()->create([
+        'name' => 'Bali Sea Explorers',
+        'slug' => 'bali-sea-explorers',
+        'status' => OperatorStatus::Approved,
+        'bank_provider' => 'BCA',
+        'bank_account_number' => '999888777',
+        'bank_account_name' => 'PT Sea Explorers',
+    ]);
+
+    $this->actingAs($this->adminUser)
+        ->get(route('admin.operators.show', $operator->id))
+        ->assertOk()
+        ->assertSee('Bali Sea Explorers')
+        ->assertSee('999888777')
+        ->assertSee('PT Sea Explorers')
+        ->assertSee('Open Operator Portal')
+        ->assertSee('Gross Sales Revenue');
+});
+
+test('platform admin can update operator status and plan from dedicated operator details page', function () {
+    $operator = Operator::factory()->create([
+        'name' => 'Lombok Trekking Co',
+        'slug' => 'lombok-trekking',
+        'status' => OperatorStatus::Pending,
+    ]);
+
+    $this->actingAs($this->adminUser);
+
+    Livewire::test('pages::admin.operators.show', ['operator' => $operator])
+        ->call('updateStatus', 'approved')
+        ->assertHasNoErrors();
+
+    expect($operator->fresh()->status)->toBe(OperatorStatus::Approved);
+
+    Livewire::test('pages::admin.operators.show', ['operator' => $operator])
+        ->call('manageOperator')
+        ->assertRedirect(route('dashboard'));
+
+    expect(session('admin_impersonated_operator_id'))->toBe($operator->id);
 });

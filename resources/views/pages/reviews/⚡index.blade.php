@@ -2,28 +2,18 @@
 
 use App\Models\Operator;
 use App\Models\Review;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Guest Reviews')] class extends Component {
+    use ResolvesCurrentOperator;
     public string $search = '';
     public string $ratingFilter = 'all'; // all, 5, 4, 3, low
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     /**
      * Get aggregate review rating statistics for agent.
@@ -33,7 +23,7 @@ new #[Title('Guest Reviews')] class extends Component {
     #[Computed]
     public function statistics(): array
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return [
                 'count' => 0,
                 'average' => 0.0,
@@ -41,7 +31,7 @@ new #[Title('Guest Reviews')] class extends Component {
             ];
         }
 
-        $reviews = $this->currentAgent->reviews()->get();
+        $reviews = $this->currentOperator->reviews()->get();
         $count = $reviews->count();
 
         if ($count === 0) {
@@ -77,11 +67,11 @@ new #[Title('Guest Reviews')] class extends Component {
     #[Computed]
     public function reviews(): Collection
     {
-        if (! $this->currentAgent) {
+        if (! $this->currentOperator) {
             return new Collection();
         }
 
-        $query = $this->currentAgent->reviews()
+        $query = $this->currentOperator->reviews()
             ->with(['bookable', 'reservation'])
             ->latest();
 

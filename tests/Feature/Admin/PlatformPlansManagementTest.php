@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\OperatorStatus;
+use App\Mail\SubscriptionRenewalReminderMail;
 use App\Models\Operator;
 use App\Models\Plan;
 use App\Models\User;
@@ -21,7 +22,7 @@ test('admin can view subscription plans management page', function () {
     $response = $this->actingAs($this->admin)->get(route('admin.plans.index'));
 
     $response->assertOk()
-        ->assertSee('Subscription Plans & Feature Limits')
+        ->assertSee('Subscription Plans & Lifecycle Management')
         ->assertSee('Starter Essential')
         ->assertSee('Pro Operator')
         ->assertSee('Agency Ultimate');
@@ -45,7 +46,7 @@ test('admin can update plan pricing, commission rate, and feature flags', functi
         ->and($growthPlan->hasFeature('custom_domain'))->toBeTrue();
 });
 
-test('admin can assign subscription plan to an operator from operators management', function () {
+test('admin can assign subscription plan to an operator from operator details page', function () {
     $operator = Operator::factory()->create([
         'name' => 'Lombok Coral Explorer',
         'slug' => 'lombok-coral',
@@ -56,11 +57,62 @@ test('admin can assign subscription plan to an operator from operators managemen
     $enterprisePlan = Plan::where('slug', 'enterprise')->first();
 
     Livewire::actingAs($this->admin)
-        ->test('pages::admin.operators.index')
-        ->call('assignPlan', $operator->id, $enterprisePlan->id);
+        ->test('pages::admin.operators.show', ['operator' => $operator])
+        ->call('assignPlan', $enterprisePlan->id);
 
     $operator->refresh();
     expect($operator->plan_id)->toBe($enterprisePlan->id)
         ->and($operator->getEffectiveCommissionRate())->toBe(0.0000)
         ->and($operator->hasFeature('custom_domain'))->toBeTrue();
+});
+
+test('admin can view renewals tab and send renewal reminder email', function () {
+    Mail::fake();
+
+    $growthPlan = Plan::where('slug', 'growth')->first();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Komodo Yacht Club',
+        'slug' => 'komodo-yacht',
+        'status' => OperatorStatus::Approved,
+        'plan_id' => $growthPlan->id,
+        'billing_email' => 'billing@komodoyacht.com',
+        'plan_expires_at' => now()->addDays(3),
+        'subscription_auto_renew' => true,
+    ]);
+
+    Livewire::actingAs($this->admin)
+        ->test('pages::admin.plans')
+        ->set('tab', 'renewals')
+        ->assertSee('Komodo Yacht Club')
+        ->assertSee('billing@komodoyacht.com')
+        ->call('sendRenewalReminder', $operator->id)
+        ->assertHasNoErrors();
+
+    Mail::assertSent(SubscriptionRenewalReminderMail::class, function ($mail) use ($operator) {
+        return $mail->hasTo('billing@komodoyacht.com') && $mail->operator->id === $operator->id;
+    });
+});
+
+test('admin can extend operator subscription duration and toggle auto renew', function () {
+    $growthPlan = Plan::where('slug', 'growth')->first();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Raja Ampat Liveaboard',
+        'slug' => 'raja-ampat',
+        'status' => OperatorStatus::Approved,
+        'plan_id' => $growthPlan->id,
+        'plan_expires_at' => now()->addDays(5),
+        'subscription_auto_renew' => false,
+    ]);
+
+    Livewire::actingAs($this->admin)
+        ->test('pages::admin.plans')
+        ->call('extendSubscription', $operator->id, 30)
+        ->call('toggleAutoRenew', $operator->id)
+        ->assertHasNoErrors();
+
+    $operator->refresh();
+    expect(now()->diffInDays($operator->plan_expires_at))->toBeGreaterThanOrEqual(34)
+        ->and($operator->subscription_auto_renew)->toBeTrue();
 });

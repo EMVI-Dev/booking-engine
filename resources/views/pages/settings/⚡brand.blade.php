@@ -1,15 +1,16 @@
 <?php
 
 use App\Models\Operator;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 new #[Title('Brand Settings')] class extends Component {
     use WithFileUploads;
+    use ResolvesCurrentOperator;
 
     // Brand Logo
     public $logo;
@@ -52,17 +53,6 @@ new #[Title('Brand Settings')] class extends Component {
 
     public bool $saved = false;
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     /**
      * Mount the component.

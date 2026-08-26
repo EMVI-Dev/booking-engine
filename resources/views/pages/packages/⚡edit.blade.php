@@ -4,7 +4,7 @@ use App\Enums\ListingStatus;
 use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
-use Illuminate\Support\Facades\Auth;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
@@ -14,6 +14,7 @@ use Livewire\WithFileUploads;
 
 new #[Title('Edit Tour Package')] class extends Component {
     use WithFileUploads;
+    use ResolvesCurrentOperator;
 
     public Package $package;
 
@@ -47,17 +48,6 @@ new #[Title('Edit Tour Package')] class extends Component {
     /** @var array<\Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
     public array $galleryFiles = [];
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     #[Computed]
     public function availableProducts()

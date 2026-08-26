@@ -19,24 +19,32 @@
             : '#';
         $packagesCount = $currentOperator ? $currentOperator->packages()->count() : 0;
         $productsCount = $currentOperator ? $currentOperator->products()->count() : 0;
-        $reservationsCount = $currentOperator ? $currentOperator->reservations()->whereIn('status', [
-            \App\Enums\ReservationStatus::Confirmed->value,
-            \App\Enums\ReservationStatus::PendingConfirmation->value,
-            \App\Enums\ReservationStatus::PaymentPending->value,
-        ])->count() : 0;
+        $reservationsCount = $currentOperator
+            ? $currentOperator
+                ->reservations()
+                ->whereIn('status', [
+                    \App\Enums\ReservationStatus::Confirmed->value,
+                    \App\Enums\ReservationStatus::PendingConfirmation->value,
+                    \App\Enums\ReservationStatus::PaymentPending->value,
+                ])
+                ->count()
+            : 0;
         $availableBalance = $currentOperator ? $currentOperator->getAvailableBalance() : 0;
     @endphp
 
     <!-- Sticky Desktop Sidebar (Purely Desktop, never flashes on mobile) -->
-    <aside class="hidden lg:flex flex-col w-64 bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 lg:sticky lg:top-0 lg:h-screen shrink-0 select-none">
+    <aside
+        class="hidden lg:flex flex-col w-64 bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 lg:sticky lg:top-0 lg:h-screen shrink-0 select-none">
         <!-- Brand Header (Fixed 64px) -->
         <div
             class="h-16 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-zinc-800 shrink-0">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 font-semibold text-sm group min-w-0"
                 wire:navigate>
                 @if ($currentOperator?->logo_url)
-                    <div class="h-9 w-9 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-0.5 shrink-0 shadow-2xs group-hover:scale-105 transition-transform duration-200 flex items-center justify-center">
-                        <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}" class="w-full h-full object-contain rounded-lg" />
+                    <div
+                        class="h-9 w-9 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-0.5 shrink-0 shadow-2xs group-hover:scale-105 transition-transform duration-200 flex items-center justify-center">
+                        <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}"
+                            class="w-full h-full object-contain rounded-lg" />
                     </div>
                 @else
                     <span
@@ -124,7 +132,8 @@
                         <span class="truncate">{{ __('Wallet & Payouts') }}</span>
                     </div>
                     @if ($availableBalance > 0)
-                        <span class="h-5 px-2 text-[10px] font-extrabold flex items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 shrink-0">
+                        <span
+                            class="h-5 px-2 text-[10px] font-extrabold flex items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 shrink-0">
                             Rp {{ number_format($availableBalance / 1000, 0) }}k
                         </span>
                     @endif
@@ -137,8 +146,9 @@
                             class="fa-solid fa-address-book w-5 text-center text-sm shrink-0 {{ request()->routeIs('guests.*') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                         <span class="truncate">{{ __('Guest CRM') }}</span>
                     </div>
-                    @if ($currentOperator && ! $currentOperator->hasFeature('guest_crm'))
-                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300">
+                    @if ($currentOperator && !$currentOperator->hasFeature('guest_crm'))
+                        <span
+                            class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300">
                             {{ __('Pro') }}
                         </span>
                     @endif
@@ -146,7 +156,8 @@
 
                 <a href="{{ route('reviews.index') }}" wire:navigate
                     class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('reviews.*') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-star w-5 text-center text-sm shrink-0 {{ request()->routeIs('reviews.*') ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                    <i
+                        class="fa-solid fa-star w-5 text-center text-sm shrink-0 {{ request()->routeIs('reviews.*') ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500' }}"></i>
                     <span class="truncate">{{ __('Guest Reviews') }}</span>
                 </a>
             </div>
@@ -158,10 +169,10 @@
                 </p>
 
                 <a href="{{ route('packages.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ (request()->routeIs('packages.*') || request()->routeIs('products.*')) ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('packages.*') || request()->routeIs('products.*') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <div class="flex items-center gap-3 min-w-0">
                         <i
-                            class="fa-solid fa-cubes w-5 text-center text-sm shrink-0 {{ (request()->routeIs('packages.*') || request()->routeIs('products.*')) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                            class="fa-solid fa-cubes w-5 text-center text-sm shrink-0 {{ request()->routeIs('packages.*') || request()->routeIs('products.*') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                         <span class="truncate">{{ __('Tours & Packages') }}</span>
                     </div>
                     @if ($packagesCount > 0)
@@ -231,7 +242,8 @@
                         <div class="border-t border-slate-100 dark:border-zinc-800 my-1"></div>
                         <x-dropdown-item :href="route('admin.platform.edit')" wire:navigate>
                             <i class="fa-brands fa-searchengin mr-2 text-purple-600 text-sm"></i>
-                            <span class="font-bold text-purple-600 dark:text-purple-400">{{ __('Platform Admin') }}</span>
+                            <span
+                                class="font-bold text-purple-600 dark:text-purple-400">{{ __('Platform Admin') }}</span>
                         </x-dropdown-item>
                     @endif
                     <div class="border-t border-slate-100 dark:border-zinc-800 my-1"></div>
@@ -250,21 +262,25 @@
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col min-w-0">
         @if (auth()->user()?->isAdmin())
-            <div class="px-4 sm:px-6 py-2 bg-gradient-to-r from-purple-700 to-indigo-700 text-white text-xs font-semibold flex flex-wrap items-center justify-between gap-2 shadow-xs z-30 shrink-0">
+            <div
+                class="px-4 sm:px-6 py-2 bg-gradient-to-r from-purple-700 to-indigo-700 text-white text-xs font-semibold flex flex-wrap items-center justify-between gap-2 shadow-xs z-30 shrink-0">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="p-1 rounded-md bg-white/20 text-white text-[10px]">
                         <i class="fa-solid fa-compass"></i>
                     </span>
                     <span class="truncate">
-                        {{ __('Admin Session: Managing Operator') }} <strong class="text-white underline font-bold">{{ $currentOperator->name ?? 'Default Operator' }}</strong>
+                        {{ __('Admin Session: Managing Operator') }} <strong
+                            class="text-white underline font-bold">{{ $currentOperator->name ?? 'Default Operator' }}</strong>
                     </span>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <a href="{{ route('admin.operators.index') }}" wire:navigate class="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold transition">
+                    <a href="{{ route('admin.operators.index') }}" wire:navigate
+                        class="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold transition">
                         <i class="fa-solid fa-users-gear mr-1"></i>
                         {{ __('Switch Operator') }}
                     </a>
-                    <a href="{{ route('admin.platform.edit') }}" wire:navigate class="px-2.5 py-1 rounded-lg bg-white text-purple-700 hover:bg-purple-50 text-[11px] font-bold transition shadow-xs">
+                    <a href="{{ route('admin.platform.edit') }}" wire:navigate
+                        class="px-2.5 py-1 rounded-lg bg-white text-purple-700 hover:bg-purple-50 text-[11px] font-bold transition shadow-xs">
                         <i class="fa-solid fa-arrow-left mr-1"></i>
                         {{ __('Platform Admin') }}
                     </a>
@@ -273,12 +289,15 @@
         @endif
 
         <!-- Mobile Top Header -->
-        <header class="h-14 px-4 sm:px-6 flex items-center justify-between border-b border-slate-200/80 dark:border-zinc-800 lg:hidden bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md sticky top-0 z-30 select-none">
+        <header
+            class="h-14 px-4 sm:px-6 flex items-center justify-between border-b border-slate-200/80 dark:border-zinc-800 lg:hidden bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md sticky top-0 z-30 select-none">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 min-w-0" wire:navigate>
                 @if ($currentOperator?->logo_url)
-                    <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}" class="h-7 w-7 rounded-lg object-contain border border-slate-200 dark:border-zinc-700 p-0.5 shrink-0 bg-white" />
+                    <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}"
+                        class="h-7 w-7 rounded-lg object-contain border border-slate-200 dark:border-zinc-700 p-0.5 shrink-0 bg-white" />
                 @else
-                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white font-black text-xs shrink-0">
+                    <span
+                        class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white font-black text-xs shrink-0">
                         {{ strtoupper(substr($currentOperator->name ?? 'T', 0, 1)) }}
                     </span>
                 @endif
@@ -315,25 +334,26 @@
         </header>
 
         <!-- Desktop Top Header Bar -->
-        <header class="hidden lg:flex h-16 items-center justify-between px-6 lg:px-8 border-b border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-30 select-none">
+        <header
+            class="hidden lg:flex h-16 items-center justify-between px-6 lg:px-8 border-b border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-30 select-none">
             <!-- Left: Storefront URL with 1-Click Copy -->
             <div class="flex items-center gap-3 min-w-0" x-data="{ copied: false }">
                 <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 shrink-0">
                     {{ __('Storefront:') }}
                 </span>
-                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 text-xs font-mono text-slate-700 dark:text-slate-300">
+                <div
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 text-xs font-mono text-slate-700 dark:text-slate-300">
                     <i class="fa-solid fa-globe text-[11px] text-indigo-500"></i>
                     <span class="truncate max-w-xs sm:max-w-md">{{ $storefrontUrl }}</span>
-                    <button
-                        type="button"
+                    <button type="button"
                         @click="navigator.clipboard.writeText('{{ $storefrontUrl }}'); copied = true; setTimeout(() => copied = false, 2000)"
                         class="ml-1 p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
-                        title="{{ __('Copy Storefront Link') }}"
-                    >
+                        title="{{ __('Copy Storefront Link') }}">
                         <i class="fa-solid" :class="copied ? 'fa-check text-emerald-500' : 'fa-copy'"></i>
                     </button>
                 </div>
-                <span x-show="copied" x-cloak class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+                <span x-show="copied" x-cloak
+                    class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
                     {{ __('Copied!') }}
                 </span>
             </div>
@@ -360,22 +380,15 @@
                     @php
                         $operatorPlan = $currentOperator->getPlan();
                     @endphp
-                    <a
-                        href="{{ route('settings.plan') }}"
-                        wire:navigate
-                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-100 transition shadow-2xs"
-                        title="{{ __('Manage Plan') }}"
-                    >
+                    <a href="{{ route('settings.plan') }}" wire:navigate
+                        class="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-100 transition shadow-2xs"
+                        title="{{ __('Manage Plan') }}">
                         <i class="fa-solid fa-crown text-[10px] text-amber-500"></i>
                         <span>{{ $operatorPlan->name }}</span>
                     </a>
 
-                    <a
-                        href="{{ $storefrontUrl }}"
-                        target="_blank"
-                        rel="noopener"
-                        class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-200/80 dark:border-zinc-700 shadow-2xs transition-all cursor-pointer"
-                    >
+                    <a href="{{ $storefrontUrl }}" target="_blank" rel="noopener"
+                        class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-200/80 dark:border-zinc-700 shadow-2xs transition-all cursor-pointer">
                         <i class="fa-solid fa-arrow-up-right-from-square text-[11px] text-indigo-500"></i>
                         <span>{{ __('Live Storefront') }}</span>
                     </a>
@@ -385,13 +398,67 @@
 
         <!-- Main Workspace (Matching Storefront Standard Mobile Padding) -->
         <main class="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:p-8 pb-24 lg:pb-8 w-full">
-            <div class="w-full max-w-7xl mx-auto">
+            <div class="w-full max-w-7xl mx-auto space-y-6">
+                @php
+                    $platformAnnouncements = \App\Models\PlatformAnnouncement::forOperator($currentOperator)->get();
+                @endphp
+
+                @if ($platformAnnouncements->isNotEmpty())
+                    <div class="space-y-3">
+                        @foreach ($platformAnnouncements as $announcement)
+                            @php
+                                $bannerClasses = match ($announcement->type) {
+                                    'critical'
+                                        => 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-900 text-rose-900 dark:text-rose-200',
+                                    'warning'
+                                        => 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-200',
+                                    'success'
+                                        => 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-200',
+                                    default
+                                        => 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-900 text-indigo-900 dark:text-indigo-200',
+                                };
+                                $iconClasses = match ($announcement->type) {
+                                    'critical' => 'fa-solid fa-triangle-exclamation text-rose-600 dark:text-rose-400',
+                                    'warning' => 'fa-solid fa-circle-exclamation text-amber-600 dark:text-amber-400',
+                                    'success' => 'fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400',
+                                    default => 'fa-solid fa-bullhorn text-indigo-600 dark:text-indigo-400',
+                                };
+                            @endphp
+                            <div x-data="{ dismissed: false }" x-show="!dismissed"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                class="p-4 rounded-2xl border {{ $bannerClasses }} shadow-xs flex items-start justify-between gap-3 text-xs">
+                                <div class="flex items-start gap-3 min-w-0">
+                                    <i class="{{ $iconClasses }} text-base mt-0.5 shrink-0"></i>
+                                    <div class="space-y-0.5 min-w-0">
+                                        <h4 class="font-bold text-xs uppercase tracking-wide">
+                                            {{ $announcement->title }}
+                                        </h4>
+                                        <p class="leading-relaxed opacity-90">
+                                            {{ $announcement->message }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                @if ($announcement->is_dismissible)
+                                    <button type="button" @click="dismissed = true"
+                                        class="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition cursor-pointer shrink-0 opacity-70 hover:opacity-100"
+                                        title="{{ __('Dismiss') }}">
+                                        <i class="fa-solid fa-xmark text-xs"></i>
+                                    </button>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
                 {{ $slot }}
             </div>
         </main>
 
         <!-- Sticky Mobile Bottom Navigation Bar (Daily Essentials) -->
-        <nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800 py-1.5 px-2 flex items-center justify-around select-none shadow-lg">
+        <nav
+            class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800 py-1.5 px-2 flex items-center justify-around select-none shadow-lg">
             <!-- Dashboard -->
             <a href="{{ route('dashboard') }}" wire:navigate
                 class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all {{ request()->routeIs('dashboard') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
@@ -405,7 +472,8 @@
                 <i class="fa-solid fa-calendar-check text-base mb-0.5"></i>
                 <span class="text-[10px] leading-none">{{ __('Bookings') }}</span>
                 @if ($reservationsCount > 0)
-                    <span class="absolute top-0.5 right-1.5 h-3.5 min-w-3.5 px-1 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                    <span
+                        class="absolute top-0.5 right-1.5 h-3.5 min-w-3.5 px-1 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">
                         {{ $reservationsCount }}
                     </span>
                 @endif
@@ -444,42 +512,33 @@
         <!-- Mobile Menu Modal (Bottom Sheet - Only Essential Actions) -->
         <div x-show="mobileMenuOpen" x-cloak class="relative z-50 lg:hidden" role="dialog" aria-modal="true">
             <!-- Dim Backdrop -->
-            <div
-                x-show="mobileMenuOpen"
-                x-cloak
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0"
-                x-transition:enter-end="opacity-100"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100"
-                x-transition:leave-end="opacity-0"
-                x-on:click="mobileMenuOpen = false"
-                class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            ></div>
+            <div x-show="mobileMenuOpen" x-cloak x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" x-on:click="mobileMenuOpen = false"
+                class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"></div>
 
             <!-- Bottom Sheet Content -->
             <div class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 max-h-[85vh] overflow-y-auto">
-                <div
-                    x-show="mobileMenuOpen"
-                    x-cloak
-                    x-transition:enter="transition ease-out duration-250 transform"
+                <div x-show="mobileMenuOpen" x-cloak x-transition:enter="transition ease-out duration-250 transform"
                     x-transition:enter-start="translate-y-full opacity-0"
                     x-transition:enter-end="translate-y-0 opacity-100"
                     x-transition:leave="transition ease-in duration-200 transform"
                     x-transition:leave-start="translate-y-0 opacity-100"
-                    x-transition:leave-end="translate-y-full opacity-0"
-                    x-on:click.away="mobileMenuOpen = false"
-                    class="w-full max-w-lg mx-auto rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 space-y-4"
-                >
+                    x-transition:leave-end="translate-y-full opacity-0" x-on:click.away="mobileMenuOpen = false"
+                    class="w-full max-w-lg mx-auto rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 space-y-4">
                     <!-- Drag Handle / Header -->
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
                         <div class="flex items-center gap-3 min-w-0">
                             @if ($currentOperator?->logo_url)
-                                <div class="h-10 w-10 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-0.5 shrink-0 flex items-center justify-center">
-                                    <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}" class="w-full h-full object-contain rounded-lg" />
+                                <div
+                                    class="h-10 w-10 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-0.5 shrink-0 flex items-center justify-center">
+                                    <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}"
+                                        class="w-full h-full object-contain rounded-lg" />
                                 </div>
                             @else
-                                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white font-black text-sm shrink-0">
+                                <span
+                                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white font-black text-sm shrink-0">
                                     {{ strtoupper(substr($currentOperator->name ?? 'T', 0, 1)) }}
                                 </span>
                             @endif
@@ -493,11 +552,8 @@
                             </div>
                         </div>
 
-                        <button
-                            type="button"
-                            x-on:click="mobileMenuOpen = false"
-                            class="h-8 w-8 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
-                        >
+                        <button type="button" x-on:click="mobileMenuOpen = false"
+                            class="h-8 w-8 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition cursor-pointer">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
@@ -520,7 +576,8 @@
                         <a href="{{ route('wallet.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                             class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 hover:border-indigo-200 dark:hover:border-indigo-900 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition space-y-1 block">
                             <div class="flex items-center justify-between">
-                                <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 text-xs">
+                                <span
+                                    class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 text-xs">
                                     <i class="fa-solid fa-wallet"></i>
                                 </span>
                                 @if ($availableBalance > 0)
@@ -529,17 +586,20 @@
                                     </span>
                                 @endif
                             </div>
-                            <span class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Wallet & Payouts') }}</span>
+                            <span
+                                class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Wallet & Payouts') }}</span>
                             <span class="text-[10px] text-slate-400 block">{{ __('Balance & settlements') }}</span>
                         </a>
 
                         <!-- Guest Reviews -->
                         <a href="{{ route('reviews.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                             class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 hover:border-indigo-200 dark:hover:border-indigo-900 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition space-y-1 block">
-                            <span class="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/80 text-amber-500 text-xs inline-block">
+                            <span
+                                class="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/80 text-amber-500 text-xs inline-block">
                                 <i class="fa-solid fa-star"></i>
                             </span>
-                            <span class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest Reviews') }}</span>
+                            <span
+                                class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest Reviews') }}</span>
                             <span class="text-[10px] text-slate-400 block">{{ __('Ratings & feedback') }}</span>
                         </a>
 
@@ -547,16 +607,19 @@
                         <a href="{{ route('guests.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                             class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 hover:border-indigo-200 dark:hover:border-indigo-900 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition space-y-1 block">
                             <div class="flex items-center justify-between">
-                                <span class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 text-xs">
+                                <span
+                                    class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 text-xs">
                                     <i class="fa-solid fa-address-book"></i>
                                 </span>
-                                @if ($currentOperator && ! $currentOperator->hasFeature('guest_crm'))
-                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300">
+                                @if ($currentOperator && !$currentOperator->hasFeature('guest_crm'))
+                                    <span
+                                        class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300">
                                         {{ __('Pro') }}
                                     </span>
                                 @endif
                             </div>
-                            <span class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest Directory') }}</span>
+                            <span
+                                class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest Directory') }}</span>
                             <span class="text-[10px] text-slate-400 block">{{ __('Customer profiles') }}</span>
                         </a>
 
@@ -564,7 +627,8 @@
                         <a href="{{ route('packages.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                             class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 hover:border-indigo-200 dark:hover:border-indigo-900 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition space-y-1 block">
                             <div class="flex items-center justify-between">
-                                <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 text-xs">
+                                <span
+                                    class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 text-xs">
                                     <i class="fa-solid fa-cubes"></i>
                                 </span>
                                 @if ($packagesCount > 0)
@@ -573,7 +637,8 @@
                                     </span>
                                 @endif
                             </div>
-                            <span class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Tours & Packages') }}</span>
+                            <span
+                                class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Tours & Packages') }}</span>
                             <span class="text-[10px] text-slate-400 block">{{ __('Live listings') }}</span>
                         </a>
                     </div>
@@ -582,19 +647,23 @@
                     <a href="{{ route('brand.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                         class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
                         <div class="flex items-center gap-2.5">
-                            <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+                            <span
+                                class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
                                 <i class="fa-solid fa-sliders"></i>
                             </span>
                             <div>
-                                <span class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Storefront Settings') }}</span>
-                                <span class="text-[10px] text-slate-400 block">{{ __('Branding, policies, payments') }}</span>
+                                <span
+                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Storefront Settings') }}</span>
+                                <span
+                                    class="text-[10px] text-slate-400 block">{{ __('Branding, policies, payments') }}</span>
                             </div>
                         </div>
                         <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
                     </a>
 
                     <!-- User Account & Logout Footer -->
-                    <div class="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-3">
+                    <div
+                        class="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-3">
                         <a href="{{ route('profile.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                             class="h-9 px-3 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-semibold text-slate-700 dark:text-slate-300 inline-flex items-center gap-2 transition">
                             <i class="fa-solid fa-user-gear text-xs text-slate-400"></i>
@@ -615,15 +684,19 @@
         </div>
 
         <!-- Operator Dashboard Desktop Footer (Hidden on Mobile for Maximum Visibility) -->
-        <footer class="hidden lg:block border-t border-slate-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md py-3 sm:py-3.5 px-4 sm:px-6 lg:px-8 mt-auto shadow-xs select-none">
-            <div class="mx-auto w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+        <footer
+            class="hidden lg:block border-t border-slate-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md py-3 sm:py-3.5 px-4 sm:px-6 lg:px-8 mt-auto shadow-xs select-none">
+            <div
+                class="mx-auto w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
                 <!-- Left: Operator Copyright & Real-time Status -->
                 <div class="flex flex-wrap items-center gap-3 text-center sm:text-left">
                     <span class="font-medium">
-                        &copy; {{ date('Y') }} <strong class="text-slate-800 dark:text-slate-200">{{ $currentOperator->name ?? config('app.name', 'TravelEngine') }}</strong>
+                        &copy; {{ date('Y') }} <strong
+                            class="text-slate-800 dark:text-slate-200">{{ $currentOperator->name ?? config('app.name', 'TravelEngine') }}</strong>
                     </span>
                     <span class="hidden sm:inline text-slate-300 dark:text-zinc-700">&bull;</span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                    <span
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         {{ __('System Operational') }}
                     </span>
@@ -634,10 +707,14 @@
                     <span class="text-slate-400 dark:text-slate-500">
                         {{ __('Powered by') }}
                     </span>
-                    <a href="https://{{ $platformDomain }}" target="_blank" class="inline-flex items-center gap-1.5 font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition group" title="{{ __('Tour Operator & Direct Booking Engine Platform') }}">
-                        <i class="fa-solid fa-compass text-indigo-500 text-xs group-hover:scale-110 transition-transform"></i>
+                    <a href="https://{{ $platformDomain }}" target="_blank"
+                        class="inline-flex items-center gap-1.5 font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition group"
+                        title="{{ __('Tour Operator & Direct Booking Engine Platform') }}">
+                        <i
+                            class="fa-solid fa-compass text-indigo-500 text-xs group-hover:scale-110 transition-transform"></i>
                         <span>{{ config('app.name', 'TravelEngine') }}</span>
-                        <span class="hidden md:inline font-normal text-slate-400 dark:text-slate-500">&mdash; {{ __('The Direct Booking & Tour Management Engine') }}</span>
+                        <span class="hidden md:inline font-normal text-slate-400 dark:text-slate-500">&mdash;
+                            {{ __('The Direct Booking & Tour Management Engine') }}</span>
                     </a>
                 </div>
             </div>

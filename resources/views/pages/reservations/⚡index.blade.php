@@ -4,16 +4,17 @@ use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Models\Operator;
 use App\Models\Reservation;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Bookings & Reservations')] class extends Component {
+    use ResolvesCurrentOperator;
     public string $search = '';
     public string $statusFilter = 'all';
     public string $dateFilter = 'all'; // all, upcoming, past, this_month
@@ -55,26 +56,15 @@ new #[Title('Bookings & Reservations')] class extends Component {
         $this->openCreateLinkModal();
     }
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     #[Computed]
     public function estimatedTotal(): float
     {
-        if (!$this->currentAgent || empty($this->createBookableId)) {
+        if (!$this->currentOperator || empty($this->createBookableId)) {
             return 0.0;
         }
 
-        $bookable = $this->createBookableType === 'package' ? $this->currentAgent->packages()->find($this->createBookableId) : $this->currentAgent->products()->find($this->createBookableId);
+        $bookable = $this->createBookableType === 'package' ? $this->currentOperator->packages()->find($this->createBookableId) : $this->currentOperator->products()->find($this->createBookableId);
 
         if (!$bookable) {
             return 0.0;
@@ -93,7 +83,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     #[Computed]
     public function availablePackages(): Collection
     {
-        return $this->currentAgent?->packages()->where('status', 'published')->get() ?? new Collection();
+        return $this->currentOperator?->packages()->where('status', 'published')->get() ?? new Collection();
     }
 
     /**
@@ -102,7 +92,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     #[Computed]
     public function availableProducts(): Collection
     {
-        return $this->currentAgent?->products()->where('status', 'published')->get() ?? new Collection();
+        return $this->currentOperator?->products()->where('status', 'published')->get() ?? new Collection();
     }
 
     /**
@@ -198,12 +188,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
             'createNotes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        if (!$this->currentAgent) {
+        if (!$this->currentOperator) {
             return;
         }
 
         /** @var \App\Models\Package|\App\Models\Product|null $bookable */
-        $bookable = $this->createBookableType === 'package' ? $this->currentAgent->packages()->find($this->createBookableId) : $this->currentAgent->products()->find($this->createBookableId);
+        $bookable = $this->createBookableType === 'package' ? $this->currentOperator->packages()->find($this->createBookableId) : $this->currentOperator->products()->find($this->createBookableId);
 
         if (!$bookable) {
             $this->addError('createBookableId', __('Please select a valid experience.'));
@@ -213,7 +203,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
         $unitPrice = (float) ($bookable->price ?? 0);
         $subtotal = $unitPrice * $this->createPaxCount;
         $serviceFeeRate = \App\Models\PlatformSetting::current()->getGuestServiceFeeRate();
-        $isEnterprise = $this->currentAgent->plan?->slug === 'enterprise';
+        $isEnterprise = $this->currentOperator->plan?->slug === 'enterprise';
         $serviceFee = $isEnterprise ? 0 : round($subtotal * $serviceFeeRate);
         $totalPrice = $subtotal + $serviceFee;
 
@@ -264,7 +254,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     #[Computed]
     public function metrics(): array
     {
-        if (!$this->currentAgent) {
+        if (!$this->currentOperator) {
             return [
                 'total' => 0,
                 'confirmed' => 0,
@@ -274,7 +264,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
             ];
         }
 
-        $base = $this->currentAgent->reservations();
+        $base = $this->currentOperator->reservations();
 
         $total = (clone $base)->count();
         $confirmed = (clone $base)->where('status', ReservationStatus::Confirmed->value)->count();
@@ -303,11 +293,11 @@ new #[Title('Bookings & Reservations')] class extends Component {
     #[Computed]
     public function reservations(): Collection
     {
-        if (!$this->currentAgent) {
+        if (!$this->currentOperator) {
             return new Collection();
         }
 
-        $query = $this->currentAgent->reservations()->with(['bookable', 'latestPayment', 'payments']);
+        $query = $this->currentOperator->reservations()->with(['bookable', 'latestPayment', 'payments']);
 
         // Status Filter
         if ($this->statusFilter !== 'all') {
@@ -345,11 +335,11 @@ new #[Title('Bookings & Reservations')] class extends Component {
     #[Computed]
     public function selectedReservation(): ?Reservation
     {
-        if (!$this->selectedReservationId || !$this->currentAgent) {
+        if (!$this->selectedReservationId || !$this->currentOperator) {
             return null;
         }
 
-        return $this->currentAgent
+        return $this->currentOperator
             ->reservations()
             ->with(['bookable', 'latestPayment', 'payments'])
             ->find($this->selectedReservationId);
@@ -383,11 +373,11 @@ new #[Title('Bookings & Reservations')] class extends Component {
      */
     public function syncPaymentStatus(string $reservationId): void
     {
-        if (!$this->currentAgent) {
+        if (!$this->currentOperator) {
             return;
         }
 
-        $res = $this->currentAgent->reservations()->with('latestPayment')->find($reservationId);
+        $res = $this->currentOperator->reservations()->with('latestPayment')->find($reservationId);
 
         if (!$res || !$res->latestPayment) {
             return;
@@ -409,11 +399,11 @@ new #[Title('Bookings & Reservations')] class extends Component {
     #[Computed]
     public function pendingStatusReservation(): ?\App\Models\Reservation
     {
-        if (!$this->statusActionReservationId || !$this->currentAgent) {
+        if (!$this->statusActionReservationId || !$this->currentOperator) {
             return null;
         }
 
-        return $this->currentAgent->reservations()->with('bookable')->find($this->statusActionReservationId);
+        return $this->currentOperator->reservations()->with('bookable')->find($this->statusActionReservationId);
     }
 
     public function confirmStatusTransition(string $reservationId, string $statusValue): void
@@ -444,11 +434,11 @@ new #[Title('Bookings & Reservations')] class extends Component {
      */
     public function updateStatus(string $reservationId, string $statusValue): void
     {
-        if (!$this->currentAgent) {
+        if (!$this->currentOperator) {
             return;
         }
 
-        $res = $this->currentAgent->reservations()->find($reservationId);
+        $res = $this->currentOperator->reservations()->find($reservationId);
 
         if (!$res) {
             return;
@@ -701,7 +691,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     __('Hello :name, reaching out regarding your reservation (:code) with :agent', [
                                         'name' => $res->guest_name,
                                         'code' => $resCode,
-                                        'agent' => $this->currentAgent->name,
+                                        'agent' => $this->currentOperator->name,
                                     ]),
                                 );
                         @endphp
@@ -999,7 +989,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         __('Hello :name, reaching out regarding your reservation (:code) with :agent', [
                             'name' => $res->guest_name,
                             'code' => $resCode,
-                            'agent' => $this->currentAgent->name,
+                            'agent' => $this->currentOperator->name,
                         ]),
                     );
             @endphp

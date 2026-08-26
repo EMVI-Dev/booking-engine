@@ -16,3 +16,6 @@ Schedule::command('trips:send-departure-reminders')->hourly();
 
 // 5. Send automated post-trip review request emails 12 hours after trip
 Schedule::command('trips:send-review-requests')->hourly();
+
+// 6. Process scheduled operator subscription downgrades upon billing cycle conclusion
+Schedule::command('subscriptions:process-scheduled-changes')->daily();

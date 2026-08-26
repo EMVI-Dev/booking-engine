@@ -1,12 +1,8 @@
 <?php
 
-use App\Enums\ListingStatus;
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
-use App\Models\Package;
 use App\Models\PlatformSetting;
-use App\Models\Product;
-use App\Models\Reservation;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -21,12 +17,8 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
     public string $currency_code = 'IDR';
     public string $currency_symbol = 'Rp';
 
-    // Dashboard Overview Counts
-    public int $total_operators = 0;
     public int $approved_operators = 0;
-    public int $total_packages = 0;
-    public int $total_products = 0;
-    public int $total_reservations = 0;
+    public int $total_operators = 0;
 
     public bool $saved = false;
 
@@ -46,12 +38,9 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
         $this->currency_code = (string) ($settings['currency_code'] ?? 'IDR');
         $this->currency_symbol = (string) ($settings['currency_symbol'] ?? 'Rp');
 
-        // Load Platform Overview Stats
+        // Operator context for the header note
         $this->total_operators = Operator::count();
         $this->approved_operators = Operator::where('status', OperatorStatus::Approved)->count();
-        $this->total_packages = Package::where('status', ListingStatus::Published)->count();
-        $this->total_products = Product::where('status', ListingStatus::Published)->count();
-        $this->total_reservations = Reservation::count();
     }
 
     /**
@@ -101,35 +90,12 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                         {{ __('Configure global platform branding, default commission take-rate, currency, and operational hold policies.') }}
+                        <span class="ml-2 text-[11px] font-bold text-purple-600 dark:text-purple-400">
+                            &mdash; {{ $approved_operators }}/{{ $total_operators }} {{ __('operators active') }}
+                        </span>
                     </p>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Platform Stats Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Registered Operators') }}</span>
-            <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-black text-slate-900 dark:text-white">{{ $approved_operators }}</span>
-                <span class="text-xs text-slate-400">/ {{ $total_operators }} total</span>
-            </div>
-        </div>
-
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Published Packages') }}</span>
-            <div class="text-2xl font-black text-slate-900 dark:text-white">{{ $total_packages }}</div>
-        </div>
-
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Products & Services') }}</span>
-            <div class="text-2xl font-black text-slate-900 dark:text-white">{{ $total_products }}</div>
-        </div>
-
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Total Reservations') }}</span>
-            <div class="text-2xl font-black text-slate-900 dark:text-white">{{ $total_reservations }}</div>
         </div>
     </div>
 

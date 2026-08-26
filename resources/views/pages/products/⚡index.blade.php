@@ -3,27 +3,17 @@
 use App\Enums\ListingStatus;
 use App\Models\Operator;
 use App\Models\Product;
-use Illuminate\Support\Facades\Auth;
+use App\Concerns\ResolvesCurrentOperator;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Activities & Inventory')] class extends Component {
+    use ResolvesCurrentOperator;
     public string $search = '';
     public string $statusFilter = 'all';
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     #[Computed]
     public function isProfileComplete(): bool
@@ -70,7 +60,7 @@ new #[Title('Activities & Inventory')] class extends Component {
 
     public function deleteProduct(string $id): void
     {
-        $product = $this->currentAgent?->products()->findOrFail($id);
+        $product = $this->currentOperator?->products()->findOrFail($id);
 
         if ($product) {
             if ($product->cover_photo) {

@@ -1,12 +1,12 @@
 <?php
 
 use App\Models\Operator;
-use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Computed;
+use App\Concerns\ResolvesCurrentOperator;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Storefront Settings')] class extends Component {
+    use ResolvesCurrentOperator;
     // Storefront Sales & Inventory Rules
     public bool $allow_standalone_products = true;
     public bool $show_reviews = true;
@@ -22,17 +22,6 @@ new #[Title('Storefront Settings')] class extends Component {
 
     public bool $saved = false;
 
-    #[Computed]
-    public function currentOperator(): ?Operator
-    {
-        return Auth::user()?->currentOperator();
-    }
-
-    #[Computed]
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator;
-    }
 
     /**
      * Mount the component.
