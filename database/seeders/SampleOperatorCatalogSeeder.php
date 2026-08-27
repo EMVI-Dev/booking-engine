@@ -542,7 +542,7 @@ class SampleOperatorCatalogSeeder extends Seeder
             [
                 'amount' => 1300000.00,
                 'gateway' => 'doku',
-                'gateway_ref' => 'INV-SARAH-' . time(),
+                'gateway_ref' => 'INV-SARAH-'.time(),
                 'split_details' => [
                     'commission_rate' => 0.00,
                     'platform_commission' => 0.00,
@@ -562,7 +562,7 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'balance_snapshot' => 1300000.00,
                 'status' => 'cleared',
                 'available_at' => now(),
-                'description' => 'Direct guest booking: #' . $res1->code . ' - Sarah Miller (2 pax)',
+                'description' => 'Direct guest booking: #'.$res1->code.' - Sarah Miller (2 pax)',
             ]
         );
 
@@ -588,7 +588,7 @@ class SampleOperatorCatalogSeeder extends Seeder
             [
                 'amount' => 5800000.00,
                 'gateway' => 'doku',
-                'gateway_ref' => 'INV-DAVID-' . time(),
+                'gateway_ref' => 'INV-DAVID-'.time(),
                 'split_details' => [
                     'commission_rate' => 0.00,
                     'platform_commission' => 0.00,
@@ -608,7 +608,7 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'balance_snapshot' => 7100000.00,
                 'status' => 'cleared',
                 'available_at' => now(),
-                'description' => 'Direct guest booking: #' . $res2->code . ' - David Clark (6 pax)',
+                'description' => 'Direct guest booking: #'.$res2->code.' - David Clark (6 pax)',
             ]
         );
 

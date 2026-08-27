@@ -598,12 +598,12 @@ new class extends Component {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <x-label for="blockStartDate" :value="__('Start Date')" required />
-                    <x-input id="blockStartDate" type="date" wire:model="blockStartDate" required />
+                    <x-date-picker id="blockStartDate" wire:model="blockStartDate" />
                     <x-input-error :messages="$errors->get('blockStartDate')" />
                 </div>
                 <div>
                     <x-label for="blockEndDate" :value="__('End Date')" required />
-                    <x-input id="blockEndDate" type="date" wire:model="blockEndDate" required />
+                    <x-date-picker id="blockEndDate" wire:model="blockEndDate" />
                     <x-input-error :messages="$errors->get('blockEndDate')" />
                 </div>
             </div>

@@ -309,24 +309,7 @@
         @endif
     </main>
 
-    <!-- Floating WhatsApp Support Button for Desktop Only -->
-    @if ($agent->contact_whatsapp)
-        @php
-            $waNumber = preg_replace('/[^0-9]/', '', $agent->contact_whatsapp);
-            if (str_starts_with($waNumber, '0')) {
-                $waNumber = '62' . substr($waNumber, 1);
-            }
-        @endphp
-        <div class="hidden lg:block fixed bottom-6 right-6 z-50">
-            <a href="https://wa.me/{{ $waNumber }}?text={{ urlencode('Hello ' . $agent->name . ', I am browsing your tour packages.') }}"
-                target="_blank"
-                class="h-13 px-5 inline-flex items-center gap-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black text-sm shadow-2xl shadow-emerald-500/30 transition-transform hover:scale-105"
-                title="{{ __('Direct WhatsApp Chat') }}">
-                <i class="fa-brands fa-whatsapp text-xl"></i>
-                <span>{{ __('Chat with Us') }}</span>
-            </a>
-        </div>
-    @endif
+
 
     @include('storefront.partials.footer')
 

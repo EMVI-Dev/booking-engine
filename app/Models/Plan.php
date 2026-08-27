@@ -208,10 +208,44 @@ class Plan extends Model
                 'custom_domain' => true,
                 'byo_gateway' => true,
                 'priority_support' => true,
+                'ai_discovery' => false,
             ],
             'is_active' => true,
             'is_popular' => false,
             'sort_order' => 3,
+        ]);
+
+        self::updateOrCreate(['slug' => 'ai_ultimate'], [
+            'name' => 'AI Ultimate Agency',
+            'tagline' => 'Full AI Search & ChatGPT recommendation engine, /llms.txt catalog feeds, unthrottled AI bot indexing, custom domain, and BYO payment gateway.',
+            'price_monthly' => 999000.00,
+            'price_yearly' => 9990000.00,
+            'commission_rate' => 0.0000, // 100% Net to Operator
+            'package_limit' => null, // unlimited
+            'team_member_limit' => null, // unlimited
+            'features' => [
+                'custom_subdomain' => true,
+                'standard_checkout' => true,
+                'reservations_management' => true,
+                'whatsapp_chat_widget' => true,
+                'quick_booking_links' => true,
+                'basic_calendar' => true,
+                'advanced_calendar' => true,
+                'daily_manifest_export' => true,
+                'capacity_heatmap' => true,
+                'google_calendar' => true,
+                'guest_crm' => true,
+                'whatsapp_dispatch' => true,
+                'tracking_pixels' => true,
+                'automated_review_requests' => true,
+                'custom_domain' => true,
+                'byo_gateway' => true,
+                'priority_support' => true,
+                'ai_discovery' => true,
+            ],
+            'is_active' => true,
+            'is_popular' => false,
+            'sort_order' => 4,
         ]);
     }
 }

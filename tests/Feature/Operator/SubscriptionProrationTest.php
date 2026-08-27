@@ -53,28 +53,88 @@ test('proration service calculates prorated credit and charge when upgrading mid
         ->and($proration['net_amount_due'])->toEqual(round($proration['prorated_target_cost'] - $proration['unused_credit'], 2));
 });
 
-test('operator can upgrade plan via Livewire and record payment', function () {
+test('operator can initiate upgrade, redirect to checkout, and complete card payment', function () {
     $this->actingAs($this->user);
 
-    Livewire::test('pages::settings.plan')
+    $component = Livewire::test('pages::settings.plan')
         ->assertSee('Starter Essential')
         ->call('initiatePlanSwitch', $this->proPlan->id)
         ->assertSet('show_switch_modal', true)
         ->assertSet('target_plan_id', $this->proPlan->id)
+        ->set('auto_renew', true)
+        ->set('auto_renew_consent', true)
+        ->set('payment_method', 'cc')
         ->call('confirmPlanSwitch')
         ->assertSet('show_switch_modal', false)
         ->assertHasNoErrors();
 
-    $this->operator->refresh();
-
-    expect($this->operator->plan_id)->toBe($this->proPlan->id)
-        ->and($this->operator->plan_expires_at)->not->toBeNull();
-
     $payment = SubscriptionPayment::where('operator_id', $this->operator->id)->first();
     expect($payment)->not->toBeNull()
         ->and($payment->plan_id)->toBe($this->proPlan->id)
-        ->and($payment->status)->toBe('completed')
+        ->and($payment->status)->toBe('pending')
         ->and((float) $payment->net_amount_paid)->toEqual((float) $this->proPlan->price_monthly);
+
+    $component->assertRedirect(route('settings.plan.checkout', $payment->id));
+
+    // Now test the Plan Checkout Livewire component
+    Livewire::test('pages::settings.plan-checkout', ['payment' => $payment])
+        ->assertSee('Pro Operator')
+        ->assertSee('Card Information')
+        ->set('card_holder', 'John Operator')
+        ->set('card_number', '4000 1234 5678 9010')
+        ->set('card_expiry', '12/28')
+        ->set('card_cvv', '888')
+        ->set('auto_renew_consent', true)
+        ->call('processCreditCardPayment')
+        ->assertRedirect(route('settings.plan'))
+        ->assertHasNoErrors();
+
+    $this->operator->refresh();
+    $payment->refresh();
+
+    expect($this->operator->plan_id)->toBe($this->proPlan->id)
+        ->and($this->operator->subscription_auto_renew)->toBeTrue()
+        ->and($this->operator->plan_expires_at)->not->toBeNull()
+        ->and($payment->status)->toBe('completed');
+});
+
+test('operator requires consent and confirmation when toggling recurring auto-renew status', function () {
+    $this->actingAs($this->user);
+
+    $this->operator->update([
+        'plan_id' => $this->proPlan->id,
+        'subscription_auto_renew' => true,
+        'plan_expires_at' => now()->addMonth(),
+    ]);
+
+    // Test prompt to turn off auto-renew
+    Livewire::test('pages::settings.plan')
+        ->assertSee('Auto-Renew: On')
+        ->call('promptToggleAutoRenew')
+        ->assertSet('show_auto_renew_modal', true)
+        ->assertSet('target_auto_renew_state', false)
+        ->call('confirmToggleAutoRenew')
+        ->assertSet('show_auto_renew_modal', false)
+        ->assertHasNoErrors();
+
+    $this->operator->refresh();
+    expect($this->operator->subscription_auto_renew)->toBeFalse();
+
+    // Test prompt to turn on auto-renew (fails without consent checkbox)
+    Livewire::test('pages::settings.plan')
+        ->assertSee('One-Time: Manual')
+        ->call('promptToggleAutoRenew')
+        ->assertSet('show_auto_renew_modal', true)
+        ->assertSet('target_auto_renew_state', true)
+        ->call('confirmToggleAutoRenew')
+        ->assertHasErrors(['modal_consent_checkbox'])
+        ->set('modal_consent_checkbox', true)
+        ->call('confirmToggleAutoRenew')
+        ->assertSet('show_auto_renew_modal', false)
+        ->assertHasNoErrors();
+
+    $this->operator->refresh();
+    expect($this->operator->subscription_auto_renew)->toBeTrue();
 });
 
 test('operator can schedule a downgrade to end of billing cycle and cancel it', function () {
@@ -130,4 +190,43 @@ test('scheduled plan changes console command executes pending downgrades when ac
     expect($this->operator->plan_id)->toBe($this->proPlan->id)
         ->and($this->operator->pending_plan_id)->toBeNull()
         ->and($this->operator->hasPendingPlanChange())->toBeFalse();
+});
+
+test('operator can view billing invoices page, view receipts, and update billing contact', function () {
+    $this->actingAs($this->user);
+
+    $payment = SubscriptionPayment::create([
+        'operator_id' => $this->operator->id,
+        'plan_id' => $this->proPlan->id,
+        'invoice_number' => 'INV-SUB-2026-TEST',
+        'type' => 'upgrade',
+        'billing_interval' => 'monthly',
+        'gross_amount' => 499000,
+        'prorated_credit' => 0,
+        'net_amount_paid' => 499000,
+        'status' => 'completed',
+        'gateway' => 'credit_card',
+        'gateway_ref' => 'CC-TEST-1234',
+        'paid_at' => now(),
+    ]);
+
+    Livewire::test('pages::settings.billing')
+        ->assertSee('Billing & Invoices')
+        ->assertSee('INV-SUB-2026-TEST')
+        ->assertSee('Rp 499.000')
+        ->call('viewInvoice', $payment->id)
+        ->assertSet('show_invoice_modal', true)
+        ->assertSee('Official Subscription Receipt')
+        ->call('closeInvoiceModal')
+        ->assertSet('show_invoice_modal', false)
+        ->set('company_legal_name', 'PT Test Travel Nusantara')
+        ->set('billing_email', 'finance@testtravel.com')
+        ->set('tax_id', '01.234.567.8-901.000')
+        ->call('updateBillingInfo')
+        ->assertHasNoErrors();
+
+    $this->operator->refresh();
+    expect($this->operator->billing_email)->toBe('finance@testtravel.com')
+        ->and($this->operator->settings['legal_name'])->toBe('PT Test Travel Nusantara')
+        ->and($this->operator->settings['tax_id'])->toBe('01.234.567.8-901.000');
 });

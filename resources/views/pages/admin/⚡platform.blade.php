@@ -176,6 +176,82 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
             </div>
         </div>
 
+        <!-- Section: Internal Wiki & Scope Architecture -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <div class="flex items-center gap-2.5">
+                    <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                    </span>
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        {{ __('Platform Scope, Commercial & Financial Specifications Wiki') }}
+                    </h3>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                    Rev. 16 Baseline
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <!-- Card 1: V1 Scope & Features -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/70 dark:border-zinc-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-contract text-indigo-500"></i>
+                            V1 Scope & Features Spec
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-400">Rev. 16</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Comprehensive blueprint covering 1-click payment links, WhatsApp dispatch, GSC verification, responsive mobile cards, and AI discovery feeds.
+                    </p>
+                    <div class="pt-1">
+                        <a href="file:///Users/mastervarol/Herd/booking/scope_and_features.md" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                            View scope_and_features.md ➔
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card 2: Commercial & Pricing Model -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/70 dark:border-zinc-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-coins text-amber-500"></i>
+                            Commercial & Pricing Matrix
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-400">4 Tiers</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Official commercial rules: 0% operator commission, 100% net operator payout, 5% guest checkout fee pass-through, and BYO custom payment keys.
+                    </p>
+                    <div class="pt-1">
+                        <a href="file:///Users/mastervarol/Herd/booking/platform_commercial_and_pricing_model.md" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline">
+                            View commercial_model.md ➔
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card 3: Money Rules & Settlement Spec -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/70 dark:border-zinc-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-scale-balanced text-emerald-500"></i>
+                            Money Rules & Settlement
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-400">8 States</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Canonical rules for double-entry ledger entries, 8-state escrow lifecycle, negative balance recovery, chargeback dispute holds, and DOKU reconciliation.
+                    </p>
+                    <div class="pt-1">
+                        <a href="file:///Users/mastervarol/Herd/booking/emvi_v1_money_rules_and_settlement_spec.md" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                            View money_rules_spec.md ➔
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Submit Button & Success Toast -->
         <div class="flex items-center gap-4 pt-2">
             <x-button variant="primary" type="submit" data-test="save-platform-settings-button" class="shadow-sm bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white">

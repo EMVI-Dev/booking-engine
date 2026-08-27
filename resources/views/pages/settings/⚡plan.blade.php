@@ -14,9 +14,15 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
     public bool $show_switch_modal = false;
     public bool $show_cancel_modal = false;
+    public bool $show_auto_renew_modal = false;
+    public bool $target_auto_renew_state = false;
+    public bool $modal_consent_checkbox = false;
+
     public ?string $target_plan_id = null;
     public string $downgrade_mode = 'end_of_cycle'; // 'end_of_cycle' | 'immediate'
-    public string $payment_method = 'qris'; // 'qris' | 'va' | 'cc' | 'direct'
+    public string $payment_method = 'cc'; // 'cc' | 'qris' | 'va' | 'direct'
+    public bool $auto_renew = true;
+    public bool $auto_renew_consent = false;
     public bool $is_processing = false;
 
     /**
@@ -29,7 +35,61 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         if ($operator) {
             $this->active_plan_id = $operator->plan_id ?: Plan::getDefaultPlan()->id;
             $this->billing_interval = (string) ($operator->subscription_interval ?: 'monthly');
+            $this->auto_renew = (bool) ($operator->subscription_auto_renew ?? true);
         }
+    }
+
+    /**
+     * Prompt confirmation modal for changing auto-renewal setting.
+     */
+    public function promptToggleAutoRenew(): void
+    {
+        $operator = auth()->user()?->currentOperator();
+
+        if ($operator) {
+            $this->target_auto_renew_state = ! (bool) ($operator->subscription_auto_renew ?? true);
+            $this->modal_consent_checkbox = false;
+            $this->show_auto_renew_modal = true;
+        }
+    }
+
+    /**
+     * Close auto-renewal toggle confirmation modal.
+     */
+    public function closeAutoRenewModal(): void
+    {
+        $this->show_auto_renew_modal = false;
+        $this->modal_consent_checkbox = false;
+    }
+
+    /**
+     * Confirm and execute auto-renewal state change.
+     */
+    public function confirmToggleAutoRenew(): void
+    {
+        $this->resetErrorBag();
+
+        $operator = auth()->user()?->currentOperator();
+
+        if (! $operator) {
+            $this->closeAutoRenewModal();
+            return;
+        }
+
+        // If enabling auto-renew, require explicit user consent
+        if ($this->target_auto_renew_state && ! $this->modal_consent_checkbox) {
+            $this->addError('modal_consent_checkbox', __('Please check the box to authorize recurring auto-renewal billing.'));
+            return;
+        }
+
+        $operator->update(['subscription_auto_renew' => $this->target_auto_renew_state]);
+        $this->auto_renew = $this->target_auto_renew_state;
+
+        session()->flash('success', $this->target_auto_renew_state
+            ? __('Recurring auto-renewal enabled. Your subscription will renew automatically at the end of each billing cycle.')
+            : __('Auto-renewal turned off. Your subscription will lapse at the end of the current term unless manually renewed.'));
+
+        $this->closeAutoRenewModal();
     }
 
     /**
@@ -60,6 +120,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         }
 
         $this->target_plan_id = $planId;
+        $this->auto_renew_consent = false;
+        $this->resetErrorBag();
         $this->show_switch_modal = true;
     }
 
@@ -70,6 +132,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
     {
         $this->show_switch_modal = false;
         $this->target_plan_id = null;
+        $this->auto_renew_consent = false;
+        $this->resetErrorBag();
         $this->is_processing = false;
     }
 
@@ -91,23 +155,36 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         $proration = $prorationService->calculateSwitch($operator, $targetPlan, $this->billing_interval);
 
         if ($proration['is_upgrade']) {
-            $payment = $prorationService->executeUpgrade(
+            if ($this->auto_renew && ! $this->auto_renew_consent) {
+                $this->addError('auto_renew_consent', __('Please confirm your consent for recurring auto-renewal before proceeding.'));
+                $this->is_processing = false;
+                return;
+            }
+
+            $payment = $prorationService->createPendingUpgrade(
                 operator: $operator,
                 targetPlan: $targetPlan,
                 interval: $this->billing_interval,
-                gateway: $this->payment_method,
-                gatewayRef: 'INV-'.strtoupper(bin2hex(random_bytes(3)))
+                autoRenew: $this->auto_renew,
+                gateway: $this->payment_method
             );
 
-            $this->active_plan_id = $targetPlan->id;
-            session()->flash('success', __(
-                'Upgraded to :plan successfully! Invoice #:invoice paid (Net: Rp :amount). All higher tier features are unlocked immediately.',
-                [
-                    'plan' => $targetPlan->name,
-                    'invoice' => $payment->invoice_number,
-                    'amount' => number_format((float) $payment->net_amount_paid, 0, ',', '.'),
-                ]
-            ));
+            $this->closeSwitchModal();
+
+            if ($payment->status === 'completed') {
+                $this->active_plan_id = $targetPlan->id;
+                session()->flash('success', __(
+                    'Upgraded to :plan successfully! Invoice #:invoice paid (Net: Rp :amount). All higher tier features are unlocked immediately.',
+                    [
+                        'plan' => $targetPlan->name,
+                        'invoice' => $payment->invoice_number,
+                        'amount' => number_format((float) $payment->net_amount_paid, 0, ',', '.'),
+                    ]
+                ));
+            } else {
+                $this->redirectRoute('settings.plan.checkout', $payment->id, navigate: true);
+                return;
+            }
         } elseif ($proration['is_downgrade']) {
             if ($this->downgrade_mode === 'immediate') {
                 $prorationService->executeImmediateDowngrade($operator, $targetPlan, $this->billing_interval);
@@ -198,9 +275,9 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
     }
 }; ?>
 
-<div class="max-w-6xl mx-auto space-y-8">
-    <!-- Unified Settings Navigation -->
-    <x-settings-nav />
+<div class="space-y-6 max-w-6xl mx-auto">
+    <!-- Subscription & Billing Navigation -->
+    <x-billing-nav />
 
     <!-- Header & Navigation Breadcrumb -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-zinc-800">
@@ -277,320 +354,340 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
     @endif
 
     <!-- Active Plan Summary Card -->
-    <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl shadow-xs shrink-0">
+    <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl sm:text-2xl shadow-xs shrink-0 mt-0.5">
                 <i class="fa-solid fa-crown"></i>
             </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">{{ __('Active Subscription') }}</span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+            <div class="space-y-1.5 min-w-0 flex-1">
+                <!-- Badges Container (Flex Wrap for Mobile) -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 shrink-0">
+                        {{ __('Active Subscription') }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 shrink-0">
                         {{ __('Active & Verified') }}
                     </span>
                     @if (!$currentPlan->isFree() && $operator->plan_expires_at)
-                        <span class="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                        <span class="text-[10px] text-slate-400 dark:text-zinc-500 font-medium shrink-0">
                             &bull; {{ __('Renews :date', ['date' => Carbon::parse($operator->plan_expires_at)->format('d M Y')]) }}
                         </span>
                     @endif
+                    @if (!$currentPlan->isFree())
+                        <button
+                            type="button"
+                            wire:click="promptToggleAutoRenew"
+                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase transition cursor-pointer shrink-0 {{ $auto_renew ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 hover:bg-indigo-200' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 hover:bg-slate-200' }}"
+                            title="{{ __('Click to configure recurring auto-renewal settings') }}"
+                        >
+                            <i class="fa-solid {{ $auto_renew ? 'fa-repeat text-indigo-600' : 'fa-hourglass-half text-amber-500' }} text-[9px]"></i>
+                            <span>{{ $auto_renew ? __('Auto-Renew: On') : __('One-Time: Manual') }}</span>
+                        </button>
+                    @endif
                 </div>
-                <h3 class="text-xl font-black text-slate-900 dark:text-white mt-1">{{ $currentPlan->name }}</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+
+                <h3 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight">
+                    {{ $currentPlan->name }}
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
                     {{ $currentPlan->tagline ?: __('Standard tour operator plan.') }}
                 </p>
             </div>
         </div>
 
-        <div class="flex items-center gap-6 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800/80 self-stretch sm:self-auto justify-between sm:justify-end">
+        <!-- Metrics Box -->
+        <div class="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800/80 w-full lg:w-auto shrink-0">
             <div>
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Platform Fee') }}</span>
-                <span class="font-mono font-black text-lg {{ $agent->getEffectiveCommissionRate() == 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400' }}">
+                <span class="font-mono font-black text-base sm:text-lg {{ $agent->getEffectiveCommissionRate() == 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400' }}">
                     {{ $agent->getEffectiveCommissionRate() == 0 ? __('0% (Zero Fee)') : ($agent->getEffectiveCommissionRate() * 100).'% '.__('All-Inclusive') }}
                 </span>
             </div>
-            <div class="h-8 w-px bg-slate-200 dark:bg-zinc-700"></div>
-            <div>
+            <div class="pl-4 border-l border-slate-200 dark:border-zinc-700">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Package Limit') }}</span>
-                <span class="font-bold text-sm text-slate-800 dark:text-slate-200">
+                <span class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">
                     {{ $currentPlan->package_limit ? __(':count Listings', ['count' => $currentPlan->package_limit]) : __('Unlimited') }}
                 </span>
             </div>
         </div>
-    </div>
-
-    <!-- Pricing Plans Comparison Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
-        @foreach ($plans as $plan)
-            @php
-                $isCurrent = ($currentPlan->id === $plan->id) || ($agent && $agent->plan_id === $plan->id) || (!$agent->plan_id && $plan->slug === 'starter');
-                $priceMonthly = (float) $plan->price_monthly;
-                $priceYearly = (float) $plan->price_yearly;
-
-                $currentRank = match($currentPlan->slug) { 'enterprise' => 3, 'growth' => 2, default => 1 };
-                $targetRank = match($plan->slug) { 'enterprise' => 3, 'growth' => 2, default => 1 };
-                $isUpgradeOption = ($targetRank > $currentRank) || ($targetRank === $currentRank && $billing_interval === 'yearly' && ($operator->subscription_interval ?: 'monthly') === 'monthly');
-                $isDowngradeOption = ($targetRank < $currentRank);
-            @endphp
-            <div class="rounded-3xl bg-white dark:bg-zinc-900 border {{ $isCurrent ? 'border-indigo-600 ring-2 ring-indigo-600/30 shadow-xl' : ($plan->is_popular ? 'border-indigo-400 dark:border-indigo-700 shadow-md' : 'border-slate-200/80 dark:border-zinc-800 shadow-sm') }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
-                
-                <div class="space-y-5">
-                    <!-- Top Header with Badge Alignment -->
-                    <div class="flex items-start justify-between gap-3 min-h-[32px]">
-                        <h3 class="font-black text-xl text-slate-900 dark:text-white tracking-tight">
-                            {{ $plan->name }}
-                        </h3>
-
-                        @if ($isCurrent)
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white shadow-xs flex items-center gap-1 shrink-0">
-                                <i class="fa-solid fa-check text-[9px]"></i>
-                                <span>{{ __('Current Plan') }}</span>
-                            </span>
-                        @elseif ($plan->is_popular)
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-indigo-600 text-white shadow-xs shrink-0">
-                                {{ __('Most Popular') }}
-                            </span>
-                        @endif
-                    </div>
-
-                    <!-- Tagline Description -->
-                    <p class="text-xs text-slate-500 dark:text-slate-400 min-h-[40px] leading-relaxed">
-                        {{ $plan->tagline }}
-                    </p>
-
-                    <!-- Price Box -->
-                    <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-800/80 space-y-2.5">
-                        <div class="flex items-baseline gap-1.5">
-                            <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                                {{ $billing_interval === 'yearly' ? 'Rp ' . number_format($priceYearly, 0, ',', '.') : 'Rp ' . number_format($priceMonthly, 0, ',', '.') }}
-                            </span>
-                            <span class="text-xs font-semibold text-slate-400">/ {{ $billing_interval === 'yearly' ? __('year') : __('month') }}</span>
-                        </div>
-                        <div class="space-y-1.5 pt-2.5 border-t border-slate-200/60 dark:border-zinc-700/60 text-xs">
-                            <div class="flex items-center justify-between">
-                                <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('Operator Payout') }}</span>
-                                <span class="font-black font-mono text-sm text-emerald-600 dark:text-emerald-400">
-                                    {{ __('100% Net to You') }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between text-[11px] text-slate-400">
-                                <span>{{ __('Guest Service Fee') }}</span>
-                                <span class="font-medium text-slate-600 dark:text-slate-300">
-                                    @if ($plan->slug === 'enterprise')
-                                        {{ __('0% (Direct BYO)') }}
-                                    @else
-                                        {{ __('5% Paid by Guest') }}
+    </div>    <!-- Head-to-Head Feature Comparison Table -->
+    <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-sm overflow-x-auto no-scrollbar select-none">
+        <table class="w-full text-left border-collapse min-w-[768px]">
+            <thead>
+                <tr class="bg-slate-50/80 dark:bg-zinc-800/60 border-b border-slate-200/80 dark:border-zinc-800">
+                    <th class="p-5 text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 w-1/4">
+                        {{ __('Plan Features & Capabilities') }}
+                    </th>
+                    @foreach ($plans as $plan)
+                        @php
+                            $isCurrent = ($currentPlan->id === $plan->id) || ($agent && $agent->plan_id === $plan->id) || (!$agent->plan_id && $plan->slug === 'starter');
+                            $priceMonthly = (float) $plan->price_monthly;
+                            $priceYearly = (float) $plan->price_yearly;
+                            $currentRank = match($currentPlan->slug) { 'ai_ultimate' => 4, 'enterprise' => 3, 'growth' => 2, default => 1 };
+                            $targetRank = match($plan->slug) { 'ai_ultimate' => 4, 'enterprise' => 3, 'growth' => 2, default => 1 };
+                            $isUpgradeOption = ($targetRank > $currentRank) || ($targetRank === $currentRank && $billing_interval === 'yearly' && ($operator->subscription_interval ?: 'monthly') === 'monthly');
+                            $isDowngradeOption = ($targetRank < $currentRank);
+                        @endphp
+                        <th class="p-5 text-center w-3/16 border-l border-slate-200/60 dark:border-zinc-800 {{ $isCurrent ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : '' }}">
+                            <div class="space-y-3">
+                                <div class="min-h-[28px] flex items-center justify-center gap-1.5">
+                                    <span class="font-black text-base text-slate-900 dark:text-white">{{ $plan->name }}</span>
+                                    @if ($isCurrent)
+                                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500 text-white shrink-0">
+                                            {{ __('Active') }}
+                                        </span>
+                                    @elseif ($plan->is_popular)
+                                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-indigo-600 text-white shrink-0">
+                                            {{ __('Popular') }}
+                                        </span>
                                     @endif
-                                </span>
+                                </div>
+
+                                <div>
+                                    <span class="text-2xl font-black text-slate-900 dark:text-white">
+                                        {{ $billing_interval === 'yearly' ? 'Rp ' . number_format($priceYearly, 0, ',', '.') : 'Rp ' . number_format($priceMonthly, 0, ',', '.') }}
+                                    </span>
+                                    <span class="text-[11px] font-medium text-slate-400 block mt-0.5">/ {{ $billing_interval === 'yearly' ? __('year') : __('month') }}</span>
+                                </div>
+
+                                <!-- Single Upgrade / Switch CTA Button -->
+                                <div class="pt-2">
+                                    @if ($isCurrent)
+                                        <button type="button" disabled class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs cursor-default flex items-center justify-center gap-1 select-none">
+                                            <i class="fa-solid fa-check text-emerald-500 text-xs"></i>
+                                            <span>{{ __('Current Plan') }}</span>
+                                        </button>
+                                    @elseif ($isUpgradeOption)
+                                        <button type="button" wire:click="initiatePlanSwitch('{{ $plan->id }}')" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                            <i class="fa-solid fa-arrow-up text-amber-300 text-xs"></i>
+                                            <span>{{ __('Upgrade') }}</span>
+                                        </button>
+                                    @else
+                                        <button type="button" wire:click="initiatePlanSwitch('{{ $plan->id }}')" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer">
+                                            <span>{{ __('Switch Plan') }}</span>
+                                        </button>
+                                    @endif
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        </th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/80 text-xs">
+                <!-- Group 1: Commercial Model & Volume Limits -->
+                <tr class="bg-slate-50/60 dark:bg-zinc-800/40">
+                    <td colspan="5" class="px-5 py-2.5 font-extrabold uppercase tracking-wider text-[10px] text-indigo-600 dark:text-indigo-400">
+                        <i class="fa-solid fa-calculator mr-1"></i> {{ __('Commercial Model & Volume Limits') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Operator Net Payout') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            100% Net
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Guest Service Fee') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60 font-medium text-slate-600 dark:text-slate-300">
+                            {{ $plan->hasFeature('byo_gateway') ? __('0% (Direct BYO)') : __('5% Paid by Guest') }}
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Tour Package Listings Limit') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60 font-bold text-slate-900 dark:text-white">
+                            {{ $plan->package_limit ? __(':count Listings', ['count' => $plan->package_limit]) : __('Unlimited') }}
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Team Staff Seats') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60 font-bold text-slate-900 dark:text-white">
+                            {{ __('Unlimited Staff') }}
+                        </td>
+                    @endforeach
+                </tr>
 
-                    <!-- Tier Limits -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="p-3 rounded-xl bg-slate-50/80 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{{ __('Package Limit') }}</span>
-                            <span class="font-extrabold text-xs text-slate-900 dark:text-white mt-0.5 block">
-                                {{ $plan->package_limit ? __(':count Listings', ['count' => $plan->package_limit]) : __('Unlimited') }}
-                            </span>
-                        </div>
-                        <div class="p-3 rounded-xl bg-slate-50/80 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{{ __('Team Seats') }}</span>
-                            <span class="font-extrabold text-xs text-slate-900 dark:text-white mt-0.5 block">
-                                {{ $plan->team_member_limit ? __(':count Staff', ['count' => $plan->team_member_limit]) : __('Unlimited Staff') }}
-                            </span>
-                        </div>
-                    </div>
+                <!-- Group 2: Operations & Scheduling -->
+                <tr class="bg-slate-50/60 dark:bg-zinc-800/40">
+                    <td colspan="5" class="px-5 py-2.5 font-extrabold uppercase tracking-wider text-[10px] text-indigo-600 dark:text-indigo-400">
+                        <i class="fa-solid fa-calendar-days mr-1"></i> {{ __('Operations & Scheduling') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('1-Click Direct Booking & Payment Links') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Advanced Fleet Matrix Calendar') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('advanced_calendar'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Daily Run-Sheet & Manifest Export') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('daily_manifest_export'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Google Calendar 1-Click & Live iCal Feed') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('google_calendar'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('1-Click WhatsApp Dispatch Center') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('whatsapp_dispatch'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
 
-                    <!-- Features Checklist -->
-                    <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Included Capabilities') }}</span>
-                        <ul class="space-y-2.5 text-xs">
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('quick_booking_links') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('quick_booking_links') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('1-Click Direct Booking & Payment Links') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('advanced_calendar') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('advanced_calendar') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Advanced Fleet Calendar & Resource Matrix') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('daily_manifest_export') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('daily_manifest_export') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Daily Run-Sheet & Manifest Export') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('capacity_heatmap') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('capacity_heatmap') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Monthly Capacity Heatmap Analytics') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('tracking_pixels') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('tracking_pixels') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Meta Pixel & Google Analytics 4 (ROAS)') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('automated_review_requests') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('automated_review_requests') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('12-Hour Automated Post-Trip Review Emails') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('google_calendar') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('google_calendar') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Google Calendar 1-Click & Live iCal') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('guest_crm') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('guest_crm') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Guest Directory CRM & Analytics') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('whatsapp_dispatch') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('whatsapp_dispatch') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('1-Click WhatsApp Dispatch Center') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('custom_domain') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('custom_domain') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('Custom Domain (`yourbrand.com`) + SSL') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 {{ $plan->hasFeature('byo_gateway') ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 line-through opacity-75' }}">
-                                <i class="fa-solid {{ $plan->hasFeature('byo_gateway') ? 'fa-check text-emerald-500' : 'fa-xmark text-slate-300 dark:text-slate-600' }} text-xs mt-0.5 shrink-0"></i>
-                                <span>{{ __('BYO Custom Payment Gateway Keys') }}</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+                <!-- Group 3: Branding & Payment Infrastructure -->
+                <tr class="bg-slate-50/60 dark:bg-zinc-800/40">
+                    <td colspan="5" class="px-5 py-2.5 font-extrabold uppercase tracking-wider text-[10px] text-indigo-600 dark:text-indigo-400">
+                        <i class="fa-solid fa-globe mr-1"></i> {{ __('Branding & Payment Infrastructure') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Custom Subdomain (`slug.booking.emvi`)') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Custom Domain (`yourbrand.com`) + SSL') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('custom_domain'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('BYO Custom Payment Gateway Keys') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('byo_gateway'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
 
-                <!-- CTA Action Button -->
-                <div class="pt-6 border-t border-slate-100 dark:border-zinc-800 mt-6">
-                    @if ($isCurrent)
-                        <button
-                            type="button"
-                            disabled
-                            class="w-full h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs cursor-default flex items-center justify-center gap-2 select-none"
-                        >
-                            <i class="fa-solid fa-check text-xs text-emerald-500"></i>
-                            <span>{{ __('Active Subscription Plan') }}</span>
-                        </button>
-                    @elseif ($isUpgradeOption)
-                        <button
-                            type="button"
-                            wire:click="initiatePlanSwitch('{{ $plan->id }}')"
-                            class="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                            <i class="fa-solid fa-arrow-up text-amber-300 text-xs"></i>
-                            <span>{{ __('Upgrade to :plan', ['plan' => $plan->name]) }}</span>
-                        </button>
-                    @elseif ($isDowngradeOption)
-                        <button
-                            type="button"
-                            wire:click="initiatePlanSwitch('{{ $plan->id }}')"
-                            class="w-full h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs sm:text-sm border border-slate-200 dark:border-zinc-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                            <i class="fa-solid fa-arrow-down text-slate-400 text-xs"></i>
-                            <span>{{ __('Downgrade to :plan', ['plan' => $plan->name]) }}</span>
-                        </button>
-                    @else
-                        <button
-                            type="button"
-                            wire:click="initiatePlanSwitch('{{ $plan->id }}')"
-                            class="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                            <span>{{ __('Switch to :plan', ['plan' => $plan->name]) }}</span>
-                        </button>
-                    @endif
-                </div>
-            </div>
-        @endforeach
-    </div>
-
-    <!-- Feature Comparison Table Accordion (Closed by default) -->
-    <div x-data="{ showComparison: false }" class="max-w-6xl mx-auto space-y-4 pt-4">
-        <div class="text-center">
-            <button
-                type="button"
-                @click="showComparison = !showComparison"
-                class="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 text-xs sm:text-sm font-bold transition-all shadow-xs group cursor-pointer"
-            >
-                <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-table-list text-xs"></i>
-                </span>
-                <span x-text="showComparison ? '{{ __('Hide Detailed Plan Comparison') }}' : '{{ __('Compare All Plan Features & Capabilities') }}'">
-                    {{ __('Compare All Plan Features & Capabilities') }}
-                </span>
-                <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-zinc-400 transition-transform duration-300" :class="showComparison ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : ''"></i>
-            </button>
-        </div>
-
-        <div
-            x-show="showComparison"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0 -translate-y-2"
-            x-transition:enter-end="opacity-100 translate-y-0"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100 translate-y-0"
-            x-transition:leave-end="opacity-0 -translate-y-2"
-            style="display: none;"
-            class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-sm overflow-hidden p-6 sm:p-8"
-        >
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse min-w-[650px]">
-                    <thead>
-                        <tr class="border-b border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400">
-                            <th class="py-4 pr-4 font-extrabold uppercase tracking-wider text-[11px] w-2/5">{{ __('Features & Limits') }}</th>
-                            <th class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-slate-800 dark:text-zinc-300">
-                                <span>Starter Essential</span>
-                                <span class="block text-[10px] font-normal text-slate-500 dark:text-zinc-500 mt-0.5">{{ __('Free Forever') }}</span>
-                            </th>
-                            <th class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5 rounded-t-2xl">
-                                <span>Pro Operator</span>
-                                <span class="block text-[10px] font-normal text-indigo-600/80 dark:text-indigo-300/80 mt-0.5">Rp 299.000 / mo</span>
-                            </th>
-                            <th class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-purple-600 dark:text-purple-400">
-                                <span>Agency Ultimate</span>
-                                <span class="block text-[10px] font-normal text-purple-600/80 dark:text-purple-300/80 mt-0.5">Rp 999.000 / mo</span>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
-                        <tr>
-                            <td class="py-3.5 pr-4 font-semibold text-slate-800 dark:text-slate-200">{{ __('Published Package Limit') }}</td>
-                            <td class="py-3.5 px-4 text-center font-bold text-slate-700 dark:text-slate-300">3 listings</td>
-                            <td class="py-3.5 px-4 text-center font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5">10 listings</td>
-                            <td class="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400 font-mono">Unlimited</td>
-                        </tr>
-                        <tr>
-                            <td class="py-3.5 pr-4 font-semibold text-slate-800 dark:text-slate-200">{{ __('Team Members & Dispatch Staff') }}</td>
-                            <td class="py-3.5 px-4 text-center font-bold text-slate-700 dark:text-slate-300">1 Seat</td>
-                            <td class="py-3.5 px-4 text-center font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5">3 Seats</td>
-                            <td class="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400 font-mono">Unlimited</td>
-                        </tr>
-                        <tr>
-                            <td class="py-3.5 pr-4 font-semibold text-slate-800 dark:text-slate-200">{{ __('Advanced Fleet Matrix & Timelines') }}</td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-emerald-500 bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check"></i></td>
-                            <td class="py-3.5 px-4 text-center text-emerald-500"><i class="fa-solid fa-check"></i></td>
-                        </tr>
-                        <tr>
-                            <td class="py-3.5 pr-4 font-semibold text-slate-800 dark:text-slate-200">{{ __('Daily Run-Sheet & Manifest Export') }}</td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-emerald-500 bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-check"></i></td>
-                            <td class="py-3.5 px-4 text-center text-emerald-500"><i class="fa-solid fa-check"></i></td>
-                        </tr>
-                        <tr>
-                            <td class="py-3.5 pr-4 font-semibold text-slate-800 dark:text-slate-200">{{ __('Monthly Capacity Heatmap Analytics') }}</td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600 bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-emerald-500 font-bold"><i class="fa-solid fa-check mr-1"></i> Exclusive</td>
-                        </tr>
-                        <tr>
-                            <td class="py-3.5 pr-4 font-semibold text-slate-800 dark:text-slate-200">{{ __('Custom Domain (`yourbrand.com`)') }}</td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600 bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-emerald-500"><i class="fa-solid fa-check"></i></td>
-                        </tr>
-                        <tr>
-                            <td class="py-3.5 pr-4 font-semibold text-slate-800 dark:text-slate-200">{{ __('BYO Custom Payment Gateway Keys') }}</td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-slate-300 dark:text-zinc-600 bg-indigo-50/50 dark:bg-indigo-500/5"><i class="fa-solid fa-minus"></i></td>
-                            <td class="py-3.5 px-4 text-center text-emerald-500"><i class="fa-solid fa-check"></i></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                <!-- Group 4: Analytics, CRM & AI Search Engine -->
+                <tr class="bg-slate-50/60 dark:bg-zinc-800/40">
+                    <td colspan="5" class="px-5 py-2.5 font-extrabold uppercase tracking-wider text-[10px] text-indigo-600 dark:text-indigo-400">
+                        <i class="fa-solid fa-chart-line mr-1"></i> {{ __('Analytics, CRM & AI Search Engine') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Guest Directory CRM & Lifetime Spend') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('guest_crm'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Meta Pixel & GA4 ROAS Tracking') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('tracking_pixels'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('12-Hour Automated Post-Trip Review Emails') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('automated_review_requests'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Monthly Capacity Heatmap Analytics') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('capacity_heatmap'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-purple-600 dark:text-purple-400"></i>
+                        <span>{{ __('AI Search & ChatGPT Catalog Discovery (`/llms.txt`)') }}</span>
+                    </td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('ai_discovery'))
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                    <i class="fa-solid fa-check text-purple-600"></i> {{ __('Included') }}
+                                </span>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <!-- Interactive Plan Switch & Proration Modal -->
@@ -664,12 +761,71 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                         </div>
                     </div>
 
+                    <!-- Renewal Mode Selection -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            {{ __('Renewal Type') }}
+                        </label>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button
+                                type="button"
+                                wire:click="$set('auto_renew', true)"
+                                class="p-3 rounded-2xl border text-left flex items-center gap-2.5 cursor-pointer transition {{ $auto_renew ? 'border-purple-600 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-white ring-1 ring-purple-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}"
+                            >
+                                <i class="fa-solid fa-repeat text-base text-purple-600 dark:text-purple-400 shrink-0"></i>
+                                <div class="text-xs">
+                                    <span class="font-bold block">{{ __('Auto-Renewing') }}</span>
+                                    <span class="text-[10px] text-slate-400">{{ __('Recurring subscription') }}</span>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                wire:click="$set('auto_renew', false)"
+                                class="p-3 rounded-2xl border text-left flex items-center gap-2.5 cursor-pointer transition {{ ! $auto_renew ? 'border-purple-600 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-white ring-1 ring-purple-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}"
+                            >
+                                <i class="fa-solid fa-hourglass-half text-base text-amber-500 shrink-0"></i>
+                                <div class="text-xs">
+                                    <span class="font-bold block">{{ __('One-Time Term') }}</span>
+                                    <span class="text-[10px] text-slate-400">{{ __('Manual renewal required') }}</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        @if ($auto_renew)
+                            <div class="mt-2.5 p-3 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/50 text-xs space-y-1.5">
+                                <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        wire:model="auto_renew_consent"
+                                        class="mt-0.5 rounded border-purple-300 text-purple-600 focus:ring-purple-500 dark:border-purple-800 dark:bg-zinc-900"
+                                    />
+                                    <span class="text-xs text-purple-900 dark:text-purple-200 font-semibold leading-tight">
+                                        {{ __('I consent to recurring auto-renewal charges at the end of each billing cycle until cancelled.') }}
+                                    </span>
+                                </label>
+                                @error('auto_renew_consent')
+                                    <p class="text-[11px] font-bold text-rose-600 dark:text-rose-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
+                    </div>
+
                     <!-- Payment Method Selection -->
                     <div class="space-y-2">
                         <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             {{ __('Select Payment Method') }}
                         </label>
                         <div class="grid grid-cols-2 gap-2.5">
+                            <label class="p-3 rounded-2xl border flex items-center gap-2.5 cursor-pointer transition {{ $payment_method === 'cc' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white ring-1 ring-indigo-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}">
+                                <input type="radio" wire:model.live="payment_method" value="cc" class="hidden" />
+                                <i class="fa-solid fa-credit-card text-base text-indigo-600 dark:text-indigo-400"></i>
+                                <div class="text-xs">
+                                    <span class="font-bold block">Credit Card</span>
+                                    <span class="text-[10px] text-slate-400">Visa / Mastercard</span>
+                                </div>
+                            </label>
+
                             <label class="p-3 rounded-2xl border flex items-center gap-2.5 cursor-pointer transition {{ $payment_method === 'qris' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white ring-1 ring-indigo-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}">
                                 <input type="radio" wire:model.live="payment_method" value="qris" class="hidden" />
                                 <i class="fa-solid fa-qrcode text-base text-indigo-600 dark:text-indigo-400"></i>
@@ -685,15 +841,6 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                 <div class="text-xs">
                                     <span class="font-bold block">Virtual Account</span>
                                     <span class="text-[10px] text-slate-400">Mandiri / BRI / BNI</span>
-                                </div>
-                            </label>
-
-                            <label class="p-3 rounded-2xl border flex items-center gap-2.5 cursor-pointer transition {{ $payment_method === 'cc' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white ring-1 ring-indigo-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}">
-                                <input type="radio" wire:model.live="payment_method" value="cc" class="hidden" />
-                                <i class="fa-solid fa-credit-card text-base text-indigo-600 dark:text-indigo-400"></i>
-                                <div class="text-xs">
-                                    <span class="font-bold block">Credit Card</span>
-                                    <span class="text-[10px] text-slate-400">Visa / Mastercard</span>
                                 </div>
                             </label>
 
@@ -757,7 +904,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                         <span wire:loading.remove>
                             @if ($prorationData['is_upgrade'])
                                 <i class="fa-solid fa-lock mr-1 text-xs"></i>
-                                {{ __('Pay Rp :amount & Upgrade', ['amount' => number_format($prorationData['net_amount_due'], 0, ',', '.')]) }}
+                                {{ __('Proceed to Payment (Rp :amount)', ['amount' => number_format($prorationData['net_amount_due'], 0, ',', '.')]) }}
                             @else
                                 {{ $downgrade_mode === 'end_of_cycle' ? __('Confirm Scheduled Downgrade') : __('Confirm Immediate Downgrade') }}
                             @endif
@@ -822,6 +969,82 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                     >
                         <i class="fa-solid fa-check text-xs"></i>
                         <span>{{ __('Yes, Keep :plan', ['plan' => $currentPlan->name]) }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Auto-Renewal Toggle Confirmation Modal -->
+    @if ($show_auto_renew_modal)
+        <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in">
+            <!-- Modal Backdrop -->
+            <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity" wire:click="closeAutoRenewModal"></div>
+
+            <!-- Modal Content Card -->
+            <div class="relative w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl overflow-hidden p-6 sm:p-7 space-y-5 z-10">
+                <div class="flex items-center gap-3.5">
+                    <span class="p-3 rounded-2xl {{ $target_auto_renew_state ? 'bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400' }} text-xl">
+                        <i class="fa-solid {{ $target_auto_renew_state ? 'fa-repeat' : 'fa-hourglass-half' }}"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900 dark:text-white">
+                            {{ $target_auto_renew_state ? __('Enable Recurring Auto-Renewal?') : __('Turn Off Auto-Renewal?') }}
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {{ $target_auto_renew_state ? __('Automatic billing on renewal dates') : __('Switch to one-time manual renewal') }}
+                        </p>
+                    </div>
+                </div>
+
+                @if ($target_auto_renew_state)
+                    <div class="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/50 text-xs text-purple-900 dark:text-purple-200 leading-relaxed space-y-3">
+                        <p>
+                            {{ __('When auto-renewal is active, your subscription will automatically renew at the end of each billing cycle using your default payment method.') }}
+                        </p>
+                        <label class="flex items-start gap-2.5 cursor-pointer select-none pt-2 border-t border-purple-200/60 dark:border-purple-900/40">
+                            <input
+                                type="checkbox"
+                                wire:model="modal_consent_checkbox"
+                                class="mt-0.5 rounded border-purple-300 text-purple-600 focus:ring-purple-500 dark:border-purple-800 dark:bg-zinc-900"
+                            />
+                            <span class="text-xs font-semibold text-purple-950 dark:text-white leading-tight">
+                                {{ __('I authorize recurring auto-renewal charges for my active subscription until I cancel.') }}
+                            </span>
+                        </label>
+                        @error('modal_consent_checkbox')
+                            <p class="text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @else
+                    <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-2">
+                        <p>
+                            {{ __('Your plan will remain active until :date, after which it will lapse unless renewed manually.', [
+                                'date' => $operator->plan_expires_at ? Carbon::parse($operator->plan_expires_at)->format('d M Y') : 'the end of your period'
+                            ]) }}
+                        </p>
+                        <p class="text-[11px] text-amber-700 dark:text-amber-300">
+                            {{ __('We will send you reminder notifications 7 days, 3 days, and on the due date so you have time to renew.') }}
+                        </p>
+                    </div>
+                @endif
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                    <button
+                        type="button"
+                        wire:click="closeAutoRenewModal"
+                        class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                    >
+                        {{ __('Cancel') }}
+                    </button>
+
+                    <button
+                        type="button"
+                        wire:click="confirmToggleAutoRenew"
+                        class="px-5 py-2.5 rounded-xl {{ $target_auto_renew_state ? 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800' : 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800' }} text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <i class="fa-solid fa-check text-xs"></i>
+                        <span>{{ $target_auto_renew_state ? __('Confirm & Enable Auto-Renew') : __('Turn Off Auto-Renew') }}</span>
                     </button>
                 </div>
             </div>

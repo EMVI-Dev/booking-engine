@@ -19,3 +19,6 @@ Schedule::command('trips:send-review-requests')->hourly();
 
 // 6. Process scheduled operator subscription downgrades upon billing cycle conclusion
 Schedule::command('subscriptions:process-scheduled-changes')->daily();
+
+// 7. Send automated subscription lapse reminders at 7 days, 3 days, and on the due date
+Schedule::command('subscriptions:send-renewal-reminders')->daily();

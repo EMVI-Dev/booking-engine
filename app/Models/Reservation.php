@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Contracts\Bookable;
 use App\Enums\ReservationStatus;
+use Carbon\CarbonInterface;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -204,5 +205,36 @@ class Reservation extends Model
     public function getTotalAmount(): float
     {
         return $this->getFrozenPrice() * $this->pax_count;
+    }
+
+    /**
+     * Get the exact cutoff datetime before which cancellation is free.
+     */
+    public function getCancellationCutoffTime(): ?Carbon
+    {
+        if (! $this->requested_date) {
+            return null;
+        }
+
+        $freeHours = $this->getFrozenFreeCancellationHours();
+
+        return Carbon::parse($this->requested_date)->startOfDay()->subHours($freeHours);
+    }
+
+    /**
+     * Check if this reservation is within the free cancellation window.
+     *
+     * @param  CarbonInterface|Carbon|null  $atTime
+     */
+    public function isEligibleForFreeCancellation(mixed $atTime = null): bool
+    {
+        $cutoff = $this->getCancellationCutoffTime();
+        if (! $cutoff) {
+            return false;
+        }
+
+        $now = $atTime ? Carbon::parse($atTime) : now();
+
+        return $now->lte($cutoff);
     }
 }

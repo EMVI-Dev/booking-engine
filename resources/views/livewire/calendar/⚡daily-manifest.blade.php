@@ -80,11 +80,10 @@ new class extends Component {
         </div>
 
         <div class="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end flex-wrap">
-            <div class="flex items-center gap-1.5">
-                <input
-                    type="date"
+            <div class="flex items-center gap-1.5 min-w-[170px]">
+                <x-date-picker
                     wire:model.live="manifestDate"
-                    class="h-9 px-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs font-bold text-slate-800 dark:text-zinc-200 cursor-pointer"
+                    :presets="false"
                 />
                 <button
                     type="button"

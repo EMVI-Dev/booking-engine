@@ -93,18 +93,38 @@
     animation: fadeInScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Date input indicator styling */
-input[type="date"]::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-    opacity: 0.6;
-    transition: opacity 0.15s ease;
+/* Date & Time input color-scheme and indicator styling */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+    color-scheme: light;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+.dark input[type="time"] {
+    color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.15s ease;
+    padding: 2px;
+    border-radius: 4px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
 }
 
-.dark input[type="date"]::-webkit-calendar-picker-indicator {
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(0.85);
 }
 

@@ -25,8 +25,8 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
     public string $name = '';
     public string $slug = '';
     public string $tagline = '';
-    public float $price_monthly = 0.00;
-    public float $price_yearly = 0.00;
+    public float $price_monthly = 0.0;
+    public float $price_yearly = 0.0;
     public float $commission_percentage = 10.0;
     public ?int $package_limit = null;
     public ?int $team_member_limit = null;
@@ -58,7 +58,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
     {
         $plan = Plan::find($planId);
 
-        if (! $plan) {
+        if (!$plan) {
             return;
         }
 
@@ -104,8 +104,8 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         $this->name = '';
         $this->slug = '';
         $this->tagline = '';
-        $this->price_monthly = 0.00;
-        $this->price_yearly = 0.00;
+        $this->price_monthly = 0.0;
+        $this->price_yearly = 0.0;
         $this->commission_percentage = 10.0;
         $this->package_limit = null;
         $this->team_member_limit = null;
@@ -199,7 +199,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
     {
         $operator = Operator::with('plan')->find($operatorId);
 
-        if (! $operator || ! $operator->plan) {
+        if (!$operator || !$operator->plan) {
             session()->flash('error', __('Operator or active plan not found.'));
 
             return;
@@ -207,7 +207,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
         $recipient = $operator->billing_email ?: ($operator->booking_notification_email ?: $operator->users->first()?->email);
 
-        if (! $recipient) {
+        if (!$recipient) {
             session()->flash('error', __('No billing email configured for :name.', ['name' => $operator->name]));
 
             return;
@@ -217,10 +217,13 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
         try {
             Mail::to($recipient)->send(new SubscriptionRenewalReminderMail($operator, $operator->plan, $daysRemaining));
-            session()->flash('success', __('Renewal reminder email sent successfully to :email for :name.', [
-                'email' => $recipient,
-                'name' => $operator->name,
-            ]));
+            session()->flash(
+                'success',
+                __('Renewal reminder email sent successfully to :email for :name.', [
+                    'email' => $recipient,
+                    'name' => $operator->name,
+                ]),
+            );
         } catch (\Throwable $e) {
             session()->flash('error', __('Failed to send email: :message', ['message' => $e->getMessage()]));
         }
@@ -233,13 +236,11 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
     {
         $operator = Operator::find($operatorId);
 
-        if (! $operator) {
+        if (!$operator) {
             return;
         }
 
-        $currentExpires = $operator->plan_expires_at && $operator->plan_expires_at->isFuture()
-            ? $operator->plan_expires_at
-            : now();
+        $currentExpires = $operator->plan_expires_at && $operator->plan_expires_at->isFuture() ? $operator->plan_expires_at : now();
 
         $newExpires = (clone $currentExpires)->addDays($days);
 
@@ -247,11 +248,14 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             'plan_expires_at' => $newExpires,
         ]);
 
-        session()->flash('success', __('Subscription extended by :days days for :name (New expiry: :date).', [
-            'days' => $days,
-            'name' => $operator->name,
-            'date' => $newExpires->format('d M Y'),
-        ]));
+        session()->flash(
+            'success',
+            __('Subscription extended by :days days for :name (New expiry: :date).', [
+                'days' => $days,
+                'name' => $operator->name,
+                'date' => $newExpires->format('d M Y'),
+            ]),
+        );
     }
 
     /**
@@ -261,12 +265,12 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
     {
         $operator = Operator::find($operatorId);
 
-        if (! $operator) {
+        if (!$operator) {
             return;
         }
 
         $operator->update([
-            'subscription_auto_renew' => ! (bool) $operator->subscription_auto_renew,
+            'subscription_auto_renew' => !(bool) $operator->subscription_auto_renew,
         ]);
 
         session()->flash('success', __('Auto-renew updated for :name.', ['name' => $operator->name]));
@@ -277,7 +281,9 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
      */
     public function render()
     {
-        $plans = Plan::withCount(['operators'])->orderBy('sort_order')->get();
+        $plans = Plan::withCount(['operators'])
+            ->orderBy('sort_order')
+            ->get();
         $totalOperators = Operator::count();
 
         // Query for Renewals Tab
@@ -285,13 +291,10 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             ->with(['plan', 'users'])
             ->whereNotNull('plan_id');
 
-        if (! empty($this->renewalsSearch)) {
+        if (!empty($this->renewalsSearch)) {
             $s = '%' . trim($this->renewalsSearch) . '%';
             $renewalsQuery->where(function ($q) use ($s) {
-                $q->where('name', 'like', $s)
-                    ->orWhere('slug', 'like', $s)
-                    ->orWhere('billing_email', 'like', $s)
-                    ->orWhereHas('users', fn ($uq) => $uq->where('email', 'like', $s)->orWhere('name', 'like', $s));
+                $q->where('name', 'like', $s)->orWhere('slug', 'like', $s)->orWhere('billing_email', 'like', $s)->orWhereHas('users', fn($uq) => $uq->where('email', 'like', $s)->orWhere('name', 'like', $s));
             });
         }
 
@@ -309,7 +312,9 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
         // Renewals Stats
         $activeSubCount = Operator::whereNotNull('plan_id')->count();
-        $expiringSoonCount = Operator::whereNotNull('plan_id')->whereBetween('plan_expires_at', [now(), now()->addDays(7)])->count();
+        $expiringSoonCount = Operator::whereNotNull('plan_id')
+            ->whereBetween('plan_expires_at', [now(), now()->addDays(7)])
+            ->count();
         $expiredCount = Operator::whereNotNull('plan_id')->where('plan_expires_at', '<', now())->count();
 
         return view('pages.admin.⚡plans', [
@@ -337,20 +342,14 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
         <div class="flex items-center gap-2">
             @if ($tab === 'plans')
-                <button
-                    type="button"
-                    wire:click="resetDefaultPlans"
-                    class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
-                >
+                <button type="button" wire:click="resetDefaultPlans"
+                    class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer">
                     <i class="fa-solid fa-rotate-left mr-1 text-[10px]"></i>
                     {{ __('Reset Default Tiers') }}
                 </button>
 
-                <button
-                    type="button"
-                    wire:click="createPlan"
-                    class="h-9 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-                >
+                <button type="button" wire:click="createPlan"
+                    class="h-9 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-plus text-[10px]"></i>
                     <span>{{ __('New Plan Tier') }}</span>
                 </button>
@@ -359,21 +358,16 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
     </div>
 
     <!-- Navigation Tabs -->
-    <div class="flex items-center gap-2 border-b border-slate-200 dark:border-zinc-800">
-        <button
-            type="button"
-            wire:click="$set('tab', 'plans')"
-            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'plans' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}"
-        >
+    <div
+        class="flex items-center gap-2 border-b border-slate-200 dark:border-zinc-800 overflow-x-auto whitespace-nowrap no-scrollbar select-none">
+        <button type="button" wire:click="$set('tab', 'plans')"
+            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'plans' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
             <i class="fa-solid fa-layer-group text-xs"></i>
             <span>{{ __('Plan Tiers & Features') }}</span>
         </button>
 
-        <button
-            type="button"
-            wire:click="$set('tab', 'renewals')"
-            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'renewals' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}"
-        >
+        <button type="button" wire:click="$set('tab', 'renewals')"
+            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'renewals' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
             <i class="fa-solid fa-clock-rotate-left text-xs"></i>
             <span>{{ __('Renewals & Expiries') }}</span>
             @if ($expiringSoonCount > 0)
@@ -382,18 +376,26 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                 </span>
             @endif
         </button>
+
+        <button type="button" wire:click="$set('tab', 'wiki')"
+            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'wiki' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
+            <i class="fa-solid fa-book-bookmark text-xs"></i>
+            <span>{{ __('Commercial Model & Pricing Wiki') }}</span>
+        </button>
     </div>
 
     <!-- Feedback Alerts -->
     @if (session()->has('success'))
-        <div class="p-4 rounded-2xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-2">
+        <div
+            class="p-4 rounded-2xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-2">
             <i class="fa-solid fa-circle-check text-sm text-emerald-600 dark:text-emerald-400"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if (session()->has('error'))
-        <div class="p-4 rounded-2xl bg-rose-50 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-2">
+        <div
+            class="p-4 rounded-2xl bg-rose-50 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-2">
             <i class="fa-solid fa-circle-exclamation text-sm text-rose-600 dark:text-rose-400"></i>
             <span>{{ session('error') }}</span>
         </div>
@@ -403,7 +405,8 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
     @if ($tab === 'plans')
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
             @foreach ($plans as $plan)
-                <div class="rounded-3xl bg-white dark:bg-zinc-900 border {{ $plan->is_popular ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-slate-200/80 dark:border-zinc-800 shadow-sm' }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
+                <div
+                    class="rounded-3xl bg-white dark:bg-zinc-900 border {{ $plan->is_popular ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-slate-200/80 dark:border-zinc-800 shadow-sm' }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
                     <div class="space-y-5">
                         <!-- Top Header with Badge Alignment -->
                         <div class="flex items-start justify-between gap-3 min-h-[32px]">
@@ -411,11 +414,13 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 {{ $plan->name }}
                             </h3>
                             @if ($plan->is_popular)
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
+                                <span
+                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
                                     {{ __('Popular') }}
                                 </span>
                             @elseif (!$plan->is_active)
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-slate-400 shrink-0">
+                                <span
+                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-slate-400 shrink-0">
                                     {{ __('Archived') }}
                                 </span>
                             @endif
@@ -429,20 +434,24 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         @endif
 
                         <!-- Pricing Breakdown -->
-                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 space-y-2">
+                        <div
+                            class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 space-y-2">
                             <div class="flex items-baseline gap-1">
                                 <span class="text-2xl font-black text-slate-900 dark:text-white">
                                     Rp {{ number_format((float) $plan->price_monthly, 0, ',', '.') }}
                                 </span>
                                 <span class="text-xs font-semibold text-slate-400">/ {{ __('mo') }}</span>
                             </div>
-                            <div class="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60 dark:border-zinc-700/60 pt-2 font-medium">
+                            <div
+                                class="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60 dark:border-zinc-700/60 pt-2 font-medium">
                                 <span>{{ __('Yearly Plan:') }}</span>
-                                <span class="font-bold text-slate-700 dark:text-slate-300">Rp {{ number_format((float) $plan->price_yearly, 0, ',', '.') }}</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Rp
+                                    {{ number_format((float) $plan->price_yearly, 0, ',', '.') }}</span>
                             </div>
                             <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
                                 <span>{{ __('Platform Take Rate:') }}</span>
-                                <span class="font-black text-purple-600 dark:text-purple-400 font-mono">{{ $plan->commission_rate * 100 }}%</span>
+                                <span
+                                    class="font-black text-purple-600 dark:text-purple-400 font-mono">{{ $plan->commission_rate * 100 }}%</span>
                             </div>
                         </div>
 
@@ -456,8 +465,9 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
                         <!-- Features Summary List -->
                         <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Included Capabilities') }}</span>
-                            
+                            <span
+                                class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Included Capabilities') }}</span>
+
                             <div class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                                 <div class="flex items-center gap-2">
                                     <i class="fa-solid fa-cube text-[10px] text-purple-600"></i>
@@ -491,11 +501,8 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
                     <!-- Bottom Edit Action -->
                     <div class="pt-6 border-t border-slate-100 dark:border-zinc-800 mt-6">
-                        <button
-                            type="button"
-                            wire:click="editPlan('{{ $plan->id }}')"
-                            class="w-full h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 text-slate-700 dark:text-slate-300 font-bold text-xs transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
-                        >
+                        <button type="button" wire:click="editPlan('{{ $plan->id }}')"
+                            class="w-full h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 text-slate-700 dark:text-slate-300 font-bold text-xs transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-pen-to-square text-xs"></i>
                             <span>{{ __('Edit Tier') }}</span>
                         </button>
@@ -510,36 +517,43 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         <div class="space-y-6">
             <!-- Renewals Summary Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Total Active Subscriptions') }}</span>
-                    <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $activeSubCount }}</div>
+                <div
+                    class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    <span
+                        class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Total Active Subscriptions') }}</span>
+                    <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $activeSubCount }}
+                    </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Operators on configured plans') }}</p>
                 </div>
 
-                <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400">{{ __('Expiring Within 7 Days') }}</span>
-                    <div class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">{{ $expiringSoonCount }}</div>
+                <div
+                    class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    <span
+                        class="text-xs font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400">{{ __('Expiring Within 7 Days') }}</span>
+                    <div class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+                        {{ $expiringSoonCount }}</div>
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Needs renewal notification') }}</p>
                 </div>
 
-                <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-                    <span class="text-xs font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400">{{ __('Expired / Lapsed') }}</span>
-                    <div class="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">{{ $expiredCount }}</div>
+                <div
+                    class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    <span
+                        class="text-xs font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400">{{ __('Expired / Lapsed') }}</span>
+                    <div class="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">{{ $expiredCount }}
+                    </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Past due date') }}</p>
                 </div>
             </div>
 
             <!-- Filters & Search Bar -->
-            <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div
+                class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
                 <!-- Search -->
                 <div class="relative w-full sm:w-80">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                    <x-input
-                        wire:model.live.debounce.300ms="renewalsSearch"
-                        type="text"
-                        placeholder="{{ __('Search by operator name, slug or email...') }}"
-                        class="pl-9 text-xs"
-                    />
+                    <i
+                        class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <x-input wire:model.live.debounce.300ms="renewalsSearch" type="text"
+                        placeholder="{{ __('Search by operator name, slug or email...') }}" class="pl-9 text-xs" />
                 </div>
 
                 <!-- Status Filter Pills -->
@@ -553,11 +567,8 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                     @endphp
 
                     @foreach ($renewalTabs as $val => $label)
-                        <button
-                            type="button"
-                            wire:click="$set('renewalsFilter', '{{ $val }}')"
-                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $renewalsFilter === $val ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}"
-                        >
+                        <button type="button" wire:click="$set('renewalsFilter', '{{ $val }}')"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $renewalsFilter === $val ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}">
                             {{ $label }}
                         </button>
                     @endforeach
@@ -565,11 +576,13 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             </div>
 
             <!-- Operators Subscription Table -->
-            <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+            <div
+                class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs sm:text-sm">
                         <thead>
-                            <tr class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <tr
+                                class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 <th class="py-3.5 px-4 sm:px-6">{{ __('Operator') }}</th>
                                 <th class="py-3.5 px-4">{{ __('Plan & Billing') }}</th>
                                 <th class="py-3.5 px-4">{{ __('Subscribed Date') }}</th>
@@ -582,21 +595,30 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                             @forelse ($subscribedOperators as $op)
                                 @php
                                     $isExpired = $op->plan_expires_at && $op->plan_expires_at->isPast();
-                                    $isExpiringSoon = $op->plan_expires_at && ! $isExpired && $op->plan_expires_at->diffInDays(now()) <= 7;
-                                    $email = $op->billing_email ?: ($op->booking_notification_email ?: $op->users->first()?->email);
+                                    $isExpiringSoon =
+                                        $op->plan_expires_at &&
+                                        !$isExpired &&
+                                        $op->plan_expires_at->diffInDays(now()) <= 7;
+                                    $email =
+                                        $op->billing_email ?:
+                                        ($op->booking_notification_email ?:
+                                        $op->users->first()?->email);
                                 @endphp
                                 <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition">
                                     <!-- Operator -->
                                     <td class="py-3.5 px-4 sm:px-6">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                                            <div
+                                                class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden">
                                                 {{ strtoupper(substr($op->name, 0, 2)) }}
                                             </div>
                                             <div class="min-w-0">
-                                                <a href="{{ route('admin.operators.show', $op->id) }}" wire:navigate class="font-bold text-sm text-slate-900 dark:text-white hover:text-purple-600 transition truncate block">
+                                                <a href="{{ route('admin.operators.show', $op->id) }}" wire:navigate
+                                                    class="font-bold text-sm text-slate-900 dark:text-white hover:text-purple-600 transition truncate block">
                                                     {{ $op->name }}
                                                 </a>
-                                                <span class="text-xs text-slate-500 dark:text-slate-400 truncate block">{{ $email ?? '-' }}</span>
+                                                <span
+                                                    class="text-xs text-slate-500 dark:text-slate-400 truncate block">{{ $email ?? '-' }}</span>
                                             </div>
                                         </div>
                                     </td>
@@ -604,11 +626,13 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     <!-- Plan & Billing -->
                                     <td class="py-3.5 px-4">
                                         <div class="space-y-0.5">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
                                                 {{ $op->plan?->name ?? 'Custom' }}
                                             </span>
                                             <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                                                {{ ucfirst($op->subscription_interval ?? 'monthly') }} &bull; Rp {{ number_format((float) ($op->plan?->price_monthly ?? 0), 0, ',', '.') }}
+                                                {{ ucfirst($op->subscription_interval ?? 'monthly') }} &bull; Rp
+                                                {{ number_format((float) ($op->plan?->price_monthly ?? 0), 0, ',', '.') }}
                                             </div>
                                         </div>
                                     </td>
@@ -622,27 +646,28 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     <td class="py-3.5 px-4">
                                         @if ($op->plan_expires_at)
                                             <div class="space-y-0.5">
-                                                <div class="font-mono text-xs font-bold {{ $isExpired ? 'text-rose-600 dark:text-rose-400' : ($isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white') }}">
+                                                <div
+                                                    class="font-mono text-xs font-bold {{ $isExpired ? 'text-rose-600 dark:text-rose-400' : ($isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white') }}">
                                                     {{ $op->plan_expires_at->format('d M Y') }}
                                                 </div>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase {{ $isExpired ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : ($isExpiringSoon ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300') }}">
+                                                <span
+                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase {{ $isExpired ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : ($isExpiringSoon ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300') }}">
                                                     {{ $isExpired ? __('Expired') : ($isExpiringSoon ? __('Expiring Soon') : __('Active')) }}
                                                 </span>
                                             </div>
                                         @else
-                                            <span class="text-slate-400 text-xs font-semibold">{{ __('No Expiry Set') }}</span>
+                                            <span
+                                                class="text-slate-400 text-xs font-semibold">{{ __('No Expiry Set') }}</span>
                                         @endif
                                     </td>
 
                                     <!-- Auto Renew -->
                                     <td class="py-3.5 px-4 text-center">
-                                        <button
-                                            type="button"
-                                            wire:click="toggleAutoRenew('{{ $op->id }}')"
+                                        <button type="button" wire:click="toggleAutoRenew('{{ $op->id }}')"
                                             class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase transition cursor-pointer {{ $op->subscription_auto_renew ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800' }}"
-                                            title="{{ __('Click to toggle auto-renewal') }}"
-                                        >
-                                            <i class="fa-solid {{ $op->subscription_auto_renew ? 'fa-check' : 'fa-xmark' }} text-[10px]"></i>
+                                            title="{{ __('Click to toggle auto-renewal') }}">
+                                            <i
+                                                class="fa-solid {{ $op->subscription_auto_renew ? 'fa-check' : 'fa-xmark' }} text-[10px]"></i>
                                             <span>{{ $op->subscription_auto_renew ? __('On') : __('Off') }}</span>
                                         </button>
                                     </td>
@@ -650,31 +675,24 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     <!-- Actions -->
                                     <td class="py-3.5 px-4 sm:px-6 text-right">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button
-                                                type="button"
+                                            <button type="button"
                                                 wire:click="sendRenewalReminder('{{ $op->id }}')"
                                                 class="h-8 px-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-xs font-bold transition border border-purple-200 dark:border-purple-800/50"
-                                                title="{{ __('Send Renewal Reminder Email') }}"
-                                            >
+                                                title="{{ __('Send Renewal Reminder Email') }}">
                                                 <i class="fa-solid fa-paper-plane mr-1 text-[10px]"></i>
                                                 <span>{{ __('Remind') }}</span>
                                             </button>
 
-                                            <button
-                                                type="button"
+                                            <button type="button"
                                                 wire:click="extendSubscription('{{ $op->id }}', 30)"
                                                 class="h-8 px-2.5 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
-                                                title="{{ __('Extend subscription by +30 days') }}"
-                                            >
+                                                title="{{ __('Extend subscription by +30 days') }}">
                                                 <span>+30d</span>
                                             </button>
 
-                                            <a
-                                                href="{{ route('admin.operators.show', $op->id) }}"
-                                                wire:navigate
+                                            <a href="{{ route('admin.operators.show', $op->id) }}" wire:navigate
                                                 class="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 text-xs transition"
-                                                title="{{ __('View Operator Details') }}"
-                                            >
+                                                title="{{ __('View Operator Details') }}">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
                                         </div>
@@ -694,19 +712,262 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         </div>
     @endif
 
+    <!-- TAB 3: COMMERCIAL MODEL & PRICING WIKI -->
+    @if ($tab === 'wiki')
+        <div class="space-y-6">
+            <!-- Executive Summary Card -->
+            <div
+                class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="p-3 rounded-2xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 text-xl shrink-0">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 dark:text-white">
+                            {{ __('Platform Commercial & Pricing Architecture') }}
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {{ __('Official internal specifications, fee structures, financial splits, and monetization mechanics.') }}
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    class="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/60 text-xs text-purple-950 dark:text-purple-200 leading-relaxed space-y-2">
+                    <p class="font-extrabold text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb text-purple-600"></i>
+                        {{ __('Industry Benchmark Model (FareHarbor, Loket, Megatix):') }}
+                    </p>
+                    <p>
+                        <strong>{{ __('Core Principle:') }}</strong>
+                        {{ __('Operators keep 100% of their listed tour package prices with 0% operator commission deduction. The platform generates revenue through an automated, transparent Guest Service Fee (5.0% / Service & Payment fees) paid by guests at checkout, combined with recurring SaaS subscription plans for Pro automation tools.') }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Commercial Matrix Table -->
+            <div
+                class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                <h3 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-table-columns text-indigo-600"></i>
+                    {{ __('Subscription Tiers & Commercial Matrix') }}
+                </h3>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr
+                                class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                <th class="py-3 px-4">{{ __('Capability / Metric') }}</th>
+                                <th class="py-3 px-4">{{ __('Starter Essential') }}</th>
+                                <th class="py-3 px-4 text-purple-600 dark:text-purple-400">{{ __('Pro Operator') }}
+                                </th>
+                                <th class="py-3 px-4 text-indigo-600 dark:text-indigo-400">{{ __('Agency Ultimate') }}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-zinc-800 font-medium">
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Subscription Price') }}</td>
+                                <td class="py-3 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">Free / Rp
+                                    0</td>
+                                <td class="py-3 px-4 font-mono font-bold text-purple-600 dark:text-purple-400">Rp
+                                    299.000 / mo (Rp 2.990.000 / yr)</td>
+                                <td class="py-3 px-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">Rp
+                                    699.000 / mo (Rp 6.990.000 / yr)</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Operator Commission Cut') }}</td>
+                                <td class="py-3 px-4 font-bold text-emerald-600">0.0% (100% Net to Operator)</td>
+                                <td class="py-3 px-4 font-bold text-emerald-600">0.0% (100% Net to Operator)</td>
+                                <td class="py-3 px-4 font-bold text-emerald-600">0.0% (100% Net to Operator)</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Guest Service Fee') }}</td>
+                                <td class="py-3 px-4">5.0% (Paid by Guest at Checkout)</td>
+                                <td class="py-3 px-4">5.0% (Paid by Guest at Checkout)</td>
+                                <td class="py-3 px-4">0.0% (Direct BYO Gateway Settlement)</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Package Listings Limit') }}</td>
+                                <td class="py-3 px-4">Up to 5 Listings</td>
+                                <td class="py-3 px-4">Up to 25 Listings</td>
+                                <td class="py-3 px-4 font-bold text-emerald-600">Unlimited Listings</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Team Staff Seats') }}</td>
+                                <td class="py-3 px-4">Unlimited Staff</td>
+                                <td class="py-3 px-4">Unlimited Staff</td>
+                                <td class="py-3 px-4">Unlimited Staff</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Custom Domain (yourbrand.com)') }}</td>
+                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
+                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included (Auto-SSL)</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Google Calendar & Live iCal Feed') }}</td>
+                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Guest CRM Directory & LTV') }}</td>
+                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('WhatsApp Dispatch Center') }}</td>
+                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                    {{ __('Payment Gateway Credentials') }}</td>
+                                <td class="py-3 px-4">Shared Platform Gateway</td>
+                                <td class="py-3 px-4">Shared Platform Gateway</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">BYO Custom Merchant Keys</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Financial Settlement Split & Math Card -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Example Flow Box -->
+                <div
+                    class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
+                    <h3 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-emerald-600"></i>
+                        {{ __('Booking Transaction Flow Example') }}
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        {{ __('Simulating Rp 1.000.000 tour booking via QRIS checkout.') }}
+                    </p>
+
+                    <div class="p-4 rounded-2xl bg-slate-900 text-slate-100 font-mono text-xs space-y-2">
+                        <div
+                            class="text-slate-400 border-b border-slate-800 pb-1.5 font-bold uppercase tracking-wider text-[11px]">
+                            {{ __('Guest Checkout Cart Breakdown:') }}
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Nusa Penida Manta & Snorkel:</span>
+                            <span>Rp 1.000.000</span>
+                        </div>
+                        <div class="flex justify-between text-purple-400">
+                            <span>Guest Service Fee (5%):</span>
+                            <span>+ Rp 50.000</span>
+                        </div>
+                        <div class="flex justify-between font-bold text-emerald-400 border-t border-slate-800 pt-1.5">
+                            <span>Total Paid by Guest via DOKU:</span>
+                            <span>Rp 1.050.000</span>
+                        </div>
+
+                        <div
+                            class="text-slate-400 border-b border-slate-800 pt-3 pb-1.5 font-bold uppercase tracking-wider text-[11px]">
+                            {{ __('Automated Settlement Split:') }}
+                        </div>
+                        <div class="flex justify-between text-emerald-400">
+                            <span>Operator Wallet (100% Net):</span>
+                            <span>Rp 1.000.000</span>
+                        </div>
+                        <div class="flex justify-between text-purple-400">
+                            <span>Platform Gross Revenue:</span>
+                            <span>Rp 50.000</span>
+                        </div>
+                        <div class="flex justify-between text-rose-400">
+                            <span>DOKU QRIS Fee (0.7%):</span>
+                            <span>- Rp 7.350</span>
+                        </div>
+                        <div class="flex justify-between font-bold text-sky-400 border-t border-slate-800 pt-1.5">
+                            <span>Platform Net Margin:</span>
+                            <span>Rp 42.650</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategic Advantages Box -->
+                <div
+                    class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                    <h3 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-purple-600"></i>
+                        {{ __('Why This Model Succeeds in Indonesia') }}
+                    </h3>
+
+                    <div class="space-y-3 text-xs">
+                        <div
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                            <strong class="text-slate-900 dark:text-white block font-bold">1. Zero Resistance from Tour
+                                Operators</strong>
+                            <p class="text-slate-500 dark:text-slate-400 mt-0.5">Boat owners and agencies get 100% of
+                                their requested price into their wallet. Zero commission eliminates onboarding
+                                hesitation.</p>
+                        </div>
+
+                        <div
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                            <strong class="text-slate-900 dark:text-white block font-bold">2. Unlimited Team Seats on
+                                All Plans</strong>
+                            <p class="text-slate-500 dark:text-slate-400 mt-0.5">Agencies rely heavily on WhatsApp
+                                coordinators, boat captains, and freelance dispatch staff. Uncapped seats ensure
+                                platform-wide adoption.</p>
+                        </div>
+
+                        <div
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                            <strong class="text-slate-900 dark:text-white block font-bold">3. Guest Cultural
+                                Acceptance</strong>
+                            <p class="text-slate-500 dark:text-slate-400 mt-0.5">Domestic travelers and foreign
+                                tourists are accustomed to standard 5% checkout service and processing fees (common
+                                across Traveloka, Tiket.com, Loket.com).</p>
+                        </div>
+
+                        <div
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                            <strong class="text-slate-900 dark:text-white block font-bold">4. Predictable SaaS
+                                Subscription MRR</strong>
+                            <p class="text-slate-500 dark:text-slate-400 mt-0.5">Operators happily pay Rp 299.000/mo or
+                                Rp 2.990.000/yr for Google Calendar sync, automated WhatsApp dispatch, and client CRM
+                                management.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Edit / Create Plan Modal -->
     @if ($show_modal)
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-                <div class="w-full max-w-xl rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col my-8">
+            <div
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+                <div
+                    class="w-full max-w-xl rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col my-8">
                     <!-- Modal Header -->
-                    <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
+                    <div
+                        class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
                         <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                            <div
+                                class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
                                 <i class="fa-solid fa-sliders"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
-                                <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                                <h3
+                                    class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
                                     {{ $editing_plan_id ? __('Edit Subscription Plan Tier') : __('Create New Plan Tier') }}
                                 </h3>
                                 <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -714,7 +975,8 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 </p>
                             </div>
                         </div>
-                        <button type="button" wire:click="closeModal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0 -mr-1 -mt-1">
+                        <button type="button" wire:click="closeModal"
+                            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0 -mr-1 -mt-1">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
@@ -724,36 +986,44 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-label for="name" :value="__('Plan Name')" required />
-                                <x-input id="name" type="text" wire:model="name" placeholder="{{ __('e.g. Pro Operator') }}" :error="$errors->has('name')" />
+                                <x-input id="name" type="text" wire:model="name"
+                                    placeholder="{{ __('e.g. Pro Operator') }}" :error="$errors->has('name')" />
                                 <x-input-error :messages="$errors->get('name')" />
                             </div>
                             <div>
                                 <x-label for="slug" :value="__('Plan Identifier (Slug)')" required />
-                                <x-input id="slug" type="text" wire:model="slug" placeholder="{{ __('e.g. growth') }}" class="font-mono" :error="$errors->has('slug')" />
+                                <x-input id="slug" type="text" wire:model="slug"
+                                    placeholder="{{ __('e.g. growth') }}" class="font-mono" :error="$errors->has('slug')" />
                                 <x-input-error :messages="$errors->get('slug')" />
                             </div>
                         </div>
 
                         <div>
                             <x-label for="tagline" :value="__('Marketing Tagline / Summary')" />
-                            <x-input id="tagline" type="text" wire:model="tagline" placeholder="{{ __('Short benefit description...') }}" :error="$errors->has('tagline')" />
+                            <x-input id="tagline" type="text" wire:model="tagline"
+                                placeholder="{{ __('Short benefit description...') }}" :error="$errors->has('tagline')" />
                             <x-input-error :messages="$errors->get('tagline')" />
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <div
+                            class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-zinc-800">
                             <div>
                                 <x-label for="price_monthly" :value="__('Monthly Price (Rp)')" required />
-                                <x-input id="price_monthly" type="number" step="1000" wire:model="price_monthly" class="font-bold" :error="$errors->has('price_monthly')" />
+                                <x-input id="price_monthly" type="number" step="1000" wire:model="price_monthly"
+                                    class="font-bold" :error="$errors->has('price_monthly')" />
                                 <x-input-error :messages="$errors->get('price_monthly')" />
                             </div>
                             <div>
                                 <x-label for="price_yearly" :value="__('Yearly Price (Rp)')" required />
-                                <x-input id="price_yearly" type="number" step="1000" wire:model="price_yearly" class="font-bold" :error="$errors->has('price_yearly')" />
+                                <x-input id="price_yearly" type="number" step="1000" wire:model="price_yearly"
+                                    class="font-bold" :error="$errors->has('price_yearly')" />
                                 <x-input-error :messages="$errors->get('price_yearly')" />
                             </div>
                             <div>
                                 <x-label for="commission_percentage" :value="__('Commission (%)')" required />
-                                <x-input id="commission_percentage" type="number" step="0.1" wire:model="commission_percentage" class="font-bold font-mono text-purple-600" :error="$errors->has('commission_percentage')" />
+                                <x-input id="commission_percentage" type="number" step="0.1"
+                                    wire:model="commission_percentage" class="font-bold font-mono text-purple-600"
+                                    :error="$errors->has('commission_percentage')" />
                                 <x-input-error :messages="$errors->get('commission_percentage')" />
                             </div>
                         </div>
@@ -761,136 +1031,106 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-label for="package_limit" :value="__('Max Packages (Blank = Unlimited)')" />
-                                <x-input id="package_limit" type="number" wire:model="package_limit" placeholder="{{ __('Unlimited') }}" :error="$errors->has('package_limit')" />
+                                <x-input id="package_limit" type="number" wire:model="package_limit"
+                                    placeholder="{{ __('Unlimited') }}" :error="$errors->has('package_limit')" />
                                 <x-input-error :messages="$errors->get('package_limit')" />
                             </div>
                             <div>
                                 <x-label for="team_member_limit" :value="__('Max Team Seats (Blank = Unlimited)')" />
-                                <x-input id="team_member_limit" type="number" wire:model="team_member_limit" placeholder="{{ __('Unlimited') }}" :error="$errors->has('team_member_limit')" />
+                                <x-input id="team_member_limit" type="number" wire:model="team_member_limit"
+                                    placeholder="{{ __('Unlimited') }}" :error="$errors->has('team_member_limit')" />
                                 <x-input-error :messages="$errors->get('team_member_limit')" />
                             </div>
                         </div>
 
                         <!-- Feature Toggles -->
                         <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
-                            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block">{{ __('Included Feature Permissions') }}</span>
+                            <span
+                                class="text-xs font-bold text-slate-800 dark:text-slate-200 block">{{ __('Included Feature Permissions') }}</span>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_quick_links"
-                                        wire:model="features.quick_booking_links"
-                                        :label="__('1-Click Booking Links')"
-                                        :description="__('Direct payment and reservation links')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_quick_links" wire:model="features.quick_booking_links"
+                                        :label="__('1-Click Booking Links')" :description="__('Direct payment and reservation links')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_adv_calendar"
-                                        wire:model="features.advanced_calendar"
-                                        :label="__('Advanced Fleet Matrix')"
-                                        :description="__('Fleet calendar & resource timeline')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_adv_calendar" wire:model="features.advanced_calendar"
+                                        :label="__('Advanced Fleet Matrix')" :description="__('Fleet calendar & resource timeline')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_manifest"
-                                        wire:model="features.daily_manifest_export"
-                                        :label="__('Daily Run-Sheet Export')"
-                                        :description="__('Daily passenger manifest downloads')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_manifest" wire:model="features.daily_manifest_export"
+                                        :label="__('Daily Run-Sheet Export')" :description="__('Daily passenger manifest downloads')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_heatmap"
-                                        wire:model="features.capacity_heatmap"
-                                        :label="__('Capacity Heatmap')"
-                                        :description="__('Monthly fleet utilization analytics')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_heatmap" wire:model="features.capacity_heatmap"
+                                        :label="__('Capacity Heatmap')" :description="__('Monthly fleet utilization analytics')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_pixels"
-                                        wire:model="features.tracking_pixels"
-                                        :label="__('Marketing Pixels')"
-                                        :description="__('Meta Pixel & GA4 tracking')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_pixels" wire:model="features.tracking_pixels" :label="__('Marketing Pixels')"
+                                        :description="__('Meta Pixel & GA4 tracking')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_reviews"
-                                        wire:model="features.automated_review_requests"
-                                        :label="__('Automated Review Emails')"
-                                        :description="__('Post-trip customer feedback loop')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_reviews" wire:model="features.automated_review_requests"
+                                        :label="__('Automated Review Emails')" :description="__('Post-trip customer feedback loop')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_gcal"
-                                        wire:model="features.google_calendar"
-                                        :label="__('Google Calendar Sync')"
-                                        :description="__('iCal live reservation sync feed')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_gcal" wire:model="features.google_calendar" :label="__('Google Calendar Sync')"
+                                        :description="__('iCal live reservation sync feed')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_crm"
-                                        wire:model="features.guest_crm"
-                                        :label="__('Guest Directory CRM')"
-                                        :description="__('Customer history and profiles')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_crm" wire:model="features.guest_crm" :label="__('Guest Directory CRM')"
+                                        :description="__('Customer history and profiles')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_whatsapp"
-                                        wire:model="features.whatsapp_dispatch"
-                                        :label="__('1-Click WhatsApp')"
-                                        :description="__('Instant dispatch to guests & drivers')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_whatsapp" wire:model="features.whatsapp_dispatch"
+                                        :label="__('1-Click WhatsApp')" :description="__('Instant dispatch to guests & drivers')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_custom_domain"
-                                        wire:model="features.custom_domain"
-                                        :label="__('Custom Domain')"
-                                        :description="__('SSL on brand domain')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_custom_domain" wire:model="features.custom_domain"
+                                        :label="__('Custom Domain')" :description="__('SSL on brand domain')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
-                                    <x-checkbox
-                                        id="feat_byo_gateway"
-                                        wire:model="features.byo_gateway"
-                                        :label="__('BYO Custom Gateway')"
-                                        :description="__('Direct merchant account settlement')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_byo_gateway" wire:model="features.byo_gateway" :label="__('BYO Custom Gateway')"
+                                        :description="__('Direct merchant account settlement')" />
                                 </div>
 
-                                <div class="p-3 rounded-2xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/40 dark:bg-purple-950/30 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition">
-                                    <x-checkbox
-                                        id="feat_is_popular"
-                                        wire:model="is_popular"
-                                        :label="__('Highlight as Popular')"
-                                        :description="__('Show popular badge on tier card')"
-                                    />
+                                <div
+                                    class="p-3 rounded-2xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/40 dark:bg-purple-950/30 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition">
+                                    <x-checkbox id="feat_is_popular" wire:model="is_popular" :label="__('Highlight as Popular')"
+                                        :description="__('Show popular badge on tier card')" />
                                 </div>
                             </div>
                         </div>
 
                         <!-- Modal Actions Footer -->
-                        <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end gap-3">
-                            <x-button type="button" variant="secondary" wire:click="closeModal" class="text-xs font-bold">
+                        <div
+                            class="pt-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end gap-3">
+                            <x-button type="button" variant="secondary" wire:click="closeModal"
+                                class="text-xs font-bold">
                                 {{ __('Cancel') }}
                             </x-button>
-                            <x-button type="submit" variant="primary" class="text-xs font-bold bg-purple-600 hover:bg-purple-700">
+                            <x-button type="submit" variant="primary"
+                                class="text-xs font-bold bg-purple-600 hover:bg-purple-700">
                                 <i class="fa-solid fa-floppy-disk mr-1.5 text-xs"></i>
                                 <span>{{ __('Save Plan Tier') }}</span>
                             </x-button>

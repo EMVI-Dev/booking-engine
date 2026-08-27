@@ -273,7 +273,7 @@
                         <h3 class="text-lg font-bold text-white">{{ __('Google & Apple Calendar Sync') }}</h3>
                         <p class="text-xs text-zinc-400 leading-relaxed">
                             All new bookings automatically sync to your team's Google Calendar or Apple Calendar so your
-                            boat captains and tour guides always know the schedule.
+                            tour guides and team members always know the schedule.
                         </p>
                     </div>
 
@@ -345,62 +345,62 @@
                 </div>
 
                 <!-- Pricing Cards Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch max-w-6xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch max-w-7xl mx-auto">
                     @foreach ($plans as $plan)
                         @php
                             $priceMonthly = (float) $plan->price_monthly;
                             $priceYearly = (float) $plan->price_yearly;
                         @endphp
                         <div
-                            class="rounded-3xl bg-zinc-900/80 border {{ $plan->is_popular ? 'border-purple-500 ring-2 ring-purple-500/30 shadow-2xl shadow-purple-500/10' : 'border-zinc-800 shadow-md' }} p-6 sm:p-8 flex flex-col justify-between relative transition hover:border-zinc-700">
+                            class="rounded-3xl bg-zinc-900/80 border {{ $plan->is_popular ? 'border-purple-500 ring-2 ring-purple-500/30 shadow-2xl shadow-purple-500/10' : 'border-zinc-800 shadow-md' }} p-6 sm:p-7 flex flex-col justify-between relative transition hover:border-zinc-700">
 
-                            <div class="space-y-6">
+                            <div class="space-y-5">
                                 <!-- Header & Badge -->
-                                <div class="flex items-start justify-between gap-3 min-h-[32px]">
-                                    <h3 class="font-black text-2xl text-white tracking-tight">
+                                <div class="flex items-start justify-between gap-2 min-h-[32px]">
+                                    <h3 class="font-black text-xl text-white tracking-tight">
                                         {{ $plan->name }}
                                     </h3>
 
                                     @if ($plan->is_popular)
                                         <span
-                                            class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-purple-600 text-white shadow-xs shrink-0">
+                                            class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-600 text-white shadow-xs shrink-0">
                                             {{ __('Most Popular') }}
                                         </span>
                                     @endif
                                 </div>
 
                                 <!-- Tagline -->
-                                <p class="text-xs text-zinc-400 min-h-[38px] leading-relaxed">
+                                <p class="text-xs text-zinc-400 min-h-[36px] leading-relaxed">
                                     {{ $plan->tagline }}
                                 </p>
 
                                 <!-- Price Box -->
-                                <div class="p-5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2.5">
-                                    <div class="flex items-baseline gap-1.5">
-                                        <span class="text-3xl sm:text-4xl font-black text-white tracking-tight"
+                                <div class="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2">
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-2xl sm:text-3xl font-black text-white tracking-tight"
                                             x-text="billing_interval === 'yearly' ? 'Rp {{ number_format($priceYearly, 0, ',', '.') }}' : 'Rp {{ number_format($priceMonthly, 0, ',', '.') }}'">
                                             Rp {{ number_format($priceMonthly, 0, ',', '.') }}
                                         </span>
-                                        <span class="text-xs font-semibold text-zinc-500"
-                                            x-text="billing_interval === 'yearly' ? '/ year' : '/ month'">
-                                            / month
+                                        <span class="text-[11px] font-semibold text-zinc-500"
+                                            x-text="billing_interval === 'yearly' ? '/ yr' : '/ mo'">
+                                            / mo
                                         </span>
                                     </div>
 
-                                    <div class="space-y-1.5 pt-2.5 border-t border-zinc-800 text-xs">
+                                    <div class="space-y-1.5 pt-2 border-t border-zinc-800 text-[11px]">
                                         <div class="flex items-center justify-between">
                                             <span class="text-zinc-400 font-medium">{{ __('Your Payout') }}</span>
-                                            <span class="font-black font-mono text-sm text-emerald-400">
+                                            <span class="font-black font-mono text-xs text-emerald-400">
                                                 {{ __('100% Net to You') }}
                                             </span>
                                         </div>
-                                        <div class="flex items-center justify-between text-[11px] text-zinc-500">
-                                            <span>{{ __('Guest Online Booking Fee') }}</span>
+                                        <div class="flex items-center justify-between text-[10px] text-zinc-500">
+                                            <span>{{ __('Guest Service Fee') }}</span>
                                             <span class="font-medium text-zinc-300">
-                                                @if ($plan->slug === 'enterprise')
-                                                    {{ __('0% (Your Own Payment Account)') }}
+                                                @if (in_array($plan->slug, ['enterprise', 'ai_ultimate']))
+                                                    {{ __('0% (BYO Gateway)') }}
                                                 @else
-                                                    {{ __('5% Paid by Guest at Checkout') }}
+                                                    {{ __('5% Paid by Guest') }}
                                                 @endif
                                             </span>
                                         </div>
@@ -408,17 +408,17 @@
                                 </div>
 
                                 <!-- Limits -->
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="p-3 rounded-xl bg-zinc-950/50 border border-zinc-800">
+                                <div class="grid grid-cols-2 gap-2 text-center">
+                                    <div class="p-2.5 rounded-xl bg-zinc-950/50 border border-zinc-800">
                                         <span
-                                            class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">{{ __('Tour Packages') }}</span>
+                                            class="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">{{ __('Tour Packages') }}</span>
                                         <span class="font-extrabold text-xs text-zinc-200 mt-0.5 block">
                                             {{ $plan->package_limit ? __(':count Packages', ['count' => $plan->package_limit]) : __('Unlimited') }}
                                         </span>
                                     </div>
-                                    <div class="p-3 rounded-xl bg-zinc-950/50 border border-zinc-800">
+                                    <div class="p-2.5 rounded-xl bg-zinc-950/50 border border-zinc-800">
                                         <span
-                                            class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">{{ __('Team Staff Seats') }}</span>
+                                            class="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">{{ __('Team Staff Seats') }}</span>
                                         <span class="font-extrabold text-xs text-zinc-200 mt-0.5 block">
                                             {{ $plan->team_member_limit ? __(':count Staff', ['count' => $plan->team_member_limit]) : __('Unlimited Staff') }}
                                         </span>
@@ -426,66 +426,66 @@
                                 </div>
 
                                 <!-- Features Checklist -->
-                                <div class="space-y-3 pt-3 border-t border-zinc-800">
+                                <div class="space-y-2.5 pt-3 border-t border-zinc-800">
                                     <span
                                         class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">{{ __('Included Features') }}</span>
-                                    <ul class="space-y-2.5 text-xs">
+                                    <ul class="space-y-2 text-[11px]">
                                         <li
-                                            class="flex items-start gap-2.5 {{ $plan->hasFeature('quick_booking_links') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
+                                            class="flex items-start gap-2 {{ $plan->hasFeature('quick_booking_links') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
                                             <i
                                                 class="fa-solid {{ $plan->hasFeature('quick_booking_links') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('1-Click Direct Booking & Payment Links') }}</span>
+                                            <span>{{ __('1-Click Direct Booking Links') }}</span>
                                         </li>
                                         <li
-                                            class="flex items-start gap-2.5 {{ $plan->hasFeature('tracking_pixels') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
+                                            class="flex items-start gap-2 {{ $plan->hasFeature('tracking_pixels') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
                                             <i
                                                 class="fa-solid {{ $plan->hasFeature('tracking_pixels') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('Meta Pixel & Google Analytics 4 (ROAS)') }}</span>
+                                            <span>{{ __('Meta Pixel & GA4 (ROAS)') }}</span>
                                         </li>
                                         <li
-                                            class="flex items-start gap-2.5 {{ $plan->hasFeature('automated_review_requests') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
-                                            <i
-                                                class="fa-solid {{ $plan->hasFeature('automated_review_requests') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('12-Hour Automated Review Emails') }}</span>
-                                        </li>
-                                        <li
-                                            class="flex items-start gap-2.5 {{ $plan->hasFeature('google_calendar') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
+                                            class="flex items-start gap-2 {{ $plan->hasFeature('google_calendar') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
                                             <i
                                                 class="fa-solid {{ $plan->hasFeature('google_calendar') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('Google & Apple Calendar Live Sync') }}</span>
+                                            <span>{{ __('Google & Apple Calendar Sync') }}</span>
                                         </li>
                                         <li
-                                            class="flex items-start gap-2.5 {{ $plan->hasFeature('guest_crm') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
+                                            class="flex items-start gap-2 {{ $plan->hasFeature('guest_crm') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
                                             <i
                                                 class="fa-solid {{ $plan->hasFeature('guest_crm') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('Customer Directory & Guest History') }}</span>
+                                            <span>{{ __('Guest Directory CRM & LTV') }}</span>
                                         </li>
                                         <li
-                                            class="flex items-start gap-2.5 {{ $plan->hasFeature('whatsapp_dispatch') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
+                                            class="flex items-start gap-2 {{ $plan->hasFeature('whatsapp_dispatch') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
                                             <i
                                                 class="fa-solid {{ $plan->hasFeature('whatsapp_dispatch') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('1-Click WhatsApp Vouchers & Reminders') }}</span>
+                                            <span>{{ __('1-Click WhatsApp Tickets & Reminders') }}</span>
                                         </li>
                                         <li
-                                            class="flex items-start gap-2.5 {{ $plan->hasFeature('custom_domain') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
+                                            class="flex items-start gap-2 {{ $plan->hasFeature('custom_domain') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
                                             <i
                                                 class="fa-solid {{ $plan->hasFeature('custom_domain') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('Use Your Own Website Name (e.g. yourbrand.com)') }}</span>
+                                            <span>{{ __('Custom Domain (`yourbrand.com`)') }}</span>
                                         </li>
                                         <li
-                                            class="flex items-start gap-2.5 {{ $plan->hasFeature('byo_gateway') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
+                                            class="flex items-start gap-2 {{ $plan->hasFeature('byo_gateway') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
                                             <i
                                                 class="fa-solid {{ $plan->hasFeature('byo_gateway') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('Connect Your Own Payment Account') }}</span>
+                                            <span>{{ __('BYO Merchant Payment Keys') }}</span>
+                                        </li>
+                                        <li
+                                            class="flex items-start gap-2 {{ $plan->hasFeature('ai_discovery') ? 'text-purple-300 font-bold' : 'text-zinc-600 line-through' }}">
+                                            <i
+                                                class="fa-solid {{ $plan->hasFeature('ai_discovery') ? 'fa-bolt-lightning text-purple-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
+                                            <span>{{ __('ChatGPT AI Search Feed (`/llms.txt`)') }}</span>
                                         </li>
                                     </ul>
                                 </div>
                             </div>
 
                             <!-- CTA Button -->
-                            <div class="pt-8 border-t border-zinc-800 mt-6">
+                            <div class="pt-6 border-t border-zinc-800 mt-5">
                                 <a href="{{ route('register') }}"
-                                    class="w-full h-12 rounded-2xl {{ $plan->is_popular ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/25' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700' }} font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                    class="w-full h-11 rounded-2xl {{ $plan->is_popular ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/25' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700' }} font-extrabold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                                     wire:navigate>
                                     <i class="fa-solid fa-arrow-right text-xs"></i>
                                     <span>{{ __('Get Started with :plan', ['plan' => $plan->name]) }}</span>
@@ -523,36 +523,39 @@
                         x-transition:leave-end="opacity-0 -translate-y-2" style="display: none;"
                         class="rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-2xl overflow-hidden p-6 sm:p-8">
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs border-collapse min-w-[650px]">
+                            <table class="w-full text-left text-xs border-collapse min-w-[800px]">
                                 <thead>
                                     <tr class="border-b border-zinc-800 text-zinc-400">
                                         <th
-                                            class="py-4 pr-4 font-extrabold uppercase tracking-wider text-[11px] w-2/5">
-                                            {{ __('Features & Limits') }}</th>
+                                            class="py-4 pr-4 font-extrabold uppercase tracking-wider text-[11px] w-2/6">
+                                            {{ __('Features & Capabilities') }}</th>
                                         <th
-                                            class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-zinc-300">
+                                            class="py-4 px-3 font-black uppercase tracking-wider text-[10px] text-center w-1/6 text-zinc-300">
                                             <span>Starter Essential</span>
                                             <span
-                                                class="block text-[10px] font-normal text-zinc-500 mt-0.5">{{ __('Free Forever') }}</span>
+                                                class="block text-[9px] font-normal text-zinc-500 mt-0.5">{{ __('Free Forever') }}</span>
                                         </th>
                                         <th
-                                            class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-purple-400 bg-purple-500/5 rounded-t-2xl">
+                                            class="py-4 px-3 font-black uppercase tracking-wider text-[10px] text-center w-1/6 text-purple-400 bg-purple-500/5 rounded-t-2xl">
                                             <span>Pro Operator</span>
-                                            <span class="block text-[10px] font-normal text-purple-300/80 mt-0.5">Rp
-                                                299.000 / mo</span>
+                                            <span class="block text-[9px] font-normal text-purple-300/80 mt-0.5">Rp 299.000 / mo</span>
                                         </th>
                                         <th
-                                            class="py-4 px-4 font-black uppercase tracking-wider text-[11px] text-center w-1/5 text-indigo-400">
+                                            class="py-4 px-3 font-black uppercase tracking-wider text-[10px] text-center w-1/6 text-indigo-400">
                                             <span>Agency Ultimate</span>
-                                            <span class="block text-[10px] font-normal text-zinc-500 mt-0.5">Rp 699.000
-                                                / mo</span>
+                                            <span class="block text-[9px] font-normal text-zinc-500 mt-0.5">Rp 699.000 / mo</span>
+                                        </th>
+                                        <th
+                                            class="py-4 px-3 font-black uppercase tracking-wider text-[10px] text-center w-1/6 text-amber-300">
+                                            <span>AI Ultimate Agency</span>
+                                            <span class="block text-[9px] font-normal text-amber-400/80 mt-0.5">Rp 999.000 / mo</span>
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-zinc-800/60">
                                     <!-- Category: Commercials -->
                                     <tr class="bg-zinc-950/60">
-                                        <td colspan="4"
+                                        <td colspan="5"
                                             class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-purple-400">
                                             {{ __('1. Commercials & Payouts') }}
                                         </td>
@@ -560,83 +563,55 @@
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
                                             {{ __('Operator Commission Cut') }}</td>
-                                        <td class="py-3.5 px-4 text-center font-bold text-emerald-400">0% (100% Net)
-                                        </td>
-                                        <td class="py-3.5 px-4 text-center font-bold text-emerald-400 bg-purple-500/5">
-                                            0% (100% Net)</td>
-                                        <td class="py-3.5 px-4 text-center font-bold text-emerald-400">0% (100% Net)
-                                        </td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-emerald-400">0% (100% Net)</td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-emerald-400 bg-purple-500/5">0% (100% Net)</td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-emerald-400">0% (100% Net)</td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-emerald-400">0% (100% Net)</td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
                                             {{ __('Guest Online Booking Fee') }}</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-400">5.0%</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-400 bg-purple-500/5">5.0%</td>
-                                        <td class="py-3.5 px-4 text-center font-bold text-indigo-400">0% (BYO Gateway)
-                                        </td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-400">5.0%</td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-400 bg-purple-500/5">5.0%</td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-indigo-400">0% (BYO Gateway)</td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-indigo-400">0% (BYO Gateway)</td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('Direct Payouts to Indonesian Bank') }}</td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
+                                            {{ __('Direct Payouts to Indonesian Bank Account') }}</td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center bg-purple-500/5"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
                                     </tr>
 
                                     <!-- Category: Storefront & Web Presence -->
                                     <tr class="bg-zinc-950/60">
-                                        <td colspan="4"
+                                        <td colspan="5"
                                             class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-purple-400">
-                                            {{ __('2. Storefront & Website') }}
+                                            {{ __('2. Storefront & Web Presence') }}
                                         </td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('Branded Tour Storefront') }}</td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                    </tr>
-                                    <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3.5 pr-4 text-zinc-300 font-medium">
                                             {{ __('Free Subdomain (`slug.booking.emvi`)') }}</td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center bg-purple-500/5"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
                                             {{ __('Custom Website Domain (`yourbrand.com`) + Auto-SSL') }}</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600 bg-purple-500/5"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center font-bold text-indigo-400"><i
-                                                class="fa-solid fa-check text-emerald-400"></i> Included</td>
-                                    </tr>
-                                    <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('Custom Brand Hex Accent Color & Logo') }}</td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-600"><i class="fa-solid fa-minus"></i></td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-600 bg-purple-500/5"><i class="fa-solid fa-minus"></i></td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-indigo-400"><i class="fa-solid fa-check text-emerald-400"></i> Included</td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-indigo-400"><i class="fa-solid fa-check text-emerald-400"></i> Included</td>
                                     </tr>
 
                                     <!-- Category: Booking Engine & Inventory -->
                                     <tr class="bg-zinc-950/60">
-                                        <td colspan="4"
+                                        <td colspan="5"
                                             class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-purple-400">
                                             {{ __('3. Booking Engine & Inventory') }}
                                         </td>
@@ -644,121 +619,58 @@
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
                                             {{ __('Tour Package Listings Limit') }}</td>
-                                        <td class="py-3.5 px-4 text-center font-semibold text-zinc-300">5 Packages</td>
-                                        <td class="py-3.5 px-4 text-center font-bold text-purple-300 bg-purple-500/5">
-                                            25 Packages</td>
-                                        <td class="py-3.5 px-4 text-center font-extrabold text-emerald-400">Unlimited
-                                        </td>
+                                        <td class="py-3.5 px-3 text-center font-semibold text-zinc-300">5 Packages</td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-purple-300 bg-purple-500/5">25 Packages</td>
+                                        <td class="py-3.5 px-3 text-center font-extrabold text-emerald-400">Unlimited</td>
+                                        <td class="py-3.5 px-3 text-center font-extrabold text-emerald-400">Unlimited</td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
                                             {{ __('Team Staff Seats & Role Accounts') }}</td>
-                                        <td class="py-3.5 px-4 text-center font-semibold text-emerald-400">Unlimited
-                                        </td>
-                                        <td
-                                            class="py-3.5 px-4 text-center font-semibold text-emerald-400 bg-purple-500/5">
-                                            Unlimited</td>
-                                        <td class="py-3.5 px-4 text-center font-semibold text-emerald-400">Unlimited
-                                        </td>
-                                    </tr>
-                                    <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('1-Click Direct Booking & Payment Links') }}</td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                    </tr>
-                                    <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('Instant QRIS & Bank Virtual Accounts (BCA, Mandiri, BRI, BNI)') }}
-                                        </td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center font-semibold text-emerald-400">Unlimited</td>
+                                        <td class="py-3.5 px-3 text-center font-semibold text-emerald-400 bg-purple-500/5">Unlimited</td>
+                                        <td class="py-3.5 px-3 text-center font-semibold text-emerald-400">Unlimited</td>
+                                        <td class="py-3.5 px-3 text-center font-semibold text-emerald-400">Unlimited</td>
                                     </tr>
 
-                                    <!-- Category: Operations & Automations -->
+                                    <!-- Category: Automation & AI Flagship -->
                                     <tr class="bg-zinc-950/60">
-                                        <td colspan="4"
+                                        <td colspan="5"
                                             class="py-3 px-3 font-extrabold text-[11px] uppercase tracking-wider text-purple-400">
-                                            {{ __('4. Automation & Integrations') }}
+                                            {{ __('4. Automation & AI Discovery') }}
                                         </td>
-                                    </tr>
-                                    <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('WhatsApp Floating Chat Widget & Operating Schedule') }}</td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
                                             {{ __('Google & Apple Calendar Live Sync (iCal Feed)') }}</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-600"><i class="fa-solid fa-minus"></i></td>
+                                        <td class="py-3.5 px-3 text-center bg-purple-500/5"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('Customer Directory & Guest CRM (LTV & Trip History)') }}</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
+                                            {{ __('Customer Directory & Guest CRM (LTV History)') }}</td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-600"><i class="fa-solid fa-minus"></i></td>
+                                        <td class="py-3.5 px-3 text-center bg-purple-500/5"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('1-Click WhatsApp Tickets & Location Pins Dispatch') }}</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
+                                            {{ __('1-Click WhatsApp Tickets & Reminders Dispatch') }}</td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-600"><i class="fa-solid fa-minus"></i></td>
+                                        <td class="py-3.5 px-3 text-center bg-purple-500/5"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
+                                        <td class="py-3.5 px-3 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('Meta Pixel (Ads ROAS) & Google Analytics 4') }}</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                    </tr>
-                                    <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('Automated 12-Hour Review Request Emails') }}</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center bg-purple-500/5"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                        <td class="py-3.5 px-4 text-center"><i
-                                                class="fa-solid fa-check text-emerald-400"></i></td>
-                                    </tr>
-                                    <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3.5 pr-4 text-zinc-300 font-medium">
-                                            {{ __('BYO Custom Payment Gateway (DOKU, Midtrans, Xendit)') }}</td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center text-zinc-600 bg-purple-500/5"><i
-                                                class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3.5 px-4 text-center font-bold text-indigo-400"><i
-                                                class="fa-solid fa-check text-emerald-400"></i> Included</td>
+                                        <td class="py-3.5 pr-4 text-purple-300 font-bold">
+                                            {{ __('AI Search Engine Feed (/llms.txt) & Unblocked AI Crawlers') }}</td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-600"><i class="fa-solid fa-minus"></i></td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-600 bg-purple-500/5"><i class="fa-solid fa-minus"></i></td>
+                                        <td class="py-3.5 px-3 text-center text-zinc-600"><i class="fa-solid fa-minus"></i></td>
+                                        <td class="py-3.5 px-3 text-center font-extrabold text-amber-300"><i class="fa-solid fa-bolt-lightning text-amber-400 mr-1"></i> Flagship Included</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -810,7 +722,7 @@
                         <div x-show="activeAccordion === 1" x-collapse
                             class="px-5 sm:px-6 pb-6 text-xs sm:text-sm text-zinc-400 leading-relaxed border-t border-zinc-800/60 pt-4"
                             style="display: none;">
-                            {{ __('When a traveler pays online for your tour via QRIS, Virtual Account, or Credit Card, the funds are deposited into your operator balance. You can request direct withdrawals to any Indonesian bank account (BCA, Mandiri, BRI, BNI, CIMB, and more) anytime.') }}
+                            {{ __('When a traveler pays online for your tour via QRIS, Virtual Account, or Credit Card, funds land in your operator wallet balance. Payouts up to Rp 10.000.000 are automatically disbursed via DOKU BI-FAST directly into your Indonesian bank account (BCA, Mandiri, BRI, BNI, and more) in under 3 seconds.') }}
                         </div>
                     </div>
 
@@ -887,7 +799,7 @@
                         <button type="button" @click="activeAccordion = activeAccordion === 6 ? null : 6"
                             class="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 cursor-pointer">
                             <span class="font-bold text-sm sm:text-base text-white">
-                                {{ __('Can my staff and boat captains have their own login accounts?') }}
+                                {{ __('Can my staff and tour guides have their own login accounts?') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
                                 :class="activeAccordion === 6 ? 'rotate-180 text-purple-400' : ''"></i>
@@ -895,7 +807,7 @@
                         <div x-show="activeAccordion === 6" x-collapse
                             class="px-5 sm:px-6 pb-6 text-xs sm:text-sm text-zinc-400 leading-relaxed border-t border-zinc-800/60 pt-4"
                             style="display: none;">
-                            {{ __('Yes! All subscription plans (including Starter Essential) include unlimited team member seats. You can invite your reservation coordinators, field guides, and captains with tailored access permissions.') }}
+                            {{ __('Yes! All subscription plans (including Starter Essential) include unlimited team member seats. You can invite your reservation coordinators, field guides, and team members with tailored access permissions.') }}
                         </div>
                     </div>
                 </div>

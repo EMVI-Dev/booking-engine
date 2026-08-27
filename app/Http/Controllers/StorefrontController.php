@@ -337,6 +337,8 @@ class StorefrontController extends Controller
 
     /**
      * Generate dynamic robots.txt optimized for search engines & AI crawlers.
+    /**
+     * Generate dynamic robots.txt for current domain.
      */
     public function robots(Request $request): Response
     {
@@ -351,19 +353,34 @@ class StorefrontController extends Controller
         $content .= "Disallow: /api/\n";
         $content .= "Disallow: /livewire/\n\n";
 
-        $content .= "# AI Discovery & LLM Crawlers Directives\n";
-        $content .= "User-agent: GPTBot\nAllow: /\n";
-        $content .= "User-agent: ChatGPT-User\nAllow: /\n";
-        $content .= "User-agent: PerplexityBot\nAllow: /\n";
-        $content .= "User-agent: ClaudeBot\nAllow: /\n";
-        $content .= "User-agent: Claude-Web\nAllow: /\n";
-        $content .= "User-agent: Google-Extended\nAllow: /\n";
-        $content .= "User-agent: Applebot-Extended\nAllow: /\n";
-        $content .= "User-agent: cohere-ai\nAllow: /\n";
-        $content .= "User-agent: anthropic-ai\nAllow: /\n\n";
+        $hasAiDiscovery = $agent ? $agent->hasFeature('ai_discovery') : true;
+
+        if ($hasAiDiscovery) {
+            $content .= "# AI Discovery & LLM Crawlers Directives (Enabled)\n";
+            $content .= "User-agent: GPTBot\nAllow: /\n";
+            $content .= "User-agent: ChatGPT-User\nAllow: /\n";
+            $content .= "User-agent: PerplexityBot\nAllow: /\n";
+            $content .= "User-agent: ClaudeBot\nAllow: /\n";
+            $content .= "User-agent: Claude-Web\nAllow: /\n";
+            $content .= "User-agent: Google-Extended\nAllow: /\n";
+            $content .= "User-agent: Applebot-Extended\nAllow: /\n";
+            $content .= "User-agent: cohere-ai\nAllow: /\n";
+            $content .= "User-agent: anthropic-ai\nAllow: /\n\n";
+        } else {
+            $content .= "# AI Discovery Crawlers Disallowed (Upgrade to AI Ultimate Agency Plan to enable AI Search indexing)\n";
+            $content .= "User-agent: GPTBot\nDisallow: /\n";
+            $content .= "User-agent: ChatGPT-User\nDisallow: /\n";
+            $content .= "User-agent: PerplexityBot\nDisallow: /\n";
+            $content .= "User-agent: ClaudeBot\nDisallow: /\n";
+            $content .= "User-agent: Claude-Web\nDisallow: /\n";
+            $content .= "User-agent: Google-Extended\nDisallow: /\n";
+            $content .= "User-agent: Applebot-Extended\nDisallow: /\n";
+            $content .= "User-agent: cohere-ai\nDisallow: /\n";
+            $content .= "User-agent: anthropic-ai\nDisallow: /\n\n";
+        }
 
         $content .= "Sitemap: {$baseUrl}/sitemap.xml\n";
-        if ($agent) {
+        if ($agent && $hasAiDiscovery) {
             $content .= "# AI Discovery Files\n";
             $content .= "llms-txt: {$baseUrl}/llms.txt\n";
             $content .= "llms-full: {$baseUrl}/llms-full.txt\n";
@@ -426,6 +443,14 @@ class StorefrontController extends Controller
             $content = "# Direct Booking Engine\n\nPlatform for direct verified tour operator storefronts.\n";
 
             return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        if (! $agent->hasFeature('ai_discovery')) {
+            $content = "# AI Discovery Not Unlocked for {$agent->name}\n\n";
+            $content .= "AI Search indexing and ChatGPT recommendation feeds (/llms.txt) are exclusive to the **AI Ultimate Agency** subscription plan.\n";
+            $content .= "Upgrade at {$baseUrl}/settings/plan to activate AI Search Engine discovery.\n";
+
+            return response($content, 403, ['Content-Type' => 'text/plain; charset=UTF-8']);
         }
 
         $packages = $agent->packages()->where('status', ListingStatus::Published)->withCount('reservations')->orderByDesc('reservations_count')->get();

@@ -6,6 +6,7 @@ use App\Models\Package;
 use App\Models\Product;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::defaultView('vendor.pagination.tailwind');
+        Paginator::defaultSimpleView('vendor.pagination.tailwind');
+
         $this->configureDefaults();
     }
 

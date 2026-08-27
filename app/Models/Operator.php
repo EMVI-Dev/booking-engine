@@ -681,6 +681,25 @@ class Operator extends Model
     }
 
     /**
+     * Get Google Search Console Site Verification Meta Tag / Code.
+     */
+    public function getGoogleSiteVerification(): ?string
+    {
+        $tracking = $this->settings['tracking'] ?? [];
+        $code = trim((string) ($tracking['google_site_verification'] ?? ''));
+
+        return $code !== '' ? $code : null;
+    }
+
+    /**
+     * Get Google Search Console verification code attribute.
+     */
+    public function getGoogleSiteVerificationAttribute(): ?string
+    {
+        return $this->getGoogleSiteVerification();
+    }
+
+    /**
      * Get Google Maps / TripAdvisor / External Review URL.
      */
     public function getReviewUrl(): ?string

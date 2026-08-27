@@ -447,9 +447,75 @@ new #[Title('Guest Directory & CRM')] class extends Component {
         </div>
     </div>
 
-    <!-- Guests List Table -->
+    <!-- Guests List Section -->
     <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Guests Mobile Responsive Card List (md:hidden) -->
+        <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
+            @forelse ($this->guests as $guest)
+                @php
+                    $waUrl = $guest->getWhatsAppUrl($this->currentOperator->name ?? '');
+                    $initials = strtoupper(substr($guest->name, 0, 2));
+                    $totalSpent = $guest->total_spent;
+                    $isRepeat = $guest->reservations_count > 1;
+                @endphp
+                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                                {{ $initials }}
+                            </div>
+                            <div class="min-w-0">
+                                <span class="font-extrabold text-xs text-slate-900 dark:text-white block truncate">
+                                    {{ $guest->name }}
+                                </span>
+                                @if ($isRepeat)
+                                    <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                        {{ __('Repeat') }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            @if ($guest->phone)
+                                <a href="{{ $waUrl }}" target="_blank" class="h-8 px-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold text-xs inline-flex items-center gap-1">
+                                    <i class="fa-brands fa-whatsapp text-xs"></i>
+                                    <span>{{ __('Chat') }}</span>
+                                </a>
+                            @endif
+                            <button type="button" wire:click="editGuest('{{ $guest->id }}')" class="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 font-bold text-xs">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Contact Info') }}</span>
+                            @if ($guest->phone)
+                                <a href="{{ $waUrl }}" target="_blank" class="font-bold text-emerald-600 dark:text-emerald-400 text-xs truncate block">
+                                    {{ $guest->phone }}
+                                </a>
+                            @elseif ($guest->email)
+                                <span class="text-slate-700 dark:text-slate-300 truncate block">{{ $guest->email }}</span>
+                            @else
+                                <span class="text-slate-400 italic text-[11px]">{{ __('No contact') }}</span>
+                            @endif
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Lifetime Spend') }}</span>
+                            <span class="font-mono font-black text-slate-900 dark:text-white block">Rp {{ number_format($totalSpent, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-xs text-slate-400">
+                    {{ __('No guests found') }}
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Desktop Guests Table (hidden on mobile) -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead class="bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200/80 dark:border-zinc-800 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     <tr>

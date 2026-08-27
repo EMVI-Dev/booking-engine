@@ -84,7 +84,7 @@ new #[Title('Storefront Settings')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6 max-w-5xl">
+<div class="space-y-6 max-w-6xl mx-auto">
     <!-- Desktop Notice on Mobile -->
     <x-desktop-only-notice
         :title="__('Storefront Policies Best Managed on Desktop')"

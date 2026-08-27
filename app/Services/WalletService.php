@@ -10,6 +10,7 @@ use App\Enums\WalletTransactionType;
 use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\PayoutRequest;
+use App\Models\Reservation;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -129,6 +130,23 @@ class WalletService
                 'description' => "Payout Request #{$payout->reference_number} ({$operator->bank_provider} - {$operator->bank_account_number})",
             ]);
 
+            // Auto-Disburse via DOKU API if amount <= Rp 10.000.000 (Industry Standard)
+            if ($amount <= 10000000.00) {
+                try {
+                    $disbursement = app(DokuPaymentService::class)->disbursePayout($payout);
+                    if ($disbursement['success']) {
+                        $payout->update([
+                            'status' => PayoutStatus::Completed,
+                            'processed_by' => 'DOKU BI-FAST API',
+                            'processed_at' => now(),
+                            'notes' => ($notes ? $notes.' | ' : '').$disbursement['message'].' [Ref: '.$disbursement['reference'].']',
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
             return $payout;
         });
     }
@@ -189,5 +207,66 @@ class WalletService
                 'status' => WalletTransactionStatus::Cleared,
                 'updated_at' => now(),
             ]);
+    }
+
+    /**
+     * Cancel or reverse wallet earnings/escrows when a booking is cancelled.
+     */
+    public function cancelBookingEarning(Reservation $reservation, string $reason = 'Booking Cancelled'): ?WalletTransaction
+    {
+        /** @var WalletTransaction|null $earningTx */
+        $earningTx = WalletTransaction::query()
+            ->where('reservation_id', $reservation->id)
+            ->where('type', WalletTransactionType::BookingEarning)
+            ->first();
+
+        if (! $earningTx) {
+            return null;
+        }
+
+        // If pending in escrow, cancel transaction
+        if ($earningTx->status === WalletTransactionStatus::PendingEscrow) {
+            $earningTx->update([
+                'status' => WalletTransactionStatus::Cancelled,
+                'description' => "{$earningTx->description} (Cancelled: {$reason})",
+            ]);
+
+            return $earningTx;
+        }
+
+        // If already cleared, issue a debit reversal transaction
+        if ($earningTx->status === WalletTransactionStatus::Cleared) {
+            return WalletTransaction::query()->create([
+                'operator_id' => $earningTx->operator_id,
+                'reservation_id' => $reservation->id,
+                'type' => WalletTransactionType::ManualAdjustment,
+                'gross_amount' => -1 * abs((float) $earningTx->gross_amount),
+                'fee_amount' => 0,
+                'net_amount' => -1 * abs((float) $earningTx->net_amount),
+                'status' => WalletTransactionStatus::Cleared,
+                'description' => "Reversal for Cancelled Booking #{$reservation->code}: {$reason}",
+            ]);
+        }
+
+        return $earningTx;
+    }
+
+    /**
+     * Process a partial refund debit against an operator's wallet.
+     */
+    public function processPartialRefund(Reservation $reservation, float $refundAmount, string $reason = 'Partial refund issued'): WalletTransaction
+    {
+        $operator = $reservation->operator;
+
+        return WalletTransaction::query()->create([
+            'operator_id' => $operator->id,
+            'reservation_id' => $reservation->id,
+            'type' => WalletTransactionType::RefundDeduction,
+            'gross_amount' => -1 * abs($refundAmount),
+            'fee_amount' => 0,
+            'net_amount' => -1 * abs($refundAmount),
+            'status' => WalletTransactionStatus::Cleared,
+            'description' => "Partial Refund for Booking #{$reservation->code}: {$reason}",
+        ]);
     }
 }

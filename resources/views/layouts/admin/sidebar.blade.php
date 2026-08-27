@@ -45,24 +45,24 @@
         </div>
 
         <!-- Navigation Links -->
-        <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-            <!-- Section: Platform Management -->
+        <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+            <!-- Section 1: Overview & Merchants -->
             <div class="space-y-1">
-                <p class="px-3 text-[11px] font-bold tracking-wider uppercase text-purple-600 dark:text-purple-400">
-                    {{ __('Platform Control') }}
+                <p class="px-3 text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
+                    {{ __('Overview & Merchants') }}
                 </p>
 
                 <a href="{{ route('admin.dashboard') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.dashboard') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.dashboard') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <i class="fa-solid fa-chart-pie w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.dashboard') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                     <span class="truncate">{{ __('Revenue Dashboard') }}</span>
                 </a>
 
                 <a href="{{ route('admin.operators.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.operators.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.operators.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <div class="flex items-center gap-3 min-w-0">
                         <i class="fa-solid fa-users-gear w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.operators.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
-                        <span class="truncate">{{ __('Operators Management') }}</span>
+                        <span class="truncate">{{ __('Operators Directory') }}</span>
                     </div>
                     @if ($totalOperators > 0)
                         <span class="h-5 px-2 text-[11px] font-bold flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 shrink-0">
@@ -70,15 +70,57 @@
                         </span>
                     @endif
                 </a>
+            </div>
+
+            <!-- Section 2: Finance & Commercial -->
+            <div class="space-y-1">
+                <p class="px-3 text-[10px] font-bold tracking-wider uppercase text-purple-600 dark:text-purple-400">
+                    {{ __('Finance & Commercial') }}
+                </p>
 
                 <a href="{{ route('admin.plans.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.plans.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.plans.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <i class="fa-solid fa-layer-group w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.plans.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                     <span class="truncate">{{ __('Subscription Plans') }}</span>
                 </a>
 
+                <a href="{{ route('admin.payouts.index') }}" wire:navigate
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.payouts.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <i class="fa-solid fa-money-bill-transfer w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.payouts.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                        <span class="truncate">{{ __('Payout Requests') }}</span>
+                    </div>
+                    @php
+                        $pendingPayouts = \App\Models\PayoutRequest::where('status', \App\Enums\PayoutStatus::Pending)->count();
+                    @endphp
+                    @if ($pendingPayouts > 0)
+                        <span class="h-5 px-2 text-[11px] font-black flex items-center justify-center rounded-full bg-amber-500 text-white shrink-0 shadow-xs">
+                            {{ $pendingPayouts }}
+                        </span>
+                    @endif
+                </a>
+
+                <a href="{{ route('admin.coupons.index') }}" wire:navigate
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.coupons.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i class="fa-solid fa-ticket w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.coupons.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                    <span class="truncate">{{ __('Promo Codes') }}</span>
+                </a>
+
+                <a href="{{ route('admin.payments.index') }}" wire:navigate
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.payments.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i class="fa-solid fa-credit-card w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.payments.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                    <span class="truncate">{{ __('Payment Gateways') }}</span>
+                </a>
+            </div>
+
+            <!-- Section 3: Platform Config -->
+            <div class="space-y-1">
+                <p class="px-3 text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
+                    {{ __('Platform Config') }}
+                </p>
+
                 <a href="{{ route('admin.announcements.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.announcements.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.announcements.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <div class="flex items-center gap-3 min-w-0">
                         <i class="fa-solid fa-bullhorn w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.announcements.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                         <span class="truncate">{{ __('Broadcast Notices') }}</span>
@@ -93,38 +135,10 @@
                     @endif
                 </a>
 
-                <a href="{{ route('admin.coupons.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.coupons.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-ticket w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.coupons.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
-                    <span class="truncate">{{ __('Promo Codes') }}</span>
-                </a>
-
-                <a href="{{ route('admin.payouts.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.payouts.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <i class="fa-solid fa-money-bill-transfer w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.payouts.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
-                        <span class="truncate">{{ __('Payout Requests') }}</span>
-                    </div>
-                    @php
-                        $pendingPayouts = \App\Models\PayoutRequest::where('status', \App\Enums\PayoutStatus::Pending)->count();
-                    @endphp
-                    @if ($pendingPayouts > 0)
-                        <span class="h-5 px-2 text-[11px] font-black flex items-center justify-center rounded-full bg-amber-500 text-white shrink-0">
-                            {{ $pendingPayouts }}
-                        </span>
-                    @endif
-                </a>
-
                 <a href="{{ route('admin.platform.edit') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.platform.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.platform.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <i class="fa-solid fa-sliders w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.platform.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
-                    <span class="truncate">{{ __('Platform Settings') }}</span>
-                </a>
-
-                <a href="{{ route('admin.payments.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.payments.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-credit-card w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.payments.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
-                    <span class="truncate">{{ __('Payment Gateways') }}</span>
+                    <span class="truncate">{{ __('Settings & Wiki') }}</span>
                 </a>
             </div>
 
@@ -206,6 +220,24 @@
                 {{ $slot }}
             </div>
         </main>
+
+        <!-- Platform Master Sticky Footer -->
+        <footer class="sticky bottom-0 z-30 border-t border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md py-3 sm:py-3.5 px-4 sm:px-6 lg:px-8 mt-auto shadow-md select-none">
+            <div class="mx-auto w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <div class="flex items-center gap-2 text-center sm:text-left">
+                    <span class="font-bold text-slate-800 dark:text-slate-200">EMVI Platform Master Engine</span>
+                    <span class="text-slate-300 dark:text-zinc-700">&bull;</span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60">
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+                        v1.0.0 Stable
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-3 text-center sm:text-right">
+                    <span>&copy; {{ date('Y') }} EMVI Infrastructure &bull; All Rights Reserved</span>
+                </div>
+            </div>
+        </footer>
     </div>
     @livewireScripts
 </body>

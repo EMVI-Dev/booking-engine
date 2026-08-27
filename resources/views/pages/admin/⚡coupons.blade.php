@@ -427,7 +427,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                     </div>
 
                     <!-- Modal Body -->
-                    <form wire:submit="saveCoupon" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                    <form wire:submit="saveCoupon" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-36">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-label for="code" :value="__('Coupon Code (e.g. SUMMER26)')" required />
@@ -503,13 +503,21 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-label for="starts_at" :value="__('Active From')" />
-                                <x-input id="starts_at" type="datetime-local" wire:model="starts_at" class="text-xs font-mono" :error="$errors->has('starts_at')" />
+                                <x-datetime-picker
+                                    id="starts_at"
+                                    wire:model="starts_at"
+                                    :error="$errors->has('starts_at')"
+                                />
                                 <x-input-error :messages="$errors->get('starts_at')" />
                             </div>
 
                             <div>
                                 <x-label for="expires_at" :value="__('Expires At')" />
-                                <x-input id="expires_at" type="datetime-local" wire:model="expires_at" class="text-xs font-mono" :error="$errors->has('expires_at')" />
+                                <x-datetime-picker
+                                    id="expires_at"
+                                    wire:model="expires_at"
+                                    :error="$errors->has('expires_at')"
+                                />
                                 <x-input-error :messages="$errors->get('expires_at')" />
                             </div>
                         </div>

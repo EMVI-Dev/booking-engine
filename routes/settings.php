@@ -9,6 +9,8 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('settings/storefront', 'pages::settings.storefront')->name('storefront-settings.edit');
     Route::livewire('settings/payments', 'pages::settings.payments')->name('payments.edit');
     Route::livewire('settings/plan', 'pages::settings.plan')->name('settings.plan');
+    Route::livewire('settings/plan/checkout/{payment}', 'pages::settings.plan-checkout')->name('settings.plan.checkout');
+    Route::livewire('settings/billing', 'pages::settings.billing')->name('settings.billing');
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
 });
 

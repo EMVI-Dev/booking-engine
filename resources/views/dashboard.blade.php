@@ -344,7 +344,58 @@
                         </a>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <!-- Mobile Responsive Card List (md:hidden) -->
+                    <div class="md:hidden space-y-3.5 pt-2">
+                        @forelse ($recentBookings as $res)
+                            @php
+                                $payment = $res->latestPayment;
+                                $resCode = $res->code ?? ('RSV-' . strtoupper(substr($res->id, -8)));
+                            @endphp
+                            <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-mono font-extrabold text-xs text-indigo-600 dark:text-indigo-400">
+                                        #{{ $resCode }}
+                                    </span>
+                                    @if ($res->status === \App\Enums\ReservationStatus::Confirmed)
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                            {{ __('Confirmed') }}
+                                        </span>
+                                    @elseif ($res->status === \App\Enums\ReservationStatus::PendingConfirmation)
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                            {{ __('Pending Review') }}
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-slate-300">
+                                            {{ $res->status->label() }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="space-y-0.5">
+                                    <h4 class="font-bold text-xs text-slate-900 dark:text-white">
+                                        {{ $res->guest_name }}
+                                    </h4>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {{ $res->requested_date->format('M d, Y') }} &bull; {{ __(':count Pax', ['count' => $res->pax_count]) }}
+                                    </p>
+                                </div>
+
+                                <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
+                                    <span class="text-slate-400 text-[10px] uppercase font-bold">{{ __('Amount') }}</span>
+                                    <span class="font-mono font-black text-slate-900 dark:text-white">
+                                        {{ $payment && $payment->isPaid() ? 'Rp ' . number_format((float) $payment->amount, 0, ',', '.') : '—' }}
+                                    </span>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="py-8 text-center text-xs text-slate-400">
+                                {{ __('No bookings received yet. Share your storefront link to start taking reservations!') }}
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <!-- Desktop Recent Bookings Table (hidden on mobile) -->
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="w-full text-left text-xs">
                             <thead class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-zinc-800">
                                 <tr>

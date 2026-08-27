@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\DokuPaymentService;
 use App\Services\WalletService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -142,7 +143,7 @@ test('operator can submit payout request within available balance', function () 
     $payout = $walletService->createPayoutRequest($this->operator, 1000000.00, 'Monthly payout');
 
     expect($payout)->toBeInstanceOf(PayoutRequest::class)
-        ->and($payout->status)->toBe(PayoutStatus::Pending)
+        ->and($payout->status)->toBe(PayoutStatus::Completed)
         ->and((float) $payout->amount)->toBe(1000000.00)
         ->and($payout->bank_provider)->toBe('BCA')
         ->and($this->operator->getAvailableBalance())->toBe(800000.00); // 1.800.000 - 1.000.000
@@ -218,4 +219,144 @@ test('operator wallet page renders metrics and handles payout requests via livew
 
     expect($this->operator->payoutRequests()->count())->toBe(1)
         ->and($this->operator->getAvailableBalance())->toBe(1300000.00);
+});
+
+test('cancelling reservation in pending escrow cancels wallet transaction', function () {
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => Package::class,
+        'bookable_id' => $this->package->id,
+        'requested_date' => now()->addDays(5)->format('Y-m-d'),
+        'status' => ReservationStatus::Confirmed,
+    ]);
+
+    $trx = WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'reservation_id' => $reservation->id,
+        'type' => WalletTransactionType::BookingEarning,
+        'gross_amount' => 1000000.00,
+        'fee_amount' => 0.00,
+        'net_amount' => 1000000.00,
+        'status' => WalletTransactionStatus::PendingEscrow,
+        'available_at' => now()->addDays(5),
+        'description' => 'Pending trip',
+    ]);
+
+    $walletService = app(WalletService::class);
+    $walletService->cancelBookingEarning($reservation, 'Guest request');
+
+    expect($trx->fresh()->status)->toBe(WalletTransactionStatus::Cancelled)
+        ->and($this->operator->getPendingEscrowBalance())->toBe(0.0);
+});
+
+test('cancelling cleared reservation creates debit reversal transaction in wallet', function () {
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => Package::class,
+        'bookable_id' => $this->package->id,
+        'requested_date' => now()->subDay()->format('Y-m-d'),
+        'status' => ReservationStatus::Confirmed,
+    ]);
+
+    $trx = WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'reservation_id' => $reservation->id,
+        'type' => WalletTransactionType::BookingEarning,
+        'gross_amount' => 1000000.00,
+        'fee_amount' => 0.00,
+        'net_amount' => 1000000.00,
+        'status' => WalletTransactionStatus::Cleared,
+        'available_at' => now()->subDay(),
+        'description' => 'Cleared trip',
+    ]);
+
+    expect($this->operator->getAvailableBalance())->toBe(1000000.00);
+
+    $walletService = app(WalletService::class);
+    $reversal = $walletService->cancelBookingEarning($reservation, 'Refund issued');
+
+    expect($reversal)->not->toBeNull()
+        ->and($reversal->type)->toBe(WalletTransactionType::ManualAdjustment)
+        ->and((float) $reversal->net_amount)->toBe(-1000000.00)
+        ->and($this->operator->getAvailableBalance())->toBe(0.0);
+});
+
+test('reservation free cancellation eligibility correctly respects cutoff hours', function () {
+    $requestedDate = now()->addDays(3)->format('Y-m-d'); // 72 hours away
+    $reservation = Reservation::factory()->create([
+        'requested_date' => $requestedDate,
+        'terms_snapshot' => [
+            'free_cancellation_hours' => 24,
+        ],
+    ]);
+
+    expect($reservation->getFrozenFreeCancellationHours())->toBe(24)
+        ->and($reservation->isEligibleForFreeCancellation(now()))->toBeTrue();
+
+    // 12 hours before departure (past 24h cutoff)
+    $departureDate = Carbon::parse($requestedDate)->startOfDay();
+    $tooLate = $departureDate->copy()->subHours(12);
+
+    expect($reservation->isEligibleForFreeCancellation($tooLate))->toBeFalse();
+});
+
+test('processing partial refund debits operator wallet balance accurately', function () {
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => Package::class,
+        'bookable_id' => $this->package->id,
+        'requested_date' => now()->subDay()->format('Y-m-d'),
+        'status' => ReservationStatus::Confirmed,
+    ]);
+
+    WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'reservation_id' => $reservation->id,
+        'type' => WalletTransactionType::BookingEarning,
+        'gross_amount' => 2000000.00,
+        'fee_amount' => 0.00,
+        'net_amount' => 2000000.00,
+        'status' => WalletTransactionStatus::Cleared,
+        'available_at' => now()->subDay(),
+        'description' => 'Full trip earning',
+    ]);
+
+    expect($this->operator->getAvailableBalance())->toBe(2000000.00);
+
+    $walletService = app(WalletService::class);
+    $partialTx = $walletService->processPartialRefund($reservation, 500000.00, '50% pax cancellation');
+
+    expect($partialTx->type)->toBe(WalletTransactionType::RefundDeduction)
+        ->and((float) $partialTx->net_amount)->toBe(-500000.00)
+        ->and($this->operator->getAvailableBalance())->toBe(1500000.00);
+});
+
+test('refund after payout results in negative wallet balance and blocks payout requests', function () {
+    $walletService = app(WalletService::class);
+
+    // Operator starts with 1.000.000 cleared
+    WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'type' => WalletTransactionType::BookingEarning,
+        'gross_amount' => 1000000.00,
+        'fee_amount' => 0.00,
+        'net_amount' => 1000000.00,
+        'status' => WalletTransactionStatus::Cleared,
+        'description' => 'Initial cleared earning',
+    ]);
+
+    // Operator withdraws all 1.000.000
+    $payout = $walletService->createPayoutRequest($this->operator, 1000000.00);
+    expect($this->operator->getAvailableBalance())->toBe(0.0);
+
+    // Later, a refund debit of 400.000 is issued
+    $reservation = Reservation::factory()->create(['operator_id' => $this->operator->id]);
+    $walletService->processPartialRefund($reservation, 400000.00, 'Post-payout refund');
+
+    // Balance is now negative (-400.000)
+    expect($this->operator->getAvailableBalance())->toBe(-400000.00);
+
+    // Payout request must be blocked
+    expect(fn () => $walletService->createPayoutRequest($this->operator, 50000.00))
+        ->toThrow(ValidationException::class);
 });

@@ -98,13 +98,13 @@
 
         <!-- Right Header Actions (WhatsApp & Mobile Toggle) -->
         <div class="flex items-center gap-2.5">
-            <!-- WhatsApp Chat Pill (Desktop & Mobile) -->
+            <!-- WhatsApp Chat Pill (Mobile / Tablet Header Only, Desktop uses Floating Button) -->
             @if ($waUrl)
                 <a
                     href="{{ $waUrl }}"
                     target="_blank"
                     rel="noopener"
-                    class="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs shadow-xs hover:shadow-md transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                    class="lg:hidden h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs shadow-xs hover:shadow-md transition-all inline-flex items-center gap-1.5 cursor-pointer"
                     title="{{ __('Chat with Operator on WhatsApp') }}"
                 >
                     <i class="fa-brands fa-whatsapp text-sm"></i>

@@ -7,6 +7,7 @@ use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\OperatorDomain;
 use App\Models\Package;
+use App\Models\Plan;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -130,11 +131,15 @@ test('operator storefront provides dedicated all products catalog page with sche
 test('operator storefront serves AI discovery endpoints including robots.txt, sitemap.xml, and llms.txt', function () {
     Cache::flush();
 
+    Plan::seedDefaultPlans();
+    $aiPlan = Plan::where('slug', 'ai_ultimate')->first();
+
     $operator = Operator::factory()->create([
         'name' => 'Komodo Dragon Charters',
         'bio' => 'Private luxury liveaboard and speedboat charters across Komodo National Park.',
         'status' => OperatorStatus::Approved,
         'contact_whatsapp' => '+628199988877',
+        'plan_id' => $aiPlan?->id,
     ]);
 
     OperatorDomain::factory()->create([

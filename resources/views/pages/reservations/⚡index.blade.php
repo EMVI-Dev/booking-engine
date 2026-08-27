@@ -463,6 +463,10 @@ new #[Title('Bookings & Reservations')] class extends Component {
             }
         }
 
+        if ($status === ReservationStatus::Cancelled) {
+            app(\App\Services\WalletService::class)->cancelBookingEarning($res, 'Cancelled by operator');
+        }
+
         $this->actionSuccess = true;
         $this->actionMessage = __('Reservation status updated to :status', ['status' => $status->label()]);
         $this->dispatch('reservation-updated');
@@ -657,10 +661,79 @@ new #[Title('Bookings & Reservations')] class extends Component {
         </div>
     </div>
 
-    <!-- Reservations Data Table -->
+    <!-- Reservations Section -->
     <div
         class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Reservations Mobile Responsive Card List (md:hidden) -->
+        <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
+            @forelse ($this->reservations as $res)
+                @php
+                    $bookable = $res->bookable;
+                    $latestPayment = $res->latestPayment;
+                    $resCode = $res->code ?? 'RSV-' . strtoupper(substr($res->id, -8));
+                    $cleanPhone = preg_replace('/[^0-9]/', '', $res->guest_contact);
+                    if (str_starts_with($cleanPhone, '0')) {
+                        $cleanPhone = '62' . substr($cleanPhone, 1);
+                    }
+                    $waUrl = 'https://wa.me/' . $cleanPhone . '?text=' . urlencode(__('Hello :name, reaching out regarding your reservation (:code) with :agent', ['name' => $res->guest_name, 'code' => $resCode, 'agent' => $this->currentOperator->name]));
+                @endphp
+                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                                {{ $res->guest_name }}
+                            </span>
+                            <span class="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 shrink-0">
+                                #{{ $resCode }}
+                            </span>
+                        </div>
+                        <div class="shrink-0">
+                            @if ($res->status->value === 'confirmed')
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Confirmed</span>
+                            @elseif ($res->status->value === 'pending_confirmation')
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">Pending Confirmation</span>
+                            @else
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-slate-300">{{ ucfirst($res->status->value) }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Experience') }}</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">{{ $bookable->name ?? ($bookable->title ?? __('Custom Booking')) }}</span>
+                            <span class="text-[10px] text-slate-500 block">{{ __(':count Pax', ['count' => $res->pax_count]) }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Trip Date') }}</span>
+                            <span class="font-bold text-slate-900 dark:text-white block">{{ $res->requested_date->format('M d, Y') }}</span>
+                            <span class="text-[10px] font-mono font-black text-slate-900 dark:text-white block">Rp {{ number_format((float) $res->total_price, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px]">
+                        <div>
+                            @if ($res->guest_contact)
+                                <a href="{{ $waUrl }}" target="_blank" class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                    <i class="fa-brands fa-whatsapp text-xs"></i>
+                                    <span>{{ __('Chat') }}</span>
+                                </a>
+                            @endif
+                        </div>
+                        <button type="button" wire:click="viewReservation('{{ $res->id }}')" class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 font-bold text-xs">
+                            {{ __('Details') }}
+                        </button>
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-xs text-slate-400">
+                    {{ __('No reservations found') }}
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Desktop Reservations Table (hidden on mobile) -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead
                     class="bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200/80 dark:border-zinc-800 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">

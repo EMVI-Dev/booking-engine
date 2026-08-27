@@ -718,23 +718,7 @@
         @endif
     </main>
 
-    <!-- Floating WhatsApp Support Button for Desktop Only -->
-    @if ($agent->contact_whatsapp)
-        @php
-            $waService = app(\App\Services\WhatsAppDispatchService::class);
-            $floatingWaUrl = $waService->buildWhatsAppUrl($agent->contact_whatsapp, "Hello {$agent->name}, I have a question about your tours.");
-        @endphp
-        <div class="hidden lg:block fixed bottom-6 right-6 z-50">
-            <a href="{{ $floatingWaUrl }}"
-                target="_blank"
-                rel="noopener"
-                class="h-13 px-5 inline-flex items-center gap-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black text-sm shadow-2xl shadow-emerald-500/30 transition-transform hover:scale-105"
-                title="{{ __('Direct WhatsApp Chat') }}">
-                <i class="fa-brands fa-whatsapp text-xl"></i>
-                <span>{{ __('Chat with Us') }}</span>
-            </a>
-        </div>
-    @endif
+
 
     @include('storefront.partials.footer')
 

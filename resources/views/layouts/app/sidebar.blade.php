@@ -8,7 +8,9 @@
 
 <body
     class="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 flex selection:bg-indigo-500 selection:text-white antialiased"
-    x-data="{ mobileMenuOpen: false }">
+    x-data="{ mobileMenuOpen: false, commandPaletteOpen: false }"
+    @keydown.window.cmd.k.prevent="commandPaletteOpen = true"
+    @keydown.window.ctrl.k.prevent="commandPaletteOpen = true">
 
     @php
         /** @var \App\Models\Operator|null $currentOperator */
@@ -30,9 +32,10 @@
                 ->count()
             : 0;
         $availableBalance = $currentOperator ? $currentOperator->getAvailableBalance() : 0;
+        $operatorPlan = $currentOperator?->getPlan();
     @endphp
 
-    <!-- Sticky Desktop Sidebar (Purely Desktop, never flashes on mobile) -->
+    <!-- Sticky Desktop Sidebar (Purely Desktop) -->
     <aside
         class="hidden lg:flex flex-col w-64 bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 lg:sticky lg:top-0 lg:h-screen shrink-0 select-none">
         <!-- Brand Header (Fixed 64px) -->
@@ -65,8 +68,8 @@
 
         <!-- Navigation Links -->
         <nav class="flex-1 px-4 py-4 space-y-6 overflow-y-auto select-none">
-            <!-- Quick Action: Create Booking & Payment Link -->
-            <div class="mb-4">
+            <!-- Primary Quick Action: Create Booking & Payment Link -->
+            <div class="mb-2">
                 @if (request()->routeIs('reservations.*'))
                     <button type="button" @click="$dispatch('open-create-booking-link')"
                         class="w-full h-10 px-3.5 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white text-xs font-black shadow-sm shadow-indigo-500/25 hover:shadow-indigo-500/35 transition-all cursor-pointer">
@@ -82,7 +85,7 @@
                 @endif
             </div>
 
-            <!-- Section 1: Core Operations -->
+            <!-- Section 1: Overview & Schedule -->
             <div class="space-y-1">
                 <p class="px-3 text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
                     {{ __('Overview & Schedule') }}
@@ -118,10 +121,10 @@
                 </a>
             </div>
 
-            <!-- Section 2: Operations & Financials -->
+            <!-- Section 2: Revenue & Customers -->
             <div class="space-y-1">
                 <p class="px-3 text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
-                    {{ __('Operations & Financials') }}
+                    {{ __('Revenue & Customers') }}
                 </p>
 
                 <a href="{{ route('wallet.index') }}" wire:navigate
@@ -162,17 +165,17 @@
                 </a>
             </div>
 
-            <!-- Section 3: Storefront & Catalog -->
+            <!-- Section 3: Catalog & Storefront -->
             <div class="space-y-1">
                 <p class="px-3 text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
-                    {{ __('Storefront & Catalog') }}
+                    {{ __('Catalog & Storefront') }}
                 </p>
 
                 <a href="{{ route('packages.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('packages.*') || request()->routeIs('products.*') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('packages.*') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <div class="flex items-center gap-3 min-w-0">
                         <i
-                            class="fa-solid fa-cubes w-5 text-center text-sm shrink-0 {{ request()->routeIs('packages.*') || request()->routeIs('products.*') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                            class="fa-solid fa-cubes w-5 text-center text-sm shrink-0 {{ request()->routeIs('packages.*') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                         <span class="truncate">{{ __('Tours & Packages') }}</span>
                     </div>
                     @if ($packagesCount > 0)
@@ -183,22 +186,65 @@
                     @endif
                 </a>
 
-                <a href="{{ route('brand.edit') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('brand.edit', 'storefront-settings.edit', 'payments.edit', 'settings.plan') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                <a href="{{ route('products.index') }}" wire:navigate
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('products.*') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <div class="flex items-center gap-3 min-w-0">
                         <i
-                            class="fa-solid fa-sliders w-5 text-center text-sm shrink-0 {{ request()->routeIs('brand.edit', 'storefront-settings.edit', 'payments.edit', 'settings.plan') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                            class="fa-solid fa-box-archive w-5 text-center text-sm shrink-0 {{ request()->routeIs('products.*') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                        <span class="truncate">{{ __('Products & Addons') }}</span>
+                    </div>
+                    @if ($productsCount > 0)
+                        <span
+                            class="h-5 px-2 text-[11px] font-bold flex items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 shrink-0">
+                            {{ $productsCount }}
+                        </span>
+                    @endif
+                </a>
+
+                <a href="{{ route('brand.edit') }}" wire:navigate
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('brand.edit', 'storefront-settings.edit', 'payments.edit') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <i
+                            class="fa-solid fa-sliders w-5 text-center text-sm shrink-0 {{ request()->routeIs('brand.edit', 'storefront-settings.edit', 'payments.edit') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
                         <span class="truncate">{{ __('Storefront Settings') }}</span>
                     </div>
+                </a>
+            </div>
+
+            <!-- Section 4: Account & Plan -->
+            <div class="space-y-1">
+                <p class="px-3 text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
+                    {{ __('Account & Subscription') }}
+                </p>
+
+                <a href="{{ route('settings.plan') }}" wire:navigate
+                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('settings.plan', 'settings.plan.checkout') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <i
+                            class="fa-solid fa-crown w-5 text-center text-sm shrink-0 {{ request()->routeIs('settings.plan', 'settings.plan.checkout') ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                        <span class="truncate">{{ __('Plan & Features') }}</span>
+                    </div>
+                    @if ($operatorPlan)
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 shrink-0">
+                            {{ $operatorPlan->name }}
+                        </span>
+                    @endif
+                </a>
+
+                <a href="{{ route('settings.billing') }}" wire:navigate
+                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('settings.billing') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i
+                        class="fa-solid fa-file-invoice-dollar w-5 text-center text-sm shrink-0 {{ request()->routeIs('settings.billing') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
+                    <span class="truncate">{{ __('Invoices & Billing') }}</span>
                 </a>
             </div>
         </nav>
 
         <!-- Sidebar Footer: Storefront Action Button & User Profile -->
         <div class="p-3 border-t border-slate-200/80 dark:border-zinc-800 space-y-2 shrink-0 bg-white dark:bg-zinc-900">
-            <!-- Storefront Button (Above Profile) -->
+            <!-- Live Storefront Link Button -->
             @if ($currentOperator)
-                <a href="{{ $storefrontUrl }}" target="_blank"
+                <a href="{{ $storefrontUrl }}" target="_blank" rel="noopener"
                     class="h-10 px-3 flex items-center justify-between rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 transition-colors border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <i class="fa-solid fa-store text-indigo-600 dark:text-indigo-400 text-xs"></i>
@@ -336,7 +382,7 @@
         <!-- Desktop Top Header Bar -->
         <header
             class="hidden lg:flex h-16 items-center justify-between px-6 lg:px-8 border-b border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-30 select-none">
-            <!-- Left: Storefront URL with 1-Click Copy -->
+            <!-- Left: Storefront URL with 1-Click Copy & Command Search -->
             <div class="flex items-center gap-3 min-w-0" x-data="{ copied: false }">
                 <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 shrink-0">
                     {{ __('Storefront:') }}
@@ -356,33 +402,23 @@
                     class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
                     {{ __('Copied!') }}
                 </span>
+
+                <!-- Quick Command Search Trigger (⌘K) -->
+                <button type="button" @click="commandPaletteOpen = true"
+                    class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 text-slate-500 hover:text-slate-900 dark:hover:text-white text-xs font-medium transition-all cursor-pointer shadow-2xs group"
+                    title="{{ __('Search pages or actions (⌘K)') }}">
+                    <i class="fa-solid fa-magnifying-glass text-[11px] text-slate-400 group-hover:text-indigo-500 transition-colors"></i>
+                    <span class="hidden xl:inline">{{ __('Search or jump to...') }}</span>
+                    <kbd class="px-1.5 py-0.5 text-[10px] font-mono font-extrabold text-slate-400 dark:text-slate-500 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-md shadow-2xs">⌘K</kbd>
+                </button>
             </div>
 
-            <!-- Right: Action Buttons, Plan Tier Pill & Live Storefront Button -->
+            <!-- Right: Active Plan Badge & Live Storefront Button -->
             <div class="flex items-center gap-3 shrink-0">
-                @if (request()->routeIs('reservations.*'))
-                    <button type="button" @click="$dispatch('open-create-booking-link')"
-                        class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer"
-                        title="{{ __('Create 1-Click Direct Booking & Payment Link') }}">
-                        <i class="fa-solid fa-plus text-xs"></i>
-                        <span>{{ __('Create Booking Link') }}</span>
-                    </button>
-                @else
-                    <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
-                        class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer"
-                        title="{{ __('Create 1-Click Direct Booking & Payment Link') }}">
-                        <i class="fa-solid fa-plus text-xs"></i>
-                        <span>{{ __('Create Booking Link') }}</span>
-                    </a>
-                @endif
-
-                @if ($currentOperator)
-                    @php
-                        $operatorPlan = $currentOperator->getPlan();
-                    @endphp
+                @if ($currentOperator && $operatorPlan)
                     <a href="{{ route('settings.plan') }}" wire:navigate
-                        class="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-100 transition shadow-2xs"
-                        title="{{ __('Manage Plan') }}">
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-100 transition shadow-2xs"
+                        title="{{ __('Manage Subscription Tier') }}">
                         <i class="fa-solid fa-crown text-[10px] text-amber-500"></i>
                         <span>{{ $operatorPlan->name }}</span>
                     </a>
@@ -396,7 +432,7 @@
             </div>
         </header>
 
-        <!-- Main Workspace (Matching Storefront Standard Mobile Padding) -->
+        <!-- Main Workspace -->
         <main class="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:p-8 pb-24 lg:pb-8 w-full">
             <div class="w-full max-w-7xl mx-auto space-y-6">
                 @php
@@ -456,60 +492,7 @@
             </div>
         </main>
 
-        <!-- Sticky Mobile Bottom Navigation Bar (Daily Essentials) -->
-        <nav
-            class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800 py-1.5 px-2 flex items-center justify-around select-none shadow-lg">
-            <!-- Dashboard -->
-            <a href="{{ route('dashboard') }}" wire:navigate
-                class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all {{ request()->routeIs('dashboard') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
-                <i class="fa-solid fa-gauge-high text-base mb-0.5"></i>
-                <span class="text-[10px] leading-none">{{ __('Home') }}</span>
-            </a>
-
-            <!-- Bookings -->
-            <a href="{{ route('reservations.index') }}" wire:navigate
-                class="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all {{ request()->routeIs('reservations.*') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
-                <i class="fa-solid fa-calendar-check text-base mb-0.5"></i>
-                <span class="text-[10px] leading-none">{{ __('Bookings') }}</span>
-                @if ($reservationsCount > 0)
-                    <span
-                        class="absolute top-0.5 right-1.5 h-3.5 min-w-3.5 px-1 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                        {{ $reservationsCount }}
-                    </span>
-                @endif
-            </a>
-
-            <!-- Quick Booking Floating Button -->
-            @if (request()->routeIs('reservations.*'))
-                <button type="button" @click="$dispatch('open-create-booking-link')"
-                    class="flex flex-col items-center justify-center -mt-5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white w-12 h-12 rounded-full shadow-lg border-2 border-white dark:border-zinc-900 transition-all cursor-pointer shrink-0"
-                    title="{{ __('Create Booking & Payment Link') }}">
-                    <i class="fa-solid fa-plus text-base"></i>
-                </button>
-            @else
-                <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
-                    class="flex flex-col items-center justify-center -mt-5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white w-12 h-12 rounded-full shadow-lg border-2 border-white dark:border-zinc-900 transition-all cursor-pointer shrink-0"
-                    title="{{ __('Create Booking & Payment Link') }}">
-                    <i class="fa-solid fa-plus text-base"></i>
-                </a>
-            @endif
-
-            <!-- Calendar -->
-            <a href="{{ route('calendar.index') }}" wire:navigate
-                class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all {{ request()->routeIs('calendar.*') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
-                <i class="fa-solid fa-calendar-days text-base mb-0.5"></i>
-                <span class="text-[10px] leading-none">{{ __('Calendar') }}</span>
-            </a>
-
-            <!-- Menu Button (Opens Bottom Sheet Modal) -->
-            <button x-on:click="mobileMenuOpen = true" type="button"
-                class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer">
-                <i class="fa-solid fa-bars text-base mb-0.5"></i>
-                <span class="text-[10px] leading-none">{{ __('Menu') }}</span>
-            </button>
-        </nav>
-
-        <!-- Mobile Menu Modal (Bottom Sheet - Only Essential Actions) -->
+        <!-- Mobile Menu Modal Drawer -->
         <div x-show="mobileMenuOpen" x-cloak class="relative z-50 lg:hidden" role="dialog" aria-modal="true">
             <!-- Dim Backdrop -->
             <div x-show="mobileMenuOpen" x-cloak x-transition:enter="transition ease-out duration-200"
@@ -527,7 +510,7 @@
                     x-transition:leave-start="translate-y-0 opacity-100"
                     x-transition:leave-end="translate-y-full opacity-0" x-on:click.away="mobileMenuOpen = false"
                     class="w-full max-w-lg mx-auto rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 space-y-4">
-                    <!-- Drag Handle / Header -->
+                    <!-- Header -->
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
                         <div class="flex items-center gap-3 min-w-0">
                             @if ($currentOperator?->logo_url)
@@ -570,7 +553,7 @@
                         </a>
                     @endif
 
-                    <!-- Secondary Essential Navigation Grid -->
+                    <!-- Secondary Navigation Grid -->
                     <div class="grid grid-cols-2 gap-2.5 pt-1">
                         <!-- Wallet & Payouts -->
                         <a href="{{ route('wallet.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
@@ -643,6 +626,24 @@
                         </a>
                     </div>
 
+                    <!-- Products & Rentals Link -->
+                    <a href="{{ route('products.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                        class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                        <div class="flex items-center gap-2.5">
+                            <span
+                                class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+                                <i class="fa-solid fa-box-archive"></i>
+                            </span>
+                            <div>
+                                <span
+                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Products & Addons') }}</span>
+                                <span
+                                    class="text-[10px] text-slate-400 block">{{ __('Rentals, gear & merchandise') }}</span>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                    </a>
+
                     <!-- Storefront Settings Link -->
                     <a href="{{ route('brand.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                         class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
@@ -655,7 +656,25 @@
                                 <span
                                     class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Storefront Settings') }}</span>
                                 <span
-                                    class="text-[10px] text-slate-400 block">{{ __('Branding, policies, payments') }}</span>
+                                    class="text-[10px] text-slate-400 block">{{ __('Branding, policies, payment keys') }}</span>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                    </a>
+
+                    <!-- Subscription & Invoices Link -->
+                    <a href="{{ route('settings.billing') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                        class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                        <div class="flex items-center gap-2.5">
+                            <span
+                                class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-xs">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </span>
+                            <div>
+                                <span
+                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Subscription & Invoices') }}</span>
+                                <span
+                                    class="text-[10px] text-slate-400 block">{{ __('Plan tier, billing history & receipts') }}</span>
                             </div>
                         </div>
                         <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
@@ -683,9 +702,9 @@
             </div>
         </div>
 
-        <!-- Operator Dashboard Desktop Footer (Hidden on Mobile for Maximum Visibility) -->
+        <!-- Operator Dashboard Sticky Footer -->
         <footer
-            class="hidden lg:block border-t border-slate-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md py-3 sm:py-3.5 px-4 sm:px-6 lg:px-8 mt-auto shadow-xs select-none">
+            class="sticky bottom-0 z-30 mb-16 lg:mb-0 border-t border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md py-3 sm:py-3.5 px-4 sm:px-6 lg:px-8 mt-auto shadow-md select-none">
             <div
                 class="mx-auto w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
                 <!-- Left: Operator Copyright & Real-time Status -->
@@ -720,7 +739,64 @@
             </div>
         </footer>
     </div>
+
+    <!-- Mobile Sticky Bottom Navigation Bar (lg:hidden) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800 h-16 flex items-center justify-around px-2 select-none shadow-lg">
+        <!-- Dashboard -->
+        <a href="{{ route('dashboard') }}" wire:navigate
+            class="flex flex-col items-center justify-center gap-1 w-14 py-1 rounded-xl text-center transition-all {{ request()->routeIs('dashboard') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}">
+            <i class="fa-solid fa-gauge-high text-base"></i>
+            <span class="text-[10px] tracking-tight">{{ __('Dashboard') }}</span>
+        </a>
+
+        <!-- Bookings -->
+        <a href="{{ route('reservations.index') }}" wire:navigate
+            class="flex flex-col items-center justify-center gap-1 w-14 py-1 rounded-xl text-center transition-all relative {{ request()->routeIs('reservations.*') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}">
+            <div class="relative">
+                <i class="fa-solid fa-calendar-check text-base"></i>
+                @if ($reservationsCount > 0)
+                    <span class="absolute -top-1 -right-2 h-3.5 min-w-[14px] px-1 text-[9px] font-black flex items-center justify-center rounded-full bg-indigo-600 text-white">
+                        {{ $reservationsCount }}
+                    </span>
+                @endif
+            </div>
+            <span class="text-[10px] tracking-tight">{{ __('Bookings') }}</span>
+        </a>
+
+        <!-- Center Raised Action: Create Booking Link -->
+        <div class="relative flex flex-col items-center">
+            @if (request()->routeIs('reservations.*'))
+                <button type="button" @click="$dispatch('open-create-booking-link')"
+                    class="w-12 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-90 text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center -mt-5 transition-all cursor-pointer border-2 border-white dark:border-zinc-900"
+                    title="{{ __('Create Booking Link') }}">
+                    <i class="fa-solid fa-plus text-base"></i>
+                </button>
+            @else
+                <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
+                    class="w-12 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-90 text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center -mt-5 transition-all cursor-pointer border-2 border-white dark:border-zinc-900"
+                    title="{{ __('Create Booking Link') }}">
+                    <i class="fa-solid fa-plus text-base"></i>
+                </a>
+            @endif
+            <span class="text-[9px] font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight mt-0.5">{{ __('New Link') }}</span>
+        </div>
+
+        <!-- Calendar -->
+        <a href="{{ route('calendar.index') }}" wire:navigate
+            class="flex flex-col items-center justify-center gap-1 w-14 py-1 rounded-xl text-center transition-all {{ request()->routeIs('calendar.*') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}">
+            <i class="fa-solid fa-calendar-days text-base"></i>
+            <span class="text-[10px] tracking-tight">{{ __('Calendar') }}</span>
+        </a>
+
+        <!-- More Menu Drawer Toggle -->
+        <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
+            class="flex flex-col items-center justify-center gap-1 w-14 py-1 rounded-xl text-center transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
+            <i class="fa-solid fa-bars-staggered text-base"></i>
+            <span class="text-[10px] tracking-tight">{{ __('Menu') }}</span>
+        </button>
+    </nav>
+
+    <x-command-palette :storefrontUrl="$storefrontUrl" />
     @livewireScripts
 </body>
-
 </html>

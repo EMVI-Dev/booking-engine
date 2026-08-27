@@ -11,6 +11,11 @@
 @endphp
 
 @if ($agent)
+    {{-- Google Search Console Site Verification --}}
+    @if (!empty($agent->google_site_verification))
+        <meta name="google-site-verification" content="{{ $agent->google_site_verification }}" />
+    @endif
+
     {{-- Google Tag Manager Container --}}
     @if ($gtmId)
         <script>

@@ -119,6 +119,27 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
         $this->dispatch('payout-approved');
     }
 
+    public function disburseViaDokuApi(string $payoutId, \App\Services\DokuPaymentService $dokuService): void
+    {
+        $payout = PayoutRequest::find($payoutId);
+        if (! $payout || $payout->status !== PayoutStatus::Pending) {
+            return;
+        }
+
+        $res = $dokuService->disbursePayout($payout);
+        if ($res['success']) {
+            $payout->update([
+                'status' => PayoutStatus::Completed,
+                'processed_by' => 'DOKU BI-FAST API (Admin Trigger)',
+                'processed_at' => now(),
+                'notes' => ($payout->notes ? $payout->notes . ' | ' : '') . $res['message'] . ' [Ref: ' . $res['reference'] . ']',
+            ]);
+            session()->flash('success', __('Payout #:ref disbursed via DOKU BI-FAST API successfully!', ['ref' => $payout->reference_number]));
+        } else {
+            session()->flash('error', __('Failed to disburse payout via DOKU API. Please check account details.'));
+        }
+    }
+
     public function rejectPayout(WalletService $walletService): void
     {
         $payout = PayoutRequest::find($this->selectedPayoutId);
@@ -128,9 +149,7 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
         }
 
         $this->validate([
-            'rejectionReason' => ['required', 'string', 'max:500'],
-        ], [
-            'rejectionReason.required' => __('Please provide a reason for rejecting this payout request.'),
+            'rejectionReason' => ['required', 'string', 'min:5', 'max:255'],
         ]);
 
         $walletService->rejectPayout($payout, $this->rejectionReason, auth()->id());
@@ -151,12 +170,19 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
                     <i class="fa-solid fa-money-bill-transfer text-lg"></i>
                 </span>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Operator Payout Requests') }}
+                    {{ __('Automated DOKU Payout Audit & Settlement') }}
                 </h1>
             </div>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Review, process bank disbursements, upload transfer receipts, and manage operator withdrawals.') }}
+                {{ __('Automated DOKU BI-FAST disbursement logs, auto-transfer audits, and exception controls.') }}
             </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="px-3 py-1.5 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{{ __('DOKU BI-FAST Auto-Disbursement: ACTIVE') }}</span>
+            </span>
         </div>
     </div>
 
@@ -216,8 +242,52 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
             </div>
         </div>
 
-        <!-- Table -->
-        <div class="overflow-x-auto">
+        <!-- Mobile Admin Payouts Card List (md:hidden) -->
+        <div class="md:hidden space-y-3 transition-opacity duration-200" wire:loading.class="opacity-60">
+            @forelse ($this->payoutRequests as $payout)
+                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-mono font-extrabold text-xs text-slate-900 dark:text-white">
+                            {{ $payout->reference_number }}
+                        </span>
+                        @if ($payout->status->value === 'approved' || $payout->status->value === 'completed')
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Paid</span>
+                        @elseif ($payout->status->value === 'pending')
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">Pending</span>
+                        @else
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">{{ ucfirst($payout->status->value) }}</span>
+                        @endif
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Operator') }}</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">{{ $payout->operator?->name ?? 'System' }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Amount') }}</span>
+                            <span class="font-mono font-black text-slate-900 dark:text-white block">Rp {{ number_format((float) $payout->amount, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-500">
+                        <span>{{ $payout->bank_name }} ({{ $payout->account_number }})</span>
+                        @if ($payout->status->value === 'pending')
+                            <button type="button" wire:click="openFulfillModal('{{ $payout->id }}')" class="px-3 py-1 rounded-xl bg-emerald-600 text-white font-bold text-xs">
+                                {{ __('Fulfill Payout') }}
+                            </button>
+                        @endif
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-xs text-slate-400">
+                    {{ __('No payout requests found') }}
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Desktop Payouts Table (hidden on mobile) -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs">
                 <thead>
                     <tr class="border-b border-slate-100 dark:border-zinc-800 text-[11px] uppercase font-bold text-slate-400 tracking-wider">
@@ -277,12 +347,17 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
                             <td class="py-3 px-3 whitespace-nowrap text-right">
                                 @if ($payout->status->value === 'pending')
                                     <div class="flex items-center justify-end gap-1.5">
+                                        <button type="button" wire:click="disburseViaDokuApi('{{ $payout->id }}')"
+                                            class="h-8 px-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-2xs transition cursor-pointer flex items-center gap-1">
+                                            <i class="fa-solid fa-bolt text-[10px]"></i>
+                                            <span>{{ __('DOKU BI-FAST') }}</span>
+                                        </button>
                                         <button type="button" wire:click="openApproveModal('{{ $payout->id }}')"
-                                            class="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition cursor-pointer">
-                                            {{ __('Approve & Paid') }}
+                                            class="h-8 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition cursor-pointer">
+                                            {{ __('Approve') }}
                                         </button>
                                         <button type="button" wire:click="openRejectModal('{{ $payout->id }}')"
-                                            class="h-8 px-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-bold text-xs transition cursor-pointer">
+                                            class="h-8 px-2 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-bold text-xs transition cursor-pointer">
                                             {{ __('Reject') }}
                                         </button>
                                     </div>

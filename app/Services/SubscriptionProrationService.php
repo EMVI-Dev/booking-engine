@@ -116,12 +116,110 @@ class SubscriptionProrationService
     }
 
     /**
+     * Create a pending subscription payment record before taking the operator to checkout.
+     */
+    public function createPendingUpgrade(
+        Operator $operator,
+        Plan $targetPlan,
+        string $interval = 'monthly',
+        bool $autoRenew = true,
+        string $gateway = 'credit_card'
+    ): SubscriptionPayment {
+        $proration = $this->calculateSwitch($operator, $targetPlan, $interval, true);
+        $previousPlanId = $operator->plan_id;
+
+        // If net amount is zero, execute upgrade immediately
+        if ($proration['net_amount_due'] <= 0) {
+            return $this->executeUpgrade(
+                operator: $operator,
+                targetPlan: $targetPlan,
+                interval: $interval,
+                autoRenew: $autoRenew,
+                gateway: 'wallet_credit',
+                gatewayRef: 'CREDIT-'.strtoupper(bin2hex(random_bytes(3)))
+            );
+        }
+
+        $invoiceNumber = 'SUB-'.strtoupper(Str::random(6)).'-'.time();
+
+        /** @var SubscriptionPayment $payment */
+        $payment = SubscriptionPayment::create([
+            'operator_id' => $operator->id,
+            'plan_id' => $targetPlan->id,
+            'previous_plan_id' => $previousPlanId,
+            'invoice_number' => $invoiceNumber,
+            'type' => $previousPlanId ? 'subscription_upgrade' : 'subscription_new',
+            'billing_interval' => $interval,
+            'gross_amount' => $proration['prorated_target_cost'],
+            'prorated_credit' => $proration['unused_credit'],
+            'net_amount_paid' => $proration['net_amount_due'],
+            'status' => 'pending',
+            'gateway' => $gateway,
+            'gateway_ref' => $invoiceNumber,
+            'breakdown' => [
+                'current_plan_name' => $proration['current_plan']->name,
+                'target_plan_name' => $targetPlan->name,
+                'days_remaining' => $proration['days_remaining'],
+                'unused_credit' => $proration['unused_credit'],
+                'prorated_charge' => $proration['prorated_target_cost'],
+                'net_amount_paid' => $proration['net_amount_due'],
+                'auto_renew' => $autoRenew,
+            ],
+            'paid_at' => null,
+        ]);
+
+        return $payment;
+    }
+
+    /**
+     * Mark a pending subscription payment as completed and activate the operator's new plan tier.
+     */
+    public function completePendingPayment(
+        SubscriptionPayment $payment,
+        ?string $gatewayRef = null,
+        ?string $gateway = null
+    ): void {
+        if ($payment->status === 'completed') {
+            return;
+        }
+
+        $payment->update([
+            'status' => 'completed',
+            'gateway' => $gateway ?: $payment->gateway,
+            'gateway_ref' => $gatewayRef ?: $payment->gateway_ref,
+            'paid_at' => now(),
+        ]);
+
+        $operator = $payment->operator;
+        $targetPlan = $payment->plan;
+        $interval = $payment->billing_interval;
+        $autoRenew = (bool) ($payment->breakdown['auto_renew'] ?? true);
+
+        $now = now();
+        $expiresAt = ($interval === 'yearly') ? $now->copy()->addYear() : $now->copy()->addMonth();
+
+        $operator->update([
+            'plan_id' => $targetPlan->id,
+            'subscription_interval' => $interval,
+            'subscription_auto_renew' => $autoRenew,
+            'subscribed_at' => $now,
+            'plan_expires_at' => $targetPlan->isFree() ? null : $expiresAt,
+            'pending_plan_id' => null,
+            'pending_plan_action_at' => null,
+        ]);
+
+        $operator->unsetRelation('plan');
+        $operator->unsetRelation('pendingPlan');
+    }
+
+    /**
      * Execute an immediate plan upgrade and record the subscription payment.
      */
     public function executeUpgrade(
         Operator $operator,
         Plan $targetPlan,
         string $interval = 'monthly',
+        bool $autoRenew = true,
         string $gateway = 'manual',
         ?string $gatewayRef = null
     ): SubscriptionPayment {
@@ -151,6 +249,7 @@ class SubscriptionProrationService
                 'unused_credit' => $proration['unused_credit'],
                 'prorated_charge' => $proration['prorated_target_cost'],
                 'net_amount_paid' => $proration['net_amount_due'],
+                'auto_renew' => $autoRenew,
             ],
             'paid_at' => now(),
         ]);
@@ -161,6 +260,7 @@ class SubscriptionProrationService
         $operator->update([
             'plan_id' => $targetPlan->id,
             'subscription_interval' => $interval,
+            'subscription_auto_renew' => $autoRenew,
             'subscribed_at' => $now,
             'plan_expires_at' => $targetPlan->isFree() ? null : $expiresAt,
             'pending_plan_id' => null,

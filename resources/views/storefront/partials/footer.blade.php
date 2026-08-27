@@ -57,3 +57,5 @@
         </div>
     </div>
 </footer>
+
+@include('storefront.partials.floating-whatsapp')

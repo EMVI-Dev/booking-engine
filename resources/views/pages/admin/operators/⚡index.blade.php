@@ -213,9 +213,55 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
         </div>
     </div>
 
-    <!-- Operators Directory Table -->
+    <!-- Operators Directory Section -->
     <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Operators Mobile Responsive Card List (md:hidden) -->
+        <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
+            @forelse ($operators as $operator)
+                @php
+                    $owner = $operator->users->first();
+                    $storeUrl = request()->getScheme() . '://' . $operator->slug . '.' . $platformDomain;
+                @endphp
+                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                                @if ($operator->logo_path)
+                                    <img src="{{ Storage::url($operator->logo_path) }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
+                                @else
+                                    {{ strtoupper(substr($operator->name, 0, 2)) }}
+                                @endif
+                            </a>
+                            <div class="min-w-0">
+                                <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="font-extrabold text-xs text-slate-900 dark:text-white block truncate">
+                                    {{ $operator->name }}
+                                </a>
+                                <span class="font-mono text-[10px] text-purple-600 dark:text-purple-400 block truncate">
+                                    {{ $operator->slug }}.{{ $platformDomain }}
+                                </span>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                            {{ $operator->subscriptionPlan?->name ?? 'Starter' }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-500">
+                        <span>{{ $owner?->email ?? 'No owner' }}</span>
+                        <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="px-3 py-1 rounded-xl bg-purple-600 text-white font-bold text-xs">
+                            {{ __('Manage') }}
+                        </a>
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-xs text-slate-400">
+                    {{ __('No operators found') }}
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Desktop Operators Table (hidden on mobile) -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs">
                 <thead>
                     <tr class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">

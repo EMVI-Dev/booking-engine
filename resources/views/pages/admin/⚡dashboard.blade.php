@@ -495,7 +495,41 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
             </a>
         </div>
 
-        <div class="overflow-x-auto">
+        <!-- Mobile Admin Transactions Feed Card List (md:hidden) -->
+        <div class="md:hidden space-y-3 transition-opacity duration-200" wire:loading.class="opacity-60">
+            @forelse ($this->recentTransactions as $payment)
+                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-mono font-extrabold text-xs text-purple-600 dark:text-purple-400">
+                            #{{ $payment->reservation?->code ?? substr($payment->id, 0, 8) }}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                            {{ strtoupper($payment->gateway) }}
+                        </span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-xs text-slate-900 dark:text-white">
+                            {{ $payment->reservation?->operator?->name ?? 'System' }} &bull; <span class="font-normal text-slate-500">{{ $payment->reservation?->guest_name ?? '-' }}</span>
+                        </h4>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
+                        <span class="text-slate-400 text-[10px] uppercase font-bold">{{ __('Amount') }}</span>
+                        <span class="font-mono font-black text-slate-900 dark:text-white">
+                            Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
+            @empty
+                <div class="py-8 text-center text-xs text-slate-400">
+                    {{ __('No recent customer transactions recorded.') }}
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Desktop Admin Transactions Table (hidden on mobile) -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead>
                     <tr class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40">

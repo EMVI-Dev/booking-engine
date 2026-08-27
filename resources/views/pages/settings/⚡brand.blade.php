@@ -45,6 +45,7 @@ new #[Title('Brand Settings')] class extends Component {
     public string $google_analytics_id = '';
     public string $meta_pixel_id = '';
     public string $google_tag_manager_id = '';
+    public string $google_site_verification = '';
     public string $review_url = '';
 
     // Notification Channels
@@ -93,6 +94,7 @@ new #[Title('Brand Settings')] class extends Component {
             $this->google_analytics_id = (string) ($tracking['google_analytics_id'] ?? '');
             $this->meta_pixel_id = (string) ($tracking['meta_pixel_id'] ?? '');
             $this->google_tag_manager_id = (string) ($tracking['google_tag_manager_id'] ?? '');
+            $this->google_site_verification = (string) ($tracking['google_site_verification'] ?? '');
 
             $marketing = $settings['marketing'] ?? [];
             $this->review_url = (string) ($marketing['review_url'] ?? '');
@@ -111,7 +113,7 @@ new #[Title('Brand Settings')] class extends Component {
     public function toggleDay(string $day): void
     {
         if (in_array($day, $this->whatsapp_days, true)) {
-            $this->whatsapp_days = array_values(array_diff($this->whatsapp_days, [$day]));
+            $this->whatsapp_days = array_values(array_filter($this->whatsapp_days, fn ($d) => $d !== $day));
         } else {
             $this->whatsapp_days[] = $day;
         }
@@ -170,6 +172,7 @@ new #[Title('Brand Settings')] class extends Component {
             'google_analytics_id' => ['nullable', 'string', 'max:50'],
             'meta_pixel_id' => ['nullable', 'string', 'max:50'],
             'google_tag_manager_id' => ['nullable', 'string', 'max:50'],
+            'google_site_verification' => ['nullable', 'string', 'max:255'],
             'review_url' => ['nullable', 'url', 'max:500'],
             'booking_notification_email' => ['required', 'email', 'max:255'],
             'billing_email' => ['required', 'email', 'max:255'],
@@ -231,6 +234,7 @@ new #[Title('Brand Settings')] class extends Component {
                 'google_analytics_id' => $validated['google_analytics_id'] ?? null,
                 'meta_pixel_id' => $validated['meta_pixel_id'] ?? null,
                 'google_tag_manager_id' => $validated['google_tag_manager_id'] ?? null,
+                'google_site_verification' => $validated['google_site_verification'] ?? null,
             ];
             $settings['marketing'] = [
                 'review_url' => $validated['review_url'] ?? null,
@@ -250,9 +254,51 @@ new #[Title('Brand Settings')] class extends Component {
         $this->saved = true;
         $this->dispatch('brand-updated');
     }
+
+    /**
+     * Test DNS CNAME record for custom domain.
+     */
+    public function verifyCustomDomainDns(): void
+    {
+        $operator = $this->currentOperator;
+        if (! $operator || ! $this->custom_domain) {
+            session()->flash('error', __('Please enter your custom domain name first.'));
+            return;
+        }
+
+        $cleanDomain = strtolower(trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/'))));
+        $targetHost = parse_url(config('app.url', 'https://emvi.id'), PHP_URL_HOST) ?? 'emvi.id';
+
+        $records = @dns_get_record($cleanDomain, DNS_CNAME);
+        $found = false;
+
+        if ($records) {
+            foreach ($records as $rec) {
+                if (isset($rec['target']) && strtolower(rtrim((string) $rec['target'], '.')) === strtolower(rtrim($targetHost, '.'))) {
+                    $found = true;
+                    break;
+                }
+            }
+        }
+
+        $customDomainRecord = $operator->domains()->where('type', \App\Enums\DomainType::Custom)->first();
+
+        if ($found) {
+            if ($customDomainRecord) {
+                $customDomainRecord->update([
+                    'status' => \App\Enums\DomainStatus::Active,
+                    'verified_at' => now(),
+                    'ssl_issued_at' => now(),
+                ]);
+            }
+            session()->flash('success', __('DNS verification successful! :domain is correctly pointing to :target.', ['domain' => $cleanDomain, 'target' => $targetHost]));
+        } else {
+            session()->flash('error', __('DNS CNAME record not detected yet for :domain pointing to :target. Please allow 5-15 minutes for global DNS propagation.', ['domain' => $cleanDomain, 'target' => $targetHost]));
+        }
+    }
 }; ?>
 
-<div class="space-y-6 max-w-5xl">
+<div class="space-y-6 max-w-6xl mx-auto">
     <!-- Desktop Notice on Mobile -->
     <x-desktop-only-notice
         :title="__('Brand Settings Best Managed on Desktop')"
@@ -364,35 +410,49 @@ new #[Title('Brand Settings')] class extends Component {
 
                     <div>
                         <x-label for="brand_color" :value="__('Brand Accent Color (Hex)')" />
-                        <div class="space-y-2 mt-1">
-                            <div class="flex items-center gap-3">
-                                <input id="brand_color_picker" type="color" wire:model.live="brand_color" class="h-10 w-14 rounded-xl border border-slate-200 dark:border-zinc-700 cursor-pointer bg-transparent" />
-                                <x-input id="brand_color" wire:model.live.debounce.250ms="brand_color" type="text" placeholder="#4f46e5" class="font-mono text-xs uppercase" :error="$errors->has('brand_color')" />
+                        <div class="space-y-2.5 mt-1.5">
+                            @php
+                                $previewHex = preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $brand_color) ? $brand_color : '#4f46e5';
+                            @endphp
+                            <!-- Unified Hex Input & Interactive Color Picker Bubble -->
+                            <div class="relative flex items-center">
+                                <div class="absolute left-2.5 flex items-center justify-center pointer-events-none z-10">
+                                    <span class="w-6 h-6 rounded-full shadow-inner border border-white/30 shrink-0 transition-transform duration-200" style="background-color: {{ $previewHex }};"></span>
+                                </div>
+                                <input id="brand_color_picker" type="color" wire:model.live="brand_color" class="absolute left-2.5 w-6 h-6 opacity-0 cursor-pointer z-20" />
+                                <x-input id="brand_color" wire:model.live.debounce.250ms="brand_color" type="text" placeholder="#4f46e5" class="pl-11 font-mono text-xs uppercase" :error="$errors->has('brand_color')" />
                             </div>
 
-                            <!-- Preset Curated Palette Swatches -->
-                            <div class="flex items-center gap-1.5 flex-wrap pt-1">
-                                <span class="text-[10px] uppercase font-bold text-slate-400 mr-1">{{ __('Presets:') }}</span>
-                                @foreach ([
-                                    ['label' => 'Indigo', 'hex' => '#4f46e5'],
-                                    ['label' => 'Ocean Sky', 'hex' => '#0284c7'],
-                                    ['label' => 'Emerald Marine', 'hex' => '#059669'],
-                                    ['label' => 'Coral Sunset', 'hex' => '#ea580c'],
-                                    ['label' => 'Royal Purple', 'hex' => '#7c3aed'],
-                                    ['label' => 'Rose Pink', 'hex' => '#e11d48'],
-                                    ['label' => 'Amber Gold', 'hex' => '#d97706'],
-                                    ['label' => 'Slate Navy', 'hex' => '#334155'],
-                                ] as $palette)
-                                    <button
-                                        type="button"
-                                        wire:click="$set('brand_color', '{{ $palette['hex'] }}')"
-                                        class="h-6 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition border cursor-pointer {{ strtolower($brand_color) === strtolower($palette['hex']) ? 'ring-2 ring-offset-1 ring-slate-900 dark:ring-white border-transparent text-white' : 'border-slate-200 dark:border-zinc-700 hover:border-slate-300 bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-300' }}"
-                                        title="{{ $palette['label'] }} ({{ $palette['hex'] }})"
-                                    >
-                                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {{ $palette['hex'] }};"></span>
-                                        <span>{{ $palette['label'] }}</span>
-                                    </button>
-                                @endforeach
+                            <!-- Preset Curated Palette Swatches (Sleek Circular Dots) -->
+                            <div class="flex items-center gap-2 pt-1 overflow-x-auto">
+                                <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 shrink-0">{{ __('Presets:') }}</span>
+                                <div class="flex items-center gap-2 py-1 px-1">
+                                    @foreach ([
+                                        ['label' => 'Indigo', 'hex' => '#4f46e5'],
+                                        ['label' => 'Ocean Sky', 'hex' => '#0284c7'],
+                                        ['label' => 'Emerald Marine', 'hex' => '#059669'],
+                                        ['label' => 'Coral Sunset', 'hex' => '#ea580c'],
+                                        ['label' => 'Royal Purple', 'hex' => '#7c3aed'],
+                                        ['label' => 'Rose Pink', 'hex' => '#e11d48'],
+                                        ['label' => 'Amber Gold', 'hex' => '#d97706'],
+                                        ['label' => 'Slate Navy', 'hex' => '#334155'],
+                                    ] as $palette)
+                                        @php
+                                            $isSelected = strtolower($brand_color) === strtolower($palette['hex']);
+                                        @endphp
+                                        <button
+                                            type="button"
+                                            wire:click="$set('brand_color', '{{ $palette['hex'] }}')"
+                                            class="w-7 h-7 rounded-full transition-all duration-200 cursor-pointer shrink-0 relative flex items-center justify-center shadow-xs hover:scale-110 active:scale-95 {{ $isSelected ? 'ring-2 ring-offset-2 ring-indigo-600 dark:ring-white dark:ring-offset-zinc-900 scale-110 z-10' : 'hover:ring-2 hover:ring-offset-1 hover:ring-slate-300 dark:hover:ring-zinc-600' }}"
+                                            style="background-color: {{ $palette['hex'] }};"
+                                            title="{{ $palette['label'] }} ({{ $palette['hex'] }})"
+                                        >
+                                            @if ($isSelected)
+                                                <i class="fa-solid fa-check text-[10px] text-white drop-shadow-xs"></i>
+                                            @endif
+                                        </button>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                         <x-input-error :messages="$errors->get('brand_color')" />
@@ -767,23 +827,121 @@ new #[Title('Brand Settings')] class extends Component {
                         </div>
                     @endif
 
-                    <div class="{{ ! $hasCustomDomain ? 'opacity-50 pointer-events-none' : '' }} space-y-3">
+                    <div class="{{ ! $hasCustomDomain ? 'opacity-50 pointer-events-none' : '' }} space-y-4">
                         <div>
-                            <x-label for="custom_domain" :value="__('Your Custom Domain')" />
+                            <x-label for="custom_domain" :value="__('Your Custom Domain / Subdomain')" />
                             <div class="relative">
                                 <i class="fa-solid fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                 <x-input id="custom_domain" wire:model="custom_domain" type="text" placeholder="tours.yourdomain.com" class="pl-9 font-mono text-xs" :disabled="! $hasCustomDomain" :error="$errors->has('custom_domain')" />
                             </div>
-                            <p class="text-[11px] text-slate-500 mt-1">{{ __('Enter the hostname where you want your booking storefront to load.') }}</p>
+                            <p class="text-[11px] text-slate-500 mt-1">{{ __('Enter the custom hostname where your guest booking storefront should be served (e.g. tours.yourdomain.com or booking.youragency.com).') }}</p>
                             <x-input-error :messages="$errors->get('custom_domain')" />
                         </div>
 
-                        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 text-xs space-y-1">
-                            <span class="font-bold text-slate-700 dark:text-slate-300 block">{{ __('DNS CNAME Setup:') }}</span>
-                            <p class="text-slate-500 dark:text-slate-400 text-[11px]">
-                                {{ __('Add a CNAME record in your domain DNS manager pointing your custom host to:') }}
-                                <code class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-700 font-mono text-[10px] text-indigo-600 dark:text-indigo-400">{{ parse_url(config('app.url', 'https://emvi.test'), PHP_URL_HOST) ?? 'yourdomain.com' }}</code>
-                            </p>
+                        <!-- Step-by-Step DNS CNAME Configuration Box -->
+                        @php
+                            $targetHost = parse_url(config('app.url', 'https://emvi.id'), PHP_URL_HOST) ?? 'emvi.id';
+                            $customDomainModel = $this->currentOperator?->domains()->where('type', \App\Enums\DomainType::Custom)->first();
+                        @endphp
+
+                        <div class="p-4 sm:p-5 rounded-2xl bg-slate-900 text-slate-100 space-y-4 shadow-md border border-slate-800">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 text-xs">
+                                        <i class="fa-solid fa-network-wired"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="font-extrabold text-xs text-white uppercase tracking-wider">{{ __('Step-by-Step DNS CNAME Setup') }}</h4>
+                                        <p class="text-[11px] text-slate-400">{{ __('Point your custom domain DNS records to EMVI servers') }}</p>
+                                    </div>
+                                </div>
+
+                                @if ($customDomainModel)
+                                    @if ($customDomainModel->status === \App\Enums\DomainStatus::Active)
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                                            <i class="fa-solid fa-circle-check text-[9px]"></i>
+                                            <span>{{ __('Verified & SSL Active') }}</span>
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                                            <i class="fa-solid fa-clock text-[9px] animate-pulse"></i>
+                                            <span>{{ __('Pending Propagation') }}</span>
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+
+                            <!-- DNS Record Spec Table -->
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs font-mono border-collapse">
+                                    <thead>
+                                        <tr class="text-[10px] font-extrabold uppercase text-slate-400 border-b border-slate-800 pb-2">
+                                            <th class="py-2 px-3">{{ __('Record Type') }}</th>
+                                            <th class="py-2 px-3">{{ __('Host / Name') }}</th>
+                                            <th class="py-2 px-3">{{ __('Target / Points To') }}</th>
+                                            <th class="py-2 px-3 text-right">{{ __('Action') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/60 font-semibold text-slate-200">
+                                        <tr>
+                                            <td class="py-2.5 px-3">
+                                                <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[11px] border border-purple-500/30">CNAME</span>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-amber-300">
+                                                @if ($this->custom_domain)
+                                                    @php
+                                                        $parts = explode('.', strtolower(trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/')))));
+                                                        $subdomain = count($parts) > 2 ? $parts[0] : '@';
+                                                    @endphp
+                                                    {{ $subdomain }}
+                                                @else
+                                                    <span class="text-slate-500 italic">{{ __('tours (or @)') }}</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-2.5 px-3 text-emerald-400 font-bold select-all">
+                                                {{ $targetHost }}
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
+                                                <button
+                                                    type="button"
+                                                    x-on:click="navigator.clipboard.writeText('{{ $targetHost }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                                    class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-sans font-bold text-[10px] transition border border-slate-700 cursor-pointer inline-flex items-center gap-1"
+                                                >
+                                                    <i class="fa-solid" :class="copied ? 'fa-check text-emerald-400' : 'fa-copy text-slate-400'"></i>
+                                                    <span x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Quick 4-Step Instructions -->
+                            <div class="space-y-2 text-[11px] text-slate-300 pt-2 border-t border-slate-800">
+                                <span class="font-bold text-slate-200 block uppercase tracking-wider text-[10px]">{{ __('Quick Setup Steps:') }}</span>
+                                <ol class="list-decimal list-inside space-y-1 text-slate-400 leading-relaxed font-sans">
+                                    <li>{{ __('Log into your domain registrar account (Cloudflare, GoDaddy, Namecheap, Niagahoster, or Rumahweb).') }}</li>
+                                    <li>{{ __('Go to your domain\'s DNS Management or Zone Editor panel.') }}</li>
+                                    <li>{{ __('Add a new CNAME record with Host set to your subdomain and Target set to ') }} <strong class="text-emerald-400 font-mono">{{ $targetHost }}</strong>.</li>
+                                    <li>{{ __('Save changes and click "Verify DNS Connection" below to issue your automated SSL certificate.') }}</li>
+                                </ol>
+                            </div>
+
+                            <!-- Verification Action Button -->
+                            <div class="pt-2 flex items-center justify-between gap-3 border-t border-slate-800">
+                                <span class="text-[10px] text-slate-400 font-sans">
+                                    <i class="fa-solid fa-circle-info text-purple-400 mr-1"></i>
+                                    {{ __('DNS changes typically take 2 to 15 minutes to propagate globally.') }}
+                                </span>
+                                <button
+                                    type="button"
+                                    wire:click="verifyCustomDomainDns"
+                                    class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-sans font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                                >
+                                    <i class="fa-solid fa-rotate text-[10px]" wire:loading.class="animate-spin" wire:target="verifyCustomDomainDns"></i>
+                                    <span>{{ __('Verify DNS Connection') }}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -868,6 +1026,17 @@ new #[Title('Brand Settings')] class extends Component {
                             </div>
                             <p class="text-[11px] text-slate-500 mt-1">{{ __('Optional custom tag manager container.') }}</p>
                             <x-input-error :messages="$errors->get('google_tag_manager_id')" />
+                        </div>
+
+                        <!-- Google Search Console Site Verification -->
+                        <div>
+                            <x-label for="google_site_verification" :value="__('Google Search Console Verification Tag / Code')" />
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass-chart absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-500 text-xs"></i>
+                                <x-input id="google_site_verification" wire:model="google_site_verification" type="text" placeholder="e.g. google-site-verification=... or code" class="pl-9 font-mono text-xs" :disabled="! $hasTracking" :error="$errors->has('google_site_verification')" />
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1">{{ __('Injected into <head> for 1-click Google Search Console domain verification.') }}</p>
+                            <x-input-error :messages="$errors->get('google_site_verification')" />
                         </div>
 
                         <!-- Google Maps / TripAdvisor Review URL -->

@@ -37,6 +37,7 @@ class PlatformSetting extends Model
             'settings' => [
                 'commission_rate' => 0.00, // Default 0% commission from operator
                 'guest_service_fee_rate' => 0.05, // 5% Guest Service Fee added at checkout
+                'guest_service_fee_cap' => 250000.00, // Max Rp 250.000 fee cap for high-ticket bookings (e.g. 100M charters)
                 'booking_hold_minutes' => 30, // 30-minute hold window for unpaid reservations
                 'doku_mode' => config('doku.default_mode', 'sandbox'),
                 'currency_code' => 'IDR',
@@ -78,6 +79,26 @@ class PlatformSetting extends Model
     public function getGuestServiceFeeRate(): float
     {
         return (float) ($this->settings['guest_service_fee_rate'] ?? 0.05);
+    }
+
+    public function getGuestServiceFeeCap(): float
+    {
+        return (float) ($this->settings['guest_service_fee_cap'] ?? 250000.00);
+    }
+
+    /**
+     * Calculate guest service fee with high-ticket cap support (e.g. 100M transaction).
+     */
+    public function calculateGuestServiceFee(float $subtotal, ?Operator $operator = null): float
+    {
+        if ($operator && $operator->hasCustomPaymentGateway()) {
+            return 0.00;
+        }
+
+        $rawFee = round($subtotal * $this->getGuestServiceFeeRate(), 2);
+        $cap = $this->getGuestServiceFeeCap();
+
+        return $cap > 0 ? min($rawFee, $cap) : $rawFee;
     }
 
     public function getBookingHoldMinutes(): int

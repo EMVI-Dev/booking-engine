@@ -331,7 +331,7 @@ new #[Title('Platform Broadcast Notices')] #[Layout('layouts.admin')] class exte
                     </div>
 
                     <!-- Modal Body -->
-                    <form wire:submit="saveAnnouncement" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                    <form wire:submit="saveAnnouncement" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-36">
                         <div>
                             <x-label for="title" :value="__('Announcement Title')" required />
                             <x-input id="title" type="text" wire:model="title" placeholder="{{ __('e.g. Scheduled System Maintenance') }}" :error="$errors->has('title')" />
@@ -387,13 +387,13 @@ new #[Title('Platform Broadcast Notices')] #[Layout('layouts.admin')] class exte
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-label for="starts_at" :value="__('Start Date & Time')" />
-                                <x-input id="starts_at" type="datetime-local" wire:model="starts_at" class="text-xs font-mono" :error="$errors->has('starts_at')" />
+                                <x-datetime-picker id="starts_at" wire:model="starts_at" :error="$errors->has('starts_at')" />
                                 <x-input-error :messages="$errors->get('starts_at')" />
                             </div>
 
                             <div>
                                 <x-label for="ends_at" :value="__('End Date & Time')" />
-                                <x-input id="ends_at" type="datetime-local" wire:model="ends_at" class="text-xs font-mono" :error="$errors->has('ends_at')" />
+                                <x-datetime-picker id="ends_at" wire:model="ends_at" :error="$errors->has('ends_at')" />
                                 <x-input-error :messages="$errors->get('ends_at')" />
                             </div>
                         </div>
