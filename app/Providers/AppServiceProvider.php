@@ -30,7 +30,22 @@ class AppServiceProvider extends ServiceProvider
         Paginator::defaultView('vendor.pagination.tailwind');
         Paginator::defaultSimpleView('vendor.pagination.tailwind');
 
+        $this->ensureSqliteDatabaseExists();
         $this->configureDefaults();
+    }
+
+    /**
+     * Ensure the SQLite database file exists on disk if configured.
+     */
+    protected function ensureSqliteDatabaseExists(): void
+    {
+        if (config('database.default') === 'sqlite') {
+            $dbPath = config('database.connections.sqlite.database');
+            if ($dbPath && $dbPath !== ':memory:' && ! file_exists($dbPath)) {
+                @mkdir(dirname($dbPath), 0755, true);
+                @touch($dbPath);
+            }
+        }
     }
 
     /**
