@@ -24,6 +24,10 @@ return new class extends Migration
             $table->foreignUlid('plan_id')->nullable()->constrained('plans')->nullOnDelete();
             $table->timestamp('subscribed_at')->nullable();
             $table->timestamp('plan_expires_at')->nullable();
+            $table->string('subscription_interval', 20)->default('monthly');
+            $table->foreignUlid('pending_plan_id')->nullable()->constrained('plans')->nullOnDelete();
+            $table->timestamp('pending_plan_action_at')->nullable();
+            $table->boolean('subscription_auto_renew')->default(true);
             $table->text('terms_and_conditions')->nullable();
             $table->string('bank_provider')->nullable();
             $table->string('bank_account_name')->nullable();

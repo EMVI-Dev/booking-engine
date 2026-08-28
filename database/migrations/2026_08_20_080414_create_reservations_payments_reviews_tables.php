@@ -28,12 +28,14 @@ return new class extends Migration
             $table->string('status')->default('payment_pending'); // payment_pending, pending_confirmation, confirmed, declined, cancelled, completed, expired
             $table->dateTime('hold_expires_at')->nullable();
             $table->dateTime('review_request_sent_at')->nullable();
+            $table->dateTime('departure_reminder_sent_at')->nullable();
             $table->timestamps();
 
             $table->index(['bookable_type', 'bookable_id']);
             $table->index(['operator_id', 'status']);
             $table->index(['status', 'hold_expires_at']);
             $table->index(['status', 'requested_date', 'review_request_sent_at'], 'reservations_review_request_idx');
+            $table->index(['status', 'requested_date', 'departure_reminder_sent_at'], 'reservations_departure_reminder_idx');
         });
 
         Schema::create('payments', function (Blueprint $table) {
