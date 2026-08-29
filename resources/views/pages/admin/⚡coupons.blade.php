@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Operator;
+use App\Models\PlatformAnnouncement;
 use App\Models\PlatformCoupon;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
@@ -11,13 +12,24 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
     public bool $show_modal = false;
     public ?string $editing_id = null;
 
+    // Confirmation modal states
+    public ?string $confirming_delete_id = null;
+    public ?string $confirming_delete_code = null;
+    public ?string $confirming_toggle_id = null;
+    public ?string $confirming_toggle_code = null;
+    public bool $confirming_toggle_current_state = false;
+
+    public ?string $operator_id = null;
+    public string $redemption_scope = 'unlimited'; // unlimited, first_purchase_only, once_per_period
+    public string $eligibility_rule_type = ''; // '' = manual, min_monthly_transactions, min_monthly_revenue, subscription_age_months
+    public ?int $eligibility_threshold = null;
+    public bool $announce_on_save = false;
     public string $code = '';
     public string $description = '';
     public string $discount_type = 'percentage'; // 'percentage' or 'fixed'
     public float $discount_value = 10.0;
     public float $min_spend = 0.0;
     public ?float $max_discount_amount = null;
-    public ?string $operator_id = null;
     public ?int $max_uses = null;
     public bool $is_active = true;
     public ?string $starts_at = null;
@@ -29,13 +41,17 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
     public function openCreateModal(): void
     {
         $this->editing_id = null;
+        $this->operator_id = null;
+        $this->redemption_scope = 'unlimited';
+        $this->eligibility_rule_type = '';
+        $this->eligibility_threshold = null;
+        $this->announce_on_save = false;
         $this->code = '';
         $this->description = '';
         $this->discount_type = 'percentage';
         $this->discount_value = 10.0;
         $this->min_spend = 0.0;
         $this->max_discount_amount = null;
-        $this->operator_id = null;
         $this->max_uses = null;
         $this->is_active = true;
         $this->starts_at = now()->format('Y-m-d\TH:i');
@@ -45,20 +61,25 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
 
     public function editCoupon(string $id): void
     {
-        $coupon = PlatformCoupon::find($id);
+        $coupon = PlatformCoupon::forSubscription()->find($id);
 
         if (! $coupon) {
             return;
         }
 
         $this->editing_id = $coupon->id;
+        $this->operator_id = $coupon->operator_id;
+        $this->redemption_scope = $coupon->redemption_scope ?? 'unlimited';
+        $rule = $coupon->eligibility_rule;
+        $this->eligibility_rule_type = $rule['type'] ?? '';
+        $this->eligibility_threshold = isset($rule['threshold']) ? (int) $rule['threshold'] : null;
+        $this->announce_on_save = false;
         $this->code = $coupon->code;
         $this->description = (string) ($coupon->description ?? '');
         $this->discount_type = $coupon->discount_type;
         $this->discount_value = (float) $coupon->discount_value;
         $this->min_spend = (float) $coupon->min_spend;
         $this->max_discount_amount = $coupon->max_discount_amount !== null ? (float) $coupon->max_discount_amount : null;
-        $this->operator_id = $coupon->operator_id;
         $this->max_uses = $coupon->max_uses;
         $this->is_active = $coupon->is_active;
         $this->starts_at = $coupon->starts_at?->format('Y-m-d\TH:i');
@@ -70,6 +91,11 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
     {
         $this->show_modal = false;
         $this->editing_id = null;
+        $this->operator_id = null;
+        $this->redemption_scope = 'unlimited';
+        $this->eligibility_rule_type = '';
+        $this->eligibility_threshold = null;
+        $this->announce_on_save = false;
     }
 
     public function saveCoupon(): void
@@ -78,26 +104,36 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
 
         $this->validate([
             'code' => ['required', 'string', 'max:50', 'alpha_num', 'unique:platform_coupons,code,' . ($this->editing_id ?: 'NULL') . ',id'],
+            'operator_id' => ['nullable', 'string', 'exists:operators,id'],
+            'redemption_scope' => ['required', 'in:unlimited,first_purchase_only,once_per_period'],
+            'eligibility_rule_type' => ['nullable', 'string', 'in:,min_monthly_transactions,min_monthly_revenue,subscription_age_months'],
+            'eligibility_threshold' => ['nullable', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:255'],
             'discount_type' => ['required', 'in:percentage,fixed'],
             'discount_value' => ['required', 'numeric', 'min:0.01'],
             'min_spend' => ['required', 'numeric', 'min:0'],
             'max_discount_amount' => ['nullable', 'numeric', 'min:0'],
-            'operator_id' => ['nullable', 'exists:operators,id'],
             'max_uses' => ['nullable', 'integer', 'min:1'],
             'is_active' => ['boolean'],
             'starts_at' => ['nullable', 'date'],
             'expires_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
         ]);
 
+        $eligibilityRule = $this->eligibility_rule_type
+            ? ['type' => $this->eligibility_rule_type, 'threshold' => $this->eligibility_threshold ?? 1, 'lookback_months' => 1]
+            : null;
+
         $attributes = [
             'code' => $cleanCode,
             'description' => $this->description ?: null,
+            'scope' => 'subscription',
+            'redemption_scope' => $this->redemption_scope,
+            'eligibility_rule' => $eligibilityRule,
+            'operator_id' => $this->operator_id ?: null,
             'discount_type' => $this->discount_type,
             'discount_value' => $this->discount_value,
             'min_spend' => $this->min_spend,
             'max_discount_amount' => $this->max_discount_amount ?: null,
-            'operator_id' => $this->operator_id ?: null,
             'max_uses' => $this->max_uses ?: null,
             'is_active' => $this->is_active,
             'starts_at' => $this->starts_at ? Carbon::parse($this->starts_at) : null,
@@ -105,41 +141,104 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
         ];
 
         if ($this->editing_id) {
-            PlatformCoupon::where('id', $this->editing_id)->update($attributes);
-            session()->flash('success', __('Coupon code :code updated successfully!', ['code' => $cleanCode]));
+            PlatformCoupon::forSubscription()->where('id', $this->editing_id)->update($attributes);
+            session()->flash('success', __('Subscription coupon :code updated successfully!', ['code' => $cleanCode]));
         } else {
-            PlatformCoupon::create($attributes);
-            session()->flash('success', __('New coupon code :code created and activated!', ['code' => $cleanCode]));
+            $coupon = PlatformCoupon::create($attributes);
+
+            // Optionally create a linked platform announcement
+            if ($this->announce_on_save) {
+                $discountLabel = $this->discount_type === 'percentage'
+                    ? "{$this->discount_value}% OFF"
+                    : 'Rp ' . number_format($this->discount_value, 0, ',', '.') . ' OFF';
+
+                $announcement = PlatformAnnouncement::create([
+                    'title' => "🎉 New promo code available: {$cleanCode}",
+                    'message' => "Use code **{$cleanCode}** to get **{$discountLabel}** on your subscription checkout!" . ($this->expires_at ? ' Valid until ' . Carbon::parse($this->expires_at)->format('d M Y') . '.' : ''),
+                    'type' => 'success',
+                    'is_active' => true,
+                    'is_dismissible' => true,
+                    'starts_at' => $this->starts_at ? Carbon::parse($this->starts_at) : now(),
+                    'ends_at' => $this->expires_at ? Carbon::parse($this->expires_at) : null,
+                ]);
+
+                $coupon->update(['announcement_id' => $announcement->id]);
+            }
+
+            session()->flash('success', __('New subscription coupon :code created and activated!', ['code' => $cleanCode]));
         }
 
         $this->closeModal();
     }
 
+    public function promptToggleActive(string $id, string $code, bool $currentActive): void
+    {
+        $this->confirming_toggle_id = $id;
+        $this->confirming_toggle_code = $code;
+        $this->confirming_toggle_current_state = $currentActive;
+    }
+
+    public function cancelToggleActive(): void
+    {
+        $this->confirming_toggle_id = null;
+        $this->confirming_toggle_code = null;
+    }
+
+    public function confirmToggleActive(): void
+    {
+        if ($this->confirming_toggle_id) {
+            $this->toggleActive($this->confirming_toggle_id);
+            $this->cancelToggleActive();
+        }
+    }
+
     public function toggleActive(string $id): void
     {
-        $coupon = PlatformCoupon::find($id);
+        $coupon = PlatformCoupon::forSubscription()->find($id);
         if ($coupon) {
             $coupon->update(['is_active' => ! $coupon->is_active]);
             session()->flash('success', __('Coupon status updated.'));
         }
     }
 
+    public function promptDelete(string $id, string $code): void
+    {
+        $this->confirming_delete_id = $id;
+        $this->confirming_delete_code = $code;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->confirming_delete_id = null;
+        $this->confirming_delete_code = null;
+    }
+
+    public function confirmDelete(): void
+    {
+        if ($this->confirming_delete_id) {
+            $this->deleteCoupon($this->confirming_delete_id);
+            $this->cancelDelete();
+        }
+    }
+
     public function deleteCoupon(string $id): void
     {
-        PlatformCoupon::where('id', $id)->delete();
+        PlatformCoupon::forSubscription()->where('id', $id)->delete();
         session()->flash('success', __('Coupon deleted successfully.'));
     }
 
     public function render()
     {
-        $query = PlatformCoupon::with('operator')->latest('created_at');
+        $query = PlatformCoupon::forSubscription()->with(['operator.users'])->latest('created_at');
 
         if (! empty($this->search)) {
             $s = '%' . trim($this->search) . '%';
             $query->where(function ($q) use ($s) {
                 $q->where('code', 'like', $s)
                     ->orWhere('description', 'like', $s)
-                    ->orWhereHas('operator', fn ($oq) => $oq->where('name', 'like', $s));
+                    ->orWhereHas('operator', function ($opQ) use ($s) {
+                        $opQ->where('name', 'like', $s);
+                    });
             });
         }
 
@@ -150,16 +249,28 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
         }
 
         $coupons = $query->get();
-        $operators = Operator::orderBy('name')->get();
 
-        $activeCount = PlatformCoupon::active()->count();
-        $totalRedemptions = PlatformCoupon::sum('used_count');
+        $activeCount = PlatformCoupon::forSubscription()->active()->count();
+        $totalRedemptions = PlatformCoupon::forSubscription()->sum('used_count');
+
+        $operators = Operator::with('users')->orderBy('name')->get();
+        $operatorOptions = [
+            ['value' => '', 'label' => '✨ ' . __('Eligible for Any Operator (Global Promo)')],
+        ];
+        foreach ($operators as $op) {
+            $primaryEmail = $op->users->first()?->email;
+            $emailSuffix = $primaryEmail ? " ({$primaryEmail})" : '';
+            $operatorOptions[] = [
+                'value' => $op->id,
+                'label' => "🏢 {$op->name}{$emailSuffix}",
+            ];
+        }
 
         return view('pages.admin.⚡coupons', [
             'coupons' => $coupons,
-            'operators' => $operators,
             'activeCount' => $activeCount,
             'totalRedemptions' => $totalRedemptions,
+            'operatorOptions' => $operatorOptions,
         ]);
     }
 }; ?>
@@ -173,24 +284,22 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
             </span>
             <div>
                 <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Platform Coupons & Discount Engine') }}
+                    {{ __('Platform Subscription Promo Codes') }}
                 </h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Create and manage cross-operator discount campaigns, promo codes, and redemption limits.') }}
+                    {{ __('Create and manage discount codes for tour operators subscribing to or upgrading SaaS plans.') }}
                 </p>
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <button
-                type="button"
-                wire:click="openCreateModal"
-                class="h-9 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-            >
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>{{ __('New Promo Code') }}</span>
-            </button>
-        </div>
+        <x-button
+            type="button"
+            wire:click="openCreateModal"
+            icon="<i class='fa-solid fa-plus text-xs'></i>"
+            class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-500 shadow-xs shrink-0"
+        >
+            <span>{{ __('New Subscription Promo Code') }}</span>
+        </x-button>
     </div>
 
     <!-- Feedback Alerts -->
@@ -216,15 +325,15 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
         </div>
 
         <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{{ __('Engine Mode') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ __('Automated') }}</div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Real-time checkout validation') }}</p>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">{{ __('Engine Status') }}</span>
+            <div class="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400">{{ __('Operational') }}</div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Platform subscription discount rules') }}</p>
         </div>
     </div>
 
-    <!-- Filters & Search Bar -->
+    <!-- Search and Status Tabs Bar -->
     <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <!-- Search -->
+        <!-- Search Input -->
         <div class="relative w-full sm:w-80">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
             <x-input
@@ -249,7 +358,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                 <button
                     type="button"
                     wire:click="$set('status_filter', '{{ $val }}')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $status_filter === $val ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $status_filter === $val ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}"
                 >
                     {{ $label }}
                 </button>
@@ -264,8 +373,8 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                 <thead>
                     <tr class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         <th class="py-3.5 px-4 sm:px-6">{{ __('Promo Code') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Target Eligibility') }}</th>
                         <th class="py-3.5 px-4">{{ __('Discount') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Scope & Operator') }}</th>
                         <th class="py-3.5 px-4">{{ __('Redemptions / Limits') }}</th>
                         <th class="py-3.5 px-4">{{ __('Validity Window') }}</th>
                         <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
@@ -280,7 +389,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                         <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition">
                             <!-- Code -->
                             <td class="py-3.5 px-4 sm:px-6">
-                                <div class="space-y-0.5">
+                                <div class="space-y-1">
                                     <span class="inline-flex items-center gap-1.5 font-mono font-black text-sm text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800">
                                         <i class="fa-solid fa-tag text-xs"></i>
                                         {{ $coupon->code }}
@@ -288,7 +397,45 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                                     @if ($coupon->description)
                                         <p class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-xs">{{ $coupon->description }}</p>
                                     @endif
+                                    {{-- Redemption scope badge --}}
+                                    @php
+                                        $scopeBadge = match($coupon->redemption_scope ?? 'unlimited') {
+                                            'first_purchase_only' => ['label' => '1st Only', 'class' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'],
+                                            'once_per_period' => ['label' => 'Per Cycle', 'class' => 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'],
+                                            default => ['label' => 'Lifetime ♾️', 'class' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'],
+                                        };
+                                    @endphp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold {{ $scopeBadge['class'] }}">
+                                        {{ $scopeBadge['label'] }}
+                                    </span>
+                                    @if ($coupon->eligibility_rule)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 ml-1" title="{{ __('Auto-broadcast enabled') }}">
+                                            <i class="fa-solid fa-satellite-dish text-[8px]"></i>
+                                            {{ $coupon->eligibility_rule['threshold'] ?? '?' }}
+                                            {{ $coupon->eligibility_rule['type'] === 'min_monthly_transactions' ? 'txn/mo' : ($coupon->eligibility_rule['type'] === 'subscription_age_months' ? 'mo sub' : 'Rp/mo') }}
+                                        </span>
+                                    @endif
                                 </div>
+                            </td>
+
+                            <!-- Target Eligibility -->
+                            <td class="py-3.5 px-4">
+                                @if ($coupon->operator)
+                                    <div class="space-y-0.5">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/80">
+                                            <i class="fa-solid fa-building text-[10px] text-purple-500"></i>
+                                            <span class="truncate max-w-[150px]">{{ $coupon->operator->name }}</span>
+                                        </span>
+                                        <p class="text-[10px] text-slate-400 dark:text-zinc-500 truncate max-w-[160px]">
+                                            {{ $coupon->operator->users->first()?->email }}
+                                        </p>
+                                    </div>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                                        <i class="fa-solid fa-globe text-[10px] text-indigo-500"></i>
+                                        <span>{{ __('Global (All Operators)') }}</span>
+                                    </span>
+                                @endif
                             </td>
 
                             <!-- Discount Value -->
@@ -314,25 +461,10 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                                 </div>
                             </td>
 
-                            <!-- Scope -->
+                            <!-- Redemptions / Limits -->
                             <td class="py-3.5 px-4">
-                                @if ($coupon->operator)
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                                        <i class="fa-solid fa-building text-[10px]"></i>
-                                        {{ $coupon->operator->name }}
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
-                                        <i class="fa-solid fa-earth-asia text-[10px]"></i>
-                                        {{ __('Platform-Wide (All)') }}
-                                    </span>
-                                @endif
-                            </td>
-
-                            <!-- Redemptions -->
-                            <td class="py-3.5 px-4">
-                                <div class="space-y-0.5">
-                                    <span class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+                                <div class="space-y-0.5 font-mono text-xs">
+                                    <span class="font-bold text-slate-900 dark:text-white">
                                         {{ $coupon->used_count }}
                                         <span class="text-slate-400 font-normal">/ {{ $coupon->max_uses ? $coupon->max_uses . ' max' : '∞' }}</span>
                                     </span>
@@ -342,12 +474,19 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                                 </div>
                             </td>
 
-                            <!-- Validity Window -->
+                            <!-- Validity Window & Status -->
                             <td class="py-3.5 px-4">
-                                <div class="space-y-0.5">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase {{ ! $coupon->is_active ? 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-slate-400' : ($isExpired ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300') }}">
-                                        {{ ! $coupon->is_active ? __('Inactive') : ($isExpired ? __('Expired') : __('Active')) }}
-                                    </span>
+                                <div class="space-y-1">
+                                    <button
+                                        type="button"
+                                        wire:click="promptToggleActive('{{ $coupon->id }}', '{{ $coupon->code }}', {{ $coupon->is_active && ! $isExpired ? 'true' : 'false' }})"
+                                        class="h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-bold uppercase transition cursor-pointer {{ $coupon->is_active && ! $isExpired ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 hover:bg-slate-200' }}"
+                                        title="{{ __('Click to change active status') }}"
+                                    >
+                                        <i class="fa-solid {{ $coupon->is_active && ! $isExpired ? 'fa-check' : 'fa-xmark' }} text-[10px]"></i>
+                                        <span>{{ $coupon->is_active && ! $isExpired ? __('Active') : ($isExpired ? __('Expired') : __('Disabled')) }}</span>
+                                    </button>
+
                                     @if ($coupon->expires_at)
                                         <p class="font-mono text-xs text-slate-500 dark:text-slate-400">
                                             {{ __('Expires:') }} {{ $coupon->expires_at->format('d M Y') }}
@@ -359,40 +498,34 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             <!-- Actions -->
                             <td class="py-3.5 px-4 sm:px-6 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <button
+                                    <x-button
                                         type="button"
-                                        wire:click="toggleActive('{{ $coupon->id }}')"
-                                        class="h-8 px-2 rounded-lg text-xs font-bold transition {{ $coupon->is_active ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200' : 'bg-emerald-600 text-white hover:bg-emerald-700' }}"
-                                        title="{{ __('Toggle active status') }}"
-                                    >
-                                        {{ $coupon->is_active ? __('Pause') : __('Activate') }}
-                                    </button>
-
-                                    <button
-                                        type="button"
+                                        size="xs"
+                                        variant="secondary"
                                         wire:click="editCoupon('{{ $coupon->id }}')"
-                                        class="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 text-xs transition"
+                                        icon="<i class='fa-solid fa-pen-to-square text-[11px]'></i>"
                                         title="{{ __('Edit Coupon') }}"
                                     >
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </button>
+                                        <span>{{ __('Edit') }}</span>
+                                    </x-button>
 
-                                    <button
+                                    <x-button
                                         type="button"
-                                        wire:click="deleteCoupon('{{ $coupon->id }}')"
-                                        wire:confirm="{{ __('Are you sure you want to delete promo code :code?', ['code' => $coupon->code]) }}"
-                                        class="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-950/70 text-rose-600 hover:bg-rose-100 text-xs transition"
+                                        size="xs"
+                                        variant="danger"
+                                        wire:click="promptDelete('{{ $coupon->id }}', '{{ $coupon->code }}')"
+                                        class="w-8 !px-0 bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 hover:bg-rose-100 hover:text-rose-700 border-none shadow-none"
                                         title="{{ __('Delete Coupon') }}"
                                     >
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </x-button>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="6" class="py-8 text-center text-slate-400">
-                                {{ __('No coupon codes match your search or filter.') }}
+                                {{ __('No subscription coupon codes match your search or filter.') }}
                             </td>
                         </tr>
                     @endforelse
@@ -400,6 +533,90 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
             </table>
         </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    @if ($confirming_delete_id)
+        @teleport('body')
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs">
+                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-6 space-y-4 text-center animate-fade-in">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-lg">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                            {{ __('Delete Promo Code ":code"?', ['code' => $confirming_delete_code]) }}
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                            {{ __('Are you sure you want to delete promo code :code? This action cannot be undone.', ['code' => $confirming_delete_code]) }}
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-3 pt-2">
+                        <x-button
+                            type="button"
+                            variant="secondary"
+                            wire:click="cancelDelete"
+                            class="font-semibold text-xs"
+                        >
+                            {{ __('Cancel') }}
+                        </x-button>
+                        <x-button
+                            type="button"
+                            variant="danger"
+                            wire:click="confirmDelete"
+                            class="font-semibold text-xs"
+                        >
+                            <i class="fa-solid fa-trash-can mr-1.5 text-xs"></i>
+                            {{ __('Yes, Delete Promo Code') }}
+                        </x-button>
+                    </div>
+                </div>
+            </div>
+        @endteleport
+    @endif
+
+    <!-- Toggle Active Status Confirmation Modal -->
+    @if ($confirming_toggle_id)
+        @teleport('body')
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs">
+                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-6 space-y-4 text-center animate-fade-in">
+                    <div class="w-12 h-12 rounded-2xl {{ $confirming_toggle_current_state ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/80 dark:text-amber-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-400' }} flex items-center justify-center mx-auto text-lg">
+                        <i class="fa-solid {{ $confirming_toggle_current_state ? 'fa-pause' : 'fa-play' }}"></i>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                            {{ $confirming_toggle_current_state ? __('Deactivate Promo Code ":code"?', ['code' => $confirming_toggle_code]) : __('Activate Promo Code ":code"?', ['code' => $confirming_toggle_code]) }}
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                            {{ $confirming_toggle_current_state ? __('Deactivating this promo code will prevent operators from applying it during checkout.') : __('Activating this promo code will allow operators to immediately apply it during subscription checkout.') }}
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-3 pt-2">
+                        <x-button
+                            type="button"
+                            variant="secondary"
+                            wire:click="cancelToggleActive"
+                            class="font-semibold text-xs"
+                        >
+                            {{ __('Cancel') }}
+                        </x-button>
+                        <x-button
+                            type="button"
+                            variant="{{ $confirming_toggle_current_state ? 'secondary' : 'primary' }}"
+                            wire:click="confirmToggleActive"
+                            class="font-semibold text-xs {{ $confirming_toggle_current_state ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-emerald-600 hover:bg-emerald-700' }}"
+                        >
+                            <i class="fa-solid {{ $confirming_toggle_current_state ? 'fa-circle-pause' : 'fa-circle-check' }} mr-1.5 text-xs"></i>
+                            {{ $confirming_toggle_current_state ? __('Deactivate Code') : __('Activate Code') }}
+                        </x-button>
+                    </div>
+                </div>
+            </div>
+        @endteleport
+    @endif
 
     <!-- Create / Edit Modal -->
     @if ($show_modal)
@@ -414,10 +631,10 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             </div>
                             <div class="space-y-0.5 min-w-0">
                                 <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
-                                    {{ $editing_id ? __('Edit Promo Code') : __('Create New Promo Code') }}
+                                    {{ $editing_id ? __('Edit Subscription Promo Code') : __('Create Subscription Promo Code') }}
                                 </h3>
                                 <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                                    {{ __('Configure discount value, storefront scope, and usage conditions.') }}
+                                    {{ __('Configure SaaS subscription discounts and targeted operator eligibility.') }}
                                 </p>
                             </div>
                         </div>
@@ -430,8 +647,8 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                     <form wire:submit="saveCoupon" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-36">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <x-label for="code" :value="__('Coupon Code (e.g. SUMMER26)')" required />
-                                <x-input id="code" type="text" wire:model="code" placeholder="{{ __('SUMMER26') }}" class="font-mono uppercase font-black" :error="$errors->has('code')" />
+                                <x-label for="code" :value="__('Coupon Code (e.g. GROW2026)')" required />
+                                <x-input id="code" type="text" wire:model="code" placeholder="{{ __('GROW2026') }}" class="font-mono uppercase font-black" :error="$errors->has('code')" />
                                 <x-input-error :messages="$errors->get('code')" />
                             </div>
 
@@ -451,8 +668,90 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                         </div>
 
                         <div>
+                            <x-label for="operator_id" :value="__('Target Operator Eligibility')" />
+                            <x-select
+                                id="operator_id"
+                                wire:model="operator_id"
+                                :options="$operatorOptions"
+                                :searchable="true"
+                                :error="$errors->has('operator_id')"
+                            />
+                            <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-1">
+                                {{ __('Target a specific operator exclusively or keep Global for all subscribing operators.') }}
+                            </p>
+                            <x-input-error :messages="$errors->get('operator_id')" />
+                        </div>
+
+                        {{-- Redemption Scope --}}
+                        <div class="pt-2 border-t border-slate-100 dark:border-zinc-800">
+                            <x-label for="redemption_scope" :value="__('How Many Times Can This Be Redeemed?')" required />
+                            <x-select
+                                id="redemption_scope"
+                                wire:model="redemption_scope"
+                                :options="[
+                                    ['value' => 'unlimited', 'label' => __('♾️ Unlimited — Every checkout & renewal (Lifetime Deal)')],
+                                    ['value' => 'first_purchase_only', 'label' => __('1️⃣ First Subscription Only — New operator onboarding discount')],
+                                    ['value' => 'once_per_period', 'label' => __('📅 Once Per Billing Cycle — Monthly / Annual renewal discount')],
+                                ]"
+                                :error="$errors->has('redemption_scope')"
+                            />
+                            <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-1">
+                                @if ($redemption_scope === 'unlimited')
+                                    {{ __('Operator keeps this discount on every subscription renewal as long as the promo is active.') }}
+                                @elseif ($redemption_scope === 'first_purchase_only')
+                                    {{ __('Operator can only use this once — their very first subscription checkout.') }}
+                                @else
+                                    {{ __('Operator can use this once per billing cycle (month or year).') }}
+                                @endif
+                            </p>
+                            <x-input-error :messages="$errors->get('redemption_scope')" />
+                        </div>
+
+                        {{-- Broadcast Eligibility Rule --}}
+                        <div>
+                            <x-label for="eligibility_rule_type" :value="__('Auto-Broadcast Eligibility Rule')" />
+                            <x-select
+                                id="eligibility_rule_type"
+                                wire:model.live="eligibility_rule_type"
+                                :options="[
+                                    ['value' => '', 'label' => __('🖐 Manual Only — Admin broadcasts manually')],
+                                    ['value' => 'min_monthly_transactions', 'label' => __('📊 Min. Monthly Confirmed Bookings (volume milestone)')],
+                                    ['value' => 'min_monthly_revenue', 'label' => __('💰 Min. Monthly Revenue (GMV milestone)')],
+                                    ['value' => 'subscription_age_months', 'label' => __('🎂 Subscription Age (loyalty reward)')],
+                                ]"
+                                :error="$errors->has('eligibility_rule_type')"
+                            />
+                            <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-1">
+                                {{ __('The daily coupons:broadcast job will auto-notify qualifying operators via a dashboard announcement.') }}
+                            </p>
+
+                            @if ($eligibility_rule_type)
+                                <div class="mt-2">
+                                    <x-label for="eligibility_threshold" :value="
+                                        match($eligibility_rule_type) {
+                                            'min_monthly_transactions' => __('Threshold: Minimum confirmed bookings/month'),
+                                            'min_monthly_revenue' => __('Threshold: Minimum revenue (Rp) in last 30 days'),
+                                            'subscription_age_months' => __('Threshold: Minimum subscription age (months)'),
+                                            default => __('Threshold'),
+                                        }
+                                    " required />
+                                    <x-input
+                                        id="eligibility_threshold"
+                                        type="number"
+                                        step="1"
+                                        wire:model="eligibility_threshold"
+                                        class="font-bold font-mono"
+                                        placeholder="{{ $eligibility_rule_type === 'min_monthly_transactions' ? '50' : ($eligibility_rule_type === 'subscription_age_months' ? '6' : '5000000') }}"
+                                        :error="$errors->has('eligibility_threshold')"
+                                    />
+                                    <x-input-error :messages="$errors->get('eligibility_threshold')" />
+                                </div>
+                            @endif
+                        </div>
+
+                        <div>
                             <x-label for="description" :value="__('Campaign Description')" />
-                            <x-input id="description" type="text" wire:model="description" placeholder="{{ __('e.g. Early bird season launch promo') }}" :error="$errors->has('description')" />
+                            <x-input id="description" type="text" wire:model="description" placeholder="{{ __('e.g. Special VIP upgrade incentive') }}" :error="$errors->has('description')" />
                             <x-input-error :messages="$errors->get('description')" />
                         </div>
 
@@ -476,28 +775,10 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <x-label for="operator_id" :value="__('Storefront Scope')" />
-                                @php
-                                    $operatorOptions = collect([['value' => '', 'label' => __('Platform-Wide (All Storefronts)')]])
-                                        ->concat($operators->map(fn($op) => ['value' => (string) $op->id, 'label' => $op->name . ' ' . __('only')]))
-                                        ->toArray();
-                                @endphp
-                                <x-select
-                                    id="operator_id"
-                                    wire:model="operator_id"
-                                    :options="$operatorOptions"
-                                    :error="$errors->has('operator_id')"
-                                />
-                                <x-input-error :messages="$errors->get('operator_id')" />
-                            </div>
-
-                            <div>
-                                <x-label for="max_uses" :value="__('Total Max Uses (Blank = ∞)')" />
-                                <x-input id="max_uses" type="number" wire:model="max_uses" placeholder="{{ __('Unlimited') }}" :error="$errors->has('max_uses')" />
-                                <x-input-error :messages="$errors->get('max_uses')" />
-                            </div>
+                        <div>
+                            <x-label for="max_uses" :value="__('Total Max Uses (Blank = Unlimited)')" />
+                            <x-input id="max_uses" type="number" wire:model="max_uses" placeholder="{{ __('Unlimited') }}" :error="$errors->has('max_uses')" />
+                            <x-input-error :messages="$errors->get('max_uses')" />
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -522,15 +803,26 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             </div>
                         </div>
 
-                        <div class="pt-3 border-t border-slate-100 dark:border-zinc-800">
+                        <div class="pt-3 border-t border-slate-100 dark:border-zinc-800 space-y-2">
                             <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
                                 <x-checkbox
                                     id="coupon_is_active"
                                     wire:model="is_active"
-                                    :label="__('Enable coupon immediately (Active)')"
-                                    :description="__('Guests will be able to apply this promo code right away')"
+                                    :label="__('Enable promo code immediately (Active)')"
+                                    :description="__('Operators will be able to apply this promo code during subscription checkout / upgrade right away')"
                                 />
                             </div>
+
+                            @if (! $editing_id)
+                                <div class="p-3 rounded-2xl border border-indigo-200/80 dark:border-indigo-800/60 bg-indigo-50/50 dark:bg-indigo-950/30 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition">
+                                    <x-checkbox
+                                        id="coupon_announce_on_save"
+                                        wire:model="announce_on_save"
+                                        :label="__('📢 Publish announcement to operator dashboard')"
+                                        :description="__('Creates a dismissible success announcement banner visible to all operators (or plan-targeted if applicable) when this coupon is saved.')"
+                                    />
+                                </div>
+                            @endif
                         </div>
 
                         <!-- Modal Actions Footer -->

@@ -4,10 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ __('Secure Online Checkout') }} - {{ $agent->name }}</title>
-    @if ($agent->logo)
-        <link rel="icon" href="{{ Storage::url($agent->logo) }}" />
-        <link rel="apple-touch-icon" href="{{ Storage::url($agent->logo) }}" />
-    @endif
+    <link rel="icon" href="{{ $agent->logo_url }}" />
+    <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
     @if (! empty($agent->brand_color))
         <style>
             :root {

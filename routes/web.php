@@ -45,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('calendar', 'pages::calendar.index')->name('calendar.index');
     Route::livewire('reviews', 'pages::reviews.index')->name('reviews.index');
     Route::livewire('wallet', 'pages::wallet.index')->name('wallet.index');
+    Route::livewire('coupons', 'pages::coupons.index')->name('coupons.index');
 });
 
 // Public Storefront Item Details (Wildcard Slugs)

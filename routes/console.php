@@ -22,3 +22,6 @@ Schedule::command('subscriptions:process-scheduled-changes')->daily();
 
 // 7. Send automated subscription lapse reminders at 7 days, 3 days, and on the due date
 Schedule::command('subscriptions:send-renewal-reminders')->daily();
+
+// 8. Broadcast platform coupon codes to operators who meet eligibility thresholds (e.g. transaction volume)
+Schedule::command('coupons:broadcast')->dailyAt('09:00');

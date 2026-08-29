@@ -23,15 +23,9 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         <!-- Brand Avatar & Title -->
         <a href="{{ route('home') }}" class="flex items-center gap-3 min-w-0 group py-1">
-            @if ($agent?->logo_path)
-                <div class="h-10 w-10 rounded-2xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 shadow-xs shrink-0 group-hover:scale-105 transition-transform bg-white dark:bg-zinc-800 p-0.5 flex items-center justify-center">
-                    <img src="{{ Storage::url($agent->logo_path) }}" alt="{{ $agent->name }}" class="w-full h-full object-contain rounded-xl" />
-                </div>
-            @else
-                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 text-white font-black text-base shadow-sm shrink-0 group-hover:scale-105 transition-transform">
-                    {{ strtoupper(substr($agent?->name ?? config('app.name', 'T'), 0, 1)) }}
-                </span>
-            @endif
+            <div class="h-10 w-10 rounded-2xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 shadow-xs shrink-0 group-hover:scale-105 transition-transform bg-white dark:bg-zinc-800 p-1 flex items-center justify-center">
+                <img src="{{ $agent?->logo_url ?? asset('favicon.png') }}" alt="{{ $agent?->name ?? config('app.name') }}" class="w-full h-full object-contain rounded-xl" />
+            </div>
             <div class="flex flex-col min-w-0">
                 <span class="font-black text-sm sm:text-base tracking-tight text-slate-900 dark:text-white truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                     {{ $agent?->name ?? config('app.name') }}
@@ -72,13 +66,13 @@
                 @endif
             </a>
 
-            <!-- Activities & Rentals -->
+            <!-- Single Activities -->
             <a
                 href="{{ route('storefront.products') }}"
                 class="px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.products') || request()->routeIs('storefront.product') ? 'bg-white dark:bg-zinc-900 text-brand-600 dark:text-brand-400 shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-zinc-900/50' }}"
             >
-                <i class="fa-solid fa-person-swimming text-[11px]"></i>
-                <span>{{ __('Activities & Rentals') }}</span>
+                <i class="fa-solid fa-compass text-[11px]"></i>
+                <span>{{ __('Single Activities') }}</span>
                 @if ($productsCount > 0)
                     <span class="px-1.5 py-0.2 rounded-md text-[10px] font-black {{ request()->routeIs('storefront.products') || request()->routeIs('storefront.product') ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300' : 'bg-slate-200/80 dark:bg-zinc-700 text-slate-600 dark:text-slate-300' }}">
                         {{ $productsCount }}
@@ -182,8 +176,8 @@
                 class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('storefront.products') || request()->routeIs('storefront.product') ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/70 dark:text-brand-300 font-extrabold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
             >
                 <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-person-swimming w-4 text-center text-brand-600 dark:text-brand-400"></i>
-                    <span>{{ __('Activities & Rentals') }}</span>
+                    <i class="fa-solid fa-compass w-4 text-center text-brand-600 dark:text-brand-400"></i>
+                    <span>{{ __('Single Activities') }}</span>
                 </div>
                 @if ($productsCount > 0)
                     <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300">

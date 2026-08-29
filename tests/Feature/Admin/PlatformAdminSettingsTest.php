@@ -97,7 +97,7 @@ test('platform admin can access payment gateways settings page', function () {
     $this->actingAs($this->adminUser)
         ->get(route('admin.payments.index'))
         ->assertOk()
-        ->assertSee('Payment Gateways')
+        ->assertSee('DOKU Payment Gateway')
         ->assertSee('Central DOKU Payment Credentials');
 });
 

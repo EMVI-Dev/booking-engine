@@ -58,8 +58,8 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'subscribed_at' => now(),
                 'bio' => 'Premier marine expeditions, daily manta ray snorkeling safaris, sunset cruises, and fast boat charters across Nusa Penida, Lembongan, and the Gili Islands.',
                 'contact_whatsapp' => '087761317159',
-                'booking_notification_email' => 'bookings@baliridetour@gmail.com',
-                'billing_email' => 'finance@baliridetour@gmail.com',
+                'booking_notification_email' => 'bookings@baliridetours.com',
+                'billing_email' => 'finance@baliridetours.com',
                 'bank_provider' => 'BCA',
                 'bank_account_name' => 'PT Bali Ride Tours',
                 'bank_account_number' => '5670660961',
@@ -116,12 +116,12 @@ class SampleOperatorCatalogSeeder extends Seeder
             ]
         );
 
-        // 4. Create Reusable Inventory Products with rich dummy imagery
+        // 4. Create Reusable Single Activities with rich dummy imagery
         $prod1 = Product::updateOrCreate(
-            ['operator_id' => $operator->id, 'name' => 'Speedboat Seat (Sanur ⇄ Nusa Penida Express)'],
+            ['operator_id' => $operator->id, 'name' => 'Speedboat Express Transfer (Sanur ⇄ Nusa Penida)'],
             [
                 'slug' => 'speedboat-seat-express',
-                'category' => 'Transport',
+                'category' => 'Day Transport',
                 'location' => 'Sanur Harbour, Bali',
                 'capacity_per_day' => 45,
                 'sellable_standalone' => true,
@@ -138,30 +138,30 @@ class SampleOperatorCatalogSeeder extends Seeder
         );
 
         $prod2 = Product::updateOrCreate(
-            ['operator_id' => $operator->id, 'name' => 'Pro Snorkeling Gear & Lifevest Set'],
+            ['operator_id' => $operator->id, 'name' => 'Guided Reef Snorkeling Session'],
             [
-                'slug' => 'pro-snorkeling-gear-set',
-                'category' => 'Rental',
+                'slug' => 'guided-reef-snorkeling-session',
+                'category' => 'Activity Session',
                 'location' => 'Toyapakeh, Nusa Penida',
                 'capacity_per_day' => 30,
                 'sellable_standalone' => true,
-                'price' => 75000.00,
+                'price' => 175000.00,
                 'cover_photo' => 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80',
                 'gallery' => [
                     'https://images.unsplash.com/photo-1682687220063-4742bd7fd538?w=800&auto=format&fit=crop&q=80',
                 ],
-                'description' => 'High-grade anti-fog tempered glass mask, dry-top silicone snorkel, adjustable open-heel fins, and high-buoyancy lifevest.',
-                'inclusions' => ['Sanitized mask & snorkel', 'Fins (Sizes 36-46 available)', 'Coast guard certified life jacket'],
-                'exclusions' => ['Loss or damage deposit'],
+                'description' => 'Guided snorkeling tour with anti-fog mask, snorkel, open-heel fins, and high-buoyancy lifevest supervised by a local guide.',
+                'inclusions' => ['Sanitized mask & snorkel', 'Fins (Sizes 36-46 available)', 'Coast guard certified life jacket', 'Guided safety briefing'],
+                'exclusions' => ['Towel rental'],
                 'status' => ListingStatus::Published,
             ]
         );
 
         $prod3 = Product::updateOrCreate(
-            ['operator_id' => $operator->id, 'name' => 'Underwater 4K Action Camera Rental'],
+            ['operator_id' => $operator->id, 'name' => 'GoPro Underwater Photo & Video Service'],
             [
                 'slug' => 'underwater-action-camera',
-                'category' => 'Equipment',
+                'category' => 'Add-on Service',
                 'location' => 'Toyapakeh, Nusa Penida',
                 'capacity_per_day' => 12,
                 'sellable_standalone' => true,
@@ -170,25 +170,25 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'gallery' => [
                     'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80',
                 ],
-                'description' => 'GoPro Hero 11 with waterproof dive housing (up to 40m), floating grip handle, and high-speed MicroSD card.',
-                'inclusions' => ['GoPro Hero 11 camera', 'Waterproof dive housing', 'Floating grip + lanyard', 'MicroSD 64GB card (kept by guest)'],
-                'exclusions' => ['Extra spare batteries'],
+                'description' => 'Dedicated underwater GoPro photography service capturing your marine moments in crisp 4K resolution.',
+                'inclusions' => ['GoPro 4K photo & video session', 'Floating grip + lanyard', 'MicroSD 64GB card (kept by guest)'],
+                'exclusions' => ['Video editing'],
                 'status' => ListingStatus::Published,
             ]
         );
 
         $prod4 = Product::updateOrCreate(
-            ['operator_id' => $operator->id, 'name' => 'Certified Local Marine Guide & Spotter'],
+            ['operator_id' => $operator->id, 'name' => 'Certified Local Tour Guide & Spotter'],
             [
                 'slug' => 'certified-marine-guide',
-                'category' => 'Service',
+                'category' => 'Guide Hire',
                 'location' => 'Manta Bay & Crystal Bay',
                 'capacity_per_day' => 10,
                 'sellable_standalone' => true,
                 'price' => 250000.00,
                 'cover_photo' => 'https://images.unsplash.com/photo-1544644181-1484b3fdfc62?w=800&auto=format&fit=crop&q=80',
-                'description' => 'Experienced PADI certified local divemaster and marine spotter specializing in Manta Ray encounters and ocean safety.',
-                'inclusions' => ['Certified local guide', 'Ocean safety supervision', 'Underwater photography assistance'],
+                'description' => 'Experienced certified local guide and spotter specializing in Manta Ray encounters, island navigation, and guest safety.',
+                'inclusions' => ['Certified local guide', 'Ocean safety supervision', 'Photography assistance'],
                 'exclusions' => ['Guide gratuity/tip'],
                 'status' => ListingStatus::Published,
             ]
@@ -198,7 +198,7 @@ class SampleOperatorCatalogSeeder extends Seeder
             ['operator_id' => $operator->id, 'name' => 'Private Speedboat Charter (Full Day)'],
             [
                 'slug' => 'private-speedboat-charter',
-                'category' => 'Charter',
+                'category' => 'Day Tour / Trip',
                 'location' => 'Nusa Penida & Lembongan',
                 'capacity_per_day' => 3,
                 'sellable_standalone' => true,
@@ -215,16 +215,16 @@ class SampleOperatorCatalogSeeder extends Seeder
         );
 
         $prod6 = Product::updateOrCreate(
-            ['operator_id' => $operator->id, 'name' => 'Island Private SUV & Driver (Full Day)'],
+            ['operator_id' => $operator->id, 'name' => 'Island Private Car & Driver Day Tour'],
             [
                 'slug' => 'private-island-suv-driver',
-                'category' => 'Transport',
+                'category' => 'Day Transport',
                 'location' => 'Nusa Penida Island',
                 'capacity_per_day' => 15,
                 'sellable_standalone' => true,
                 'price' => 650000.00,
                 'cover_photo' => 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop&q=80',
-                'description' => 'Air-conditioned 6-seater private SUV with friendly English-speaking local driver-guide for 10 hours of customized sightseeing.',
+                'description' => 'Air-conditioned 6-seater private vehicle with friendly English-speaking local driver-guide for 10 hours of customized sightseeing.',
                 'inclusions' => ['Private vehicle for 10 hours', 'English-speaking driver guide', 'All island fuel & parking fees', 'Bottled mineral water'],
                 'exclusions' => ['Destination entry tickets', 'Lunch expenses'],
                 'status' => ListingStatus::Published,
@@ -232,18 +232,18 @@ class SampleOperatorCatalogSeeder extends Seeder
         );
 
         $prod7 = Product::updateOrCreate(
-            ['operator_id' => $operator->id, 'name' => 'Stand-Up Paddleboard & Clear Kayak Rental'],
+            ['operator_id' => $operator->id, 'name' => 'Guided Stand-Up Paddleboard & Clear Kayak Session'],
             [
-                'slug' => 'paddleboard-clear-kayak-rental',
-                'category' => 'Rental',
+                'slug' => 'paddleboard-clear-kayak-session',
+                'category' => 'Activity Session',
                 'location' => 'Crystal Bay, Nusa Penida',
                 'capacity_per_day' => 20,
                 'sellable_standalone' => true,
-                'price' => 125000.00,
+                'price' => 175000.00,
                 'cover_photo' => 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=800&auto=format&fit=crop&q=80',
-                'description' => 'Premium transparent ocean kayak and high-stability stand-up paddleboard with safety leash and lifevest for 2 hours.',
-                'inclusions' => ['Transparent kayak or SUP board', 'Carbon paddle', 'Coiled ankle leash', 'US Coast Guard certified life jacket'],
-                'exclusions' => ['Instructional coaching lesson'],
+                'description' => '2-hour guided ocean session with transparent kayak and high-stability stand-up paddleboard with safety leash and lifevest.',
+                'inclusions' => ['Transparent kayak or SUP board', 'Carbon paddle', 'Coiled ankle leash', 'US Coast Guard certified life jacket', 'Safety instructor'],
+                'exclusions' => ['Personal photography'],
                 'status' => ListingStatus::Published,
             ]
         );
@@ -307,7 +307,7 @@ class SampleOperatorCatalogSeeder extends Seeder
                     'Full snorkeling gear for all guests',
                     'Chilled tropical fruit platter & coconut water',
                     'Bluetooth premium sound system onboard',
-                    'GoPro underwater action camera rental included',
+                    'GoPro underwater 4K photo & video service included',
                 ],
                 'exclusions' => [
                     'Personal alcoholic beverages (BYO allowed at no corkage fee)',

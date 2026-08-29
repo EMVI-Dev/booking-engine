@@ -117,8 +117,10 @@ new class extends Component {
 
                 // Check availability blocks for this product or operator-wide
                 $isBlocked = $blocks->contains(function ($b) use ($product, $dateStr) {
-                    $inRange = $b->date_start <= $dateStr && $b->date_end >= $dateStr;
-                    $matchesScope = $b->product_id === null || $b->product_id === $product->id;
+                    $start = $b->date_start instanceof Carbon ? $b->date_start->toDateString() : (string) $b->date_start;
+                    $end = $b->date_end instanceof Carbon ? $b->date_end->toDateString() : (string) $b->date_end;
+                    $inRange = $start <= $dateStr && $end >= $dateStr;
+                    $matchesScope = ($b->product_id === null && $b->package_id === null) || $b->product_id === $product->id;
 
                     return $inRange && $matchesScope;
                 });
@@ -153,7 +155,7 @@ new class extends Component {
             </span>
             <div>
                 <h3 class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
-                    {{ __('Fleet & Experience Timeline') }}
+                    {{ __('Resource & Experience Timeline') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
                     {{ \Illuminate\Support\Carbon::parse($timelineWeekStart)->format('M d') }} - {{ \Illuminate\Support\Carbon::parse($timelineWeekStart)->addDays(6)->format('M d, Y') }}
@@ -218,7 +220,7 @@ new class extends Component {
                             <td class="py-4 px-4 font-bold text-slate-900 dark:text-white">
                                 <div class="flex items-center gap-2.5">
                                     <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs shrink-0">
-                                        <i class="fa-solid fa-sailboat"></i>
+                                        <i class="fa-solid fa-layer-group"></i>
                                     </span>
                                     <div class="min-w-0">
                                         <p class="truncate text-xs font-extrabold text-slate-900 dark:text-white leading-tight">

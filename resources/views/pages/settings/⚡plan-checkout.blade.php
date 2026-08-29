@@ -25,6 +25,13 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
     public bool $auto_renew_consent = false;
     public ?string $error_message = null;
 
+    // Platform Subscription Promo Code
+    public string $couponCode = '';
+    public ?string $appliedCouponCode = null;
+    public float $discountAmount = 0.0;
+    public string $couponMessage = '';
+    public bool $couponValid = false;
+
     /**
      * Mount checkout component and verify ownership.
      */
@@ -48,6 +55,89 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             : 'cc';
 
         $this->card_holder = auth()->user()->name;
+
+        if (! empty($payment->breakdown['coupon_code'])) {
+            $this->appliedCouponCode = (string) $payment->breakdown['coupon_code'];
+            $this->discountAmount = (float) ($payment->breakdown['discount_amount'] ?? 0);
+            $this->couponValid = true;
+        }
+    }
+
+    /**
+     * Apply platform subscription promo code.
+     */
+    public function applyCoupon(): void
+    {
+        $cleanCode = strtoupper(trim($this->couponCode));
+
+        if (empty($cleanCode)) {
+            $this->couponMessage = __('Please enter a promo code.');
+            $this->couponValid = false;
+            return;
+        }
+
+        // Platform subscription coupons have operator_id = null
+        $coupon = \App\Models\PlatformCoupon::whereNull('operator_id')
+            ->where('code', $cleanCode)
+            ->first();
+
+        if (! $coupon) {
+            $this->couponMessage = __('Invalid subscription promo code.');
+            $this->couponValid = false;
+            $this->removeCoupon();
+            return;
+        }
+
+        $gross = (float) $this->payment->gross_amount;
+        $result = $coupon->validateFor($gross);
+
+        if (! $result['valid'] || ($result['discount'] ?? 0) <= 0) {
+            $this->couponMessage = $result['reason'] ?? __('Promo code cannot be applied.');
+            $this->couponValid = false;
+            $this->removeCoupon();
+            return;
+        }
+
+        $this->appliedCouponCode = $coupon->code;
+        $this->discountAmount = (float) $result['discount'];
+        $this->couponValid = true;
+        $this->couponMessage = __('Code :code applied! Saved Rp :amount', [
+            'code' => $coupon->code,
+            'amount' => number_format($this->discountAmount, 0, ',', '.'),
+        ]);
+
+        $unusedCredit = (float) ($this->payment->breakdown['unused_credit'] ?? 0);
+        $newNet = max(0, $gross - $unusedCredit - $this->discountAmount);
+        $breakdown = $this->payment->breakdown ?? [];
+        $breakdown['discount_amount'] = $this->discountAmount;
+        $breakdown['coupon_code'] = $this->appliedCouponCode;
+
+        $this->payment->update([
+            'net_amount_paid' => $newNet,
+            'breakdown' => $breakdown,
+        ]);
+    }
+
+    /**
+     * Remove applied subscription promo code.
+     */
+    public function removeCoupon(): void
+    {
+        $this->appliedCouponCode = null;
+        $this->discountAmount = 0.0;
+        $this->couponCode = '';
+        $this->couponValid = false;
+
+        $gross = (float) $this->payment->gross_amount;
+        $unusedCredit = (float) ($this->payment->breakdown['unused_credit'] ?? 0);
+        $newNet = max(0, $gross - $unusedCredit);
+        $breakdown = $this->payment->breakdown ?? [];
+        unset($breakdown['discount_amount'], $breakdown['coupon_code']);
+
+        $this->payment->update([
+            'net_amount_paid' => $newNet,
+            'breakdown' => $breakdown,
+        ]);
     }
 
     /**
@@ -79,6 +169,13 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
         try {
             $gatewayRef = 'CC-AUTH-'.strtoupper(bin2hex(random_bytes(4)));
 
+            if ($this->appliedCouponCode) {
+                \App\Models\PlatformCoupon::whereNull('operator_id')
+                    ->where('code', $this->appliedCouponCode)
+                    ->first()
+                    ?->incrementUsage();
+            }
+
             $prorationService->completePendingPayment(
                 payment: $this->payment,
                 gatewayRef: $gatewayRef,
@@ -107,6 +204,13 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
 
         try {
             $gatewayRef = strtoupper($this->payment_method).'-SIM-'.strtoupper(bin2hex(random_bytes(4)));
+
+            if ($this->appliedCouponCode) {
+                \App\Models\PlatformCoupon::whereNull('operator_id')
+                    ->where('code', $this->appliedCouponCode)
+                    ->first()
+                    ?->incrementUsage();
+            }
 
             $prorationService->completePendingPayment(
                 payment: $this->payment,
@@ -426,6 +530,83 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
                         <span class="font-mono font-bold text-slate-900 dark:text-white">
                             + Rp {{ number_format((float) $payment->gross_amount, 0, ',', '.') }}
                         </span>
+                    </div>
+
+                    @if ($discountAmount > 0)
+                        <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                            <span class="flex items-center gap-1.5 font-bold">
+                                <i class="fa-solid fa-tag text-[10px]"></i>
+                                <span>{{ __('Subscription Promo (:code)', ['code' => $appliedCouponCode]) }}</span>
+                            </span>
+                            <span class="font-mono font-bold">
+                                - Rp {{ number_format($discountAmount, 0, ',', '.') }}
+                            </span>
+                        </div>
+                    @endif
+
+                    <!-- Subscription Promo Code Input Accordion -->
+                    <div class="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-1.5" x-data="{ open: @json($appliedCouponCode || $couponMessage ? true : false) }">
+                        <div class="flex items-center justify-between">
+                            <button
+                                type="button"
+                                @click="open = !open"
+                                class="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1.5 cursor-pointer"
+                            >
+                                <i class="fa-solid fa-ticket text-[11px]"></i>
+                                <span>{{ __('Have a platform promo code?') }}</span>
+                                <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                            </button>
+                            @if ($appliedCouponCode)
+                                <span class="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/60 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
+                                    {{ $appliedCouponCode }}
+                                </span>
+                            @endif
+                        </div>
+
+                        <div x-show="open" x-cloak class="space-y-1.5 pt-1">
+                            @if (! $appliedCouponCode)
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        wire:model="couponCode"
+                                        wire:keydown.enter.prevent="applyCoupon"
+                                        placeholder="{{ __('ENTER PROMO CODE') }}"
+                                        class="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono uppercase font-black text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                    />
+                                    <button
+                                        type="button"
+                                        wire:click="applyCoupon"
+                                        wire:loading.attr="disabled"
+                                        wire:target="applyCoupon"
+                                        class="h-9 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold transition shadow-xs cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                                    >
+                                        <span wire:loading.remove wire:target="applyCoupon">{{ __('Apply') }}</span>
+                                        <span wire:loading wire:target="applyCoupon"><i class="fa-solid fa-spinner fa-spin text-xs"></i></span>
+                                    </button>
+                                </div>
+                            @else
+                                <div class="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs">
+                                    <div class="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+                                        <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400"></i>
+                                        <span>{{ $appliedCouponCode }} (-Rp {{ number_format($discountAmount, 0, ',', '.') }})</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        wire:click="removeCoupon"
+                                        class="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold cursor-pointer"
+                                    >
+                                        {{ __('Remove') }}
+                                    </button>
+                                </div>
+                            @endif
+
+                            @if ($couponMessage && ! $appliedCouponCode)
+                                <p class="text-[11px] font-semibold flex items-center gap-1 {{ $couponValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                                    <i class="fa-solid {{ $couponValid ? 'fa-circle-check' : 'fa-circle-exclamation' }} text-[10px]"></i>
+                                    <span>{{ $couponMessage }}</span>
+                                </p>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">

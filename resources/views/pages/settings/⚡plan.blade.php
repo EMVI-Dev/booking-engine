@@ -25,6 +25,13 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
     public bool $auto_renew_consent = false;
     public bool $is_processing = false;
 
+    // Platform Subscription Promo Code
+    public string $couponCode = '';
+    public ?string $appliedCouponCode = null;
+    public float $discountAmount = 0.0;
+    public string $couponMessage = '';
+    public bool $couponValid = false;
+
     /**
      * Mount plan settings component.
      */
@@ -37,6 +44,69 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
             $this->billing_interval = (string) ($operator->subscription_interval ?: 'monthly');
             $this->auto_renew = (bool) ($operator->subscription_auto_renew ?? true);
         }
+    }
+
+    /**
+     * Apply platform subscription promo code in upgrade modal.
+     */
+    public function applyCoupon(SubscriptionProrationService $prorationService): void
+    {
+        $cleanCode = strtoupper(trim($this->couponCode));
+
+        if (empty($cleanCode)) {
+            $this->couponMessage = __('Please enter a promo code.');
+            $this->couponValid = false;
+            return;
+        }
+
+        // Platform subscription coupons have operator_id = null
+        $coupon = \App\Models\PlatformCoupon::whereNull('operator_id')
+            ->where('code', $cleanCode)
+            ->first();
+
+        if (! $coupon) {
+            $this->couponMessage = __('Invalid subscription promo code.');
+            $this->couponValid = false;
+            $this->removeCoupon();
+            return;
+        }
+
+        $operator = auth()->user()?->currentOperator();
+        $targetPlan = $this->target_plan_id ? Plan::find($this->target_plan_id) : null;
+
+        if (! $operator || ! $targetPlan) {
+            return;
+        }
+
+        $proration = $prorationService->calculateSwitch($operator, $targetPlan, $this->billing_interval);
+        $gross = (float) $proration['prorated_target_cost'];
+        $result = $coupon->validateFor($gross);
+
+        if (! $result['valid'] || ($result['discount'] ?? 0) <= 0) {
+            $this->couponMessage = $result['reason'] ?? __('Promo code cannot be applied.');
+            $this->couponValid = false;
+            $this->removeCoupon();
+            return;
+        }
+
+        $this->appliedCouponCode = $coupon->code;
+        $this->discountAmount = (float) $result['discount'];
+        $this->couponValid = true;
+        $this->couponMessage = __('Code :code applied! Saved Rp :amount', [
+            'code' => $coupon->code,
+            'amount' => number_format($this->discountAmount, 0, ',', '.'),
+        ]);
+    }
+
+    /**
+     * Remove applied subscription promo code.
+     */
+    public function removeCoupon(): void
+    {
+        $this->appliedCouponCode = null;
+        $this->discountAmount = 0.0;
+        $this->couponCode = '';
+        $this->couponValid = false;
     }
 
     /**
@@ -121,6 +191,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
         $this->target_plan_id = $planId;
         $this->auto_renew_consent = false;
+        $this->removeCoupon();
+        $this->couponMessage = '';
         $this->resetErrorBag();
         $this->show_switch_modal = true;
     }
@@ -133,6 +205,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         $this->show_switch_modal = false;
         $this->target_plan_id = null;
         $this->auto_renew_consent = false;
+        $this->removeCoupon();
+        $this->couponMessage = '';
         $this->resetErrorBag();
         $this->is_processing = false;
     }
@@ -166,7 +240,9 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 targetPlan: $targetPlan,
                 interval: $this->billing_interval,
                 autoRenew: $this->auto_renew,
-                gateway: $this->payment_method
+                gateway: $this->payment_method,
+                couponCode: $this->appliedCouponCode,
+                discountAmount: $this->discountAmount
             );
 
             $this->closeSwitchModal();
@@ -453,19 +529,17 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                 <!-- Single Upgrade / Switch CTA Button -->
                                 <div class="pt-2">
                                     @if ($isCurrent)
-                                        <button type="button" disabled class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs cursor-default flex items-center justify-center gap-1 select-none">
-                                            <i class="fa-solid fa-check text-emerald-500 text-xs"></i>
+                                        <x-button size="xs" variant="secondary" disabled class="w-full opacity-60 cursor-default" icon="<i class='fa-solid fa-check text-emerald-500 text-xs'></i>">
                                             <span>{{ __('Current Plan') }}</span>
-                                        </button>
+                                        </x-button>
                                     @elseif ($isUpgradeOption)
-                                        <button type="button" wire:click="initiatePlanSwitch('{{ $plan->id }}')" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                                            <i class="fa-solid fa-arrow-up text-amber-300 text-xs"></i>
+                                        <x-button size="xs" variant="primary" wire:click="initiatePlanSwitch('{{ $plan->id }}')" class="w-full shadow-xs" icon="<i class='fa-solid fa-arrow-up text-amber-300 text-xs'></i>">
                                             <span>{{ __('Upgrade') }}</span>
-                                        </button>
+                                        </x-button>
                                     @else
-                                        <button type="button" wire:click="initiatePlanSwitch('{{ $plan->id }}')" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer">
+                                        <x-button size="xs" variant="secondary" wire:click="initiatePlanSwitch('{{ $plan->id }}')" class="w-full">
                                             <span>{{ __('Switch Plan') }}</span>
-                                        </button>
+                                        </x-button>
                                     @endif
                                 </div>
                             </div>
@@ -528,7 +602,19 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                     @endforeach
                 </tr>
                 <tr>
-                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Advanced Fleet Matrix Calendar') }}</td>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Guest Coupons & Promo Code Engine') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('promotional_coupons'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Advanced Resource Matrix Calendar') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('advanced_calendar'))
@@ -750,13 +836,93 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                             </span>
                         </div>
 
+                        @if ($discountAmount > 0)
+                            <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                                <span class="flex items-center gap-1.5 font-bold">
+                                    <i class="fa-solid fa-tag text-[10px]"></i>
+                                    <span>{{ __('Subscription Promo (:code)', ['code' => $appliedCouponCode]) }}</span>
+                                </span>
+                                <span class="font-mono font-bold">
+                                    - Rp {{ number_format($discountAmount, 0, ',', '.') }}
+                                </span>
+                            </div>
+                        @endif
+
+                        <!-- Subscription Promo Code Input Accordion in Modal -->
+                        <div class="pt-2 border-t border-slate-200/80 dark:border-zinc-700 space-y-1.5" x-data="{ open: @json($appliedCouponCode || $couponMessage ? true : false) }">
+                            <div class="flex items-center justify-between">
+                                <button
+                                    type="button"
+                                    @click="open = !open"
+                                    class="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    <i class="fa-solid fa-ticket text-[11px]"></i>
+                                    <span>{{ __('Have a platform promo code?') }}</span>
+                                    <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                                </button>
+                                @if ($appliedCouponCode)
+                                    <span class="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/60 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
+                                        {{ $appliedCouponCode }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div x-show="open" x-cloak class="space-y-1.5 pt-1">
+                                @if (! $appliedCouponCode)
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            wire:model="couponCode"
+                                            wire:keydown.enter.prevent="applyCoupon"
+                                            placeholder="{{ __('ENTER PROMO CODE') }}"
+                                            class="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono uppercase font-black text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                        />
+                                        <button
+                                            type="button"
+                                            wire:click="applyCoupon"
+                                            wire:loading.attr="disabled"
+                                            wire:target="applyCoupon"
+                                            class="h-9 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold transition shadow-xs cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                                        >
+                                            <span wire:loading.remove wire:target="applyCoupon">{{ __('Apply') }}</span>
+                                            <span wire:loading wire:target="applyCoupon"><i class="fa-solid fa-spinner fa-spin text-xs"></i></span>
+                                        </button>
+                                    </div>
+                                @else
+                                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs">
+                                        <div class="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+                                            <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400"></i>
+                                            <span>{{ $appliedCouponCode }} (-Rp {{ number_format($discountAmount, 0, ',', '.') }})</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            wire:click="removeCoupon"
+                                            class="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold cursor-pointer"
+                                        >
+                                            {{ __('Remove') }}
+                                        </button>
+                                    </div>
+                                @endif
+
+                                @if ($couponMessage && ! $appliedCouponCode)
+                                    <p class="text-[11px] font-semibold flex items-center gap-1 {{ $couponValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                                        <i class="fa-solid {{ $couponValid ? 'fa-circle-check' : 'fa-circle-exclamation' }} text-[10px]"></i>
+                                        <span>{{ $couponMessage }}</span>
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+
+                        @php
+                            $effectiveNetDue = max(0, (float) $prorationData['net_amount_due'] - $discountAmount);
+                        @endphp
                         <div class="pt-2.5 border-t border-slate-200 dark:border-zinc-700 flex items-center justify-between">
                             <div>
                                 <span class="font-extrabold text-slate-900 dark:text-white text-sm block">{{ __('Net Amount Due Today') }}</span>
                                 <span class="text-[10px] text-slate-400">{{ __('Instant activation with immediate feature unlock') }}</span>
                             </div>
                             <span class="text-xl font-black font-mono text-indigo-600 dark:text-indigo-400">
-                                Rp {{ number_format($prorationData['net_amount_due'], 0, ',', '.') }}
+                                Rp {{ number_format($effectiveNetDue, 0, ',', '.') }}
                             </span>
                         </div>
                     </div>
@@ -887,33 +1053,38 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
                 <!-- Modal Action Buttons -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
-                    <button
+                    <x-button
                         type="button"
+                        variant="secondary"
                         wire:click="closeSwitchModal"
-                        class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                        class="text-xs font-bold"
                     >
                         {{ __('Cancel') }}
-                    </button>
+                    </x-button>
 
-                    <button
+                    <x-button
                         type="button"
+                        variant="primary"
                         wire:click="confirmPlanSwitch"
                         wire:loading.attr="disabled"
-                        class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                        class="text-xs font-extrabold shadow-md bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800"
                     >
                         <span wire:loading.remove>
                             @if ($prorationData['is_upgrade'])
+                                @php
+                                    $effectiveNet = max(0, (float) $prorationData['net_amount_due'] - $discountAmount);
+                                @endphp
                                 <i class="fa-solid fa-lock mr-1 text-xs"></i>
-                                {{ __('Proceed to Payment (Rp :amount)', ['amount' => number_format($prorationData['net_amount_due'], 0, ',', '.')]) }}
+                                {{ $effectiveNet <= 0 ? __('Activate Plan Instantly (100% Discount)') : __('Proceed to Payment (Rp :amount)', ['amount' => number_format($effectiveNet, 0, ',', '.')]) }}
                             @else
                                 {{ $downgrade_mode === 'end_of_cycle' ? __('Confirm Scheduled Downgrade') : __('Confirm Immediate Downgrade') }}
                             @endif
                         </span>
-                        <span wire:loading class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
-                            <span>{{ __('Processing...') }}</span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            {{ __('Processing...') }}
                         </span>
-                    </button>
+                    </x-button>
                 </div>
             </div>
         </div>
@@ -926,10 +1097,10 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
             <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity" wire:click="closeCancelModal"></div>
 
             <!-- Modal Content Card -->
-            <div class="relative w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl overflow-hidden p-6 sm:p-7 space-y-5 z-10">
-                <div class="flex items-center gap-3.5">
-                    <span class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xl">
-                        <i class="fa-solid fa-shield-halved"></i>
+            <div class="relative w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl overflow-hidden p-6 sm:p-7 space-y-4 z-10">
+                <div class="flex items-center gap-3">
+                    <span class="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-lg">
+                        <i class="fa-solid fa-arrow-rotate-left"></i>
                     </span>
                     <div>
                         <h3 class="text-lg font-black text-slate-900 dark:text-white">
@@ -941,11 +1112,10 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                     </div>
                 </div>
 
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 text-xs text-slate-600 dark:text-slate-300 leading-relaxed space-y-2">
-                    <p>
-                        {{ __('By cancelling the scheduled downgrade, your account will remain on :plan and will renew automatically at the end of your billing cycle (:date).', [
-                            'plan' => $currentPlan->name,
-                            'date' => $operator->plan_expires_at ? Carbon::parse($operator->plan_expires_at)->format('d M Y') : 'End of period'
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 space-y-2">
+                    <p class="text-xs text-slate-700 dark:text-slate-300 font-semibold leading-relaxed">
+                        {{ __('Your pending downgrade will be cancelled immediately. Your subscription will remain on the :plan tier.', [
+                            'plan' => $currentPlan->name
                         ]) }}
                     </p>
                     <p class="text-[11px] text-slate-500 dark:text-slate-400">
@@ -954,22 +1124,24 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </div>
 
                 <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
-                    <button
+                    <x-button
                         type="button"
+                        variant="secondary"
                         wire:click="closeCancelModal"
-                        class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                        class="text-xs font-bold"
                     >
                         {{ __('No, Keep Downgrade') }}
-                    </button>
+                    </x-button>
 
-                    <button
+                    <x-button
                         type="button"
+                        variant="primary"
                         wire:click="confirmCancelScheduledDowngrade"
-                        class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                        class="text-xs font-extrabold shadow-md bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800"
                     >
-                        <i class="fa-solid fa-check text-xs"></i>
+                        <i class='fa-solid fa-check text-xs mr-1.5'></i>
                         <span>{{ __('Yes, Keep :plan', ['plan' => $currentPlan->name]) }}</span>
-                    </button>
+                    </x-button>
                 </div>
             </div>
         </div>
@@ -1030,22 +1202,24 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 @endif
 
                 <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
-                    <button
+                    <x-button
                         type="button"
+                        variant="secondary"
                         wire:click="closeAutoRenewModal"
-                        class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                        class="text-xs font-bold"
                     >
                         {{ __('Cancel') }}
-                    </button>
+                    </x-button>
 
-                    <button
+                    <x-button
                         type="button"
+                        variant="primary"
                         wire:click="confirmToggleAutoRenew"
-                        class="px-5 py-2.5 rounded-xl {{ $target_auto_renew_state ? 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800' : 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800' }} text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                        class="text-xs font-extrabold shadow-md {{ $target_auto_renew_state ? 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800' : 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800' }}"
                     >
-                        <i class="fa-solid fa-check text-xs"></i>
+                        <i class='fa-solid fa-check text-xs mr-1.5'></i>
                         <span>{{ $target_auto_renew_state ? __('Confirm & Enable Auto-Renew') : __('Turn Off Auto-Renew') }}</span>
-                    </button>
+                    </x-button>
                 </div>
             </div>
         </div>

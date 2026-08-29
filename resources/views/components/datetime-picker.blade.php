@@ -165,6 +165,23 @@
             this.currentMonth = now.getMonth();
             this.updateValue();
             this.open = false;
+        },
+        placement: 'bottom',
+        togglePicker() {
+            if ({{ $disabled ? 'true' : 'false' }}) return;
+            this.open = !this.open;
+            if (this.open) {
+                this.$nextTick(() => {
+                    const rect = this.$el.getBoundingClientRect();
+                    const popoverHeight = 360;
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    if (spaceBelow < popoverHeight && rect.top > popoverHeight) {
+                        this.placement = 'top';
+                    } else {
+                        this.placement = 'bottom';
+                    }
+                });
+            }
         }
     }"
     x-on:click.outside="open = false"
@@ -174,7 +191,7 @@
     <!-- Trigger Button -->
     <button
         type="button"
-        x-on:click="if (!{{ $disabled ? 'true' : 'false' }}) { open = !open; if (open) { $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }); } }"
+        x-on:click="togglePicker()"
         {{ $disabled ? 'disabled' : '' }}
         {{ $attributes->except(['wire:model', 'min', 'max'])->merge(['class' => $classes . ' px-3.5 flex items-center justify-between gap-2 text-left cursor-pointer select-none']) }}
         :class="{ 'ring-2 ring-purple-500/20 border-purple-500 dark:border-purple-400': open }"
@@ -200,7 +217,8 @@
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
         x-transition:leave-end="opacity-0 translate-y-1 scale-98"
-        class="absolute right-0 z-50 mt-1.5 w-72 sm:w-80 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-4 space-y-3 animate-fade-in"
+        :class="placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'"
+        class="absolute right-0 z-50 w-72 sm:w-80 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-4 space-y-3 animate-fade-in"
         style="display: none;"
     >
         <!-- Calendar Month Navigation Header -->

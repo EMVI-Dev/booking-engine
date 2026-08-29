@@ -3,6 +3,7 @@
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\Plan;
+use App\Models\PlatformCoupon;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
 use App\Services\SubscriptionProrationService;
@@ -229,4 +230,96 @@ test('operator can view billing invoices page, view receipts, and update billing
     expect($this->operator->billing_email)->toBe('finance@testtravel.com')
         ->and($this->operator->settings['legal_name'])->toBe('PT Test Travel Nusantara')
         ->and($this->operator->settings['tax_id'])->toBe('01.234.567.8-901.000');
+});
+
+test('operator can apply platform subscription coupon during checkout to receive discount', function () {
+    $this->actingAs($this->user);
+
+    PlatformCoupon::create([
+        'code' => 'PLATFORM50',
+        'operator_id' => null, // Platform Master Coupon
+        'discount_type' => 'percentage',
+        'discount_value' => 50.0,
+        'is_active' => true,
+    ]);
+
+    $payment = SubscriptionPayment::create([
+        'operator_id' => $this->operator->id,
+        'plan_id' => $this->proPlan->id,
+        'invoice_number' => 'INV-SUB-DISC-TEST',
+        'type' => 'upgrade',
+        'billing_interval' => 'monthly',
+        'gross_amount' => 300000,
+        'prorated_credit' => 0,
+        'net_amount_paid' => 300000,
+        'status' => 'pending',
+        'gateway' => 'credit_card',
+    ]);
+
+    Livewire::test('pages::settings.plan-checkout', ['payment' => $payment])
+        ->set('couponCode', 'PLATFORM50')
+        ->call('applyCoupon')
+        ->assertSet('appliedCouponCode', 'PLATFORM50')
+        ->assertSet('discountAmount', 150000.0)
+        ->assertSet('couponValid', true);
+
+    $payment->refresh();
+    expect((float) $payment->net_amount_paid)->toBe(150000.0)
+        ->and((float) $payment->breakdown['discount_amount'])->toBe(150000.0);
+});
+
+test('operator can apply platform subscription coupon directly in plan upgrade modal', function () {
+    $this->actingAs($this->user);
+
+    PlatformCoupon::create([
+        'code' => 'UPGRADE25',
+        'operator_id' => null, // Platform Master Coupon
+        'discount_type' => 'percentage',
+        'discount_value' => 25.0,
+        'is_active' => true,
+    ]);
+
+    Livewire::test('pages::settings.plan')
+        ->call('initiatePlanSwitch', $this->proPlan->id)
+        ->assertSet('show_switch_modal', true)
+        ->set('couponCode', 'UPGRADE25')
+        ->call('applyCoupon')
+        ->assertSet('appliedCouponCode', 'UPGRADE25')
+        ->assertSet('couponValid', true)
+        ->assertSee('UPGRADE25')
+        ->set('auto_renew_consent', true)
+        ->call('confirmPlanSwitch')
+        ->assertHasNoErrors();
+});
+
+test('operator invoice receipt displays coupon promo code discount breakdown', function () {
+    $this->actingAs($this->user);
+
+    $payment = SubscriptionPayment::create([
+        'operator_id' => $this->operator->id,
+        'plan_id' => $this->proPlan->id,
+        'invoice_number' => 'INV-SUB-PROMO-100',
+        'type' => 'upgrade',
+        'billing_interval' => 'monthly',
+        'gross_amount' => 500000,
+        'prorated_credit' => 0,
+        'net_amount_paid' => 350000,
+        'status' => 'completed',
+        'gateway' => 'credit_card',
+        'gateway_ref' => 'CC-PROMO-TEST',
+        'breakdown' => [
+            'coupon_code' => 'SAVE150',
+            'discount_amount' => 150000,
+        ],
+        'paid_at' => now(),
+    ]);
+
+    Livewire::test('pages::settings.billing')
+        ->assertSee('INV-SUB-PROMO-100')
+        ->assertSee('SAVE150')
+        ->call('viewInvoice', $payment->id)
+        ->assertSee('Official Subscription Receipt')
+        ->assertSee('Promo Code Discount (SAVE150)')
+        ->assertSee('150.000')
+        ->assertSee('350.000');
 });

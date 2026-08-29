@@ -145,7 +145,7 @@ new class extends Component {
                 </span>
                 <div>
                     <h3 class="text-lg font-black text-slate-900 dark:text-white leading-tight">
-                        {{ __('Occupancy Heatmap & Fleet Density') }}
+                        {{ __('Occupancy Heatmap & Capacity Density') }}
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
                         {{ \Illuminate\Support\Carbon::createFromDate($heatmapYear, $heatmapMonth, 1)->format('F Y') }}
@@ -192,7 +192,7 @@ new class extends Component {
                 </p>
             </div>
             <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800 space-y-1">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Monthly Avg Fleet Load') }}</span>
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Monthly Avg Capacity Load') }}</span>
                 <p class="text-xl font-black text-emerald-600 dark:text-emerald-400">
                     {{ $this->heatmapSummary['avgOccupancyRate'] }}%
                 </p>

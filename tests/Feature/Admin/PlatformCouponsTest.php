@@ -30,7 +30,7 @@ test('admin can view coupons page and create a new promo code', function () {
     Livewire::actingAs($this->admin)
         ->test('pages::admin.coupons')
         ->assertOk()
-        ->assertSee('Platform Coupons & Discount Engine')
+        ->assertSee('Platform Subscription Promo Codes')
         ->call('openCreateModal')
         ->set('code', 'TREK15')
         ->set('description', '15% Off Trekking Launch')
@@ -43,7 +43,8 @@ test('admin can view coupons page and create a new promo code', function () {
     expect(PlatformCoupon::where('code', 'TREK15')->exists())->toBeTrue();
     $coupon = PlatformCoupon::where('code', 'TREK15')->first();
     expect((float) $coupon->discount_value)->toBe(15.0)
-        ->and((float) $coupon->min_spend)->toBe(500000.0);
+        ->and((float) $coupon->min_spend)->toBe(500000.0)
+        ->and($coupon->operator_id)->toBeNull();
 });
 
 test('admin can toggle coupon active status and delete coupon', function () {
@@ -71,6 +72,7 @@ test('admin can toggle coupon active status and delete coupon', function () {
 test('guest can apply platform coupon in storefront booking box and receive discount', function () {
     PlatformCoupon::create([
         'code' => 'BALISAVE20',
+        'operator_id' => $this->operator->id,
         'discount_type' => 'percentage',
         'discount_value' => 20,
         'min_spend' => 0,
@@ -92,6 +94,7 @@ test('guest can apply platform coupon in storefront booking box and receive disc
 test('coupon rejects when minimum spend is not met', function () {
     PlatformCoupon::create([
         'code' => 'VIP500',
+        'operator_id' => $this->operator->id,
         'discount_type' => 'fixed',
         'discount_value' => 500000,
         'min_spend' => 5000000, // Requires 5M subtotal

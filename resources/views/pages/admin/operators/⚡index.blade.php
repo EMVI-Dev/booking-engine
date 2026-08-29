@@ -358,7 +358,7 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
                                     <button
                                         type="button"
                                         wire:click="manageOperator('{{ $operator->id }}')"
-                                        class="h-8 px-2.5 inline-flex items-center gap-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition cursor-pointer border border-purple-200 dark:border-purple-800/60"
+                                        class="h-8 px-2.5 inline-flex items-center gap-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition cursor-pointer border border-purple-200 dark:border-purple-800/60"
                                         title="{{ __('Open & manage this operator portal') }}"
                                     >
                                         <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
@@ -367,7 +367,7 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
 
                                     <x-dropdown position="bottom-end" width="56">
                                         <x-slot name="trigger">
-                                            <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-600 dark:text-slate-400 text-xs transition cursor-pointer">
+                                            <button type="button" class="h-8 w-8 rounded-xl inline-flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-600 dark:text-slate-400 text-xs transition cursor-pointer">
                                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                                             </button>
                                         </x-slot>

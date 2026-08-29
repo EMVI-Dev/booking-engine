@@ -249,6 +249,94 @@ class Package extends Model implements Bookable
         return $result;
     }
 
+    /**
+     * @return HasMany<AvailabilityBlock, $this>
+     */
+    public function availabilityBlocks(): HasMany
+    {
+        return $this->hasMany(AvailabilityBlock::class);
+    }
+
+    /**
+     * Check if this Package is blacked out on a specific date.
+     * (Evaluates operator-wide blocks, package-specific blocks, and underlying product blocks)
+     */
+    public function isBlackedOutOn(Carbon|string $date): bool
+    {
+        $dateStr = $date instanceof Carbon ? $date->toDateString() : Carbon::parse($date)->toDateString();
+
+        // 1. Operator-wide or package-specific blackout
+        $directBlock = AvailabilityBlock::where('operator_id', $this->operator_id)
+            ->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('product_id')->whereNull('package_id');
+                })->orWhere('package_id', $this->id);
+            })
+            ->whereDate('date_start', '<=', $dateStr)
+            ->whereDate('date_end', '>=', $dateStr)
+            ->exists();
+
+        if ($directBlock) {
+            return true;
+        }
+
+        // 2. Underlying product blackout
+        $productIds = $this->products->pluck('id')->filter()->toArray();
+        if (! empty($productIds)) {
+            $productBlock = AvailabilityBlock::where('operator_id', $this->operator_id)
+                ->whereIn('product_id', $productIds)
+                ->whereDate('date_start', '<=', $dateStr)
+                ->whereDate('date_end', '>=', $dateStr)
+                ->exists();
+
+            if ($productBlock) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get array of blacked out date strings for a given date range.
+     *
+     * @return array<string, string> Key is Y-m-d, value is blackout reason
+     */
+    public function getBlackoutDates(?Carbon $start = null, ?Carbon $end = null): array
+    {
+        $startDate = $start ?? now()->startOfDay();
+        $endDate = $end ?? now()->addYear()->endOfDay();
+
+        $productIds = $this->products()->pluck('products.id')->toArray();
+
+        $blocks = AvailabilityBlock::where('operator_id', $this->operator_id)
+            ->where(function ($q) use ($productIds) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('product_id')->whereNull('package_id');
+                })->orWhere('package_id', $this->id);
+
+                if (! empty($productIds)) {
+                    $q->orWhereIn('product_id', $productIds);
+                }
+            })
+            ->where('date_start', '<=', $endDate->toDateString())
+            ->where('date_end', '>=', $startDate->toDateString())
+            ->get();
+
+        $dates = [];
+        foreach ($blocks as $b) {
+            $cur = Carbon::parse($b->date_start)->max($startDate);
+            $last = Carbon::parse($b->date_end)->min($endDate);
+
+            while ($cur->lte($last)) {
+                $dates[$cur->toDateString()] = $b->reason ?: __('Blackout Date');
+                $cur->addDay();
+            }
+        }
+
+        return $dates;
+    }
+
     public function isSellable(): bool
     {
         return true;

@@ -267,6 +267,59 @@ class Product extends Model implements Bookable
         return $collection;
     }
 
+    /**
+     * Check if this Product is blacked out on a specific date.
+     * (Evaluates operator-wide blocks and product-specific blocks)
+     */
+    public function isBlackedOutOn(Carbon|string $date): bool
+    {
+        $dateStr = $date instanceof Carbon ? $date->toDateString() : Carbon::parse($date)->toDateString();
+
+        return AvailabilityBlock::where('operator_id', $this->operator_id)
+            ->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('product_id')->whereNull('package_id');
+                })->orWhere('product_id', $this->id);
+            })
+            ->whereDate('date_start', '<=', $dateStr)
+            ->whereDate('date_end', '>=', $dateStr)
+            ->exists();
+    }
+
+    /**
+     * Get array of blacked out date strings for a given date range.
+     *
+     * @return array<string, string> Key is Y-m-d, value is blackout reason
+     */
+    public function getBlackoutDates(?Carbon $start = null, ?Carbon $end = null): array
+    {
+        $startDate = $start ?? now()->startOfDay();
+        $endDate = $end ?? now()->addYear()->endOfDay();
+
+        $blocks = AvailabilityBlock::where('operator_id', $this->operator_id)
+            ->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('product_id')->whereNull('package_id');
+                })->orWhere('product_id', $this->id);
+            })
+            ->where('date_start', '<=', $endDate->toDateString())
+            ->where('date_end', '>=', $startDate->toDateString())
+            ->get();
+
+        $dates = [];
+        foreach ($blocks as $b) {
+            $cur = Carbon::parse($b->date_start)->max($startDate);
+            $last = Carbon::parse($b->date_end)->min($endDate);
+
+            while ($cur->lte($last)) {
+                $dates[$cur->toDateString()] = $b->reason ?: __('Blackout Date');
+                $cur->addDay();
+            }
+        }
+
+        return $dates;
+    }
+
     public function isSellable(): bool
     {
         return $this->sellable_standalone && $this->price !== null && (float) $this->price > 0;

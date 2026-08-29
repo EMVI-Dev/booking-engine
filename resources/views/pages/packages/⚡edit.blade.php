@@ -444,7 +444,7 @@ new #[Title('Edit Tour Package')] class extends Component {
             </div>
 
             <p class="text-xs text-slate-500 dark:text-slate-400">
-                {{ __('Select which inventory units (e.g., boat seats, snorkel gear, guide) are reserved whenever this package is booked. Capacity will be automatically synchronized.') }}
+                {{ __('Select which inventory items (e.g., activity slots, guide hire, admission passes) are reserved whenever this package is booked. Capacity will be automatically synchronized.') }}
             </p>
 
             @if ($this->availableProducts->isNotEmpty())

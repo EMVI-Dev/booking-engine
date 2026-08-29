@@ -205,12 +205,12 @@ class Operator extends Model
         return $this->logo_path ?: $this->photo;
     }
 
-    public function getLogoUrlAttribute(): ?string
+    public function getLogoUrlAttribute(): string
     {
         $path = $this->logo_path ?: $this->photo;
 
         if (! $path) {
-            return null;
+            return asset('favicon.png');
         }
 
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {

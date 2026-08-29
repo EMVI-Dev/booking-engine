@@ -166,6 +166,27 @@ new #[Title('Bookings & Reservations')] class extends Component {
         $this->linkCreatedSuccessfully = false;
     }
 
+    #[Computed]
+    public function createBookableBlackoutDates(): array
+    {
+        if (!$this->currentOperator || empty($this->createExperienceSelection)) {
+            return [];
+        }
+
+        if (str_contains($this->createExperienceSelection, ':')) {
+            [$type, $id] = explode(':', $this->createExperienceSelection, 2);
+            $bookable = $type === 'package'
+                ? $this->currentOperator->packages()->find($id)
+                : $this->currentOperator->products()->find($id);
+
+            if ($bookable && method_exists($bookable, 'getBlackoutDates')) {
+                return $bookable->getBlackoutDates();
+            }
+        }
+
+        return [];
+    }
+
     /**
      * Generate reservation, 30-min hold session, and WhatsApp payment invitation.
      */
@@ -197,6 +218,11 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
         if (!$bookable) {
             $this->addError('createBookableId', __('Please select a valid experience.'));
+            return;
+        }
+
+        if (method_exists($bookable, 'isBlackedOutOn') && $bookable->isBlackedOutOn($this->createRequestedDate)) {
+            $this->addError('createRequestedDate', __('The selected date (:date) is blocked by an active blackout block for this experience.', ['date' => $this->createRequestedDate]));
             return;
         }
 
@@ -1311,7 +1337,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         <div class="space-y-2">
                             <x-label for="agentNote" :value="__('Internal Reservation Notes')" />
                             <x-textarea id="agentNote" wire:model="agentNote" rows="3"
-                                placeholder="{{ __('Add special dietary requests, pickup instructions, boat assignments...') }}"
+                                placeholder="{{ __('Add special dietary requests, pickup instructions, guide assignments, etc...') }}"
                                 class="text-xs" />
                             <div class="flex justify-end">
                                 <x-button size="sm" variant="secondary" wire:click="saveNotes"
@@ -1492,7 +1518,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     <div>
                                         <x-label for="createRequestedDate" :value="__('Trip Date')" required />
                                         <x-date-picker id="createRequestedDate" wire:model.live="createRequestedDate"
-                                            min="{{ now()->format('Y-m-d') }}" :placeholder="__('Select date...')" :error="$errors->has('createRequestedDate')" />
+                                            min="{{ now()->format('Y-m-d') }}" :blackout-dates="$this->createBookableBlackoutDates" :placeholder="__('Select date...')" :error="$errors->has('createRequestedDate')" />
                                         <x-input-error :messages="$errors->get('createRequestedDate')" />
                                     </div>
 

@@ -248,7 +248,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
                 </div>
             </div>
             <a href="{{ route('payments.edit') }}" wire:navigate
-                class="h-8 px-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 transition shadow-xs">
+                class="h-8 px-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 transition shadow-xs">
                 <span>{{ __('Add Bank Details') }}</span>
                 <i class="fa-solid fa-arrow-right text-[10px]"></i>
             </a>

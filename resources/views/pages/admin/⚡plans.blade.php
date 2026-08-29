@@ -39,6 +39,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         'custom_subdomain' => true,
         'standard_checkout' => true,
         'reservations_management' => true,
+        'promotional_coupons' => true,
         'whatsapp_chat_widget' => true,
         'quick_booking_links' => true,
         'google_calendar' => false,
@@ -79,6 +80,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             'custom_subdomain' => true,
             'standard_checkout' => true,
             'reservations_management' => true,
+            'promotional_coupons' => true,
             'whatsapp_chat_widget' => true,
             'quick_booking_links' => true,
             'google_calendar' => false,
@@ -117,6 +119,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             'custom_subdomain' => true,
             'standard_checkout' => true,
             'reservations_management' => true,
+            'promotional_coupons' => true,
             'whatsapp_chat_widget' => true,
             'quick_booking_links' => true,
             'google_calendar' => false,
@@ -342,17 +345,15 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
         <div class="flex items-center gap-2">
             @if ($tab === 'plans')
-                <button type="button" wire:click="resetDefaultPlans"
-                    class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer">
-                    <i class="fa-solid fa-rotate-left mr-1 text-[10px]"></i>
-                    {{ __('Reset Default Tiers') }}
-                </button>
+                <x-button type="button" variant="secondary" size="md" wire:click="resetDefaultPlans">
+                    <i class="fa-solid fa-rotate-left mr-1.5 text-xs"></i>
+                    <span>{{ __('Reset Default Tiers') }}</span>
+                </x-button>
 
-                <button type="button" wire:click="createPlan"
-                    class="h-9 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-plus text-[10px]"></i>
+                <x-button type="button" variant="primary" size="md" wire:click="createPlan" class="bg-purple-600 hover:bg-purple-700">
+                    <i class="fa-solid fa-plus mr-1.5 text-xs"></i>
                     <span>{{ __('New Plan Tier') }}</span>
-                </button>
+                </x-button>
             @endif
         </div>
     </div>
@@ -664,7 +665,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     <!-- Auto Renew -->
                                     <td class="py-3.5 px-4 text-center">
                                         <button type="button" wire:click="toggleAutoRenew('{{ $op->id }}')"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase transition cursor-pointer {{ $op->subscription_auto_renew ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800' }}"
+                                            class="h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-bold uppercase transition cursor-pointer {{ $op->subscription_auto_renew ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 hover:bg-slate-200' }}"
                                             title="{{ __('Click to toggle auto-renewal') }}">
                                             <i
                                                 class="fa-solid {{ $op->subscription_auto_renew ? 'fa-check' : 'fa-xmark' }} text-[10px]"></i>
@@ -677,21 +678,21 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                         <div class="flex items-center justify-end gap-1.5">
                                             <button type="button"
                                                 wire:click="sendRenewalReminder('{{ $op->id }}')"
-                                                class="h-8 px-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-xs font-bold transition border border-purple-200 dark:border-purple-800/50"
+                                                class="h-8 px-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-xs font-bold transition border border-purple-200 dark:border-purple-800/50 inline-flex items-center gap-1 cursor-pointer"
                                                 title="{{ __('Send Renewal Reminder Email') }}">
-                                                <i class="fa-solid fa-paper-plane mr-1 text-[10px]"></i>
+                                                <i class="fa-solid fa-paper-plane text-[10px]"></i>
                                                 <span>{{ __('Remind') }}</span>
                                             </button>
 
                                             <button type="button"
                                                 wire:click="extendSubscription('{{ $op->id }}', 30)"
-                                                class="h-8 px-2.5 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
+                                                class="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition inline-flex items-center justify-center cursor-pointer"
                                                 title="{{ __('Extend subscription by +30 days') }}">
                                                 <span>+30d</span>
                                             </button>
 
                                             <a href="{{ route('admin.operators.show', $op->id) }}" wire:navigate
-                                                class="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 text-xs transition"
+                                                class="h-8 w-8 rounded-xl inline-flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 text-xs transition cursor-pointer"
                                                 title="{{ __('View Operator Details') }}">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
@@ -911,9 +912,8 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                     <div class="space-y-3 text-xs">
                         <div
                             class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
-                            <strong class="text-slate-900 dark:text-white block font-bold">1. Zero Resistance from Tour
-                                Operators</strong>
-                            <p class="text-slate-500 dark:text-slate-400 mt-0.5">Boat owners and agencies get 100% of
+                            <strong class="text-slate-900 dark:text-white block font-bold">1. Zero Resistance from Tour Operators</strong>
+                            <p class="text-slate-500 dark:text-slate-400 mt-0.5">Experience providers, activity hosts, and agencies get 100% of
                                 their requested price into their wallet. Zero commission eliminates onboarding
                                 hesitation.</p>
                         </div>
@@ -923,7 +923,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                             <strong class="text-slate-900 dark:text-white block font-bold">2. Unlimited Team Seats on
                                 All Plans</strong>
                             <p class="text-slate-500 dark:text-slate-400 mt-0.5">Agencies rely heavily on WhatsApp
-                                coordinators, boat captains, and freelance dispatch staff. Uncapped seats ensure
+                                coordinators, field guides, and freelance dispatch staff. Uncapped seats ensure
                                 platform-wide adoption.</p>
                         </div>
 
@@ -1056,8 +1056,14 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
                                 <div
                                     class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    <x-checkbox id="feat_promotional_coupons" wire:model="features.promotional_coupons"
+                                        :label="__('Coupons & Promo Codes')" :description="__('Guest discounts & marketing campaigns')" />
+                                </div>
+
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
                                     <x-checkbox id="feat_adv_calendar" wire:model="features.advanced_calendar"
-                                        :label="__('Advanced Fleet Matrix')" :description="__('Fleet calendar & resource timeline')" />
+                                        :label="__('Advanced Resource Matrix')" :description="__('Resource calendar & capacity timeline')" />
                                 </div>
 
                                 <div
@@ -1069,7 +1075,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 <div
                                     class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
                                     <x-checkbox id="feat_heatmap" wire:model="features.capacity_heatmap"
-                                        :label="__('Capacity Heatmap')" :description="__('Monthly fleet utilization analytics')" />
+                                        :label="__('Capacity Heatmap')" :description="__('Monthly capacity utilization analytics')" />
                                 </div>
 
                                 <div

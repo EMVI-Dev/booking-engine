@@ -5,7 +5,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Payment Gateways')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Component {
     // Gateway Provider
     public string $selected_provider = 'doku';
 
@@ -139,10 +139,10 @@ new #[Title('Payment Gateways')] #[Layout('layouts.admin')] class extends Compon
                 </span>
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Payment Gateways') }}
+                        {{ __('DOKU Payment Gateway') }}
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                        {{ __('Configure central platform payment engine credentials, Sandbox keys, Live production settings, and SNAP RSA certificates.') }}
+                        {{ __('Configure central platform DOKU Checkout & SNAP Open API credentials, Sandbox keys, Live production settings, and RSA certificates.') }}
                     </p>
                 </div>
             </div>
@@ -156,24 +156,21 @@ new #[Title('Payment Gateways')] #[Layout('layouts.admin')] class extends Compon
         </div>
     </div>
 
-    <!-- Gateway Provider Selector Cards (Prepared for future expansion) -->
-    <div class="space-y-3">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Supported Gateway Engines') }}</span>
-            <span class="text-[11px] text-slate-400">{{ __('1 Gateway Active') }}</span>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <!-- DOKU Payment Gateway Card -->
-            <div class="p-4 rounded-2xl border-2 border-purple-600 bg-purple-50/40 dark:bg-purple-950/40 dark:border-purple-500 shadow-xs space-y-2 select-none">
-                <div class="flex items-center justify-between">
-                    <span class="font-extrabold text-sm text-slate-900 dark:text-white">DOKU Checkout & SNAP</span>
+    <!-- Active Gateway Engine Notice Banner -->
+    <div class="p-4 rounded-2xl border-2 border-purple-500/30 bg-gradient-to-r from-purple-50/60 via-indigo-50/40 to-transparent dark:from-purple-950/30 dark:via-indigo-950/20 dark:to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+        <div class="flex items-start sm:items-center gap-3">
+            <span class="p-2.5 rounded-xl bg-purple-600 text-white shrink-0 shadow-xs">
+                <i class="fa-solid fa-building-columns text-sm"></i>
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="font-extrabold text-sm text-slate-900 dark:text-white">{{ __('DOKU Hosted Checkout & SNAP Open API') }}</h3>
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                        {{ __('Default Built-in') }}
+                        {{ __('Exclusive Gateway') }}
                     </span>
                 </div>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {{ __('Virtual Accounts, QRIS, Credit Cards, and E-Wallets with automated bank split settlements for agents.') }}
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {{ __('Processes QRIS, Virtual Accounts (BCA, Mandiri, BRI, BNI), Credit Cards, and automated operator bank split settlements.') }}
                 </p>
             </div>
         </div>

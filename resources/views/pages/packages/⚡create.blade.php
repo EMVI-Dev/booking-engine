@@ -253,10 +253,10 @@ new #[Title('Create Tour Package')] class extends Component {
                     <span class="text-slate-900 dark:text-white">{{ __('Create New') }}</span>
                 </div>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Create Tour Package / Expedition') }}
+                    {{ __('Create Tour Package / Experience') }}
                 </h1>
                 <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    {{ __('Bundle activities, boat transfers, and equipment into an all-inclusive public package.') }}
+                    {{ __('Bundle activities, transport, guide hire, and equipment into an all-inclusive public package.') }}
                 </p>
             </div>
 
@@ -386,7 +386,7 @@ new #[Title('Create Tour Package')] class extends Component {
             </div>
 
             <p class="text-xs text-slate-500 dark:text-slate-400">
-                {{ __('Select which inventory units (e.g., boat seats, snorkel gear, guide) are reserved whenever this package is booked. Capacity will be automatically synchronized.') }}
+                {{ __('Select which inventory items (e.g., activity slots, guide hire, admission passes) are reserved whenever this package is booked. Capacity will be automatically synchronized.') }}
             </p>
 
             @if ($this->availableProducts->isNotEmpty())
@@ -554,7 +554,7 @@ new #[Title('Create Tour Package')] class extends Component {
 
                 <div class="space-y-1.5">
                     <x-label for="itinerary_text" :value="__('Chronological Itinerary Schedule (Line-by-line)')" />
-                    <x-textarea id="itinerary_text" wire:model="itinerary_text" rows="5" placeholder="07:30 — Sanur Harbor check-in&#10;08:00 — Fastboat cruise to Nusa Penida&#10;09:00 — Manta Bay snorkeling expedition&#10;12:00 — Cliffside buffet lunch" />
+                    <x-textarea id="itinerary_text" wire:model="itinerary_text" rows="5" placeholder="08:00 — Meeting point & check-in&#10;09:00 — Guided tour & activity departure&#10;12:00 — Lunch & rest stop&#10;15:00 — Return & photo sharing" />
                     <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ __('Each line will render as an interactive step in the guest itinerary timeline.') }}</p>
                     <x-input-error :messages="$errors->get('itinerary_text')" />
                 </div>
@@ -562,7 +562,7 @@ new #[Title('Create Tour Package')] class extends Component {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <x-label for="inclusions" :value="__('What is Included (Comma-separated)')" />
-                        <x-input id="inclusions" type="text" wire:model="inclusions" placeholder="{{ __('Return Fastboat, Snorkeling Gear, Buffet Lunch, GoPro Photos') }}" />
+                        <x-input id="inclusions" type="text" wire:model="inclusions" placeholder="{{ __('Guided Tour, Equipment Gear, Lunch, Insurance, Photos') }}" />
                         <x-input-error :messages="$errors->get('inclusions')" />
                     </div>
 

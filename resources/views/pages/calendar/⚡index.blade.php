@@ -8,7 +8,7 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
-new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] class extends Component {
+new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class extends Component {
     use ResolvesCurrentOperator;
     #[Url(as: 'view')]
     public string $viewMode = 'month'; // 'month' | 'timeline' | 'manifest' | 'heatmap'
@@ -68,20 +68,20 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
 };
 ?>
 
-<div class="space-y-8 animate-fade-in">
+<div class="space-y-8 animate-fade-in print:space-y-0">
     <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div>
             <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                 <span>{{ __('Operations Hub') }}</span>
                 <span>&bull;</span>
-                <span class="text-indigo-600 dark:text-indigo-400">{{ __('Calendar & Fleet Schedule') }}</span>
+                <span class="text-indigo-600 dark:text-indigo-400">{{ __('Calendar & Operations Schedule') }}</span>
             </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 {{ __('Booking Calendar & Availability') }}
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Manage scheduled guest departures, fleet resource allocation, run-sheet manifests, and blackout dates.') }}
+                {{ __('Manage scheduled guest departures, resource allocation, run-sheet manifests, and blackout dates.') }}
             </p>
         </div>
 
@@ -95,7 +95,10 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
                 <i class="fa-brands fa-google text-indigo-600 dark:text-indigo-400 text-sm"></i>
                 <span>{{ __('Sync iCal Feed') }}</span>
                 @if (!$this->hasGoogleCalendarFeature)
-                    <span class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">PRO</span>
+                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[8px]"></i>
+                        <span>PRO</span>
+                    </span>
                 @endif
             </button>
         </div>
@@ -103,14 +106,14 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
 
     <!-- Flash Notifications -->
     @if (session('success'))
-        <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center gap-2 animate-fade-in shadow-xs">
+        <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center gap-2 animate-fade-in shadow-xs print:hidden">
             <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-sm"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     <!-- Calendar View Mode Tabs Navigator -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-zinc-800 pb-3">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-zinc-800 pb-3 print:hidden">
         <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100/80 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/60 overflow-x-auto max-w-full">
             <!-- 1. Month Grid View (Free) -->
             <button
@@ -122,16 +125,19 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
                 <span>{{ __('Month Grid') }}</span>
             </button>
 
-            <!-- 2. Fleet & Resource Timeline (Pro) -->
+            <!-- 2. Resource Timeline (Pro) -->
             <button
                 type="button"
                 wire:click="switchView('timeline')"
                 class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'timeline' ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
             >
                 <i class="fa-solid fa-bars-staggered"></i>
-                <span>{{ __('Fleet Timeline') }}</span>
+                <span>{{ __('Resource Timeline') }}</span>
                 @if (!$this->hasTimelineFeature)
-                    <span class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">PRO</span>
+                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[8px]"></i>
+                        <span>PRO</span>
+                    </span>
                 @endif
             </button>
 
@@ -144,7 +150,10 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
                 <i class="fa-solid fa-clipboard-list"></i>
                 <span>{{ __('Daily Manifest') }}</span>
                 @if (!$this->hasManifestFeature)
-                    <span class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">PRO</span>
+                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[8px]"></i>
+                        <span>PRO</span>
+                    </span>
                 @endif
             </button>
 
@@ -157,7 +166,10 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
                 <i class="fa-solid fa-fire-flame-curved"></i>
                 <span>{{ __('Capacity Heatmap') }}</span>
                 @if (!$this->hasHeatmapFeature)
-                    <span class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">ULTIMATE</span>
+                    <span title="{{ __('Requires Agency Ultimate Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[8px]"></i>
+                        <span>ULTIMATE</span>
+                    </span>
                 @endif
             </button>
         </div>
@@ -169,16 +181,16 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
             <livewire:calendar.month-grid />
         @elseif ($viewMode === 'timeline')
             @if ($this->hasTimelineFeature)
-                <livewire:calendar.fleet-timeline />
+                <livewire:calendar.resource-timeline />
             @else
                 <x-feature-gate
-                    :title="__('Fleet Timeline & Resource Matrix')"
-                    :description="__('Visualize boat, tour guide, and vehicle capacity in a Gantt-style matrix across 7-day windows. Track seat occupancy progress bars and prevent overbookings.')"
+                    :title="__('Resource Timeline & Capacity Matrix')"
+                    :description="__('Visualize tour guide, vehicle, and activity capacity in a Gantt-style matrix across 7-day windows. Track seat occupancy progress bars and prevent overbookings.')"
                     requiredPlan="Pro Operator"
                     planSlug="growth"
                     icon="fa-solid fa-bars-staggered"
                     :features="[
-                        __('Visual Gantt timeline for boats, guides, and activity seats'),
+                        __('Visual Gantt timeline for activities, guides, and bookable resources'),
                         __('Live seat occupancy progress bars and percentage fill rates'),
                         __('1-Click multi-week navigation and resource scheduling'),
                         __('Instant identification of available capacity vs. booked slots'),
@@ -191,7 +203,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
             @else
                 <x-feature-gate
                     :title="__('Daily Passenger Run-Sheet & Manifest Export')"
-                    :description="__('Generate printable daily passenger run-sheets for boat captains, tour drivers, and guides with lead guest names, pickup notes, and WhatsApp links.')"
+                    :description="__('Generate printable daily passenger run-sheets for tour drivers, captains, and guides with lead guest names, pickup notes, and WhatsApp links.')"
                     requiredPlan="Pro Operator"
                     planSlug="growth"
                     icon="fa-solid fa-clipboard-list"
@@ -208,15 +220,15 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Fleet Operations')] cla
                 <livewire:calendar.capacity-heatmap />
             @else
                 <x-feature-gate
-                    :title="__('Fleet Occupancy & Capacity Heatmap Analytics')"
-                    :description="__('Discover booking density and peak departure days with color-graded monthly utilization heatmaps. Analyze fleet load and optimize seasonal scheduling.')"
+                    :title="__('Capacity & Occupancy Heatmap Analytics')"
+                    :description="__('Discover booking density and peak departure days with color-graded monthly utilization heatmaps. Analyze capacity load and optimize seasonal scheduling.')"
                     requiredPlan="Agency Ultimate"
                     planSlug="enterprise"
                     icon="fa-solid fa-fire-flame-curved"
                     :features="[
-                        __('Color-coded monthly heatmap showing fleet occupancy density (0-100%)'),
+                        __('Color-coded monthly heatmap showing occupancy density (0-100%)'),
                         __('Peak departure day identification and active booking trends'),
-                        __('Total monthly passenger counts and average fleet capacity load'),
+                        __('Total monthly passenger counts and average capacity load'),
                         __('Strategic insights for tour pricing adjustments and blackout planning'),
                     ]"
                 />

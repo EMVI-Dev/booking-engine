@@ -18,6 +18,10 @@ class PlatformCouponFactory extends Factory
         return [
             'code' => strtoupper(Str::random(8)),
             'description' => fake()->sentence(),
+            'scope' => 'subscription',
+            'redemption_scope' => 'unlimited',
+            'eligibility_rule' => null,
+            'announcement_id' => null,
             'discount_type' => fake()->randomElement(['percentage', 'fixed']),
             'discount_value' => 10,
             'min_spend' => 0,
@@ -29,5 +33,32 @@ class PlatformCouponFactory extends Factory
             'starts_at' => now()->subDay(),
             'expires_at' => now()->addDays(30),
         ];
+    }
+
+    public function forGuest(): static
+    {
+        return $this->state(fn () => ['scope' => 'guest']);
+    }
+
+    public function forSubscription(): static
+    {
+        return $this->state(fn () => ['scope' => 'subscription']);
+    }
+
+    public function firstPurchaseOnly(): static
+    {
+        return $this->state(fn () => ['redemption_scope' => 'first_purchase_only']);
+    }
+
+    public function oncePeriod(): static
+    {
+        return $this->state(fn () => ['redemption_scope' => 'once_per_period']);
+    }
+
+    public function withEligibilityRule(string $type = 'min_monthly_transactions', int $threshold = 10): static
+    {
+        return $this->state(fn () => [
+            'eligibility_rule' => ['type' => $type, 'threshold' => $threshold, 'lookback_months' => 1],
+        ]);
     }
 }

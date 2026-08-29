@@ -34,6 +34,7 @@
                 { title: '{{ __('Guest CRM Directory') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-address-book text-sky-500', url: '{{ route('guests.index') }}' },
                 { title: '{{ __('Guest Reviews & Feedback') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-star text-amber-500', url: '{{ route('reviews.index') }}' },
                 { title: '{{ __('Tours & Package Listings') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-cubes text-indigo-500', url: '{{ route('packages.index') }}' },
+                { title: '{{ __('Coupons & Promo Codes') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-ticket text-purple-500', url: '{{ route('coupons.index') }}' },
                 { title: '{{ __('Brand Logo & Custom Theme') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-palette text-indigo-500', url: '{{ route('brand.edit') }}' },
                 { title: '{{ __('Storefront & Policy Setup') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-sliders text-indigo-500', url: '{{ route('storefront-settings.edit') }}' },
                 { title: '{{ __('Merchant Payment Gateways') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-credit-card text-indigo-500', url: '{{ route('payments.edit') }}' },

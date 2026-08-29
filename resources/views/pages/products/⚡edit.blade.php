@@ -45,7 +45,7 @@ new #[Title('Edit Activity Item')] class extends Component {
     #[Computed]
     public function suggestedCategories(): array
     {
-        $defaults = ['Snorkeling Gear', 'Scuba Equipment', 'Boat Seat', 'Vehicle Rental', 'Local Guide', 'Water Sport', 'Ticket / Pass'];
+        $defaults = ['Day Tour / Trip', 'Workshop & Class', 'Activity Session', 'Guide Hire', 'Ticket & Admission', 'Day Transport', 'Add-on Service'];
         if ($this->currentOperator) {
             $existing = $this->currentOperator->products()
                 ->whereNotNull('category')
@@ -315,7 +315,7 @@ new #[Title('Edit Activity Item')] class extends Component {
                             type="text"
                             wire:model="category"
                             list="product-categories-edit-list"
-                            placeholder="{{ __('e.g., Snorkeling Gear, Fastboat Seat, Scooter...') }}"
+                            placeholder="{{ __('e.g., Snorkeling Gear, Mountain Bike, Day Pass...') }}"
                         />
                         <datalist id="product-categories-edit-list">
                             @foreach ($this->suggestedCategories as $cat)
@@ -370,7 +370,7 @@ new #[Title('Edit Activity Item')] class extends Component {
                 <div class="flex items-center justify-between">
                     <div>
                         <h4 class="text-xs font-bold text-slate-900 dark:text-white">
-                            {{ __('Sell as Standalone Activity / Rental on Storefront') }}
+                            {{ __('Sell as Standalone Activity / Service on Storefront') }}
                         </h4>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400">
                             {{ __('Allow guests to book this item directly on your storefront without purchasing a full package.') }}

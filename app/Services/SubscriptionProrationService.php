@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Operator;
 use App\Models\Plan;
+use App\Models\PlatformCoupon;
 use App\Models\SubscriptionPayment;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -123,21 +124,39 @@ class SubscriptionProrationService
         Plan $targetPlan,
         string $interval = 'monthly',
         bool $autoRenew = true,
-        string $gateway = 'credit_card'
+        string $gateway = 'credit_card',
+        ?string $couponCode = null,
+        float $discountAmount = 0.0
     ): SubscriptionPayment {
         $proration = $this->calculateSwitch($operator, $targetPlan, $interval, true);
         $previousPlanId = $operator->plan_id;
 
-        // If net amount is zero, execute upgrade immediately
-        if ($proration['net_amount_due'] <= 0) {
-            return $this->executeUpgrade(
+        $netDue = max(0.0, (float) $proration['net_amount_due'] - $discountAmount);
+
+        // If net amount is zero (e.g. 100% coupon or credits covered), execute upgrade immediately
+        if ($netDue <= 0) {
+            $payment = $this->executeUpgrade(
                 operator: $operator,
                 targetPlan: $targetPlan,
                 interval: $interval,
                 autoRenew: $autoRenew,
-                gateway: 'wallet_credit',
-                gatewayRef: 'CREDIT-'.strtoupper(bin2hex(random_bytes(3)))
+                gateway: $couponCode ? 'promo_code' : 'wallet_credit',
+                gatewayRef: ($couponCode ? 'PROMO-' : 'CREDIT-').strtoupper(bin2hex(random_bytes(3)))
             );
+
+            if ($couponCode) {
+                PlatformCoupon::whereNull('operator_id')
+                    ->where('code', $couponCode)
+                    ->first()
+                    ?->incrementUsage();
+
+                $breakdown = $payment->breakdown ?? [];
+                $breakdown['coupon_code'] = $couponCode;
+                $breakdown['discount_amount'] = $discountAmount;
+                $payment->update(['breakdown' => $breakdown]);
+            }
+
+            return $payment;
         }
 
         $invoiceNumber = 'SUB-'.strtoupper(Str::random(6)).'-'.time();
@@ -152,7 +171,7 @@ class SubscriptionProrationService
             'billing_interval' => $interval,
             'gross_amount' => $proration['prorated_target_cost'],
             'prorated_credit' => $proration['unused_credit'],
-            'net_amount_paid' => $proration['net_amount_due'],
+            'net_amount_paid' => $netDue,
             'status' => 'pending',
             'gateway' => $gateway,
             'gateway_ref' => $invoiceNumber,
@@ -162,7 +181,9 @@ class SubscriptionProrationService
                 'days_remaining' => $proration['days_remaining'],
                 'unused_credit' => $proration['unused_credit'],
                 'prorated_charge' => $proration['prorated_target_cost'],
-                'net_amount_paid' => $proration['net_amount_due'],
+                'discount_amount' => $discountAmount,
+                'coupon_code' => $couponCode,
+                'net_amount_paid' => $netDue,
                 'auto_renew' => $autoRenew,
             ],
             'paid_at' => null,

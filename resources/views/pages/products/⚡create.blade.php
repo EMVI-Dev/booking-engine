@@ -44,7 +44,7 @@ new #[Title('Create Activity Item')] class extends Component {
     #[Computed]
     public function suggestedCategories(): array
     {
-        $defaults = ['Snorkeling Gear', 'Scuba Equipment', 'Boat Seat', 'Vehicle Rental', 'Local Guide', 'Water Sport', 'Ticket / Pass'];
+        $defaults = ['Day Tour / Trip', 'Workshop & Class', 'Activity Session', 'Guide Hire', 'Ticket & Admission', 'Day Transport', 'Add-on Service'];
         if ($this->currentOperator) {
             $existing = $this->currentOperator->products()
                 ->whereNotNull('category')
@@ -183,7 +183,7 @@ new #[Title('Create Activity Item')] class extends Component {
                 {{ __('Create Activity / Inventory Item') }}
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                {{ __('Add a standalone service, rental equipment, transport seat, or tour guide unit.') }}
+                {{ __('Add an activity session, day admission, guide service, or single-day inventory item.') }}
             </p>
         </div>
 
@@ -233,7 +233,7 @@ new #[Title('Create Activity Item')] class extends Component {
                             type="text"
                             wire:model="category"
                             list="product-categories-list"
-                            placeholder="{{ __('e.g., Snorkeling Gear, Fastboat Seat, Scooter...') }}"
+                            placeholder="{{ __('e.g., Snorkeling Gear, Mountain Bike, Day Pass...') }}"
                         />
                         <datalist id="product-categories-list">
                             @foreach ($this->suggestedCategories as $cat)
@@ -288,7 +288,7 @@ new #[Title('Create Activity Item')] class extends Component {
                 <div class="flex items-center justify-between">
                     <div>
                         <h4 class="text-xs font-bold text-slate-900 dark:text-white">
-                            {{ __('Sell as Standalone Activity / Rental on Storefront') }}
+                            {{ __('Sell as Standalone Activity / Service on Storefront') }}
                         </h4>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400">
                             {{ __('Allow guests to book this item directly on your storefront without purchasing a full package.') }}

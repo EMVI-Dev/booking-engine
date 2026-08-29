@@ -130,6 +130,7 @@ class Plan extends Model
                 'custom_subdomain' => true,
                 'standard_checkout' => true,
                 'reservations_management' => true,
+                'promotional_coupons' => true,
                 'whatsapp_chat_widget' => true,
                 'quick_booking_links' => true,
                 'basic_calendar' => true,
@@ -152,7 +153,7 @@ class Plan extends Model
 
         self::updateOrCreate(['slug' => 'growth'], [
             'name' => 'Pro Operator',
-            'tagline' => 'Designed for growing tour operators and activity companies needing Fleet Timeline Matrix, CRM, and automation.',
+            'tagline' => 'Designed for growing tour operators and activity companies needing Resource Timeline Matrix, CRM, and automation.',
             'price_monthly' => 299000.00,
             'price_yearly' => 2990000.00,
             'commission_rate' => 0.0000, // 100% Net to Operator
@@ -162,6 +163,7 @@ class Plan extends Model
                 'custom_subdomain' => true,
                 'standard_checkout' => true,
                 'reservations_management' => true,
+                'promotional_coupons' => true,
                 'whatsapp_chat_widget' => true,
                 'quick_booking_links' => true,
                 'basic_calendar' => true,
@@ -194,6 +196,7 @@ class Plan extends Model
                 'custom_subdomain' => true,
                 'standard_checkout' => true,
                 'reservations_management' => true,
+                'promotional_coupons' => true,
                 'whatsapp_chat_widget' => true,
                 'quick_booking_links' => true,
                 'basic_calendar' => true,
@@ -227,6 +230,7 @@ class Plan extends Model
                 'custom_subdomain' => true,
                 'standard_checkout' => true,
                 'reservations_management' => true,
+                'promotional_coupons' => true,
                 'whatsapp_chat_widget' => true,
                 'quick_booking_links' => true,
                 'basic_calendar' => true,

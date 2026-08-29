@@ -767,7 +767,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                                 id="editNotes"
                                 wire:model="editNotes"
                                 rows="4"
-                                placeholder="{{ __('Add internal notes about allergies, preferred boat seating, passport info, etc...') }}"
+                                placeholder="{{ __('Add internal notes about allergies, preferences, special requests, pickup locations, etc...') }}"
                             />
                             <x-input-error :messages="$errors->get('editNotes')" />
                         </div>

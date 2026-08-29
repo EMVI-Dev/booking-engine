@@ -17,7 +17,7 @@ new #[Title('Payment Gateways')] class extends Component {
     public string $payment_mode = 'platform';
 
     // Custom Gateway Configuration
-    public string $selected_gateway_provider = 'doku'; // doku, midtrans, xendit
+    public string $selected_gateway_provider = 'doku'; // doku (exclusive platform gateway)
     public string $gateway_environment = 'sandbox'; // sandbox, production
     public string $gateway_client_id = '';
     public string $gateway_shared_key = '';
@@ -43,7 +43,7 @@ new #[Title('Payment Gateways')] class extends Component {
 
             $useCustom = (bool) ($gateway['use_custom_credentials'] ?? false);
             $this->payment_mode = $useCustom ? 'custom' : 'platform';
-            $this->selected_gateway_provider = (string) ($gateway['provider'] ?? 'doku');
+            $this->selected_gateway_provider = 'doku';
             $this->gateway_environment = (string) ($gateway['environment'] ?? 'sandbox');
             $this->gateway_client_id = (string) ($gateway['client_id'] ?? '');
             $this->gateway_shared_key = (string) ($gateway['shared_key'] ?? '');
@@ -67,7 +67,7 @@ new #[Title('Payment Gateways')] class extends Component {
             'bank_account_name' => ['required', 'string', 'max:255'],
             'bank_account_number' => ['required', 'string', 'max:50'],
             'payment_mode' => ['required', 'string', 'in:platform,custom'],
-            'selected_gateway_provider' => [$isCustom ? 'required' : 'nullable', 'string', 'in:doku,midtrans,xendit'],
+            'selected_gateway_provider' => [$isCustom ? 'required' : 'nullable', 'string', 'in:doku'],
             'gateway_environment' => [$isCustom ? 'required' : 'nullable', 'string', 'in:sandbox,production'],
             'gateway_client_id' => [$isCustom ? 'required' : 'nullable', 'string', 'max:255'],
             'gateway_shared_key' => [$isCustom ? 'required' : 'nullable', 'string', 'max:255'],
@@ -78,7 +78,7 @@ new #[Title('Payment Gateways')] class extends Component {
         if ($operator) {
             $settings = $operator->settings ?? [];
             $settings['payment_gateway'] = [
-                'provider' => $isCustom ? $validated['selected_gateway_provider'] : 'doku',
+                'provider' => 'doku',
                 'use_custom_credentials' => $isCustom,
                 'environment' => $isCustom ? $validated['gateway_environment'] : 'production',
                 'client_id' => $isCustom ? ($validated['gateway_client_id'] ?? null) : null,
@@ -284,12 +284,12 @@ new #[Title('Payment Gateways')] class extends Component {
                     </div>
 
                     <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                        {{ __('Connect your own direct merchant credentials if your business has an existing contract with DOKU, Midtrans, or Xendit.') }}
+                        {{ __('Connect your own direct merchant credentials if your business has an existing merchant account with DOKU.') }}
                     </p>
 
                     <div class="pt-2 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center gap-2 text-xs text-slate-500">
                         <i class="fa-solid fa-code text-[11px]"></i>
-                        <span>{{ __('Requires API Client ID & Shared Secret Key') }}</span>
+                        <span>{{ __('Requires DOKU Client ID (MALL ID) & Secret / Shared Key') }}</span>
                     </div>
                 </div>
             </div>
@@ -321,7 +321,7 @@ new #[Title('Payment Gateways')] class extends Component {
                             </span>
                             <div>
                                 <p class="text-xs font-bold text-slate-900 dark:text-white">{{ __('Custom Gateway Requires Agency Ultimate Tier') }}</p>
-                                <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ __('Upgrade to Agency Ultimate to connect your own direct merchant credentials (DOKU, Midtrans, or Xendit).') }}</p>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ __('Upgrade to Agency Ultimate to connect your own direct DOKU merchant credentials.') }}</p>
                             </div>
                         </div>
                         <a href="{{ route('settings.plan') }}" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-xs" wire:navigate>
@@ -334,41 +334,27 @@ new #[Title('Payment Gateways')] class extends Component {
                 <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-5 animate-fade-in {{ ! $this->currentOperator?->hasFeature('byo_gateway') ? 'opacity-50 pointer-events-none' : '' }}">
                     <div>
                         <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                            {{ __('Select Your Custom Provider & Credentials') }}
+                            {{ __('Direct DOKU Merchant Credentials') }}
                         </h4>
                         <p class="text-[11px] text-slate-500 mt-0.5">
-                            {{ __('Specify which payment engine credentials your agency uses.') }}
+                            {{ __('Specify your direct DOKU Checkout & SNAP API merchant keys.') }}
                         </p>
                     </div>
 
-                    <!-- Provider Selector Cards -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <button
-                            type="button"
-                            wire:click="$set('selected_gateway_provider', 'doku')"
-                            class="p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer {{ $selected_gateway_provider === 'doku' ? 'border-indigo-600 bg-white dark:bg-zinc-900 shadow-xs' : 'border-slate-200 dark:border-zinc-700 bg-transparent' }}"
-                        >
-                            <span class="font-bold text-xs text-slate-900 dark:text-white block">DOKU Checkout</span>
-                            <span class="text-[10px] text-slate-500">MALLID / Client Key</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            wire:click="$set('selected_gateway_provider', 'midtrans')"
-                            class="p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer {{ $selected_gateway_provider === 'midtrans' ? 'border-indigo-600 bg-white dark:bg-zinc-900 shadow-xs' : 'border-slate-200 dark:border-zinc-700 bg-transparent' }}"
-                        >
-                            <span class="font-bold text-xs text-slate-900 dark:text-white block">Midtrans Snap</span>
-                            <span class="text-[10px] text-slate-500">Merchant / Server Key</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            wire:click="$set('selected_gateway_provider', 'xendit')"
-                            class="p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer {{ $selected_gateway_provider === 'xendit' ? 'border-indigo-600 bg-white dark:bg-zinc-900 shadow-xs' : 'border-slate-200 dark:border-zinc-700 bg-transparent' }}"
-                        >
-                            <span class="font-bold text-xs text-slate-900 dark:text-white block">Xendit Invoice</span>
-                            <span class="text-[10px] text-slate-500">Public & Secret API Keys</span>
-                        </button>
+                    <!-- Single Provider Active Badge -->
+                    <div class="p-4 rounded-xl border-2 border-indigo-600 bg-white dark:bg-zinc-900 shadow-xs flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400">
+                                <i class="fa-solid fa-credit-card text-sm"></i>
+                            </span>
+                            <div>
+                                <span class="font-bold text-xs text-slate-900 dark:text-white block">{{ __('DOKU Checkout & SNAP API') }}</span>
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400">{{ __('Exclusive platform payment engine') }}</span>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                            {{ __('Supported Gateway') }}
+                        </span>
                     </div>
 
                     <!-- Custom API Credential Inputs -->
@@ -387,14 +373,14 @@ new #[Title('Payment Gateways')] class extends Component {
                         </div>
 
                         <div>
-                            <x-label for="gateway_client_id" :value="__('Merchant / Client ID')" required />
-                            <x-input id="gateway_client_id" wire:model="gateway_client_id" type="text" placeholder="e.g. MALLID / Client Key" :error="$errors->has('gateway_client_id')" />
+                            <x-label for="gateway_client_id" :value="__('DOKU Client ID / MALL ID')" required />
+                            <x-input id="gateway_client_id" wire:model="gateway_client_id" type="text" placeholder="e.g. MALLID_12345" class="font-mono text-xs" :error="$errors->has('gateway_client_id')" />
                             <x-input-error :messages="$errors->get('gateway_client_id')" />
                         </div>
 
                         <div>
-                            <x-label for="gateway_shared_key" :value="__('Secret / Shared Key')" required />
-                            <x-input id="gateway_shared_key" wire:model="gateway_shared_key" type="password" placeholder="••••••••••••" :error="$errors->has('gateway_shared_key')" />
+                            <x-label for="gateway_shared_key" :value="__('DOKU Secret / Shared Key')" required />
+                            <x-input id="gateway_shared_key" wire:model="gateway_shared_key" type="password" placeholder="••••••••••••••••" class="font-mono text-xs" :error="$errors->has('gateway_shared_key')" />
                             <x-input-error :messages="$errors->get('gateway_shared_key')" />
                         </div>
                     </div>

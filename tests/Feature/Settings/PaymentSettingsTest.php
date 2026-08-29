@@ -59,10 +59,10 @@ test('payment settings can be updated with custom BYO merchant gateway', functio
         ->set('bank_account_name', 'PT Paradise Expeditions')
         ->set('bank_account_number', '9876543210')
         ->set('payment_mode', 'custom')
-        ->set('selected_gateway_provider', 'midtrans')
+        ->set('selected_gateway_provider', 'doku')
         ->set('gateway_environment', 'production')
-        ->set('gateway_client_id', 'MID-CLIENT-999')
-        ->set('gateway_shared_key', 'MID-SERVER-KEY-888')
+        ->set('gateway_client_id', 'MALLID_CUSTOM_999')
+        ->set('gateway_shared_key', 'DOKU_CUSTOM_KEY_888')
         ->call('updatePaymentSettings')
         ->assertHasNoErrors();
 
@@ -72,9 +72,9 @@ test('payment settings can be updated with custom BYO merchant gateway', functio
         ->and($this->operator->bank_account_name)->toBe('PT Paradise Expeditions')
         ->and($this->operator->bank_account_number)->toBe('9876543210')
         ->and($this->operator->bank_account_ref)->toBe('Mandiri - 9876543210 (PT Paradise Expeditions)')
-        ->and($this->operator->settings['payment_gateway']['provider'])->toBe('midtrans')
+        ->and($this->operator->settings['payment_gateway']['provider'])->toBe('doku')
         ->and($this->operator->settings['payment_gateway']['use_custom_credentials'])->toBeTrue()
         ->and($this->operator->settings['payment_gateway']['environment'])->toBe('production')
-        ->and($this->operator->settings['payment_gateway']['client_id'])->toBe('MID-CLIENT-999')
-        ->and($this->operator->settings['payment_gateway']['shared_key'])->toBe('MID-SERVER-KEY-888');
+        ->and($this->operator->settings['payment_gateway']['client_id'])->toBe('MALLID_CUSTOM_999')
+        ->and($this->operator->settings['payment_gateway']['shared_key'])->toBe('DOKU_CUSTOM_KEY_888');
 });

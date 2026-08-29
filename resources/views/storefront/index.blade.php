@@ -8,29 +8,27 @@
     <!-- SEO & Metadata -->
     <title>{{ $agent->name }} &bull; {{ __('Official Direct Tour Bookings') }} &bull; {{ config('app.name') }}</title>
     <meta name="description"
-        content="{{ Str::limit($agent->bio ?: __('Book direct tour packages, speedboats, and equipment rentals with :name. Instant holds, transparent pricing, and secure payment.', ['name' => $agent->name]), 160) }}" />
+        content="{{ Str::limit($agent->bio ?: __('Book direct tour packages, activities, and experiences with :name. Instant holds, transparent pricing, and secure payment.', ['name' => $agent->name]), 160) }}" />
     <link rel="canonical" href="{{ url()->current() }}" />
 
     <!-- Search Engine & AI Agent Discovery -->
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
+    <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine" />
     <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
     <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
 
     <!-- Favicon & Brand Icons -->
-    @if ($agent->logo)
-        <link rel="icon" href="{{ Storage::url($agent->logo) }}" />
-        <link rel="apple-touch-icon" href="{{ Storage::url($agent->logo) }}" />
-    @endif
+    <link rel="icon" href="{{ $agent->logo_url }}" />
+    <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
 
     <!-- OpenGraph & WhatsApp Social Share Cards -->
     @php
         $ogImageUrl = $agent->logo
             ? (Str::startsWith($agent->logo, ['http://', 'https://']) ? $agent->logo : url(Storage::url($agent->logo)))
             : url('/favicon.png');
-        $ogDescription = Str::limit($agent->bio ?: __('Official online booking portal for :name. Explore tour packages, fast boats, and day trips.', ['name' => $agent->name]), 160);
+        $ogDescription = Str::limit($agent->bio ?: __('Official online booking portal for :name. Explore tour packages, activities, and experiences.', ['name' => $agent->name]), 160);
     @endphp
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ url()->current() }}" />
@@ -285,8 +283,8 @@
                         class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
                         :class="activeTab === 'products' ? 'bg-brand-600 text-white shadow-sm' :
                             'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
-                        <i class="fa-solid fa-box-open mr-1.5 text-[11px]"></i>
-                        {{ __('Services & Rentals (:count)', ['count' => $standaloneProducts->count()]) }}
+                        <i class="fa-solid fa-compass mr-1.5 text-[11px]"></i>
+                        {{ __('Single Activities (:count)', ['count' => $standaloneProducts->count()]) }}
                     </button>
                 @endif
 
@@ -476,10 +474,10 @@
                     <div>
                         <h2
                             class="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-                            {{ __('Individual Services & Equipment Rentals') }}
+                            {{ __('Single Activities') }}
                         </h2>
                         <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            {{ __('Rent standalone gear, reserve fastboat seats, or hire local marine guides directly.') }}
+                            {{ __('Book standalone activities, sessions, or guided experiences directly.') }}
                         </p>
                     </div>
 
@@ -574,8 +572,8 @@
                     <div class="text-center pt-2">
                         <a href="{{ route('storefront.products') }}"
                             class="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-brand-400 dark:hover:border-brand-600 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-xs hover:shadow-md transition">
-                            <i class="fa-solid fa-box-open text-sky-500"></i>
-                            <span>{{ __('Explore All :count Activities & Rentals', ['count' => $standaloneProducts->count()]) }}</span>
+                            <i class="fa-solid fa-compass text-sky-500"></i>
+                            <span>{{ __('Explore All :count Single Activities', ['count' => $standaloneProducts->count()]) }}</span>
                             <i class="fa-solid fa-arrow-right text-[10px] ml-1"></i>
                         </a>
                     </div>

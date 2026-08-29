@@ -273,9 +273,18 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
                     <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-500">
                         <span>{{ $payout->bank_name }} ({{ $payout->account_number }})</span>
                         @if ($payout->status->value === 'pending')
-                            <button type="button" wire:click="openFulfillModal('{{ $payout->id }}')" class="px-3 py-1 rounded-xl bg-emerald-600 text-white font-bold text-xs">
-                                {{ __('Fulfill Payout') }}
-                            </button>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" wire:click="disburseViaDokuApi('{{ $payout->id }}')" class="h-8 px-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs inline-flex items-center gap-1 transition cursor-pointer">
+                                    <i class="fa-solid fa-bolt text-[10px]"></i>
+                                    <span>{{ __('DOKU') }}</span>
+                                </button>
+                                <button type="button" wire:click="openApproveModal('{{ $payout->id }}')" class="h-8 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center transition cursor-pointer">
+                                    {{ __('Approve') }}
+                                </button>
+                                <button type="button" wire:click="openRejectModal('{{ $payout->id }}')" class="h-8 px-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-bold text-xs inline-flex items-center transition cursor-pointer">
+                                    {{ __('Reject') }}
+                                </button>
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -318,28 +327,28 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
 
                             <td class="py-3 px-3 whitespace-nowrap">
                                 <div class="font-bold text-slate-800 dark:text-slate-200">
-                                    {{ $payout->bank_provider }} &bull; {{ $payout->bank_account_number }}
+                                    {{ $payout->bank_name }}
                                 </div>
-                                <div class="text-[10px] text-slate-400">
-                                    a/n {{ $payout->bank_account_name }}
+                                <div class="font-mono text-[11px] text-slate-500">
+                                    {{ $payout->account_number }} ({{ $payout->account_name }})
                                 </div>
                             </td>
 
                             <td class="py-3 px-3 whitespace-nowrap">
-                                @if ($payout->status->value === 'completed')
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                        <i class="fa-solid fa-circle-check text-[10px]"></i>
-                                        {{ __('Completed') }}
+                                @if ($payout->status->value === 'approved' || $payout->status->value === 'completed')
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
+                                        <i class="fa-solid fa-check text-[9px]"></i>
+                                        <span>Paid</span>
                                     </span>
-                                @elseif ($payout->status->value === 'rejected')
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                        <i class="fa-solid fa-circle-xmark text-[10px]"></i>
-                                        {{ __('Rejected') }}
+                                @elseif ($payout->status->value === 'pending')
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300">
+                                        <i class="fa-solid fa-clock text-[9px]"></i>
+                                        <span>Pending</span>
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                        <i class="fa-solid fa-clock text-[10px]"></i>
-                                        {{ __('Pending Approval') }}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300">
+                                        <i class="fa-solid fa-ban text-[9px]"></i>
+                                        <span>{{ ucfirst($payout->status->value) }}</span>
                                     </span>
                                 @endif
                             </td>
@@ -348,16 +357,16 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
                                 @if ($payout->status->value === 'pending')
                                     <div class="flex items-center justify-end gap-1.5">
                                         <button type="button" wire:click="disburseViaDokuApi('{{ $payout->id }}')"
-                                            class="h-8 px-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-2xs transition cursor-pointer flex items-center gap-1">
+                                            class="h-8 px-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-2xs transition cursor-pointer inline-flex items-center gap-1">
                                             <i class="fa-solid fa-bolt text-[10px]"></i>
                                             <span>{{ __('DOKU BI-FAST') }}</span>
                                         </button>
                                         <button type="button" wire:click="openApproveModal('{{ $payout->id }}')"
-                                            class="h-8 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition cursor-pointer">
+                                            class="h-8 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition cursor-pointer inline-flex items-center">
                                             {{ __('Approve') }}
                                         </button>
                                         <button type="button" wire:click="openRejectModal('{{ $payout->id }}')"
-                                            class="h-8 px-2 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-bold text-xs transition cursor-pointer">
+                                            class="h-8 px-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 font-bold text-xs transition cursor-pointer inline-flex items-center">
                                             {{ __('Reject') }}
                                         </button>
                                     </div>

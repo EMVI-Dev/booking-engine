@@ -15,6 +15,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('code', 50)->unique();
             $table->string('description')->nullable();
+            $table->string('scope', 20)->default('guest'); // subscription, guest
             $table->string('discount_type', 20)->default('percentage'); // percentage, fixed
             $table->decimal('discount_value', 14, 2)->default(0);
             $table->decimal('min_spend', 14, 2)->default(0);
@@ -28,6 +29,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['code', 'is_active']);
+            $table->index(['scope', 'is_active']);
             $table->index(['operator_id', 'is_active']);
         });
     }

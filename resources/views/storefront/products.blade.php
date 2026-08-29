@@ -5,28 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
     <!-- SEO & Metadata -->
-    <title>{{ __('Single Activities, Transfers & Rentals') }} &bull; {{ $agent->name }} &bull; {{ config('app.name') }}</title>
-    <meta name="description" content="{{ __('Rent standalone gear, reserve fastboat transfer seats, or hire local marine guides directly from :name. Instant holds, transparent pricing, and secure payment.', ['name' => $agent->name]) }}" />
+    <title>{{ __('Single Activities') }} &bull; {{ $agent->name }} &bull; {{ config('app.name') }}</title>
+    <meta name="description" content="{{ __('Book single activities, day tours, and guided experiences directly with :name. Instant holds, transparent pricing, and secure payment.', ['name' => $agent->name]) }}" />
     <link rel="canonical" href="{{ route('storefront.products') }}" />
 
     <!-- Search Engine & AI Agent Discovery -->
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
+    <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine" />
     <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
     <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
     <!-- Favicon & Brand Icons -->
-    @if ($agent->logo)
-        <link rel="icon" href="{{ Storage::url($agent->logo) }}" />
-        <link rel="apple-touch-icon" href="{{ Storage::url($agent->logo) }}" />
-    @endif
+    <link rel="icon" href="{{ $agent->logo_url }}" />
+    <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
 
     <!-- OpenGraph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ route('storefront.products') }}" />
-    <meta property="og:title" content="{{ __('Activities, Transfers & Rentals') }} &bull; {{ $agent->name }}" />
-    <meta property="og:description" content="{{ __('Browse standalone activities, fastboat tickets, and gear rentals by :name.', ['name' => $agent->name]) }}" />
+    <meta property="og:title" content="{{ __('Single Activities') }} &bull; {{ $agent->name }}" />
+    <meta property="og:description" content="{{ __('Browse single activities, tours, and experiences by :name.', ['name' => $agent->name]) }}" />
     <meta property="og:site_name" content="{{ $agent->name }} • {{ config('app.name') }}" />
     @if ($agent->logo)
         <meta property="og:image" content="{{ Storage::url($agent->logo) }}" />
@@ -34,8 +32,8 @@
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{{ __('Activities & Rentals') }} &bull; {{ $agent->name }}" />
-    <meta name="twitter:description" content="{{ __('Browse standalone activities, fastboat tickets, and gear rentals by :name.', ['name' => $agent->name]) }}" />
+    <meta name="twitter:title" content="{{ __('Single Activities') }} &bull; {{ $agent->name }}" />
+    <meta name="twitter:description" content="{{ __('Browse single activities, tours, and experiences by :name.', ['name' => $agent->name]) }}" />
     @if ($agent->logo)
         <meta name="twitter:image" content="{{ Storage::url($agent->logo) }}" />
     @endif
@@ -57,14 +55,14 @@
                         [
                             '@type' => 'ListItem',
                             'position' => 2,
-                            'name' => __('Activities & Rentals'),
+                            'name' => __('Single Activities'),
                             'item' => route('storefront.products'),
                         ],
                     ],
                 ],
                 [
                     '@type' => 'ItemList',
-                    'name' => $agent->name . ' - ' . __('Activities, Transfers & Rentals'),
+                    'name' => $agent->name . ' - ' . __('Single Activities'),
                     'numberOfItems' => $products->count(),
                     'itemListElement' => $products->values()->map(fn ($p, $idx) => [
                         '@type' => 'ListItem',
@@ -132,16 +130,16 @@
             <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-semibold">
                 <a href="{{ route('home') }}" class="hover:text-brand-600">{{ __('Home') }}</a>
                 <span>&rsaquo;</span>
-                <span class="text-slate-900 dark:text-white font-bold">{{ __('Activities & Rentals') }}</span>
+                <span class="text-slate-900 dark:text-white font-bold">{{ __('Single Activities') }}</span>
             </nav>
 
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                        {{ __('Single Activities, Transfers & Rentals') }}
+                        {{ __('Single Activities') }}
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-                        {{ __('Reserve standalone boat seats, certified guide hire, or rental equipment directly with :name.', ['name' => $agent->name]) }}
+                        {{ __('Book standalone activities, sessions, or guided experiences directly with :name.', ['name' => $agent->name]) }}
                     </p>
                 </div>
 
@@ -270,7 +268,7 @@
                 </div>
                 <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ __('No Items Matching Your Filter') }}</h3>
                 <p class="text-xs text-slate-500 max-w-sm mx-auto">
-                    {{ __('Try clearing your search terms or selecting a different category to view available activities and rentals.') }}
+                    {{ __('Try clearing your search terms or selecting a different category to view available items.') }}
                 </p>
                 <div class="pt-2">
                     <a href="{{ route('storefront.products') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition">

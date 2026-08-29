@@ -123,7 +123,7 @@ test('operator storefront provides dedicated all products catalog page with sche
     $response->assertOk()
         ->assertViewIs('storefront.products')
         ->assertSee('GoPro Hero 12 Rental')
-        ->assertSee('Single Activities, Transfers &amp; Rentals', false)
+        ->assertSee('Single Activities', false)
         ->assertSee('BreadcrumbList')
         ->assertSee('Product');
 });
@@ -301,5 +301,5 @@ test('storefront displays operator logo and mobile hamburger navigation menu', f
         ->assertSee('storage/operators/logos/bali-coastal-logo.png', false)
         ->assertSee('mobileMenuOpen', false)
         ->assertSee('fa-bars', false)
-        ->assertSee('Tour Packages', false);
+        ->assertSee('Packages', false);
 });

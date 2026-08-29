@@ -68,7 +68,7 @@ test('free tier operator can view month grid calendar', function () {
     Livewire::test('pages::calendar.index')
         ->assertOk()
         ->assertSee('Month Grid')
-        ->assertSee('Fleet Timeline')
+        ->assertSee('Resource Timeline')
         ->assertSee('PRO')
         ->assertSee('ULTIMATE');
 
@@ -78,17 +78,17 @@ test('free tier operator can view month grid calendar', function () {
         ->assertSee('Block Dates');
 });
 
-test('free tier operator sees upgrade gate when switching to fleet timeline', function () {
+test('free tier operator sees upgrade gate when switching to resource timeline', function () {
     $this->actingAs($this->freeUser);
 
     Livewire::test('pages::calendar.index')
         ->set('viewMode', 'timeline')
         ->assertOk()
-        ->assertSee('Fleet Timeline &amp; Resource Matrix', false)
+        ->assertSee('Resource Timeline &amp; Capacity Matrix', false)
         ->assertSee('Requires Pro Operator Plan');
 });
 
-test('pro tier operator unlocks fleet timeline and daily manifest views, but heatmap is gated for ultimate', function () {
+test('pro tier operator unlocks resource timeline and daily manifest views, but heatmap is gated for ultimate', function () {
     $this->actingAs($this->proUser);
 
     $product = Product::factory()->create([
@@ -113,10 +113,10 @@ test('pro tier operator unlocks fleet timeline and daily manifest views, but hea
         ->assertOk()
         ->assertSee('Fast Speedboat 1');
 
-    // Independent subcomponent: Fleet Timeline
-    Livewire::test('calendar.fleet-timeline')
+    // Independent subcomponent: Resource Timeline
+    Livewire::test('calendar.resource-timeline')
         ->assertOk()
-        ->assertSee('Fleet &amp; Experience Timeline', false)
+        ->assertSee('Resource &amp; Experience Timeline', false)
         ->assertSee('Fast Speedboat 1')
         ->assertSee('4 Pax');
 
@@ -139,7 +139,7 @@ test('pro tier operator unlocks fleet timeline and daily manifest views, but hea
     Livewire::test('pages::calendar.index')
         ->set('viewMode', 'heatmap')
         ->assertOk()
-        ->assertSee('Fleet Occupancy &amp; Capacity Heatmap Analytics', false)
+        ->assertSee('Capacity &amp; Occupancy Heatmap Analytics', false)
         ->assertSee('Requires Agency Ultimate Plan');
 });
 
@@ -159,14 +159,14 @@ test('ultimate tier operator unlocks capacity heatmap view', function () {
     Livewire::test('pages::calendar.index')
         ->set('viewMode', 'heatmap')
         ->assertOk()
-        ->assertSee('Occupancy Heatmap &amp; Fleet Density', false)
+        ->assertSee('Occupancy Heatmap &amp; Capacity Density', false)
         ->assertSee('Total Month Passengers')
         ->assertSee('6 Pax');
 
     // Independent subcomponent: Capacity Heatmap
     Livewire::test('calendar.capacity-heatmap')
         ->assertOk()
-        ->assertSee('Occupancy Heatmap &amp; Fleet Density', false)
+        ->assertSee('Occupancy Heatmap &amp; Capacity Density', false)
         ->assertSee('Total Month Passengers')
         ->assertSee('6 Pax');
 });

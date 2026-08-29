@@ -114,40 +114,21 @@ new #[Title('Activities & Inventory')] class extends Component {
         </div>
     @endif
 
-    <!-- Catalog Sub-navigation Toggle -->
-    <div class="flex items-center gap-1.5 p-1.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-x-auto select-none">
-        <a
-            href="{{ route('packages.index') }}"
-            wire:navigate
-            class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 {{ request()->routeIs('packages.*') ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}"
-        >
-            <i class="fa-solid fa-cubes text-xs {{ request()->routeIs('packages.*') ? 'text-white' : 'text-slate-400' }}"></i>
-            <span>{{ __('Tour Packages & Combos') }}</span>
-        </a>
 
-        <a
-            href="{{ route('products.index') }}"
-            wire:navigate
-            class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 {{ request()->routeIs('products.*') ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}"
-        >
-            <i class="fa-solid fa-box-open text-xs {{ request()->routeIs('products.*') ? 'text-white' : 'text-indigo-500' }}"></i>
-            <span>{{ __('Activities & Inventory Items') }}</span>
-        </a>
-    </div>
 
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
                 <span class="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400">
-                    <i class="fa-solid fa-box-open text-lg"></i>
+                    <i class="fa-solid fa-compass text-lg"></i>
                 </span>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Activities, Transport & Inventory') }}
+                    {{ __('Single Activities') }}
                 </h1>
             </div>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Manage single day trips, fastboat seats, rental gear, and guides. These can be booked directly or bundled into Tour Packages.') }}
+                {{ __('Manage standalone activities, guided sessions, day tickets, and services. These can be booked directly or bundled into Tour Packages.') }}
             </p>
         </div>
 
@@ -159,16 +140,17 @@ new #[Title('Activities & Inventory')] class extends Component {
                 wire:navigate
             >
                 <i class="fa-solid fa-plus mr-1 text-xs"></i>
-                {{ __('Add Activity / Item') }}
+                {{ __('Add Single Activity') }}
             </x-button>
         @else
             <x-button
                 variant="primary"
-                class="shrink-0 shadow-sm transition-all opacity-50 cursor-not-allowed"
+                class="shrink-0 opacity-60 cursor-not-allowed"
                 disabled
+                title="{{ __('Complete your operator profile in Settings to start adding inventory.') }}"
             >
                 <i class="fa-solid fa-plus mr-1 text-xs"></i>
-                {{ __('Add Activity / Item') }}
+                {{ __('Add Single Activity') }}
             </x-button>
         @endif
     </div>
@@ -270,10 +252,9 @@ new #[Title('Activities & Inventory')] class extends Component {
                                     <div class="flex items-center justify-end gap-1.5">
                                         <x-button
                                             :href="route('products.edit', $product)"
-                                            size="sm"
+                                            size="xs"
                                             variant="secondary"
                                             wire:navigate
-                                            class="h-8 px-2.5 text-xs font-semibold"
                                             title="{{ __('Edit') }}"
                                         >
                                             <i class="fa-solid fa-pen-to-square mr-1"></i>
@@ -282,7 +263,7 @@ new #[Title('Activities & Inventory')] class extends Component {
                                         <button
                                             type="button"
                                             wire:click="confirmDelete('{{ $product->id }}', '{{ addslashes($product->name) }}')"
-                                            class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-zinc-800 transition cursor-pointer"
+                                            class="h-8 w-8 rounded-xl inline-flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
                                             title="{{ __('Delete') }}"
                                         >
                                             <i class="fa-solid fa-trash text-xs"></i>
@@ -303,7 +284,7 @@ new #[Title('Activities & Inventory')] class extends Component {
             <div class="space-y-1 max-w-md mx-auto">
                 <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ __('No Activities or Items Found') }}</h3>
                 <p class="text-xs text-slate-500">
-                    {{ __('Create activities, boat seats, guide services, or rental equipment with daily availability limits.') }}
+                    {{ __('Create activities, workshop sessions, guide services, or admission tickets with daily capacity limits.') }}
                 </p>
             </div>
             @if ($this->isProfileComplete)

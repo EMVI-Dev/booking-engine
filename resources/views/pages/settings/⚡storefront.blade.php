@@ -132,7 +132,7 @@ new #[Title('Storefront Settings')] class extends Component {
                         id="allow_standalone_products"
                         wire:model="allow_standalone_products"
                         :label="__('Allow Standalone Product & Service Sales')"
-                        :description="__('When enabled, products and resources flagged as \'Sell Standalone\' (e.g. equipment rentals, transport transfers, add-ons) can be booked directly by guests outside of packages.')"
+                        :description="__('When enabled, products and services flagged as \'Sell Standalone\' (e.g. day passes, single sessions, guide hire) can be booked directly by guests outside of packages.')"
                     />
                 </div>
 
@@ -233,7 +233,7 @@ new #[Title('Storefront Settings')] class extends Component {
                         />
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        {{ __('Paid reservations are placed in "Pending Confirmation" status. You manually inspect crew, weather, and boat availability before clicking "Confirm" in your Bookings dashboard.') }}
+                        {{ __('Paid reservations are placed in "Pending Confirmation" status. You manually inspect staff schedule, capacity, and resource availability before clicking "Confirm" in your Bookings dashboard.') }}
                     </p>
                 </label>
             </div>

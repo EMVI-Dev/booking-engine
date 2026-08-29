@@ -16,10 +16,8 @@
         <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
         <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
         <!-- Favicon & Brand Icons -->
-        @if ($agent->logo)
-            <link rel="icon" href="{{ Storage::url($agent->logo) }}" />
-            <link rel="apple-touch-icon" href="{{ Storage::url($agent->logo) }}" />
-        @endif
+        <link rel="icon" href="{{ $agent->logo_url }}" />
+        <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
 
         <!-- OpenGraph -->
         <meta property="og:type" content="product" />
@@ -60,7 +58,7 @@
                             [
                                 '@type' => 'ListItem',
                                 'position' => 2,
-                                'name' => __('Activities & Rentals'),
+                                'name' => __('Single Activities'),
                                 'item' => route('storefront.products'),
                             ],
                             [
@@ -213,7 +211,7 @@
                 <!-- Right Desktop Sticky Booking Box -->
                 <div class="hidden lg:block space-y-6">
                     <div class="sticky top-24">
-                        <livewire:storefront.booking-box :bookable="$product" :agent="$agent" />
+                        <livewire:storefront.booking-box :bookable="$product" :agent="$agent" :key="'desktop-booking-box-' . $product->id" />
                     </div>
                 </div>
             </div>
@@ -276,7 +274,7 @@
                     </button>
                 </div>
 
-                <livewire:storefront.booking-box :bookable="$product" :agent="$agent" />
+                <livewire:storefront.booking-box :bookable="$product" :agent="$agent" :key="'mobile-booking-box-' . $product->id" />
             </div>
         </div>
 

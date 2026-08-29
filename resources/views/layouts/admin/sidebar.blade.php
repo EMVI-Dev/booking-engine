@@ -109,7 +109,7 @@
                 <a href="{{ route('admin.payments.index') }}" wire:navigate
                     class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.payments.*') ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white' }}">
                     <i class="fa-solid fa-credit-card w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.payments.*') ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500' }}"></i>
-                    <span class="truncate">{{ __('Payment Gateways') }}</span>
+                    <span class="truncate">{{ __('Payment Gateway') }}</span>
                 </a>
             </div>
 

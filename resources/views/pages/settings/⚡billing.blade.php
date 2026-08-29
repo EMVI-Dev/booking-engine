@@ -355,7 +355,14 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                         <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-zinc-800">
                             <div>
                                 <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Plan / Description') }}</span>
-                                <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">{{ $payment->plan?->name ?? 'Custom Tier' }}</span>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="font-bold text-slate-800 dark:text-slate-200 truncate">{{ $payment->plan?->name ?? 'Custom Tier' }}</span>
+                                    @if (!empty($payment->breakdown['coupon_code']))
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                            {{ $payment->breakdown['coupon_code'] }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                             <div class="text-right">
                                 <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Net Amount') }}</span>
@@ -411,8 +418,15 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
                                 <!-- Plan / Description -->
                                 <td class="py-3.5 px-3">
-                                    <div class="font-bold text-slate-900 dark:text-white">
-                                        {{ $payment->plan?->name ?? 'Custom Tier' }}
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-slate-900 dark:text-white">
+                                            {{ $payment->plan?->name ?? 'Custom Tier' }}
+                                        </span>
+                                        @if (!empty($payment->breakdown['coupon_code']))
+                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                                <i class="fa-solid fa-tag text-[9px] mr-0.5"></i>{{ $payment->breakdown['coupon_code'] }}
+                                            </span>
+                                        @endif
                                     </div>
                                     <span class="text-[10px] text-slate-400 uppercase font-medium">
                                         {{ ucfirst($payment->type ?: 'Upgrade') }} &bull; {{ ucfirst($payment->billing_interval) }}
@@ -604,6 +618,21 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                             </div>
                             <span class="font-mono">
                                 - Rp {{ number_format((float) $inv->prorated_credit, 0, ',', '.') }}
+                            </span>
+                        </div>
+                    @endif
+
+                    @if ((float) ($breakdown['discount_amount'] ?? 0) > 0)
+                        <div class="flex items-center justify-between text-purple-600 dark:text-purple-400 font-bold">
+                            <div>
+                                <span class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-ticket text-xs"></i>
+                                    {{ __('Promo Code Discount (:code)', ['code' => $breakdown['coupon_code'] ?? 'PROMO']) }}
+                                </span>
+                                <span class="text-[10px] opacity-80 font-normal block">{{ __('Platform subscription discount applied') }}</span>
+                            </div>
+                            <span class="font-mono">
+                                - Rp {{ number_format((float) $breakdown['discount_amount'], 0, ',', '.') }}
                             </span>
                         </div>
                     @endif

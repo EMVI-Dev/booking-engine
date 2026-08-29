@@ -25,8 +25,8 @@
                 <span>{{ __('Tour Packages') }}</span>
             </a>
             <a href="{{ route('storefront.products') }}" class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
-                <i class="fa-solid fa-person-swimming text-[11px] text-slate-400"></i>
-                <span>{{ __('Activities & Rentals') }}</span>
+                <i class="fa-solid fa-compass text-[11px] text-slate-400"></i>
+                <span>{{ __('Single Activities') }}</span>
             </a>
             <a href="{{ route('storefront.terms') }}" class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-shield-halved text-[11px] text-slate-400"></i>
