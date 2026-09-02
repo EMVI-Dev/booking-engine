@@ -184,45 +184,11 @@ class Plan extends Model
             'sort_order' => 2,
         ]);
 
-        self::updateOrCreate(['slug' => 'enterprise'], [
+        $enterprise = self::updateOrCreate(['slug' => 'enterprise'], [
             'name' => 'Agency Ultimate',
-            'tagline' => 'White-label branding on your custom domain with SSL, BYO payment gateway, Capacity Heatmap Analytics, and unlimited listings.',
-            'price_monthly' => 699000.00,
-            'price_yearly' => 6990000.00,
-            'commission_rate' => 0.0000, // 100% Net to Operator
-            'package_limit' => null, // unlimited
-            'team_member_limit' => null, // unlimited
-            'features' => [
-                'custom_subdomain' => true,
-                'standard_checkout' => true,
-                'reservations_management' => true,
-                'promotional_coupons' => true,
-                'whatsapp_chat_widget' => true,
-                'quick_booking_links' => true,
-                'basic_calendar' => true,
-                'advanced_calendar' => true,
-                'daily_manifest_export' => true,
-                'capacity_heatmap' => true,
-                'google_calendar' => true,
-                'guest_crm' => true,
-                'whatsapp_dispatch' => true,
-                'tracking_pixels' => true,
-                'automated_review_requests' => true,
-                'custom_domain' => true,
-                'byo_gateway' => true,
-                'priority_support' => true,
-                'ai_discovery' => false,
-            ],
-            'is_active' => true,
-            'is_popular' => false,
-            'sort_order' => 3,
-        ]);
-
-        self::updateOrCreate(['slug' => 'ai_ultimate'], [
-            'name' => 'AI Ultimate Agency',
-            'tagline' => 'Full AI Search & ChatGPT recommendation engine, /llms.txt catalog feeds, unthrottled AI bot indexing, custom domain, and BYO payment gateway.',
-            'price_monthly' => 999000.00,
-            'price_yearly' => 9990000.00,
+            'tagline' => 'White-label branding on your custom domain with SSL, BYO payment gateway, AI ChatGPT Search Discovery, Capacity Heatmap Analytics, and unlimited listings.',
+            'price_monthly' => 799000.00,
+            'price_yearly' => 7990000.00,
             'commission_rate' => 0.0000, // 100% Net to Operator
             'package_limit' => null, // unlimited
             'team_member_limit' => null, // unlimited
@@ -246,10 +212,18 @@ class Plan extends Model
                 'byo_gateway' => true,
                 'priority_support' => true,
                 'ai_discovery' => true,
+                'remove_branding' => true,
             ],
             'is_active' => true,
             'is_popular' => false,
-            'sort_order' => 4,
+            'sort_order' => 3,
         ]);
+
+        // Clean up legacy ai_ultimate tier if present and migrate operators to Agency Ultimate
+        $legacyAiPlan = self::where('slug', 'ai_ultimate')->first();
+        if ($legacyAiPlan) {
+            Operator::where('plan_id', $legacyAiPlan->id)->update(['plan_id' => $enterprise->id]);
+            $legacyAiPlan->delete();
+        }
     }
 }

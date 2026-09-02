@@ -5,7 +5,7 @@
 ])
 
 <div class="lg:hidden p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-center space-y-5 shadow-xs my-3 animate-fade-in">
-    <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500/10 via-indigo-500/20 to-purple-500/10 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center text-2xl border border-indigo-200/60 dark:border-indigo-800/60 shadow-inner">
+    <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center text-2xl border border-indigo-200/60 dark:border-zinc-700 shadow-inner">
         <i class="{{ $icon }}"></i>
     </div>
 

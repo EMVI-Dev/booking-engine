@@ -88,6 +88,8 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
             };
 
             $operator->update(['status' => $operatorStatus]);
+            app(DomainResolverService::class)->clearOperatorDomainCache($operator);
+            Cache::flush();
             $this->dispatch('operator-status-updated', ['name' => $operator->name, 'status' => $operatorStatus->label()]);
         }
     }
@@ -98,11 +100,11 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
     public function with(): array
     {
         $query = Operator::query()
-            ->with(['users', 'plan'])
-            ->withCount(['reservations']);
+            ->with(['users', 'plan', 'domains'])
+            ->withCount(['reservations', 'packages', 'products']);
 
         if (! empty($this->search)) {
-            $s = '%' . trim($this->search) . '%';
+            $s = '%'.trim($this->search).'%';
             $query->where(function ($q) use ($s) {
                 $q->where('name', 'like', $s)
                     ->orWhere('slug', 'like', $s)
@@ -130,6 +132,7 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
             'approvedCount' => Operator::where('status', OperatorStatus::Approved)->count(),
             'pendingCount' => Operator::where('status', OperatorStatus::Pending)->count(),
             'suspendedCount' => Operator::where('status', OperatorStatus::Suspended)->count(),
+            'totalReservationsCount' => \App\Models\Reservation::count(),
         ];
     }
 }; ?>
@@ -139,46 +142,66 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400">
-                    <i class="fa-solid fa-users-gear text-lg"></i>
+                <span class="w-10 h-10 rounded-2xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] flex items-center justify-center text-lg border border-[#FFEF4D]/30 shadow-2xs">
+                    <i class="fa-solid fa-users-gear"></i>
                 </span>
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                         {{ __('Operators Management') }}
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                        {{ __('Monitor all registered tour operators, inspect dedicated insights, manage their portal, and update approval status.') }}
+                        {{ __('Monitor all registered tour operators, inspect catalog density, manage their portal, and update approval status.') }}
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Overview Counters -->
+    <!-- Overview Counters Strip -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Total Operators') }}</span>
-            <div class="text-2xl font-black text-slate-900 dark:text-white">{{ $totalCount }}</div>
+        <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Total Operators') }}</span>
+                <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $totalCount }}</div>
+            </div>
+            <span class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-[#141821] text-slate-500 flex items-center justify-center text-base shrink-0">
+                <i class="fa-solid fa-users"></i>
+            </span>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{{ __('Approved & Live') }}</span>
-            <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ $approvedCount }}</div>
+        <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{{ __('Approved & Live') }}</span>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ $approvedCount }}</div>
+            </div>
+            <span class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base shrink-0">
+                <i class="fa-solid fa-circle-check"></i>
+            </span>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">{{ __('Pending Review') }}</span>
-            <div class="text-2xl font-black text-amber-600 dark:text-amber-400">{{ $pendingCount }}</div>
+        <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">{{ __('Pending Review') }}</span>
+                <div class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">{{ $pendingCount }}</div>
+            </div>
+            <span class="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base shrink-0">
+                <i class="fa-solid fa-clock"></i>
+            </span>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">{{ __('Suspended') }}</span>
-            <div class="text-2xl font-black text-rose-600 dark:text-rose-400">{{ $suspendedCount }}</div>
+        <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">{{ __('Suspended') }}</span>
+                <div class="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">{{ $suspendedCount }}</div>
+            </div>
+            <span class="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base shrink-0">
+                <i class="fa-solid fa-ban"></i>
+            </span>
         </div>
     </div>
 
     <!-- Filters & Search Bar -->
-    <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <!-- Search -->
         <div class="relative w-full sm:w-96">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -205,7 +228,7 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
                 <button
                     type="button"
                     wire:click="$set('status_filter', '{{ $val }}')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $status_filter === $val ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $status_filter === $val ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'bg-slate-100 dark:bg-[#141821] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1e2433]' }}"
                 >
                     {{ $label }}
                 </button>
@@ -214,18 +237,20 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
     </div>
 
     <!-- Operators Directory Section -->
-    <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+    <!-- Operators Table Card -->
+    <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
         <!-- Operators Mobile Responsive Card List (md:hidden) -->
         <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
             @forelse ($operators as $operator)
                 @php
                     $owner = $operator->users->first();
-                    $storeUrl = request()->getScheme() . '://' . $operator->slug . '.' . $platformDomain;
+                    $storeUrl = request()->getScheme().'://'.$operator->slug.'.'.$platformDomain;
+                    $hasBank = filled($operator->bank_provider) && filled($operator->bank_account_number);
                 @endphp
-                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2.5 min-w-0">
-                            <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                            <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="w-10 h-10 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shrink-0 overflow-hidden shadow-xs">
                                 @if ($operator->logo_path)
                                     <img src="{{ Storage::url($operator->logo_path) }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
                                 @else
@@ -233,24 +258,46 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
                                 @endif
                             </a>
                             <div class="min-w-0">
-                                <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="font-extrabold text-xs text-slate-900 dark:text-white block truncate">
+                                <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="font-extrabold text-xs text-slate-900 dark:text-white block truncate hover:text-[#FFEF4D] transition">
                                     {{ $operator->name }}
                                 </a>
-                                <span class="font-mono text-[10px] text-purple-600 dark:text-purple-400 block truncate">
-                                    {{ $operator->slug }}.{{ $platformDomain }}
-                                </span>
+                                <a href="{{ $storeUrl }}" target="_blank" class="font-mono text-[10px] text-[#8a7808] dark:text-[#FFEF4D] hover:underline flex items-center gap-1">
+                                    <span>{{ $operator->slug }}.{{ $platformDomain }}</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                                </a>
                             </div>
                         </div>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
-                            {{ $operator->subscriptionPlan?->name ?? 'Starter' }}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase
+                            {{ $operator->status === OperatorStatus::Approved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : ($operator->status === OperatorStatus::Suspended ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300') }}">
+                            {{ $operator->status->label() }}
                         </span>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-500">
-                        <span>{{ $owner?->email ?? 'No owner' }}</span>
-                        <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="px-3 py-1 rounded-xl bg-purple-600 text-white font-bold text-xs">
-                            {{ __('Manage') }}
-                        </a>
+                    <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-[#1e2433] text-slate-500 dark:text-slate-400">
+                        <div>
+                            <span class="block text-[10px] uppercase font-bold text-slate-400">{{ __('Catalog') }}</span>
+                            <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $operator->packages_count }} {{ __('Pkgs') }} • {{ $operator->products_count }} {{ __('Acts') }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] uppercase font-bold text-slate-400">{{ __('Bookings') }}</span>
+                            <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $operator->reservations_count }} {{ __('Total') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#1e2433] text-[11px]">
+                        <span class="text-slate-500 truncate max-w-[160px]">{{ $owner?->email ?? 'No owner' }}</span>
+                        <div class="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                wire:click="manageOperator('{{ $operator->id }}')"
+                                class="px-2.5 py-1 rounded-xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-bold text-xs border border-[#FFEF4D]/30"
+                            >
+                                {{ __('Portal') }}
+                            </button>
+                            <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#1e2433] font-bold text-xs">
+                                {{ __('Manage') }}
+                            </a>
+                        </div>
                     </div>
                 </div>
             @empty
@@ -262,30 +309,42 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
 
         <!-- Desktop Operators Table (hidden on mobile) -->
         <div class="hidden md:block overflow-x-auto">
-            <table class="w-full text-left text-xs">
+            <table class="w-full text-left text-xs sm:text-sm">
                 <thead>
-                    <tr class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         <th class="py-3.5 px-4 sm:px-6">{{ __('Operator') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Plan & Status') }}</th>
-                        <th class="py-3.5 px-4 text-center">{{ __('Setup') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Plan & Economics') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Owner & Contact') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Performance & Catalog') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Disbursement Bank') }}</th>
+                        <th class="py-3.5 px-4 text-center">{{ __('Status') }}</th>
                         <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                     @forelse ($operators as $operator)
                         @php
                             $owner = $operator->users->first();
-                            $storeUrl = request()->getScheme() . '://' . $operator->slug . '.' . $platformDomain;
+                            $storeUrl = request()->getScheme().'://'.$operator->slug.'.'.$platformDomain;
                             $hasBank = filled($operator->bank_provider) && filled($operator->bank_account_number);
                             $hasWhatsApp = filled($operator->contact_whatsapp);
+                            $activePlan = $operator->getPlan();
+                            $planBadgeColor = match ($activePlan->slug) {
+                                default => 'bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30',
+                            };
+                            $statusBadgeClasses = match ($operator->status) {
+                                OperatorStatus::Approved => 'bg-emerald-950/60 text-emerald-400 border-emerald-800/60',
+                                OperatorStatus::Pending => 'bg-amber-950/60 text-amber-400 border-amber-800/60',
+                                OperatorStatus::Suspended => 'bg-rose-950/60 text-rose-400 border-rose-800/60',
+                            };
                         @endphp
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 transition-colors group">
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141821]/80 transition group">
 
-                            {{-- Column 1: Operator Identity --}}
-                            <td class="py-4 px-4 sm:px-6">
+                            {{-- Column 1: Operator Identity & Subdomain --}}
+                            <td class="py-3.5 px-4 sm:px-6">
                                 <div class="flex items-center gap-3">
                                     <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate
-                                        class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 font-extrabold flex items-center justify-center text-sm shrink-0 overflow-hidden border border-purple-200 dark:border-purple-800/50 hover:scale-105 transition-transform">
+                                        class="size-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shrink-0 overflow-hidden hover:scale-105 transition-transform shadow-xs">
                                         @if ($operator->logo_path)
                                             <img src="{{ Storage::url($operator->logo_path) }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
                                         @else
@@ -294,90 +353,125 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
                                     </a>
                                     <div class="min-w-0 space-y-0.5">
                                         <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate
-                                            class="font-bold text-slate-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition truncate block text-sm leading-tight">
+                                            class="font-bold text-slate-900 dark:text-white hover:text-[#FFEF4D] transition truncate block text-sm leading-snug">
                                             {{ $operator->name }}
                                         </a>
                                         <a href="{{ $storeUrl }}" target="_blank"
-                                            class="text-[11px] text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 w-fit">
-                                            <span class="font-mono">{{ $operator->slug }}.{{ $platformDomain }}</span>
-                                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                            class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 dark:text-zinc-400 hover:text-[#FFEF4D] hover:underline">
+                                            <span class="truncate max-w-[200px]">{{ $operator->slug }}.{{ $platformDomain }}</span>
+                                            <i class="fa-solid fa-arrow-up-right-from-square text-[8px] opacity-70 shrink-0"></i>
                                         </a>
-                                        <div class="flex items-center gap-2 text-[11px] text-slate-400">
-                                            @if ($owner?->email)
-                                                <span class="truncate max-w-[180px]">{{ $owner->email }}</span>
-                                                <span>&bull;</span>
-                                            @endif
-                                            <span>{{ $operator->created_at?->diffForHumans() }}</span>
-                                        </div>
                                     </div>
                                 </div>
                             </td>
 
-                            {{-- Column 2: Plan & Status --}}
-                            <td class="py-4 px-4">
-                                <div class="space-y-1.5">
-                                    @php
-                                        $activePlan = $operator->getPlan();
-                                        $planBadgeColor = match ($activePlan->slug) {
-                                            'enterprise' => 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 dark:border-purple-800',
-                                            'growth' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
-                                            default => 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-slate-300 border-slate-200 dark:border-zinc-700',
-                                        };
-                                        $statusBadgeClasses = match ($operator->status) {
-                                            OperatorStatus::Approved => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300',
-                                            OperatorStatus::Pending => 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300',
-                                            OperatorStatus::Suspended => 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300',
-                                        };
-                                    @endphp
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase border {{ $planBadgeColor }}">
+                            {{-- Column 2: Plan & Subscription --}}
+                            <td class="py-3.5 px-4">
+                                <div class="space-y-1">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border {{ $planBadgeColor }}">
                                         {{ $activePlan->name }}
                                     </span>
-                                    <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider {{ $statusBadgeClasses }}">
-                                        {{ $operator->status->label() }}
-                                    </span>
+                                    <div class="text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
+                                        {{ $operator->getEffectiveCommissionRate() * 100 }}% {{ __('take-rate') }}
+                                    </div>
                                 </div>
                             </td>
 
-                            {{-- Column 3: Setup Completeness --}}
-                            <td class="py-4 px-4 text-center">
-                                <div class="inline-flex flex-col items-start gap-1.5">
-                                    <span class="flex items-center gap-1.5 text-[11px] font-semibold {{ $hasBank ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400' }}">
-                                        <i class="fa-solid {{ $hasBank ? 'fa-circle-check' : 'fa-circle-exclamation' }} text-xs"></i>
-                                        {{ __('Bank') }}
-                                    </span>
-                                    <span class="flex items-center gap-1.5 text-[11px] font-semibold {{ $hasWhatsApp ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400' }}">
-                                        <i class="fa-solid {{ $hasWhatsApp ? 'fa-circle-check' : 'fa-circle-minus' }} text-xs"></i>
-                                        {{ __('WhatsApp') }}
-                                    </span>
+                            {{-- Column 3: Owner & Contacts --}}
+                            <td class="py-3.5 px-4">
+                                <div class="space-y-1 min-w-0">
+                                    <div class="font-semibold text-slate-900 dark:text-white text-xs truncate max-w-[170px]">
+                                        {{ $owner?->name ?? __('No Owner Assigned') }}
+                                    </div>
+                                    <div class="font-mono text-[11px] text-slate-500 dark:text-zinc-400 truncate max-w-[170px]">
+                                        {{ $owner?->email ?? '-' }}
+                                    </div>
+                                    @if ($hasWhatsApp)
+                                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $operator->contact_whatsapp) }}" target="_blank"
+                                            class="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-mono">
+                                            <i class="fa-brands fa-whatsapp text-[10px]"></i>
+                                            <span>{{ $operator->contact_whatsapp }}</span>
+                                        </a>
+                                    @endif
                                 </div>
                             </td>
 
-                            {{-- Column 4: Actions --}}
-                            <td class="py-4 px-4 sm:px-6 text-right">
+                            {{-- Column 4: Performance & Catalog --}}
+                            <td class="py-3.5 px-4">
+                                <div class="space-y-1">
+                                    <div class="font-mono font-black text-slate-900 dark:text-white text-xs">
+                                        Rp {{ number_format($operator->calculated_gmv ?? 0, 0, ',', '.') }}
+                                    </div>
+                                    <div class="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1">
+                                        <span class="font-bold text-slate-700 dark:text-zinc-300">{{ $operator->reservations_count }}</span> {{ __('bookings') }}
+                                        <span class="opacity-40">•</span>
+                                        <span class="font-bold text-slate-700 dark:text-zinc-300">{{ $operator->packages_count }}</span> {{ __('pkgs') }}
+                                    </div>
+                                </div>
+                            </td>
+
+                            {{-- Column 5: Disbursement Bank --}}
+                            <td class="py-3.5 px-4">
+                                @if ($hasBank)
+                                    <div class="space-y-0.5">
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-[#1e2433]">
+                                            <i class="fa-solid fa-building-columns text-[9px]"></i>
+                                            {{ $operator->bank_provider }}
+                                        </span>
+                                        <div class="font-mono text-[11px] text-slate-700 dark:text-zinc-300">
+                                            {{ $operator->bank_account_number }}
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="text-[11px] text-slate-400 italic">{{ __('Not configured') }}</span>
+                                @endif
+                            </td>
+
+                            {{-- Column 6: Approval Status --}}
+                            <td class="py-3.5 px-4 text-center">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border {{ $statusBadgeClasses }}">
+                                    <span class="size-1.5 rounded-full {{ $operator->status === OperatorStatus::Approved ? 'bg-emerald-400' : ($operator->status === OperatorStatus::Pending ? 'bg-amber-400' : 'bg-rose-400') }}"></span>
+                                    {{ $operator->status->label() }}
+                                </span>
+                            </td>
+
+                            {{-- Column 7: Actions --}}
+                            <td class="py-3.5 px-4 sm:px-6 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
+                                    <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate
+                                        class="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#1e2433] text-slate-700 dark:text-zinc-200 font-bold text-xs inline-flex items-center gap-1 transition shadow-2xs">
+                                        <span>{{ __('Inspect') }}</span>
+                                        <i class="fa-solid fa-arrow-right text-[9px]"></i>
+                                    </a>
+
                                     <button
                                         type="button"
                                         wire:click="manageOperator('{{ $operator->id }}')"
-                                        class="h-8 px-2.5 inline-flex items-center gap-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition cursor-pointer border border-purple-200 dark:border-purple-800/60"
-                                        title="{{ __('Open & manage this operator portal') }}"
+                                        class="h-8 px-2.5 rounded-xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] hover:bg-[#FFEF4D]/20 text-xs font-bold transition cursor-pointer border border-[#FFEF4D]/30 inline-flex items-center gap-1"
+                                        title="{{ __('Open operator dashboard portal') }}"
                                     >
                                         <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
                                         <span>{{ __('Portal') }}</span>
                                     </button>
 
+                                    <!-- 3-Dots Action Dropdown -->
                                     <x-dropdown position="bottom-end" width="56">
                                         <x-slot name="trigger">
-                                            <button type="button" class="h-8 w-8 rounded-xl inline-flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-600 dark:text-slate-400 text-xs transition cursor-pointer">
+                                            <button type="button" class="h-8 w-8 rounded-xl inline-flex items-center justify-center bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-600 dark:text-slate-400 text-xs transition cursor-pointer shadow-2xs border border-slate-200 dark:border-[#1e2433]">
                                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                                             </button>
                                         </x-slot>
 
                                         <x-slot name="content">
                                             <x-dropdown-item :href="route('admin.operators.show', $operator->id)" wire:navigate>
-                                                <i class="fa-solid fa-eye mr-2 text-slate-400 text-xs"></i>
-                                                {{ __('View Details') }}
+                                                <i class="fa-solid fa-chart-line mr-2 text-[#8a7808] dark:text-[#FFEF4D] text-xs"></i>
+                                                {{ __('Operator Analytics & Details') }}
                                             </x-dropdown-item>
-                                            <div class="border-t border-slate-100 dark:border-zinc-800 my-1"></div>
+                                            <x-dropdown-item :href="$storeUrl" target="_blank">
+                                                <i class="fa-solid fa-arrow-up-right-from-square mr-2 text-slate-400 text-xs"></i>
+                                                {{ __('Visit Live Storefront') }}
+                                            </x-dropdown-item>
+                                            <div class="border-t border-slate-100 dark:border-[#1e2433] my-1"></div>
                                             <x-dropdown-item wire:click="confirmOperatorStatus('{{ $operator->id }}', 'approved')">
                                                 <i class="fa-solid fa-circle-check mr-2 text-emerald-500 text-xs"></i>
                                                 {{ __('Approve & Set Active') }}
@@ -397,7 +491,7 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="py-12 text-center text-slate-400">
+                            <td colspan="7" class="py-12 text-center text-slate-400">
                                 <i class="fa-solid fa-users-slash text-3xl mb-2 block opacity-40"></i>
                                 <span class="font-bold text-sm">{{ __('No matching operators found') }}</span>
                                 <p class="text-xs text-slate-500 mt-0.5">{{ __('Try clearing filters or adjusting your search term.') }}</p>
@@ -409,24 +503,22 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
         </div>
 
         @if ($operators->hasPages())
-            <div class="p-4 border-t border-slate-100 dark:border-zinc-800">
+            <div class="p-4 border-t border-slate-100 dark:border-[#1e2433]">
                 {{ $operators->links() }}
             </div>
         @endif
     </div>
 
-
     <!-- Confirm Operator Status Modal -->
-
     @if ($showConfirmOperatorStatusModal && $this->pendingStatusOperator)
         @php
             $pendingOperator = $this->pendingStatusOperator;
         @endphp
         @teleport('body')
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto" wire:keydown.escape="closeConfirmOperatorStatusModal">
-                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl border border-slate-200/80 dark:border-zinc-800 flex flex-col my-8" @click.outside="$wire.closeConfirmOperatorStatusModal()">
+                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-[#0C0E13] shadow-2xl border border-slate-200/80 dark:border-[#1e2433] flex flex-col my-8" @click.outside="$wire.closeConfirmOperatorStatusModal()">
                     <!-- Modal Header -->
-                    <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
+                    <div class="p-6 border-b border-slate-100 dark:border-[#1e2433] flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-[#10141d] rounded-t-3xl">
                         <div class="flex items-start gap-3.5 min-w-0">
                             @if ($pendingOperatorStatus === 'approved')
                                 <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
@@ -437,7 +529,7 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
                                     <i class="fa-solid fa-ban"></i>
                                 </div>
                             @else
-                                <div class="w-10 h-10 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                                <div class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
                                     <i class="fa-solid fa-clock"></i>
                                 </div>
                             @endif
@@ -448,60 +540,76 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
                                     @elseif ($pendingOperatorStatus === 'suspended')
                                         {{ __('Suspend Operator Account') }}
                                     @else
-                                        {{ __('Mark as Pending Review') }}
+                                        {{ __('Mark Operator as Pending Review') }}
                                     @endif
                                 </h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                                    @if ($pendingOperatorStatus === 'approved')
-                                        {{ __('Grant full storefront and payment capabilities to this operator.') }}
-                                    @elseif ($pendingOperatorStatus === 'suspended')
-                                        {{ __('Immediately deactivate this operator\'s storefront and booking engine.') }}
-                                    @else
-                                        {{ __('Set this operator back to pending verification status.') }}
-                                    @endif
+                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                    {{ $pendingOperator->name }}
                                 </p>
                             </div>
                         </div>
-                        <button type="button" wire:click="closeConfirmOperatorStatusModal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0 -mr-1 -mt-1">
+
+                        <button
+                            type="button"
+                            wire:click="closeConfirmOperatorStatusModal"
+                            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#141821] transition cursor-pointer"
+                        >
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
 
-                    <!-- Modal Body / Summary Card -->
-                    <div class="p-6 space-y-4">
-                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="font-extrabold text-sm text-slate-900 dark:text-white">{{ $pendingOperator->name }}</span>
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-300">
-                                    {{ $pendingOperator->status->label() }} &rarr; {{ ucfirst($pendingOperatorStatus) }}
-                                </span>
+                    <!-- Modal Body -->
+                    <div class="p-6 space-y-4 text-xs text-slate-600 dark:text-slate-300">
+                        @if ($pendingOperatorStatus === 'approved')
+                            <p class="leading-relaxed">
+                                {{ __('Are you sure you want to approve') }} <strong>{{ $pendingOperator->name }}</strong>?
+                            </p>
+                            <div class="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 space-y-1 text-emerald-800 dark:text-emerald-200">
+                                <div class="font-bold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span>{{ __('Live Storefront Activation') }}</span>
+                                </div>
+                                <p class="text-[11px] text-emerald-700 dark:text-emerald-300 leading-normal">
+                                    {{ __('Their storefront and published tour packages will be immediately accessible to online travelers for direct booking and checkout.') }}
+                                </p>
                             </div>
-                            <p class="text-xs text-slate-500 font-mono">{{ $pendingOperator->slug }}.{{ $platformDomain }}</p>
-                        </div>
+                        @elseif ($pendingOperatorStatus === 'suspended')
+                            <p class="leading-relaxed">
+                                {{ __('Are you sure you want to suspend') }} <strong>{{ $pendingOperator->name }}</strong>?
+                            </p>
+                            <div class="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 space-y-1 text-rose-800 dark:text-rose-200">
+                                <div class="font-bold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                    <span>{{ __('Storefront Offline Warning') }}</span>
+                                </div>
+                                <p class="text-[11px] text-rose-700 dark:text-rose-300 leading-normal">
+                                    {{ __('New direct bookings and checkout will be suspended immediately. Existing bookings remain intact for fulfillment.') }}
+                                </p>
+                            </div>
+                        @else
+                            <p class="leading-relaxed">
+                                {{ __('Set status to Pending Review for') }} <strong>{{ $pendingOperator->name }}</strong>?
+                            </p>
+                        @endif
+                    </div>
 
-                        <!-- Footer Actions -->
-                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
-                            <x-button type="button" variant="secondary" wire:click="closeConfirmOperatorStatusModal" class="text-xs font-bold">
-                                {{ __('Cancel') }}
-                            </x-button>
-
-                            @if ($pendingOperatorStatus === 'approved')
-                                <x-button type="button" variant="primary" wire:click="executeOperatorStatus" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
-                                    <i class="fa-solid fa-check mr-1.5 text-xs"></i>
-                                    {{ __('Yes, Approve Operator') }}
-                                </x-button>
-                            @elseif ($pendingOperatorStatus === 'suspended')
-                                <x-button type="button" variant="danger" wire:click="executeOperatorStatus" class="text-xs font-bold">
-                                    <i class="fa-solid fa-ban mr-1.5 text-xs"></i>
-                                    {{ __('Yes, Suspend Operator') }}
-                                </x-button>
-                            @else
-                                <x-button type="button" variant="secondary" wire:click="executeOperatorStatus" class="text-xs font-bold">
-                                    <i class="fa-solid fa-clock mr-1.5 text-amber-500"></i>
-                                    {{ __('Yes, Set to Pending') }}
-                                </x-button>
-                            @endif
-                        </div>
+                    <!-- Modal Footer -->
+                    <div class="p-4 border-t border-slate-100 dark:border-[#1e2433] flex items-center justify-end gap-2.5 bg-slate-50/50 dark:bg-[#10141d] rounded-b-3xl">
+                        <button
+                            type="button"
+                            wire:click="closeConfirmOperatorStatusModal"
+                            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#141821] transition cursor-pointer"
+                        >
+                            {{ __('Cancel') }}
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="executeOperatorStatus"
+                            class="px-4 py-2 rounded-xl text-xs font-bold text-white transition cursor-pointer shadow-xs
+                                {{ $pendingOperatorStatus === 'approved' ? 'bg-emerald-600 hover:bg-emerald-700' : ($pendingOperatorStatus === 'suspended' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700') }}"
+                        >
+                            {{ __('Confirm Status Change') }}
+                        </button>
                     </div>
                 </div>
             </div>

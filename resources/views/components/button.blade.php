@@ -27,7 +27,7 @@
         'ghost'
             => 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 focus:ring-indigo-500',
         default
-            => 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:text-white dark:hover:bg-indigo-500 focus:ring-indigo-500 shadow-xs',
+            => 'bg-[#FFEF4D] text-[#101730] hover:bg-[#fae639] dark:bg-[#FFEF4D] dark:text-[#101730] dark:hover:bg-[#fae639] focus:ring-[#FFEF4D] shadow-sm font-black',
     };
 
     $classes = "{$baseClasses} {$sizeClasses} {$variantClasses}";

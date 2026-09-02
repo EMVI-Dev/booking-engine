@@ -204,7 +204,7 @@
                 @foreach ($packages as $pkg)
                     <div class="group flex flex-col justify-between rounded-2xl sm:rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-xl hover:border-brand-400 dark:hover:border-brand-600 transition-all duration-200 overflow-hidden">
                         <!-- Card Media Header -->
-                        <div class="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-brand-950 via-slate-900 to-zinc-900 shrink-0">
+                        <div class="relative aspect-video w-full overflow-hidden bg-slate-900 dark:bg-zinc-950 shrink-0">
                             @if ($pkg->cover_photo_url)
                                 <img src="{{ $pkg->cover_photo_url }}" alt="{{ $pkg->title }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             @else

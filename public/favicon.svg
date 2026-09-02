@@ -1,14 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#9333ea" />
-      <stop offset="50%" stop-color="#7c3aed" />
-      <stop offset="100%" stop-color="#4f46e5" />
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="128" fill="url(#brandGradient)" />
-  <g transform="translate(64, 64) scale(0.75)">
-    <!-- Font Awesome 6 Solid Compass Path -->
-    <path fill="#ffffff" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm50.7-386.9l112 48a16 16 0 0 1 8.2 8.2l48 112c5.4 12.6-4.3 26.3-17.9 26.3l-1.8 0-112-48a16 16 0 0 1 -8.2-8.2l-48-112c-5.4-12.6 4.3-26.3 17.9-26.3l1.8 0zM256 288a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/>
+  <!-- Solid Sandy Yellow Background (Zero Gradients) -->
+  <rect width="512" height="512" rx="128" fill="#FFEF4D" />
+  <g transform="translate(96, 96) scale(0.625)">
+    <!-- Font Awesome 6 Solid Compass Path in Solid Ebony Clay -->
+    <path fill="#2A428C" d="M256 512a256 256 0 1 0 0-512 256 256 0 1 0 0 512zm50.7-186.9L162.4 380.6c-19.4 7.5-38.5-11.6-31-31l55.5-144.3c3.3-8.5 9.9-15.1 18.4-18.4l144.3-55.5c19.4-7.5 38.5 11.6 31 31L325.1 306.7c-3.2 8.5-9.9 15.1-18.4 18.4zM288 256a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/>
   </g>
 </svg>

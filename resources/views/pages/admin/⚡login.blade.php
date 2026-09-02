@@ -43,34 +43,34 @@ new #[Title('Platform Admin Login')] #[Layout('layouts.auth')] class extends Com
 
         session()->regenerate();
 
-        $this->redirectIntended(route('admin.platform.edit'), navigate: true);
+        $this->redirectIntended(route('admin.dashboard'), navigate: true);
     }
 }; ?>
 
 <div class="flex flex-col gap-6">
     <div class="text-center space-y-2">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-            <i class="fa-brands fa-searchengin text-sm text-purple-600 dark:text-purple-400"></i>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
+            <i class="fa-brands fa-searchengin text-sm"></i>
             {{ __('Platform Master Control') }}
         </span>
-        <h1 class="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             {{ __('Platform Admin Login') }}
         </h1>
-        <p class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
             {{ __('Authenticate to manage central DOKU credentials, platform take-rates, and global operations.') }}
         </p>
     </div>
 
     <!-- Quick Credentials Helper Badge for Convenience -->
-    <div class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800 text-xs flex items-center justify-between gap-2">
+    <div class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/80 dark:border-[#1e2433] text-xs flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-            <i class="fa-solid fa-key text-purple-500"></i>
+            <i class="fa-solid fa-key text-[#8a7808] dark:text-[#FFEF4D]"></i>
             <span class="font-mono text-[11px]">admin@emvi.dev / password</span>
         </div>
         <button
             type="button"
             x-on:click="$wire.set('email', 'admin@emvi.dev'); $wire.set('password', 'password');"
-            class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] uppercase tracking-wider transition cursor-pointer"
+            class="px-2.5 py-1 rounded-lg bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-[10px] uppercase tracking-wider transition cursor-pointer"
         >
             {{ __('Auto-fill') }}
         </button>
@@ -118,15 +118,15 @@ new #[Title('Platform Admin Login')] #[Layout('layouts.auth')] class extends Com
         </div>
 
         <div>
-            <x-button variant="primary" type="submit" class="w-full shadow-sm font-bold bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white" data-test="admin-login-button">
-                <i class="fa-solid fa-lock-open mr-1.5 text-xs"></i>
+            <button type="submit" class="w-full h-11 rounded-2xl font-black text-xs bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer transition" data-test="admin-login-button">
+                <i class="fa-solid fa-lock-open text-xs"></i>
                 {{ __('Access Platform Dashboard') }}
-            </x-button>
+            </button>
         </div>
     </form>
 
-    <div class="text-xs text-center text-zinc-500 dark:text-zinc-400 border-t border-slate-200/80 dark:border-zinc-800 pt-4">
+    <div class="text-xs text-center text-slate-500 dark:text-zinc-400 border-t border-slate-200/80 dark:border-[#1e2433] pt-4">
         <span>{{ __('Looking for your tour operator portal?') }}</span>
-        <a href="{{ route('login') }}" class="font-semibold underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 ml-1" wire:navigate>{{ __('Operator Sign In') }}</a>
+        <a href="{{ route('login') }}" class="font-bold underline text-[#8a7808] dark:text-[#FFEF4D] hover:opacity-80 ml-1" wire:navigate>{{ __('Operator Sign In') }}</a>
     </div>
 </div>

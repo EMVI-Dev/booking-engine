@@ -16,19 +16,23 @@
     <div class="max-w-4xl mx-auto space-y-4 text-xs text-slate-500 dark:text-slate-400">
         <!-- Minimal Links Pill Row -->
         <div class="flex flex-wrap items-center justify-center gap-1.5 text-xs">
-            <a href="{{ route('home') }}" class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+            <a href="{{ route('home') }}"
+                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-compass text-[11px] text-slate-400"></i>
                 <span>{{ __('Catalog') }}</span>
             </a>
-            <a href="{{ route('storefront.packages') }}" class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+            <a href="{{ route('storefront.packages') }}"
+                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-cubes text-[11px] text-slate-400"></i>
                 <span>{{ __('Tour Packages') }}</span>
             </a>
-            <a href="{{ route('storefront.products') }}" class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+            <a href="{{ route('storefront.products') }}"
+                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-compass text-[11px] text-slate-400"></i>
                 <span>{{ __('Single Activities') }}</span>
             </a>
-            <a href="{{ route('storefront.terms') }}" class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+            <a href="{{ route('storefront.terms') }}"
+                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-shield-halved text-[11px] text-slate-400"></i>
                 <span>{{ __('Terms & Policies') }}</span>
             </a>
@@ -49,8 +53,8 @@
             <span>&bull;</span>
             <span>{{ __('Powered by') }}
                 <a href="https://{{ $platformDomain }}" target="_blank" rel="noopener"
-                    class="text-slate-700 dark:text-slate-300 font-bold hover:text-brand-600 dark:hover:text-brand-400 hover:underline inline-flex items-center gap-1">
-                    <i class="fa-solid fa-compass text-brand-600 dark:text-brand-400 text-[10px]"></i>
+                    class="text-slate-900 dark:text-slate-300 font-bold hover:text-brand-600 dark:hover:text-brand-400 hover:underline inline-flex items-center gap-1">
+                    <i class="fa-solid fa-compass brand-400 text-[10px]"></i>
                     {{ config('app.name', 'TravelEngine') }}
                 </a>
             </span>

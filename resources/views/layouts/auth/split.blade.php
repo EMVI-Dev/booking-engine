@@ -8,10 +8,10 @@
             <div class="relative hidden h-full flex-col bg-zinc-900 p-10 text-white dark:border-r dark:border-zinc-800 lg:flex">
                 <div class="absolute inset-0 bg-zinc-900"></div>
                 <a href="{{ route('home') }}" class="relative z-20 flex items-center gap-2.5 text-lg font-bold" wire:navigate>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white text-sm">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#2A428C] text-sm font-black">
                         <i class="fa-solid fa-compass"></i>
                     </span>
-                    {{ config('app.name', 'Booking Engine') }}
+                    {{ config('app.name', 'TravelEngine') }}
                 </a>
                 <div class="relative z-20 mt-auto">
                     <blockquote class="space-y-2">

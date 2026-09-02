@@ -47,13 +47,13 @@ test('non-admin user attempting admin login is rejected', function () {
     $this->assertGuest();
 });
 
-test('platform admin can authenticate via admin login and is redirected to admin platform edit', function () {
+test('platform admin can authenticate via admin login and is redirected to admin dashboard', function () {
     Livewire::test('pages::admin.login')
         ->set('email', 'admin@emvi.dev')
         ->set('password', 'password')
         ->call('login')
         ->assertHasNoErrors()
-        ->assertRedirect(route('admin.platform.edit'));
+        ->assertRedirect(route('admin.dashboard'));
 
     $this->assertAuthenticatedAs($this->adminUser);
 });
@@ -62,6 +62,43 @@ test('non-admin user accessing admin settings directly receives 403 forbidden', 
     $this->actingAs($this->regularUser)
         ->get(route('admin.platform.edit'))
         ->assertForbidden();
+
+    $this->actingAs($this->regularUser)
+        ->get(route('admin.profile.edit'))
+        ->assertForbidden();
+});
+
+test('platform admin can access dedicated admin profile and security page', function () {
+    $this->actingAs($this->adminUser)
+        ->get(route('admin.profile.edit'))
+        ->assertOk()
+        ->assertSee('Admin Profile & Security')
+        ->assertSee('Administrative Identity')
+        ->assertSee('Update Password')
+        ->assertSee('Two-Factor Authentication')
+        ->assertSee('WebAuthn Passkeys');
+});
+
+test('platform admin can update their profile information and password from admin profile page', function () {
+    $this->actingAs($this->adminUser);
+
+    Livewire::test('pages::admin.profile')
+        ->set('name', 'Super Administrator')
+        ->set('email', 'superadmin@emvi.dev')
+        ->call('updateProfileInformation')
+        ->assertHasNoErrors();
+
+    expect($this->adminUser->fresh()->name)->toBe('Super Administrator')
+        ->and($this->adminUser->fresh()->email)->toBe('superadmin@emvi.dev');
+
+    Livewire::test('pages::admin.profile')
+        ->set('current_password', 'password')
+        ->set('password', 'new-super-secret-password-123')
+        ->set('password_confirmation', 'new-super-secret-password-123')
+        ->call('updatePassword')
+        ->assertHasNoErrors();
+
+    expect(Hash::check('new-super-secret-password-123', $this->adminUser->fresh()->password))->toBeTrue();
 });
 
 test('platform admin can access platform settings page', function () {

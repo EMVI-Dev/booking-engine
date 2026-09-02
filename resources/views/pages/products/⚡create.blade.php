@@ -160,7 +160,7 @@ new #[Title('Create Activity Item')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6 max-w-5xl">
+<div class="space-y-6 w-full">
     <!-- Desktop Notice on Mobile -->
     <x-desktop-only-notice
         :title="__('Activity & Inventory Setup Best Managed on Desktop')"

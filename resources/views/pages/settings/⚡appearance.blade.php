@@ -13,14 +13,20 @@ new #[Title('Appearance settings')] class extends Component {
     <x-pages::settings.layout :heading="__('Appearance & Theme')" :subheading="__('Choose your preferred theme mode for the operator portal')">
         <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" x-data="{
-                theme: localStorage.getItem('theme') || 'system',
+                theme: localStorage.getItem('theme') || 'dark',
                 setTheme(val) {
                     this.theme = val;
                     localStorage.setItem('theme', val);
-                    if (val === 'dark' || (val === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    if (val === 'dark') {
                         document.documentElement.classList.add('dark');
-                    } else {
+                    } else if (val === 'light') {
                         document.documentElement.classList.remove('dark');
+                    } else {
+                        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                            document.documentElement.classList.add('dark');
+                        } else {
+                            document.documentElement.classList.remove('dark');
+                        }
                     }
                 }
             }">

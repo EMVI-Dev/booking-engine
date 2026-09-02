@@ -350,36 +350,36 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                     <span>{{ __('Reset Default Tiers') }}</span>
                 </x-button>
 
-                <x-button type="button" variant="primary" size="md" wire:click="createPlan" class="bg-purple-600 hover:bg-purple-700">
-                    <i class="fa-solid fa-plus mr-1.5 text-xs"></i>
+                <button type="button" wire:click="createPlan" class="h-9 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+                    <i class="fa-solid fa-plus text-xs"></i>
                     <span>{{ __('New Plan Tier') }}</span>
-                </x-button>
+                </button>
             @endif
         </div>
     </div>
 
     <!-- Navigation Tabs -->
     <div
-        class="flex items-center gap-2 border-b border-slate-200 dark:border-zinc-800 overflow-x-auto whitespace-nowrap no-scrollbar select-none">
+        class="flex items-center gap-2 border-b border-slate-200 dark:border-[#1e2433] overflow-x-auto whitespace-nowrap no-scrollbar select-none">
         <button type="button" wire:click="$set('tab', 'plans')"
-            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'plans' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
+            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'plans' ? 'border-[#FFEF4D] text-[#8a7808] dark:text-[#FFEF4D]' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
             <i class="fa-solid fa-layer-group text-xs"></i>
             <span>{{ __('Plan Tiers & Features') }}</span>
         </button>
 
         <button type="button" wire:click="$set('tab', 'renewals')"
-            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'renewals' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
+            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'renewals' ? 'border-[#FFEF4D] text-[#8a7808] dark:text-[#FFEF4D]' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
             <i class="fa-solid fa-clock-rotate-left text-xs"></i>
             <span>{{ __('Renewals & Expiries') }}</span>
             @if ($expiringSoonCount > 0)
-                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white">
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-[#FFEF4D] text-[#090d16]">
                     {{ $expiringSoonCount }}
                 </span>
             @endif
         </button>
 
         <button type="button" wire:click="$set('tab', 'wiki')"
-            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'wiki' ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
+            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'wiki' ? 'border-[#FFEF4D] text-[#8a7808] dark:text-[#FFEF4D]' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
             <i class="fa-solid fa-book-bookmark text-xs"></i>
             <span>{{ __('Commercial Model & Pricing Wiki') }}</span>
         </button>
@@ -407,7 +407,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
             @foreach ($plans as $plan)
                 <div
-                    class="rounded-3xl bg-white dark:bg-zinc-900 border {{ $plan->is_popular ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-slate-200/80 dark:border-zinc-800 shadow-sm' }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
+                    class="rounded-3xl bg-white dark:bg-[#0C0E13] border {{ $plan->is_popular ? 'border-[#FFEF4D] ring-2 ring-[#FFEF4D]/20 shadow-md' : 'border-slate-200/80 dark:border-[#1e2433] shadow-sm' }} p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-lg relative">
                     <div class="space-y-5">
                         <!-- Top Header with Badge Alignment -->
                         <div class="flex items-start justify-between gap-3 min-h-[32px]">
@@ -416,12 +416,12 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                             </h3>
                             @if ($plan->is_popular)
                                 <span
-                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
+                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 shrink-0">
                                     {{ __('Popular') }}
                                 </span>
                             @elseif (!$plan->is_active)
                                 <span
-                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-slate-400 shrink-0">
+                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 dark:bg-[#141821] dark:text-slate-400 shrink-0">
                                     {{ __('Archived') }}
                                 </span>
                             @endif
@@ -436,7 +436,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
                         <!-- Pricing Breakdown -->
                         <div
-                            class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 space-y-2">
+                            class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-2">
                             <div class="flex items-baseline gap-1">
                                 <span class="text-2xl font-black text-slate-900 dark:text-white">
                                     Rp {{ number_format((float) $plan->price_monthly, 0, ',', '.') }}
@@ -444,7 +444,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 <span class="text-xs font-semibold text-slate-400">/ {{ __('mo') }}</span>
                             </div>
                             <div
-                                class="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60 dark:border-zinc-700/60 pt-2 font-medium">
+                                class="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60 dark:border-[#1e2433] pt-2 font-medium">
                                 <span>{{ __('Yearly Plan:') }}</span>
                                 <span class="font-bold text-slate-700 dark:text-slate-300">Rp
                                     {{ number_format((float) $plan->price_yearly, 0, ',', '.') }}</span>
@@ -452,7 +452,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                             <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
                                 <span>{{ __('Platform Take Rate:') }}</span>
                                 <span
-                                    class="font-black text-purple-600 dark:text-purple-400 font-mono">{{ $plan->commission_rate * 100 }}%</span>
+                                    class="font-black text-[#8a7808] dark:text-[#FFEF4D] font-mono">{{ $plan->commission_rate * 100 }}%</span>
                             </div>
                         </div>
 
@@ -465,17 +465,17 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         </div>
 
                         <!-- Features Summary List -->
-                        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
                             <span
                                 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Included Capabilities') }}</span>
 
                             <div class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                                 <div class="flex items-center gap-2">
-                                    <i class="fa-solid fa-cube text-[10px] text-purple-600"></i>
+                                    <i class="fa-solid fa-cube text-[10px] text-[#8a7808] dark:text-[#FFEF4D]"></i>
                                     <span>{{ $plan->package_limit ? __(':count Packages Max', ['count' => $plan->package_limit]) : __('Unlimited Packages') }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <i class="fa-solid fa-users text-[10px] text-purple-600"></i>
+                                    <i class="fa-solid fa-users text-[10px] text-[#8a7808] dark:text-[#FFEF4D]"></i>
                                     <span>{{ $plan->team_member_limit ? __(':count Team Seats', ['count' => $plan->team_member_limit]) : __('Unlimited Team Seats') }}</span>
                                 </div>
                                 @if ($plan->hasFeature('custom_domain'))
@@ -486,7 +486,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 @endif
                                 @if ($plan->hasFeature('byo_gateway'))
                                     <div class="flex items-center gap-2">
-                                        <i class="fa-solid fa-credit-card text-[10px] text-indigo-500"></i>
+                                        <i class="fa-solid fa-credit-card text-[10px] text-[#8a7808] dark:text-[#FFEF4D]"></i>
                                         <span>{{ __('BYO Custom Payment Gateway') }}</span>
                                     </div>
                                 @endif
@@ -501,9 +501,9 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                     </div>
 
                     <!-- Bottom Edit Action -->
-                    <div class="pt-6 border-t border-slate-100 dark:border-zinc-800 mt-6">
+                    <div class="pt-6 border-t border-slate-100 dark:border-[#1e2433] mt-6">
                         <button type="button" wire:click="editPlan('{{ $plan->id }}')"
-                            class="w-full h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 text-slate-700 dark:text-slate-300 font-bold text-xs transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
+                            class="w-full h-10 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#1e2433] text-slate-700 dark:text-zinc-200 font-bold text-xs transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-pen-to-square text-xs"></i>
                             <span>{{ __('Edit Tier') }}</span>
                         </button>
@@ -519,7 +519,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             <!-- Renewals Summary Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div
-                    class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
                     <span
                         class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Total Active Subscriptions') }}</span>
                     <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $activeSubCount }}
@@ -528,7 +528,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                 </div>
 
                 <div
-                    class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
                     <span
                         class="text-xs font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400">{{ __('Expiring Within 7 Days') }}</span>
                     <div class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
@@ -537,7 +537,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                 </div>
 
                 <div
-                    class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+                    class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
                     <span
                         class="text-xs font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400">{{ __('Expired / Lapsed') }}</span>
                     <div class="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">{{ $expiredCount }}
@@ -548,7 +548,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
             <!-- Filters & Search Bar -->
             <div
-                class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
                 <!-- Search -->
                 <div class="relative w-full sm:w-80">
                     <i
@@ -569,7 +569,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
                     @foreach ($renewalTabs as $val => $label)
                         <button type="button" wire:click="$set('renewalsFilter', '{{ $val }}')"
-                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $renewalsFilter === $val ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}">
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $renewalsFilter === $val ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'bg-slate-100 dark:bg-[#141821] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1e2433]' }}">
                             {{ $label }}
                         </button>
                     @endforeach
@@ -577,13 +577,11 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             </div>
 
             <!-- Operators Subscription Table -->
-            <div
-                class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+            <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs sm:text-sm">
                         <thead>
-                            <tr
-                                class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 <th class="py-3.5 px-4 sm:px-6">{{ __('Operator') }}</th>
                                 <th class="py-3.5 px-4">{{ __('Plan & Billing') }}</th>
                                 <th class="py-3.5 px-4">{{ __('Subscribed Date') }}</th>
@@ -592,7 +590,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                        <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                             @forelse ($subscribedOperators as $op)
                                 @php
                                     $isExpired = $op->plan_expires_at && $op->plan_expires_at->isPast();
@@ -605,17 +603,17 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                         ($op->booking_notification_email ?:
                                         $op->users->first()?->email);
                                 @endphp
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition">
+                                <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
                                     <!-- Operator -->
                                     <td class="py-3.5 px-4 sm:px-6">
                                         <div class="flex items-center gap-3">
                                             <div
-                                                class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                                                class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shrink-0 overflow-hidden shadow-xs">
                                                 {{ strtoupper(substr($op->name, 0, 2)) }}
                                             </div>
                                             <div class="min-w-0">
                                                 <a href="{{ route('admin.operators.show', $op->id) }}" wire:navigate
-                                                    class="font-bold text-sm text-slate-900 dark:text-white hover:text-purple-600 transition truncate block">
+                                                    class="font-bold text-sm text-slate-900 dark:text-white hover:text-[#FFEF4D] transition truncate block">
                                                     {{ $op->name }}
                                                 </a>
                                                 <span
@@ -628,7 +626,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     <td class="py-3.5 px-4">
                                         <div class="space-y-0.5">
                                             <span
-                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
                                                 {{ $op->plan?->name ?? 'Custom' }}
                                             </span>
                                             <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -639,12 +637,12 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     </td>
 
                                     <!-- Subscribed Date -->
-                                    <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-xs">
+                                    <td class="py-4 px-4 text-slate-600 dark:text-slate-400 font-mono text-xs">
                                         {{ $op->subscribed_at?->format('d M Y') ?? '-' }}
                                     </td>
 
                                     <!-- Expiration / Status -->
-                                    <td class="py-3.5 px-4">
+                                    <td class="py-4 px-4">
                                         @if ($op->plan_expires_at)
                                             <div class="space-y-0.5">
                                                 <div
@@ -652,7 +650,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                                     {{ $op->plan_expires_at->format('d M Y') }}
                                                 </div>
                                                 <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase {{ $isExpired ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : ($isExpiringSoon ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300') }}">
+                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase {{ $isExpired ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : ($isExpiringSoon ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300') }}">
                                                     {{ $isExpired ? __('Expired') : ($isExpiringSoon ? __('Expiring Soon') : __('Active')) }}
                                                 </span>
                                             </div>
@@ -663,9 +661,9 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     </td>
 
                                     <!-- Auto Renew -->
-                                    <td class="py-3.5 px-4 text-center">
+                                    <td class="py-4 px-4 text-center">
                                         <button type="button" wire:click="toggleAutoRenew('{{ $op->id }}')"
-                                            class="h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-bold uppercase transition cursor-pointer {{ $op->subscription_auto_renew ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 hover:bg-slate-200' }}"
+                                            class="h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-bold uppercase transition cursor-pointer {{ $op->subscription_auto_renew ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 dark:bg-[#141821] hover:bg-slate-200' }}"
                                             title="{{ __('Click to toggle auto-renewal') }}">
                                             <i
                                                 class="fa-solid {{ $op->subscription_auto_renew ? 'fa-check' : 'fa-xmark' }} text-[10px]"></i>
@@ -674,11 +672,11 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     </td>
 
                                     <!-- Actions -->
-                                    <td class="py-3.5 px-4 sm:px-6 text-right">
+                                    <td class="py-4 px-4 sm:px-6 text-right">
                                         <div class="flex items-center justify-end gap-1.5">
                                             <button type="button"
                                                 wire:click="sendRenewalReminder('{{ $op->id }}')"
-                                                class="h-8 px-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-xs font-bold transition border border-purple-200 dark:border-purple-800/50 inline-flex items-center gap-1 cursor-pointer"
+                                                class="h-8 px-2.5 rounded-xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] hover:bg-[#FFEF4D]/20 text-xs font-bold transition border border-[#FFEF4D]/30 inline-flex items-center gap-1 cursor-pointer"
                                                 title="{{ __('Send Renewal Reminder Email') }}">
                                                 <i class="fa-solid fa-paper-plane text-[10px]"></i>
                                                 <span>{{ __('Remind') }}</span>
@@ -686,13 +684,13 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
                                             <button type="button"
                                                 wire:click="extendSubscription('{{ $op->id }}', 30)"
-                                                class="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition inline-flex items-center justify-center cursor-pointer"
+                                                class="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] text-xs font-bold transition inline-flex items-center justify-center cursor-pointer"
                                                 title="{{ __('Extend subscription by +30 days') }}">
                                                 <span>+30d</span>
                                             </button>
 
                                             <a href="{{ route('admin.operators.show', $op->id) }}" wire:navigate
-                                                class="h-8 w-8 rounded-xl inline-flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 text-xs transition cursor-pointer"
+                                                class="h-8 w-8 rounded-xl inline-flex items-center justify-center bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-[#1e2433] text-xs transition cursor-pointer"
                                                 title="{{ __('View Operator Details') }}">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
@@ -701,8 +699,9 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="py-8 text-center text-slate-400">
-                                        {{ __('No subscribed operators match your search or filter.') }}
+                                    <td colspan="6" class="py-12 text-center text-slate-400">
+                                        <i class="fa-solid fa-layer-group text-3xl mb-2 block opacity-40"></i>
+                                        <p class="font-bold text-sm text-slate-600 dark:text-slate-300">{{ __('No subscribed operators match your search or filter.') }}</p>
                                     </td>
                                 </tr>
                             @endforelse
@@ -718,10 +717,10 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         <div class="space-y-6">
             <!-- Executive Summary Card -->
             <div
-                class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <div class="flex items-center gap-3">
                     <span
-                        class="p-3 rounded-2xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 text-xl shrink-0">
+                        class="p-3 rounded-2xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xl shrink-0">
                         <i class="fa-solid fa-scale-balanced"></i>
                     </span>
                     <div>
@@ -735,9 +734,9 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                 </div>
 
                 <div
-                    class="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/60 text-xs text-purple-950 dark:text-purple-200 leading-relaxed space-y-2">
-                    <p class="font-extrabold text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-lightbulb text-purple-600"></i>
+                    class="p-4 rounded-2xl bg-[#FFEF4D]/10 dark:bg-[#FFEF4D]/5 border border-[#FFEF4D]/30 text-xs text-slate-900 dark:text-slate-200 leading-relaxed space-y-2">
+                    <p class="font-extrabold text-sm flex items-center gap-2 text-[#8a7808] dark:text-[#FFEF4D]">
+                        <i class="fa-solid fa-lightbulb"></i>
                         {{ __('Industry Benchmark Model (FareHarbor, Loket, Megatix):') }}
                     </p>
                     <p>
@@ -749,34 +748,34 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
             <!-- Commercial Matrix Table -->
             <div
-                class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <h3 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-table-columns text-indigo-600"></i>
+                    <i class="fa-solid fa-table-columns text-[#FFEF4D]"></i>
                     {{ __('Subscription Tiers & Commercial Matrix') }}
                 </h3>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs">
+                    <table class="w-full text-left text-xs sm:text-sm">
                         <thead>
                             <tr
-                                class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 <th class="py-3 px-4">{{ __('Capability / Metric') }}</th>
                                 <th class="py-3 px-4">{{ __('Starter Essential') }}</th>
-                                <th class="py-3 px-4 text-purple-600 dark:text-purple-400">{{ __('Pro Operator') }}
+                                <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Pro Operator') }}
                                 </th>
-                                <th class="py-3 px-4 text-indigo-600 dark:text-indigo-400">{{ __('Agency Ultimate') }}
+                                <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Agency Ultimate') }}
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-zinc-800 font-medium">
+                        <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433] font-medium">
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
                                     {{ __('Subscription Price') }}</td>
                                 <td class="py-3 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">Free / Rp
                                     0</td>
-                                <td class="py-3 px-4 font-mono font-bold text-purple-600 dark:text-purple-400">Rp
+                                <td class="py-3 px-4 font-mono font-bold text-[#8a7808] dark:text-[#FFEF4D]">Rp
                                     299.000 / mo (Rp 2.990.000 / yr)</td>
-                                <td class="py-3 px-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">Rp
+                                <td class="py-3 px-4 font-mono font-bold text-[#8a7808] dark:text-[#FFEF4D]">Rp
                                     699.000 / mo (Rp 6.990.000 / yr)</td>
                             </tr>
                             <tr>
@@ -851,7 +850,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Example Flow Box -->
                 <div
-                    class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
+                    class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-3">
                     <h3 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
                         <i class="fa-solid fa-calculator text-emerald-600"></i>
                         {{ __('Booking Transaction Flow Example') }}
@@ -860,41 +859,41 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         {{ __('Simulating Rp 1.000.000 tour booking via QRIS checkout.') }}
                     </p>
 
-                    <div class="p-4 rounded-2xl bg-slate-900 text-slate-100 font-mono text-xs space-y-2">
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#10141d] text-slate-800 dark:text-slate-100 font-mono text-xs space-y-2 border border-slate-200 dark:border-[#1e2433]">
                         <div
-                            class="text-slate-400 border-b border-slate-800 pb-1.5 font-bold uppercase tracking-wider text-[11px]">
+                            class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#1e2433] pb-1.5 font-bold uppercase tracking-wider text-[11px]">
                             {{ __('Guest Checkout Cart Breakdown:') }}
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between text-slate-700 dark:text-slate-300">
                             <span>Nusa Penida Manta & Snorkel:</span>
                             <span>Rp 1.000.000</span>
                         </div>
-                        <div class="flex justify-between text-purple-400">
+                        <div class="flex justify-between text-[#8a7808] dark:text-[#FFEF4D] font-bold">
                             <span>Guest Service Fee (5%):</span>
                             <span>+ Rp 50.000</span>
                         </div>
-                        <div class="flex justify-between font-bold text-emerald-400 border-t border-slate-800 pt-1.5">
+                        <div class="flex justify-between font-bold text-emerald-700 dark:text-emerald-400 border-t border-slate-200 dark:border-[#1e2433] pt-1.5">
                             <span>Total Paid by Guest via DOKU:</span>
                             <span>Rp 1.050.000</span>
                         </div>
 
                         <div
-                            class="text-slate-400 border-b border-slate-800 pt-3 pb-1.5 font-bold uppercase tracking-wider text-[11px]">
+                            class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#1e2433] pt-3 pb-1.5 font-bold uppercase tracking-wider text-[11px]">
                             {{ __('Automated Settlement Split:') }}
                         </div>
-                        <div class="flex justify-between text-emerald-400">
+                        <div class="flex justify-between text-emerald-700 dark:text-emerald-400 font-bold">
                             <span>Operator Wallet (100% Net):</span>
                             <span>Rp 1.000.000</span>
                         </div>
-                        <div class="flex justify-between text-purple-400">
+                        <div class="flex justify-between text-[#8a7808] dark:text-[#FFEF4D] font-bold">
                             <span>Platform Gross Revenue:</span>
                             <span>Rp 50.000</span>
                         </div>
-                        <div class="flex justify-between text-rose-400">
+                        <div class="flex justify-between text-rose-600 dark:text-rose-400">
                             <span>DOKU QRIS Fee (0.7%):</span>
                             <span>- Rp 7.350</span>
                         </div>
-                        <div class="flex justify-between font-bold text-sky-400 border-t border-slate-800 pt-1.5">
+                        <div class="flex justify-between font-bold text-sky-700 dark:text-sky-400 border-t border-slate-200 dark:border-[#1e2433] pt-1.5">
                             <span>Platform Net Margin:</span>
                             <span>Rp 42.650</span>
                         </div>
@@ -903,15 +902,15 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
                 <!-- Strategic Advantages Box -->
                 <div
-                    class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                    class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                     <h3 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line text-purple-600"></i>
+                        <i class="fa-solid fa-chart-line text-[#8a7808] dark:text-[#FFEF4D]"></i>
                         {{ __('Why This Model Succeeds in Indonesia') }}
                     </h3>
 
                     <div class="space-y-3 text-xs">
                         <div
-                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-100 dark:border-[#1e2433]">
                             <strong class="text-slate-900 dark:text-white block font-bold">1. Zero Resistance from Tour Operators</strong>
                             <p class="text-slate-500 dark:text-slate-400 mt-0.5">Experience providers, activity hosts, and agencies get 100% of
                                 their requested price into their wallet. Zero commission eliminates onboarding
@@ -919,7 +918,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         </div>
 
                         <div
-                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-100 dark:border-[#1e2433]">
                             <strong class="text-slate-900 dark:text-white block font-bold">2. Unlimited Team Seats on
                                 All Plans</strong>
                             <p class="text-slate-500 dark:text-slate-400 mt-0.5">Agencies rely heavily on WhatsApp
@@ -928,7 +927,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         </div>
 
                         <div
-                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-100 dark:border-[#1e2433]">
                             <strong class="text-slate-900 dark:text-white block font-bold">3. Guest Cultural
                                 Acceptance</strong>
                             <p class="text-slate-500 dark:text-slate-400 mt-0.5">Domestic travelers and foreign
@@ -937,7 +936,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         </div>
 
                         <div
-                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-100 dark:border-[#1e2433]">
                             <strong class="text-slate-900 dark:text-white block font-bold">4. Predictable SaaS
                                 Subscription MRR</strong>
                             <p class="text-slate-500 dark:text-slate-400 mt-0.5">Operators happily pay Rp 299.000/mo or
@@ -956,13 +955,13 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             <div
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
                 <div
-                    class="w-full max-w-xl rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col my-8">
+                    class="w-full max-w-xl rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl flex flex-col my-8">
                     <!-- Modal Header -->
                     <div
-                        class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
+                        class="p-6 border-b border-slate-100 dark:border-[#1e2433] flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-[#10141d] rounded-t-3xl">
                         <div class="flex items-start gap-3.5 min-w-0">
                             <div
-                                class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                                class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5 font-bold">
                                 <i class="fa-solid fa-sliders"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
@@ -1006,7 +1005,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         </div>
 
                         <div
-                            class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                            class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
                             <div>
                                 <x-label for="price_monthly" :value="__('Monthly Price (Rp)')" required />
                                 <x-input id="price_monthly" type="number" step="1000" wire:model="price_monthly"
@@ -1022,7 +1021,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                             <div>
                                 <x-label for="commission_percentage" :value="__('Commission (%)')" required />
                                 <x-input id="commission_percentage" type="number" step="0.1"
-                                    wire:model="commission_percentage" class="font-bold font-mono text-purple-600"
+                                    wire:model="commission_percentage" class="font-bold font-mono text-[#8a7808] dark:text-[#FFEF4D]"
                                     :error="$errors->has('commission_percentage')" />
                                 <x-input-error :messages="$errors->get('commission_percentage')" />
                             </div>
@@ -1044,84 +1043,84 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                         </div>
 
                         <!-- Feature Toggles -->
-                        <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                        <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-[#1e2433]">
                             <span
                                 class="text-xs font-bold text-slate-800 dark:text-slate-200 block">{{ __('Included Feature Permissions') }}</span>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_quick_links" wire:model="features.quick_booking_links"
                                         :label="__('1-Click Booking Links')" :description="__('Direct payment and reservation links')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_promotional_coupons" wire:model="features.promotional_coupons"
                                         :label="__('Coupons & Promo Codes')" :description="__('Guest discounts & marketing campaigns')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_adv_calendar" wire:model="features.advanced_calendar"
                                         :label="__('Advanced Resource Matrix')" :description="__('Resource calendar & capacity timeline')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_manifest" wire:model="features.daily_manifest_export"
                                         :label="__('Daily Run-Sheet Export')" :description="__('Daily passenger manifest downloads')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_heatmap" wire:model="features.capacity_heatmap"
                                         :label="__('Capacity Heatmap')" :description="__('Monthly capacity utilization analytics')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_pixels" wire:model="features.tracking_pixels" :label="__('Marketing Pixels')"
                                         :description="__('Meta Pixel & GA4 tracking')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_reviews" wire:model="features.automated_review_requests"
                                         :label="__('Automated Review Emails')" :description="__('Post-trip customer feedback loop')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_gcal" wire:model="features.google_calendar" :label="__('Google Calendar Sync')"
                                         :description="__('iCal live reservation sync feed')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_crm" wire:model="features.guest_crm" :label="__('Guest Directory CRM')"
                                         :description="__('Customer history and profiles')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_whatsapp" wire:model="features.whatsapp_dispatch"
                                         :label="__('1-Click WhatsApp')" :description="__('Instant dispatch to guests & drivers')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_custom_domain" wire:model="features.custom_domain"
                                         :label="__('Custom Domain')" :description="__('SSL on brand domain')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_byo_gateway" wire:model="features.byo_gateway" :label="__('BYO Custom Gateway')"
                                         :description="__('Direct merchant account settlement')" />
                                 </div>
 
                                 <div
-                                    class="p-3 rounded-2xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/40 dark:bg-purple-950/30 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition">
+                                    class="p-3 rounded-2xl border border-[#FFEF4D]/30 bg-[#FFEF4D]/10 hover:bg-[#FFEF4D]/15 transition">
                                     <x-checkbox id="feat_is_popular" wire:model="is_popular" :label="__('Highlight as Popular')"
                                         :description="__('Show popular badge on tier card')" />
                                 </div>
@@ -1130,16 +1129,16 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 
                         <!-- Modal Actions Footer -->
                         <div
-                            class="pt-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end gap-3">
+                            class="pt-4 border-t border-slate-100 dark:border-[#1e2433] flex items-center justify-end gap-3">
                             <x-button type="button" variant="secondary" wire:click="closeModal"
                                 class="text-xs font-bold">
                                 {{ __('Cancel') }}
                             </x-button>
-                            <x-button type="submit" variant="primary"
-                                class="text-xs font-bold bg-purple-600 hover:bg-purple-700">
-                                <i class="fa-solid fa-floppy-disk mr-1.5 text-xs"></i>
+                            <button type="submit"
+                                class="h-9 px-4 rounded-xl text-xs font-black bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+                                <i class="fa-solid fa-floppy-disk text-xs"></i>
                                 <span>{{ __('Save Plan Tier') }}</span>
-                            </x-button>
+                            </button>
                         </div>
                     </form>
                 </div>

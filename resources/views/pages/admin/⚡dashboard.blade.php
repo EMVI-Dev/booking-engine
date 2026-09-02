@@ -211,7 +211,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300">
+                <span class="p-2 rounded-xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
                     <i class="fa-solid fa-chart-pie text-lg"></i>
                 </span>
                 <div>
@@ -226,7 +226,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
         </div>
 
         <!-- Time Range Selector -->
-        <div class="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-1.5 rounded-2xl shadow-xs self-start sm:self-auto">
+        <div class="flex items-center gap-1.5 bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] p-1.5 rounded-2xl shadow-xs self-start sm:self-auto">
             @php
                 $periods = [
                     '30d' => __('30 Days'),
@@ -238,7 +238,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
                 <button
                     type="button"
                     wire:click="$set('period', '{{ $key }}')"
-                    class="px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer {{ $period === $key ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
+                    class="px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer {{ $period === $key ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-[#141721]' }}"
                 >
                     {{ $label }}
                 </button>
@@ -249,27 +249,27 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
     <!-- Executive KPI Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Card 1: Total Platform GMV -->
-        <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2 relative overflow-hidden group hover:border-purple-300 dark:hover:border-purple-800/80 transition">
+        <div class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Platform Gross GMV') }}</span>
-                <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400">
-                    <i class="fa-solid fa-coins text-sm"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Platform Gross GMV') }}</span>
+                <span class="w-8 h-8 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shadow-xs">
+                    <i class="fa-solid fa-coins"></i>
                 </span>
             </div>
             <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                 Rp {{ number_format($this->totalGmv, 0, ',', '.') }}
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs text-slate-500 dark:text-zinc-400">
                 {{ __('All-time processed customer payments') }}
             </p>
         </div>
 
         <!-- Card 2: Current Month GMV & Momentum -->
-        <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2 relative overflow-hidden group hover:border-indigo-300 dark:hover:border-indigo-800/80 transition">
+        <div class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-emerald-500 shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Monthly Volume (MTD)') }}</span>
-                <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
-                    <i class="fa-solid fa-calendar-check text-sm"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Monthly Volume (MTD)') }}</span>
+                <span class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-black flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-calendar-check"></i>
                 </span>
             </div>
             <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
@@ -290,45 +290,45 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
         </div>
 
         <!-- Card 3: Active MRR -->
-        <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2 relative overflow-hidden group hover:border-emerald-300 dark:hover:border-emerald-800/80 transition">
+        <div class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Subscription MRR') }}</span>
-                <span class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400">
-                    <i class="fa-solid fa-repeat text-sm"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Subscription MRR') }}</span>
+                <span class="w-8 h-8 rounded-xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 font-black flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-repeat"></i>
                 </span>
             </div>
             <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                 Rp {{ number_format($this->currentMrr, 0, ',', '.') }}
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs text-slate-500 dark:text-zinc-400">
                 {{ __('Contracted recurring plan revenue / month') }}
             </p>
         </div>
 
         <!-- Card 4: Live Tour Operators -->
-        <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2 relative overflow-hidden group hover:border-amber-300 dark:hover:border-amber-800/80 transition">
+        <div class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-sky-500 shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Live Operators') }}</span>
-                <span class="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400">
-                    <i class="fa-solid fa-users-gear text-sm"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Live Operators') }}</span>
+                <span class="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-black flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-users-gear"></i>
                 </span>
             </div>
             <div class="flex items-baseline gap-2">
                 <span class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $this->approvedOperatorsCount }}</span>
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">/ {{ $this->totalOperatorsCount }} {{ __('registered') }}</span>
+                <span class="text-xs font-bold text-slate-500 dark:text-zinc-400">/ {{ $this->totalOperatorsCount }} {{ __('registered') }}</span>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs text-slate-500 dark:text-zinc-400">
                 {{ __('Approved operator storefronts selling actively') }}
             </p>
         </div>
     </div>
 
     <!-- Monthly GMV Trend Visualizer -->
-    <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-zinc-800">
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-[#1e2433]">
             <div>
                 <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-chart-column text-purple-600 dark:text-purple-400"></i>
+                    <i class="fa-solid fa-chart-column text-[#8a7808] dark:text-[#FFEF4D]"></i>
                     {{ __('Gross Merchandise Volume (GMV) Trend') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
@@ -337,7 +337,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
             </div>
             <div class="flex items-center gap-4 text-xs font-semibold">
                 <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                    <span class="w-3 h-3 rounded bg-purple-600 inline-block"></span>
+                    <span class="w-3 h-3 rounded bg-[#FFEF4D] inline-block"></span>
                     {{ __('Reservation GMV') }}
                 </span>
             </div>
@@ -362,15 +362,15 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
                     </div>
 
                     <!-- Bar -->
-                    <div class="w-full max-w-[48px] bg-slate-100 dark:bg-zinc-800 rounded-t-xl overflow-hidden flex flex-col justify-end h-40 relative">
+                    <div class="w-full max-w-[48px] bg-slate-100 dark:bg-[#141821] rounded-t-xl overflow-hidden flex flex-col justify-end h-40 relative border-t border-x border-slate-200 dark:border-[#1e2433]">
                         <div
                             style="height: {{ $pct }}%"
-                            class="w-full bg-gradient-to-t from-purple-600 to-indigo-500 dark:from-purple-500 dark:to-indigo-400 rounded-t-xl group-hover:brightness-110 transition-all duration-300"
+                            class="w-full bg-[#FFEF4D] rounded-t-xl group-hover:brightness-110 transition-all duration-300"
                         ></div>
                     </div>
 
                     <!-- Label -->
-                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300 group-hover:text-purple-600 transition truncate">
+                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300 group-hover:text-[#FFEF4D] transition truncate">
                         {{ $m['short'] }}
                     </span>
                 </div>
@@ -381,8 +381,8 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
     <!-- Dual Column: Top Operators & Plan Distribution -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left: Top Operators by GMV (2 Cols) -->
-        <div class="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+        <div class="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
                 <div>
                     <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                         <i class="fa-solid fa-trophy text-amber-500"></i>
@@ -392,17 +392,17 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
                         {{ __('Ranked by all-time processed gross volume.') }}
                     </p>
                 </div>
-                <a href="{{ route('admin.operators.index') }}" wire:navigate class="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline">
+                <a href="{{ route('admin.operators.index') }}" wire:navigate class="text-xs font-bold text-[#8a7808] dark:text-[#FFEF4D] hover:underline">
                     {{ __('View all') }} &rarr;
                 </a>
             </div>
 
-            <div class="divide-y divide-slate-100 dark:divide-zinc-800">
+            <div class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                 @forelse ($this->topOperators as $index => $operator)
-                    <div class="py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 px-2 rounded-2xl transition">
+                    <div class="py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-[#141824]/50 px-2 rounded-2xl transition">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-6 text-center font-black text-xs text-slate-400">{{ $index + 1 }}</span>
-                            <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-purple-200 dark:border-purple-800/50">
+                            <div class="w-10 h-10 rounded-xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-[#FFEF4D]/30">
                                 @if ($operator->logo_path)
                                     <img src="{{ Storage::url($operator->logo_path) }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
                                 @else
@@ -410,7 +410,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
                                 @endif
                             </div>
                             <div class="min-w-0">
-                                <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="font-bold text-sm text-slate-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition truncate block">
+                                <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="font-bold text-sm text-slate-900 dark:text-white hover:text-[#FFEF4D] transition truncate block">
                                     {{ $operator->name }}
                                 </a>
                                 <span class="text-xs text-slate-500 dark:text-slate-400">
@@ -435,10 +435,10 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
         </div>
 
         <!-- Right: Subscription Plans Breakdown (1 Col) -->
-        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-            <div class="pb-3 border-b border-slate-100 dark:border-zinc-800">
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+            <div class="pb-3 border-b border-slate-100 dark:border-[#1e2433]">
                 <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-indigo-500"></i>
+                    <i class="fa-solid fa-layer-group text-[#8a7808] dark:text-[#FFEF4D]"></i>
                     {{ __('Plan Subscriptions') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
@@ -448,10 +448,10 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
 
             <div class="space-y-3">
                 @foreach ($this->planDistribution as $plan)
-                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 space-y-1">
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
                         <div class="flex items-center justify-between">
                             <span class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{{ $plan['name'] }}</span>
-                            <span class="font-black text-sm text-purple-600 dark:text-purple-400">
+                            <span class="font-black text-sm text-[#8a7808] dark:text-[#FFEF4D]">
                                 {{ $plan['count'] }} {{ __('operators') }}
                             </span>
                         </div>
@@ -470,7 +470,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
             </div>
 
             <div class="pt-2">
-                <a href="{{ route('admin.plans.index') }}" wire:navigate class="w-full h-9 flex items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-xs font-bold transition border border-purple-200 dark:border-purple-800/50">
+                <a href="{{ route('admin.plans.index') }}" wire:navigate class="w-full h-9 flex items-center justify-center rounded-xl bg-[#FFEF4D]/15 hover:bg-[#FFEF4D]/25 text-[#8a7808] dark:text-[#FFEF4D] text-xs font-bold transition border border-[#FFEF4D]/30">
                     <i class="fa-solid fa-sliders mr-1.5 text-xs"></i>
                     {{ __('Manage Subscription Tiers') }}
                 </a>
@@ -479,8 +479,8 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
     </div>
 
     <!-- Recent Platform-Wide Transactions Stream -->
-    <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
             <div>
                 <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                     <i class="fa-solid fa-receipt text-emerald-500"></i>
@@ -490,7 +490,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
                     {{ __('Real-time transaction feed across all operator storefronts.') }}
                 </p>
             </div>
-            <a href="{{ route('admin.payouts.index') }}" wire:navigate class="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline">
+            <a href="{{ route('admin.payouts.index') }}" wire:navigate class="text-xs font-bold text-[#8a7808] dark:text-[#FFEF4D] hover:underline">
                 {{ __('View Payouts') }} &rarr;
             </a>
         </div>
@@ -498,12 +498,12 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
         <!-- Mobile Admin Transactions Feed Card List (md:hidden) -->
         <div class="md:hidden space-y-3 transition-opacity duration-200" wire:loading.class="opacity-60">
             @forelse ($this->recentTransactions as $payment)
-                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="font-mono font-extrabold text-xs text-purple-600 dark:text-purple-400">
+                        <span class="font-mono font-extrabold text-xs text-[#FFEF4D]">
                             #{{ $payment->reservation?->code ?? substr($payment->id, 0, 8) }}
                         </span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300">
                             {{ strtoupper($payment->gateway) }}
                         </span>
                     </div>
@@ -514,7 +514,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
                         </h4>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#1e2433] text-xs">
                         <span class="text-slate-400 text-[10px] uppercase font-bold">{{ __('Amount') }}</span>
                         <span class="font-mono font-black text-slate-900 dark:text-white">
                             Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}
@@ -532,52 +532,53 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead>
-                    <tr class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40">
-                        <th class="py-3 px-3.5">{{ __('Transaction / Code') }}</th>
-                        <th class="py-3 px-3.5">{{ __('Operator') }}</th>
-                        <th class="py-3 px-3.5">{{ __('Guest') }}</th>
-                        <th class="py-3 px-3.5">{{ __('Amount') }}</th>
-                        <th class="py-3 px-3.5">{{ __('Gateway') }}</th>
-                        <th class="py-3 px-3.5 text-right">{{ __('Date & Time') }}</th>
+                    <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <th class="py-3.5 px-4 sm:px-6">{{ __('Transaction / Code') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Operator') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Guest') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Amount') }}</th>
+                        <th class="py-3.5 px-4">{{ __('Gateway') }}</th>
+                        <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Date & Time') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                     @forelse ($this->recentTransactions as $payment)
-                        <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition">
-                            <td class="py-3.5 px-3.5">
-                                <div class="font-mono font-bold text-purple-600 dark:text-purple-400">
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
+                            <td class="py-3.5 px-4 sm:px-6">
+                                <span class="font-mono text-[10px] font-bold text-[#FFEF4D] px-2 py-0.5 rounded-lg bg-[#FFEF4D]/10 border border-[#FFEF4D]/30 inline-block mb-0.5">
                                     #{{ $payment->reservation?->code ?? substr($payment->id, 0, 8) }}
-                                </div>
-                                <span class="text-xs text-slate-400 font-mono">{{ $payment->gateway_ref ?? '-' }}</span>
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-mono block">{{ $payment->gateway_ref ?? '-' }}</span>
                             </td>
-                            <td class="py-3.5 px-3.5">
+                            <td class="py-3.5 px-4">
                                 @if ($payment->reservation?->operator)
-                                    <a href="{{ route('admin.operators.show', $payment->reservation->operator->id) }}" wire:navigate class="font-bold text-slate-900 dark:text-white hover:text-purple-600 transition">
+                                    <a href="{{ route('admin.operators.show', $payment->reservation->operator->id) }}" wire:navigate class="font-bold text-slate-900 dark:text-white hover:text-[#FFEF4D] transition">
                                         {{ $payment->reservation->operator->name }}
                                     </a>
                                 @else
                                     <span class="text-slate-400">-</span>
                                 @endif
                             </td>
-                            <td class="py-3.5 px-3.5 text-slate-700 dark:text-slate-300 font-medium">
+                            <td class="py-3.5 px-4 text-slate-700 dark:text-slate-300 font-medium">
                                 {{ $payment->reservation?->guest_name ?? '-' }}
                             </td>
-                            <td class="py-3.5 px-3.5 font-black text-slate-900 dark:text-white">
+                            <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
                                 Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}
                             </td>
-                            <td class="py-3.5 px-3.5">
-                                <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                            <td class="py-3.5 px-4">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
                                     {{ strtoupper($payment->gateway) }}
                                 </span>
                             </td>
-                            <td class="py-3.5 px-3.5 text-right text-slate-500 dark:text-slate-400 font-mono text-xs">
+                            <td class="py-3.5 px-4 sm:px-6 text-right text-slate-500 dark:text-slate-400 font-mono text-xs">
                                 {{ $payment->created_at?->format('d M Y, H:i') }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-8 text-center text-slate-400">
-                                {{ __('No recent customer transactions recorded.') }}
+                            <td colspan="6" class="py-12 text-center text-slate-400">
+                                <i class="fa-solid fa-receipt text-3xl mb-2 block opacity-40"></i>
+                                <p class="font-bold text-sm text-slate-600 dark:text-slate-300">{{ __('No recent customer transactions recorded.') }}</p>
                             </td>
                         </tr>
                     @endforelse

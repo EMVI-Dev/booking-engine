@@ -75,11 +75,16 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
             <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                 <span>{{ __('Operations Hub') }}</span>
                 <span>&bull;</span>
-                <span class="text-indigo-600 dark:text-indigo-400">{{ __('Calendar & Operations Schedule') }}</span>
+                <span class="text-slate-800 dark:text-[#FFEF4D] font-bold">{{ __('Calendar & Operations Schedule') }}</span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                {{ __('Booking Calendar & Availability') }}
-            </h1>
+            <div class="flex items-center gap-2.5">
+                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
+                    <i class="fa-solid fa-calendar-days text-lg"></i>
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    {{ __('Booking Calendar & Availability') }}
+                </h1>
+            </div>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {{ __('Manage scheduled guest departures, resource allocation, run-sheet manifests, and blackout dates.') }}
             </p>
@@ -95,7 +100,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 <i class="fa-brands fa-google text-indigo-600 dark:text-indigo-400 text-sm"></i>
                 <span>{{ __('Sync iCal Feed') }}</span>
                 @if (!$this->hasGoogleCalendarFeature)
-                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center gap-1">
+                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16] flex items-center gap-1">
                         <i class="fa-solid fa-lock text-[8px]"></i>
                         <span>PRO</span>
                     </span>
@@ -113,13 +118,13 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
     @endif
 
     <!-- Calendar View Mode Tabs Navigator -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-zinc-800 pb-3 print:hidden">
-        <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100/80 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/60 overflow-x-auto max-w-full">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-[#1e2433] pb-3 print:hidden">
+        <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-[#141721] border border-slate-200 dark:border-[#262d3d] overflow-x-auto max-w-full">
             <!-- 1. Month Grid View (Free) -->
             <button
                 type="button"
                 wire:click="switchView('month')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'month' ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                class="px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'month' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white' }}"
             >
                 <i class="fa-solid fa-calendar-days"></i>
                 <span>{{ __('Month Grid') }}</span>
@@ -129,12 +134,12 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
             <button
                 type="button"
                 wire:click="switchView('timeline')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'timeline' ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                class="px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'timeline' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white' }}"
             >
                 <i class="fa-solid fa-bars-staggered"></i>
                 <span>{{ __('Resource Timeline') }}</span>
                 @if (!$this->hasTimelineFeature)
-                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center gap-1">
+                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16] border border-[#fae639] flex items-center gap-1">
                         <i class="fa-solid fa-lock text-[8px]"></i>
                         <span>PRO</span>
                     </span>
@@ -145,12 +150,12 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
             <button
                 type="button"
                 wire:click="switchView('manifest')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'manifest' ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                class="px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'manifest' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white' }}"
             >
                 <i class="fa-solid fa-clipboard-list"></i>
                 <span>{{ __('Daily Manifest') }}</span>
                 @if (!$this->hasManifestFeature)
-                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center gap-1">
+                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16] border border-[#fae639] flex items-center gap-1">
                         <i class="fa-solid fa-lock text-[8px]"></i>
                         <span>PRO</span>
                     </span>
@@ -161,12 +166,12 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
             <button
                 type="button"
                 wire:click="switchView('heatmap')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'heatmap' ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                class="px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'heatmap' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white' }}"
             >
                 <i class="fa-solid fa-fire-flame-curved"></i>
                 <span>{{ __('Capacity Heatmap') }}</span>
                 @if (!$this->hasHeatmapFeature)
-                    <span title="{{ __('Requires Agency Ultimate Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center gap-1">
+                    <span title="{{ __('Requires Agency Ultimate Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16] border border-[#fae639] flex items-center gap-1">
                         <i class="fa-solid fa-lock text-[8px]"></i>
                         <span>ULTIMATE</span>
                     </span>

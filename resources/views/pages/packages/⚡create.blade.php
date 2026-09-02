@@ -216,7 +216,7 @@ new #[Title('Create Tour Package')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6 max-w-5xl">
+<div class="space-y-6 w-full">
     <!-- Desktop Notice on Mobile -->
     <x-desktop-only-notice
         :title="__('Tour Package Creation Best Managed on Desktop')"

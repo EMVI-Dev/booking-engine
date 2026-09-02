@@ -317,9 +317,12 @@ test('operator invoice receipt displays coupon promo code discount breakdown', f
     Livewire::test('pages::settings.billing')
         ->assertSee('INV-SUB-PROMO-100')
         ->assertSee('SAVE150')
-        ->call('viewInvoice', $payment->id)
+        ->call('openInvoice', $payment->id)
         ->assertSee('Official Subscription Receipt')
         ->assertSee('Promo Code Discount (SAVE150)')
         ->assertSee('150.000')
-        ->assertSee('350.000');
+        ->assertSee('350.000')
+        ->call('closeInvoiceModal')
+        ->call('viewInvoice', $payment->id)
+        ->assertSee('Official Subscription Receipt');
 });

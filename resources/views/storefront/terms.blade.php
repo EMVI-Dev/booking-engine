@@ -167,7 +167,7 @@
                             @if ($agent->logo_path ?? $agent->logo)
                                 <img src="{{ Storage::url($agent->logo_path ?? $agent->logo) }}" alt="{{ $agent->name }}" class="h-12 w-12 rounded-2xl object-cover border border-slate-200/80 dark:border-zinc-800 shadow-xs shrink-0 bg-white dark:bg-zinc-800" />
                             @else
-                                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 text-white font-black text-lg shadow-sm shrink-0">
+                                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 text-[#101730] font-black text-lg shadow-sm shrink-0">
                                     {{ strtoupper(substr($agent->name, 0, 1)) }}
                                 </span>
                             @endif

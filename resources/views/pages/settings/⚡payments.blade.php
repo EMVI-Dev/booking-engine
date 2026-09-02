@@ -103,7 +103,7 @@ new #[Title('Payment Gateways')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6 max-w-6xl mx-auto">
+<div class="space-y-6 w-full">
     <!-- Desktop Notice on Mobile -->
     <x-desktop-only-notice
         :title="__('Payment Gateway Setup Best Managed on Desktop')"
@@ -118,7 +118,7 @@ new #[Title('Payment Gateways')] class extends Component {
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400">
+                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
                     <i class="fa-solid fa-credit-card text-lg"></i>
                 </span>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -314,7 +314,7 @@ new #[Title('Payment Gateways')] class extends Component {
             <!-- Custom Gateway BYO Config Fields -->
             @if ($payment_mode === 'custom')
                 @if (! $this->currentOperator?->hasFeature('byo_gateway'))
-                    <div class="p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+                    <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
                         <div class="flex items-center gap-2.5">
                             <span class="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 text-sm">
                                 <i class="fa-solid fa-crown"></i>

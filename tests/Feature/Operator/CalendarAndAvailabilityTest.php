@@ -51,8 +51,8 @@ test('operator can view calendar with month days and scheduled reservations', fu
 test('operator can navigate calendar months', function () {
     $this->actingAs($this->user);
 
-    $nextMonthLabel = now()->addMonth()->format('F Y');
-    $prevMonthLabel = now()->subMonth()->format('F Y');
+    $nextMonthLabel = now()->startOfMonth()->addMonth()->format('F Y');
+    $prevMonthLabel = now()->startOfMonth()->subMonth()->format('F Y');
 
     Livewire::test('calendar.month-grid')
         ->call('nextMonth')

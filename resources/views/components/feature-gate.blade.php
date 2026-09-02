@@ -10,17 +10,17 @@
 <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-sm p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-6">
     <!-- Feature Icon with Lock Badge -->
     <div class="relative inline-block mx-auto">
-        <div class="w-20 h-20 rounded-3xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-3xl shadow-inner mx-auto">
+        <div class="w-20 h-20 rounded-3xl bg-slate-100 dark:bg-[#141721] text-slate-800 dark:text-[#FFEF4D] border border-slate-200 dark:border-[#262d3d] flex items-center justify-center text-3xl shadow-inner mx-auto">
             <i class="{{ $icon }}"></i>
         </div>
-        <div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs shadow-md border-2 border-white dark:border-zinc-900">
+        <div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shadow-md border-2 border-white dark:border-zinc-900">
             <i class="fa-solid fa-lock"></i>
         </div>
     </div>
 
     <!-- Header Text -->
     <div class="space-y-2 max-w-lg mx-auto">
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FFEF4D] text-[#090d16] border border-[#fae639] shadow-xs">
             <i class="fa-solid fa-sparkles text-[10px]"></i>
             <span>{{ __('Requires :plan Plan', ['plan' => $requiredPlan]) }}</span>
         </div>
@@ -52,9 +52,9 @@
         <a
             href="{{ route('settings.plan') }}"
             wire:navigate
-            class="h-11 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2"
+            class="h-11 px-8 rounded-2xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs sm:text-sm shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
         >
-            <i class="fa-solid fa-bolt text-amber-300"></i>
+            <i class="fa-solid fa-bolt text-xs"></i>
             <span>{{ __('Upgrade to :plan', ['plan' => $requiredPlan]) }}</span>
             <i class="fa-solid fa-arrow-right text-xs"></i>
         </a>

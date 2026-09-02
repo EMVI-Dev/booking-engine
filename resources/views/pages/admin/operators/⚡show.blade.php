@@ -42,6 +42,8 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         };
 
         $this->operator->update(['status' => $operatorStatus]);
+        app(DomainResolverService::class)->clearOperatorDomainCache($this->operator);
+        Cache::flush();
         $this->operator->refresh();
         $this->dispatch('operator-status-updated', ['name' => $this->operator->name, 'status' => $operatorStatus->label()]);
     }
@@ -55,6 +57,8 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
             'plan_id' => $planId ?: null,
             'subscribed_at' => $planId ? now() : null,
         ]);
+        app(DomainResolverService::class)->clearOperatorDomainCache($this->operator);
+        Cache::flush();
         $this->operator->refresh();
         $this->dispatch('operator-status-updated', ['name' => $this->operator->name, 'status' => 'Plan Updated']);
     }
@@ -136,7 +140,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     <div class="space-y-3">
         <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <a href="{{ route('admin.operators.index') }}" wire:navigate
-                class="hover:text-purple-600 dark:hover:text-purple-400 font-semibold transition">
+                class="hover:text-[#8a7808] dark:hover:text-[#FFEF4D] font-semibold transition">
                 <i class="fa-solid fa-users-gear mr-1"></i>
                 {{ __('Operators Management') }}
             </a>
@@ -145,11 +149,11 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         </nav>
 
         <div
-            class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+            class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
             <!-- Left: Identity -->
             <div class="flex items-start sm:items-center gap-4">
                 <div
-                    class="w-16 h-16 rounded-2xl bg-purple-600 text-white flex items-center justify-center text-2xl font-black shadow-md shrink-0 uppercase">
+                    class="w-16 h-16 rounded-2xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-2xl font-black shadow-md shrink-0 uppercase">
                     {{ substr($operator->name, 0, 2) }}
                 </div>
 
@@ -163,13 +167,13 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                             {{ $operator->status->label() }}
                         </span>
                         <span
-                            class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                            class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
                             {{ $operator->plan?->name ?? __('Free Plan') }}
                         </span>
                     </div>
                     <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                         <span
-                            class="font-mono text-purple-600 dark:text-purple-400 font-semibold">{{ $operator->slug }}.{{ $this->platformDomain }}</span>
+                            class="font-mono text-[#8a7808] dark:text-[#FFEF4D] font-semibold">{{ $operator->slug }}.{{ $this->platformDomain }}</span>
                         <span>&bull;</span>
                         <span>{{ __('Registered') }} {{ $operator->created_at?->diffForHumans() }}</span>
                     </div>
@@ -178,20 +182,20 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
             <!-- Right: Primary Actions -->
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-                <x-button size="sm" type="button" wire:click="manageOperator"
-                    class="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs">
-                    <i class="fa-solid fa-arrow-right-to-bracket mr-1.5 text-xs"></i>
+                <button type="button" wire:click="manageOperator"
+                    class="h-9 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
                     <span>{{ __('Open Operator Portal') }}</span>
-                </x-button>
+                </button>
 
                 <a href="{{ $this->storefrontUrl }}" target="_blank"
-                    class="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs shadow-xs transition">
+                    class="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-[#141821] border border-slate-200 dark:border-[#1e2433] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-200 font-bold text-xs shadow-xs transition">
                     <span>{{ __('Visit Storefront') }}</span>
                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                 </a>
 
                 <!-- Status Action Dropdown/Buttons -->
-                <div class="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-zinc-800">
+                <div class="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-[#1e2433]">
                     @if ($operator->status !== OperatorStatus::Approved)
                         <x-button size="sm" type="button" wire:click="updateStatus('approved')"
                             class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
@@ -216,7 +220,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     <!-- KPI Insights Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div
-            class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+            class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
             <span
                 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Gross Sales Revenue') }}</span>
             <div class="text-2xl font-black text-slate-900 dark:text-white">
@@ -225,7 +229,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         </div>
 
         <div
-            class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+            class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
             <span
                 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Total Reservations') }}</span>
             <div class="flex items-baseline gap-2">
@@ -235,7 +239,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         </div>
 
         <div
-            class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+            class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
             <span
                 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Listed Experiences') }}</span>
             <div class="flex items-baseline gap-2">
@@ -247,7 +251,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         </div>
 
         <div
-            class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+            class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
             <span
                 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Guest Directory') }}</span>
             <div class="text-2xl font-black text-slate-900 dark:text-white">{{ $this->totalGuests }}</div>
@@ -260,11 +264,11 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         <div class="lg:col-span-2 space-y-6">
             <!-- Subscription Plan Assignment Card -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
                     <div class="flex items-center gap-2">
                         <span
-                            class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+                            class="p-1.5 rounded-lg bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs">
                             <i class="fa-solid fa-layer-group"></i>
                         </span>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -272,7 +276,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                         </h3>
                     </div>
                     <span
-                        class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                        class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
                         {{ $operator->getEffectiveCommissionRate() * 100 }}% {{ __('Take Rate') }}
                     </span>
                 </div>
@@ -280,7 +284,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start pt-1">
                     <div class="space-y-1.5">
                         <x-label :value="__('Current Subscription Plan')" class="text-xs" />
-                        <div class="h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-between">
+                        <div class="h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-[#141821] border border-slate-200/80 dark:border-[#1e2433] flex items-center justify-between">
                             <span class="font-black text-sm text-slate-900 dark:text-white">
                                 {{ $operator->plan?->name ?? __('Free Tier') }}
                             </span>
@@ -311,11 +315,11 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
             <!-- Packages & Combos Listed -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
                     <div class="flex items-center gap-2">
                         <span
-                            class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-xs">
+                            class="p-1.5 rounded-lg bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs">
                             <i class="fa-solid fa-map-location-dot"></i>
                         </span>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -328,36 +332,36 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                     <p class="text-xs text-slate-400 py-4 text-center">
                         {{ __('No tour packages created by this operator yet.') }}</p>
                 @else
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-[#1e2433]">
+                        <table class="w-full text-left text-xs sm:text-sm">
                             <thead>
-                                <tr
-                                    class="text-[11px] uppercase font-bold text-slate-400 border-b border-slate-100 dark:border-zinc-800">
-                                    <th class="py-2.5 px-3">{{ __('Package Title') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Category') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Price') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Items Included') }}</th>
-                                    <th class="py-2.5 px-3 text-right">{{ __('Status') }}</th>
+                                <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    <th class="py-3.5 px-4">{{ __('Package Title') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Category') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Price') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Items Included') }}</th>
+                                    <th class="py-3.5 px-4 text-right">{{ __('Status') }}</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                            <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                                 @foreach ($this->packages as $pkg)
-                                    <tr>
-                                        <td class="py-3 px-3 font-bold text-slate-900 dark:text-white">
+                                    <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
+                                        <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                                             {{ $pkg->title }}
                                         </td>
-                                        <td class="py-3 px-3 text-slate-600 dark:text-slate-400">
+                                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                                             {{ $pkg->category }}
                                         </td>
-                                        <td class="py-3 px-3 font-semibold text-slate-900 dark:text-white">
+                                        <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
                                             Rp {{ number_format((float) $pkg->price, 0, ',', '.') }}
                                         </td>
-                                        <td class="py-3 px-3 text-slate-600 dark:text-slate-400">
+                                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                                             {{ $pkg->products_count }} {{ __('products') }}
                                         </td>
-                                        <td class="py-3 px-3 text-right">
+                                        <td class="py-3.5 px-4 text-right">
                                             <span
-                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $pkg->status === ListingStatus::Published ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-400' }}">
+                                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ $pkg->status === ListingStatus::Published ? 'bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30' : 'bg-slate-100 text-slate-600 dark:bg-[#141821] dark:text-slate-400 border border-slate-200 dark:border-[#1e2433]' }}">
+                                                <span class="w-1.5 h-1.5 rounded-full {{ $pkg->status === ListingStatus::Published ? 'bg-[#FFEF4D]' : 'bg-slate-400' }}"></span>
                                                 {{ $pkg->status->label() }}
                                             </span>
                                         </td>
@@ -371,11 +375,11 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
             <!-- Activities & Inventory Items Listed -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
                     <div class="flex items-center gap-2">
                         <span
-                            class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 text-xs">
+                            class="p-1.5 rounded-lg bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs">
                             <i class="fa-solid fa-boxes-stacked"></i>
                         </span>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -388,41 +392,41 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                     <p class="text-xs text-slate-400 py-4 text-center">
                         {{ __('No inventory items created by this operator yet.') }}</p>
                 @else
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-[#1e2433]">
+                        <table class="w-full text-left text-xs sm:text-sm">
                             <thead>
-                                <tr
-                                    class="text-[11px] uppercase font-bold text-slate-400 border-b border-slate-100 dark:border-zinc-800">
-                                    <th class="py-2.5 px-3">{{ __('Item Name') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Category') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Daily Capacity') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Standalone Sale') }}</th>
-                                    <th class="py-2.5 px-3 text-right">{{ __('Status') }}</th>
+                                <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    <th class="py-3.5 px-4">{{ __('Item Name') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Category') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Daily Capacity') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Standalone Sale') }}</th>
+                                    <th class="py-3.5 px-4 text-right">{{ __('Status') }}</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                            <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                                 @foreach ($this->products as $prod)
-                                    <tr>
-                                        <td class="py-3 px-3 font-bold text-slate-900 dark:text-white">
+                                    <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
+                                        <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                                             {{ $prod->name }}
                                         </td>
-                                        <td class="py-3 px-3 text-slate-600 dark:text-slate-400">
+                                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                                             {{ $prod->category }}
                                         </td>
-                                        <td class="py-3 px-3 font-semibold text-slate-900 dark:text-white">
+                                        <td class="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
                                             {{ $prod->capacity_per_day }} {{ __('pax/day') }}
                                         </td>
-                                        <td class="py-3 px-3 text-slate-600 dark:text-slate-400">
+                                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                                             @if ($prod->sellable_standalone)
-                                                <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Rp
+                                                <span class="font-mono font-bold text-[#FFEF4D]">Rp
                                                     {{ number_format((float) $prod->price, 0, ',', '.') }}</span>
                                             @else
                                                 <span class="text-slate-400">{{ __('Package Only') }}</span>
                                             @endif
                                         </td>
-                                        <td class="py-3 px-3 text-right">
+                                        <td class="py-3.5 px-4 text-right">
                                             <span
-                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $prod->status === ListingStatus::Published ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-400' }}">
+                                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ $prod->status === ListingStatus::Published ? 'bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30' : 'bg-slate-100 text-slate-600 dark:bg-[#141821] dark:text-slate-400 border border-slate-200 dark:border-[#1e2433]' }}">
+                                                <span class="w-1.5 h-1.5 rounded-full {{ $prod->status === ListingStatus::Published ? 'bg-[#FFEF4D]' : 'bg-slate-400' }}"></span>
                                                 {{ $prod->status->label() }}
                                             </span>
                                         </td>
@@ -436,11 +440,11 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
             <!-- Recent Reservations Stream -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
                     <div class="flex items-center gap-2">
                         <span
-                            class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
+                            class="p-1.5 rounded-lg bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs">
                             <i class="fa-solid fa-receipt"></i>
                         </span>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -453,36 +457,37 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                     <p class="text-xs text-slate-400 py-4 text-center">
                         {{ __('No reservations processed for this operator yet.') }}</p>
                 @else
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-[#1e2433]">
+                        <table class="w-full text-left text-xs sm:text-sm">
                             <thead>
-                                <tr
-                                    class="text-[11px] uppercase font-bold text-slate-400 border-b border-slate-100 dark:border-zinc-800">
-                                    <th class="py-2.5 px-3">{{ __('Code') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Guest') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Bookable Item') }}</th>
-                                    <th class="py-2.5 px-3">{{ __('Amount') }}</th>
-                                    <th class="py-2.5 px-3 text-right">{{ __('Status') }}</th>
+                                <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    <th class="py-3.5 px-4">{{ __('Code') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Guest') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Bookable Item') }}</th>
+                                    <th class="py-3.5 px-4">{{ __('Amount') }}</th>
+                                    <th class="py-3.5 px-4 text-right">{{ __('Status') }}</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                            <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                                 @foreach ($this->recentReservations as $res)
-                                    <tr>
-                                        <td class="py-3 px-3 font-mono font-bold text-purple-600 dark:text-purple-400">
-                                            #{{ $res->reservation_code }}
+                                    <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
+                                        <td class="py-3.5 px-4">
+                                            <span class="font-mono text-[10px] font-bold text-[#FFEF4D] px-2 py-0.5 rounded-lg bg-[#FFEF4D]/10 border border-[#FFEF4D]/30">
+                                                #{{ $res->reservation_code }}
+                                            </span>
                                         </td>
-                                        <td class="py-3 px-3 text-slate-900 dark:text-white font-medium">
+                                        <td class="py-3.5 px-4 text-slate-900 dark:text-white font-medium">
                                             {{ $res->guest_name }}
                                         </td>
-                                        <td class="py-3 px-3 text-slate-600 dark:text-slate-400">
+                                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                                             {{ $res->bookable?->title ?? ($res->bookable?->name ?? 'Item') }}
                                         </td>
-                                        <td class="py-3 px-3 font-semibold text-slate-900 dark:text-white">
+                                        <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
                                             Rp {{ number_format((float) $res->total_price, 0, ',', '.') }}
                                         </td>
-                                        <td class="py-3 px-3 text-right">
+                                        <td class="py-3.5 px-4 text-right">
                                             <span
-                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-slate-300">
+                                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
                                                 {{ $res->status->label() }}
                                             </span>
                                         </td>
@@ -499,7 +504,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         <div class="space-y-6">
             <!-- Owner & Contact Routing -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {{ __('Owner & Notification Routing') }}
                 </h3>
@@ -537,7 +542,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                         <span class="text-slate-400 block text-[10px] uppercase font-bold">{{ __('Domain') }}</span>
                         <div class="space-y-1">
                             <a href="{{ $this->storefrontUrl }}" target="_blank"
-                                class="font-mono text-purple-600 dark:text-purple-400 hover:underline text-[11px] flex items-center gap-1">
+                                class="font-mono text-[#FFEF4D] dark:text-[#FFEF4D] hover:underline text-[11px] flex items-center gap-1">
                                 {{ $operator->slug }}.{{ $this->platformDomain }}
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                             </a>
@@ -559,13 +564,13 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
             <!-- Direct Bank Settlement Details -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {{ __('Direct Bank Settlement Details') }}
                 </h3>
 
                 <div
-                    class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 space-y-3 text-xs">
+                    class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-3 text-xs">
                     <div>
                         <span
                             class="text-slate-400 block text-[10px] uppercase font-bold">{{ __('Bank Provider') }}</span>
@@ -577,7 +582,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                         <span
                             class="text-slate-400 block text-[10px] uppercase font-bold">{{ __('Account Number') }}</span>
                         <span
-                            class="font-mono font-bold text-purple-600 dark:text-purple-400 text-sm">{{ $operator->bank_account_number ?? '-' }}</span>
+                            class="font-mono font-bold text-[#FFEF4D] dark:text-[#FFEF4D] text-sm">{{ $operator->bank_account_number ?? '-' }}</span>
                     </div>
 
                     <div>
@@ -591,7 +596,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
             <!-- WhatsApp Support Hours -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {{ __('WhatsApp Support & Schedule') }}
                 </h3>
@@ -608,14 +613,14 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                         <span
                             class="text-slate-400 block text-[10px] uppercase font-bold">{{ __('Live Schedule Summary') }}</span>
                         <span
-                            class="font-semibold text-indigo-600 dark:text-indigo-400">{{ $operator->getWhatsAppScheduleSummary() }}</span>
+                            class="font-semibold text-[#FFEF4D] dark:text-[#FFEF4D]">{{ $operator->getWhatsAppScheduleSummary() }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Storefront Capabilities & Features -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {{ __('Storefront Capabilities') }}
                 </h3>

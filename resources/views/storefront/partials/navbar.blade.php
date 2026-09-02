@@ -10,11 +10,6 @@
     $productsCount = $agent ? $agent->products()->where('status', \App\Enums\ListingStatus::Published)->where('sellable_standalone', true)->count() : 0;
 @endphp
 
-<!-- Ambient Top Glow -->
-<div class="fixed inset-0 pointer-events-none overflow-hidden -z-10 select-none">
-    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[450px] bg-gradient-to-b from-brand-500/15 via-sky-500/10 to-transparent rounded-full blur-3xl dark:from-brand-600/20 dark:via-sky-500/10"></div>
-</div>
-
 <!-- Sticky Header Navigation -->
 <header
     x-data="{ mobileMenuOpen: false }"

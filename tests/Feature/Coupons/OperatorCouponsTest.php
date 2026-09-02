@@ -41,6 +41,42 @@ test('operator can create a storefront promo code', function () {
     expect(PlatformCoupon::where('operator_id', $operator->id)->where('code', 'SUMMER26')->exists())->toBeTrue();
 });
 
+test('operator can open edit modal and update an existing coupon', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->create();
+    $user->operators()->attach($operator->id, ['role' => 'owner']);
+
+    $coupon = PlatformCoupon::create([
+        'operator_id' => $operator->id,
+        'code' => 'EDITME10',
+        'discount_type' => 'percentage',
+        'discount_value' => 10.0,
+        'is_active' => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::coupons.index')
+        ->call('editCoupon', $coupon->id)
+        ->assertSet('editing_id', $coupon->id)
+        ->assertSet('code', 'EDITME10')
+        ->assertSet('show_modal', true)
+        ->set('discount_value', 25.0)
+        ->call('saveCoupon')
+        ->assertHasNoErrors();
+
+    expect($coupon->fresh()->discount_value)->toEqual(25.0);
+
+    // Also verify openModal compatibility
+    Livewire::actingAs($user)
+        ->test('pages::coupons.index')
+        ->call('openModal', $coupon->id)
+        ->assertSet('editing_id', $coupon->id)
+        ->assertSet('show_modal', true)
+        ->call('openModal')
+        ->assertSet('editing_id', null)
+        ->assertSet('show_modal', true);
+});
+
 test('operator cannot see or edit another operators coupons', function () {
     $user1 = User::factory()->create();
     $operator1 = Operator::factory()->create();

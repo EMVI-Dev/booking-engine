@@ -279,7 +279,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-            <span class="p-2.5 rounded-2xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300">
+            <span class="p-2.5 rounded-2xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
                 <i class="fa-solid fa-ticket text-lg"></i>
             </span>
             <div>
@@ -292,14 +292,14 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
             </div>
         </div>
 
-        <x-button
+        <button
             type="button"
             wire:click="openCreateModal"
-            icon="<i class='fa-solid fa-plus text-xs'></i>"
-            class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-500 shadow-xs shrink-0"
+            class="h-10 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs shadow-xs shrink-0 inline-flex items-center gap-1.5 cursor-pointer"
         >
+            <i class="fa-solid fa-plus text-xs"></i>
             <span>{{ __('New Subscription Promo Code') }}</span>
-        </x-button>
+        </button>
     </div>
 
     <!-- Feedback Alerts -->
@@ -312,27 +312,27 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
 
     <!-- Summary KPI Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
+        <div class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
             <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Active Promo Codes') }}</span>
             <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $activeCount }}</div>
             <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Available for customer checkout') }}</p>
         </div>
 
-        <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">{{ __('Total Redemptions') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">{{ $totalRedemptions }}</div>
+        <div class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Total Redemptions') }}</span>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $totalRedemptions }}</div>
             <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Coupons claimed by guests') }}</p>
         </div>
 
-        <div class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">{{ __('Engine Status') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400">{{ __('Operational') }}</div>
+        <div class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{{ __('Engine Status') }}</span>
+            <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ __('Operational') }}</div>
             <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Platform subscription discount rules') }}</p>
         </div>
     </div>
 
     <!-- Search and Status Tabs Bar -->
-    <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <!-- Search Input -->
         <div class="relative w-full sm:w-80">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -358,7 +358,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                 <button
                     type="button"
                     wire:click="$set('status_filter', '{{ $val }}')"
-                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $status_filter === $val ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $status_filter === $val ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}"
                 >
                     {{ $label }}
                 </button>
@@ -367,11 +367,11 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
     </div>
 
     <!-- Coupons Table -->
-    <div class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+    <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead>
-                    <tr class="bg-slate-50/50 dark:bg-zinc-800/40 border-b border-slate-200/80 dark:border-zinc-800 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         <th class="py-3.5 px-4 sm:px-6">{{ __('Promo Code') }}</th>
                         <th class="py-3.5 px-4">{{ __('Target Eligibility') }}</th>
                         <th class="py-3.5 px-4">{{ __('Discount') }}</th>
@@ -380,18 +380,18 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                         <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                     @forelse ($coupons as $coupon)
                         @php
                             $isExpired = $coupon->expires_at && $coupon->expires_at->isPast();
                             $isLimitReached = $coupon->max_uses !== null && $coupon->used_count >= $coupon->max_uses;
                         @endphp
-                        <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition">
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
                             <!-- Code -->
                             <td class="py-3.5 px-4 sm:px-6">
                                 <div class="space-y-1">
-                                    <span class="inline-flex items-center gap-1.5 font-mono font-black text-sm text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800">
-                                        <i class="fa-solid fa-tag text-xs"></i>
+                                    <span class="inline-flex items-center gap-1.5 font-mono font-bold text-xs text-[#8a7808] dark:text-[#FFEF4D] px-2.5 py-1 rounded-lg bg-[#FFEF4D]/10 border border-[#FFEF4D]/30">
+                                        <i class="fa-solid fa-tag text-[10px]"></i>
                                         {{ $coupon->code }}
                                     </span>
                                     @if ($coupon->description)
@@ -409,7 +409,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                                         {{ $scopeBadge['label'] }}
                                     </span>
                                     @if ($coupon->eligibility_rule)
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 ml-1" title="{{ __('Auto-broadcast enabled') }}">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 ml-1" title="{{ __('Auto-broadcast enabled') }}">
                                             <i class="fa-solid fa-satellite-dish text-[8px]"></i>
                                             {{ $coupon->eligibility_rule['threshold'] ?? '?' }}
                                             {{ $coupon->eligibility_rule['type'] === 'min_monthly_transactions' ? 'txn/mo' : ($coupon->eligibility_rule['type'] === 'subscription_age_months' ? 'mo sub' : 'Rp/mo') }}
@@ -422,8 +422,8 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             <td class="py-3.5 px-4">
                                 @if ($coupon->operator)
                                     <div class="space-y-0.5">
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/80">
-                                            <i class="fa-solid fa-building text-[10px] text-purple-500"></i>
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
+                                            <i class="fa-solid fa-building text-[10px]"></i>
                                             <span class="truncate max-w-[150px]">{{ $coupon->operator->name }}</span>
                                         </span>
                                         <p class="text-[10px] text-slate-400 dark:text-zinc-500 truncate max-w-[160px]">
@@ -431,8 +431,8 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                                         </p>
                                     </div>
                                 @else
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
-                                        <i class="fa-solid fa-globe text-[10px] text-indigo-500"></i>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
+                                        <i class="fa-solid fa-globe text-[10px]"></i>
                                         <span>{{ __('Global (All Operators)') }}</span>
                                     </span>
                                 @endif
@@ -475,7 +475,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             </td>
 
                             <!-- Validity Window & Status -->
-                            <td class="py-3.5 px-4">
+                            <td class="py-4 px-4">
                                 <div class="space-y-1">
                                     <button
                                         type="button"
@@ -496,7 +496,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             </td>
 
                             <!-- Actions -->
-                            <td class="py-3.5 px-4 sm:px-6 text-right">
+                            <td class="py-4 px-4 sm:px-6 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <x-button
                                         type="button"
@@ -524,8 +524,10 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-8 text-center text-slate-400">
-                                {{ __('No subscription coupon codes match your search or filter.') }}
+                            <td colspan="6" class="py-12 text-center text-slate-400">
+                                <i class="fa-solid fa-ticket text-3xl mb-2 block opacity-40"></i>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-300 block">{{ __('No coupon codes found') }}</span>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ __('No subscription promo coupons match your search or filter.') }}</p>
                             </td>
                         </tr>
                     @endforelse
@@ -538,7 +540,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
     @if ($confirming_delete_id)
         @teleport('body')
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs">
-                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-6 space-y-4 text-center animate-fade-in">
+                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl p-6 space-y-4 text-center animate-fade-in">
                     <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-lg">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                     </div>
@@ -580,7 +582,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
     @if ($confirming_toggle_id)
         @teleport('body')
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs">
-                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-6 space-y-4 text-center animate-fade-in">
+                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl p-6 space-y-4 text-center animate-fade-in">
                     <div class="w-12 h-12 rounded-2xl {{ $confirming_toggle_current_state ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/80 dark:text-amber-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-400' }} flex items-center justify-center mx-auto text-lg">
                         <i class="fa-solid {{ $confirming_toggle_current_state ? 'fa-pause' : 'fa-play' }}"></i>
                     </div>
@@ -622,11 +624,11 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
     @if ($show_modal)
         @teleport('body')
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-                <div class="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col my-8">
+                <div class="w-full max-w-lg rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl flex flex-col my-8">
                     <!-- Modal Header -->
-                    <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
+                    <div class="p-6 border-b border-slate-100 dark:border-[#1e2433] flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-[#10141d] rounded-t-3xl">
                         <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                            <div class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5 font-bold">
                                 <i class="fa-solid fa-ticket"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
@@ -683,7 +685,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                         </div>
 
                         {{-- Redemption Scope --}}
-                        <div class="pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <div class="pt-2 border-t border-slate-100 dark:border-[#1e2433]">
                             <x-label for="redemption_scope" :value="__('How Many Times Can This Be Redeemed?')" required />
                             <x-select
                                 id="redemption_scope"
@@ -755,7 +757,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             <x-input-error :messages="$errors->get('description')" />
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
                             <div>
                                 <x-label for="discount_value" :value="$discount_type === 'percentage' ? __('Discount (%)') : __('Discount (Rp)')" required />
                                 <x-input id="discount_value" type="number" step="0.1" wire:model="discount_value" class="font-bold font-mono" :error="$errors->has('discount_value')" />
@@ -803,8 +805,8 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             </div>
                         </div>
 
-                        <div class="pt-3 border-t border-slate-100 dark:border-zinc-800 space-y-2">
-                            <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                        <div class="pt-3 border-t border-slate-100 dark:border-[#1e2433] space-y-2">
+                            <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                 <x-checkbox
                                     id="coupon_is_active"
                                     wire:model="is_active"
@@ -814,7 +816,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                             </div>
 
                             @if (! $editing_id)
-                                <div class="p-3 rounded-2xl border border-indigo-200/80 dark:border-indigo-800/60 bg-indigo-50/50 dark:bg-indigo-950/30 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition">
+                                <div class="p-3 rounded-2xl border border-[#FFEF4D]/30 dark:border-[#FFEF4D]/20 bg-[#FFEF4D]/5 dark:bg-[#FFEF4D]/5 hover:bg-[#FFEF4D]/10 dark:hover:bg-[#FFEF4D]/10 transition">
                                     <x-checkbox
                                         id="coupon_announce_on_save"
                                         wire:model="announce_on_save"
@@ -826,14 +828,17 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                         </div>
 
                         <!-- Modal Actions Footer -->
-                        <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end gap-3">
+                        <div class="pt-4 border-t border-slate-100 dark:border-[#1e2433] flex items-center justify-end gap-3">
                             <x-button type="button" variant="secondary" wire:click="closeModal" class="text-xs font-bold">
                                 {{ __('Cancel') }}
                             </x-button>
-                            <x-button type="submit" variant="primary" class="text-xs font-bold bg-purple-600 hover:bg-purple-700">
-                                <i class="fa-solid fa-floppy-disk mr-1.5 text-xs"></i>
-                                <span>{{ __('Save Promo Code') }}</span>
-                            </x-button>
+                            <button
+                                type="submit"
+                                class="h-10 px-5 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <i class="fa-solid fa-floppy-disk text-xs"></i>
+                                <span>{{ $editing_id ? __('Save Changes') : __('Create Promo Code') }}</span>
+                            </button>
                         </div>
                     </form>
                 </div>

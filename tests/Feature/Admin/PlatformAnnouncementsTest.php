@@ -41,7 +41,7 @@ test('admin can view broadcast notices page and create announcement', function (
     expect(PlatformAnnouncement::where('title', 'Scheduled Maintenance Notice')->exists())->toBeTrue();
 });
 
-test('admin can toggle active status and delete announcement', function () {
+test('admin can toggle active status and delete announcement via confirmation modals', function () {
     $announcement = PlatformAnnouncement::factory()->create([
         'title' => 'Important Policy Update',
         'is_active' => true,
@@ -49,7 +49,11 @@ test('admin can toggle active status and delete announcement', function () {
 
     Livewire::actingAs($this->admin)
         ->test('pages::admin.announcements')
-        ->call('toggleActive', $announcement->id)
+        ->call('confirmToggleActive', $announcement->id)
+        ->assertSet('showConfirmToggleModal', true)
+        ->assertSet('toggleAnnouncementId', $announcement->id)
+        ->call('executeToggleActive')
+        ->assertSet('showConfirmToggleModal', false)
         ->assertHasNoErrors();
 
     $announcement->refresh();
@@ -57,7 +61,11 @@ test('admin can toggle active status and delete announcement', function () {
 
     Livewire::actingAs($this->admin)
         ->test('pages::admin.announcements')
-        ->call('deleteAnnouncement', $announcement->id)
+        ->call('confirmDelete', $announcement->id)
+        ->assertSet('showConfirmDeleteModal', true)
+        ->assertSet('deleteAnnouncementId', $announcement->id)
+        ->call('executeDelete')
+        ->assertSet('showConfirmDeleteModal', false)
         ->assertHasNoErrors();
 
     expect(PlatformAnnouncement::find($announcement->id))->toBeNull();

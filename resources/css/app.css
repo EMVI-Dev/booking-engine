@@ -8,7 +8,25 @@
 @theme {
     --font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-    /* Base Palette */
+    /* Obsidian Dark Mode Scale mapped cleanly */
+    --color-zinc-950: #090b10;
+    --color-zinc-900: #0c0e13;
+    --color-zinc-800: #141821;
+    --color-zinc-700: #1e2433;
+    --color-zinc-600: #2d3748;
+    --color-zinc-500: #64748b;
+    --color-zinc-400: #94a3b8;
+    --color-zinc-300: #cbd5e1;
+    --color-zinc-200: #e2e8f0;
+    --color-zinc-100: #f1f5f9;
+    --color-zinc-50: #f8fafc;
+
+    --color-slate-950: #090b10;
+    --color-slate-900: #0c0e13;
+    --color-slate-800: #141821;
+    --color-slate-700: #1e2433;
+
+    /* Base Palette (Standard Clean Zinc / Slate Surfaces) */
     --color-surface-50: #f8fafc;
     --color-surface-100: #f1f5f9;
     --color-surface-200: #e2e8f0;
@@ -17,28 +35,69 @@
     --color-surface-500: #64748b;
     --color-surface-600: #475569;
     --color-surface-700: #334155;
-    --color-surface-800: #1e293b;
-    --color-surface-900: #0f172a;
-    --color-surface-950: #090d16;
+    --color-surface-800: #1e2433;
+    --color-surface-900: #0c0e13;
+    --color-surface-950: #090b10;
 
-    /* Accent & Brand Colors (Dynamically derived from Agent's Brand Hex) */
-    --color-brand-50: color-mix(in srgb, var(--brand-color, #4f46e5) 8%, white);
-    --color-brand-100: color-mix(in srgb, var(--brand-color, #4f46e5) 15%, white);
-    --color-brand-200: color-mix(in srgb, var(--brand-color, #4f46e5) 30%, white);
-    --color-brand-300: color-mix(in srgb, var(--brand-color, #4f46e5) 50%, white);
-    --color-brand-400: color-mix(in srgb, var(--brand-color, #4f46e5) 75%, white);
-    --color-brand-500: color-mix(in srgb, var(--brand-color, #4f46e5) 90%, white);
-    --color-brand-600: var(--brand-color, #4f46e5);
-    --color-brand-700: color-mix(in srgb, var(--brand-color, #4f46e5) 85%, black);
-    --color-brand-800: color-mix(in srgb, var(--brand-color, #4f46e5) 70%, black);
-    --color-brand-900: color-mix(in srgb, var(--brand-color, #4f46e5) 55%, black);
-    --color-brand-950: color-mix(in srgb, var(--brand-color, #4f46e5) 25%, black);
+    /* Sandy Yellow Accent Palette */
+    --color-yellow-50: #fffde6;
+    --color-yellow-100: #fffab8;
+    --color-yellow-200: #fff78a;
+    --color-yellow-300: #fff25c;
+    --color-yellow-400: #ffef4d;
+    --color-yellow-500: #ffef4d;
+    --color-yellow-600: #fae639;
+    --color-yellow-700: #d4bc1c;
+    --color-yellow-800: #8a7808;
+    --color-yellow-900: #423800;
+    --color-yellow-950: #262000;
+
+    --color-sandy-yellow: #ffef4d;
+    --color-sandy-yellow-hover: #fae639;
+
+    /* Brand Scale Defaulting to Sandy Yellow */
+    --color-brand-50: #fffde6;
+    --color-brand-100: #fffab8;
+    --color-brand-200: #fff78a;
+    --color-brand-300: #fff25c;
+    --color-brand-400: #ffef4d;
+    --color-brand-500: #ffd700;
+    --color-brand-600: var(--brand-color, #ffef4d);
+    --color-brand-700: #fae639;
+    --color-brand-800: #d4bc1c;
+    --color-brand-900: #8a7808;
+    --color-brand-950: #332d00;
+
+    /* Map Indigo & Purple Namespaces to Sandy Yellow */
+    --color-indigo-50: #fffde6;
+    --color-indigo-100: #fffab8;
+    --color-indigo-200: #fff78a;
+    --color-indigo-300: #fff25c;
+    --color-indigo-400: #ffef4d;
+    --color-indigo-500: #ffef4d;
+    --color-indigo-600: #ffef4d;
+    --color-indigo-700: #fae639;
+    --color-indigo-800: #d4bc1c;
+    --color-indigo-900: #8a7808;
+    --color-indigo-950: #262000;
+
+    --color-purple-50: #fffde6;
+    --color-purple-100: #fffab8;
+    --color-purple-200: #fff78a;
+    --color-purple-300: #fff25c;
+    --color-purple-400: #ffef4d;
+    --color-purple-500: #ffef4d;
+    --color-purple-600: #ffef4d;
+    --color-purple-700: #fae639;
+    --color-purple-800: #d4bc1c;
+    --color-purple-900: #8a7808;
+    --color-purple-950: #262000;
 
     --color-emerald-500: #10b981;
     --color-emerald-600: #059669;
 
-    --color-accent: var(--brand-color, #4f46e5);
-    --color-accent-foreground: var(--color-white);
+    --color-accent: var(--brand-color, #ffef4d);
+    --color-accent-foreground: #090d16;
 }
 
 @layer base {
@@ -77,11 +136,63 @@
     }
 }
 
+/* ============================================================
+   BRAND PRIMARY PALETTE & UTILITIES
+   ============================================================ */
+.btn-brand-primary {
+    background-color: #FFEF4D;
+    color: #090D16;
+    font-weight: 800;
+    transition: all 150ms ease-in-out;
+}
+.btn-brand-primary:hover {
+    background-color: #fae639;
+}
+
+.focus-ring-brand {
+    @apply focus:outline-none focus:ring-2 focus:ring-[#FFEF4D] focus:border-[#FFEF4D];
+}
+
+/* ============================================================
+   CANVAS & SURFACE HIERARCHY
+   ============================================================ */
+body {
+    background-color: #EEF0F5;
+}
+
+.dark body {
+    background-color: #090B10;
+    color: #F1F5F9;
+}
+
+/* Base dark container defaults */
+.dark .card-surface,
+.dark .bg-card-obsidian {
+    background-color: #0C0E13;
+    border-color: #1E2433;
+}
+
+/* Sleek Obsidian Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #1e2433;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #2a3346;
+}
+
 /* Custom Animation Utilities */
 @keyframes fadeInScale {
     from {
         opacity: 0;
-        transform: scale(0.98) translateY(4px);
+        transform: scale(0.985) translateY(3px);
     }
     to {
         opacity: 1;
@@ -90,7 +201,30 @@
 }
 
 .animate-fade-in {
-    animation: fadeInScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: fadeInScale 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Interactive Card & Button Enhancements */
+.card-interactive {
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.card-interactive:hover {
+    border-color: #cbd5e1 !important;
+}
+.dark .card-interactive:hover {
+    border-color: rgba(255, 239, 77, 0.4) !important;
+    background-color: #171c2a !important;
+}
+
+/* Dark Mode Table Row Hover */
+.dark tr:hover td {
+    background-color: rgba(30, 36, 51, 0.6) !important;
+}
+
+/* Crisp Button Active Press */
+button:active:not(:disabled),
+a:active:not([disabled]) {
+    transform: scale(0.985);
 }
 
 /* Date & Time input color-scheme and indicator styling */
@@ -110,10 +244,9 @@ input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
-    opacity: 0.75;
-    transition: opacity 0.15s ease;
-    padding: 2px;
-    border-radius: 4px;
+    opacity: 0.7;
+    filter: invert(0.4);
+    transition: opacity 0.15s ease, filter 0.15s ease;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator:hover,
@@ -128,3 +261,10 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     filter: invert(0.85);
 }
 
+/* Brand Yellow Accent Focus Rings for Form Controls */
+input:focus:not([type="checkbox"]):not([type="radio"]),
+select:focus,
+textarea:focus {
+    border-color: #FFEF4D !important;
+    box-shadow: 0 0 0 2px rgba(255, 239, 77, 0.25) !important;
+}

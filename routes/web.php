@@ -68,6 +68,7 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     Route::livewire('/payouts', 'pages::admin.payouts')->name('payouts.index');
     Route::livewire('/payments', 'pages::admin.payments')->name('payments.index');
     Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
+    Route::livewire('/profile', 'pages::admin.profile')->name('profile.edit');
 });
 
 require __DIR__.'/settings.php';

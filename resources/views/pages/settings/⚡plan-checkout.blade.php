@@ -231,7 +231,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
     }
 }; ?>
 
-<div class="max-w-4xl mx-auto space-y-6 py-4">
+<div class="w-full space-y-6 py-4">
     <!-- Header -->
     <div class="flex items-center justify-between">
         <a href="{{ route('settings.plan') }}" wire:navigate class="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition">
@@ -481,7 +481,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
                             type="button"
                             wire:click="processSimulatedPayment"
                             wire:loading.attr="disabled"
-                            class="w-full h-11 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                            class="w-full h-11 rounded-2xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                         >
                             <i class="fa-solid fa-bolt text-xs"></i>
                             <span>{{ __('Activate :plan Instantly', ['plan' => $payment->plan->name]) }}</span>

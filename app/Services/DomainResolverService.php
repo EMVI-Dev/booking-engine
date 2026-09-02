@@ -47,7 +47,7 @@ class DomainResolverService
                 ->with('operator')
                 ->first();
 
-            if ($domainRecord && $domainRecord->operator?->isApproved()) {
+            if ($domainRecord && $domainRecord->operator) {
                 return (string) $domainRecord->operator->id;
             }
 
@@ -63,7 +63,7 @@ class DomainResolverService
                     ->where('slug', $subdomain)
                     ->first();
 
-                if ($operator && $operator->isApproved()) {
+                if ($operator) {
                     return (string) $operator->id;
                 }
             }
@@ -76,6 +76,31 @@ class DomainResolverService
         }
 
         return Operator::find($operatorId);
+    }
+
+    /**
+     * Clear cached domain resolutions for the given operator.
+     */
+    public function clearOperatorDomainCache(Operator $operator): void
+    {
+        $platformDomain = $this->getPlatformDomain();
+        $subdomain = strtolower($operator->slug);
+
+        $hosts = [
+            "{$subdomain}.{$platformDomain}",
+            "{$subdomain}.booking.test",
+            "{$subdomain}.booking.emvi",
+            "{$subdomain}.platform.com",
+            $operator->slug,
+        ];
+
+        foreach ($operator->domains as $d) {
+            $hosts[] = strtolower($d->domain);
+        }
+
+        foreach ($hosts as $h) {
+            Cache::forget("resolved_operator_id_for_domain_{$h}");
+        }
     }
 
     /**

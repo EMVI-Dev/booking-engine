@@ -195,6 +195,16 @@ class Operator extends Model
         return $this->status === OperatorStatus::Approved;
     }
 
+    public function isSuspended(): bool
+    {
+        return $this->status === OperatorStatus::Suspended;
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === OperatorStatus::Pending;
+    }
+
     public function getDisplayNameAttribute(): string
     {
         return (string) ($this->settings['display_name'] ?? $this->name);
@@ -237,7 +247,7 @@ class Operator extends Model
 
     public function getBrandColorAttribute(): string
     {
-        return (string) ($this->settings['brand_color'] ?? '#4f46e5');
+        return (string) ($this->settings['brand_color'] ?? '#FFEF4D');
     }
 
     public function setBrandColorAttribute(string $value): void

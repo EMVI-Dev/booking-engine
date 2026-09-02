@@ -183,5 +183,8 @@ test('operator can search and filter guest directory and view booking history dr
         ->assertSee('Nusa Penida Snorkeling Trip')
         ->assertSee('Michael Chen')
         ->call('closeHistory')
-        ->assertSet('showHistoryModal', false);
+        ->assertSet('showHistoryModal', false)
+        ->call('openHistory', $michaelGuest->id)
+        ->assertSet('showHistoryModal', true)
+        ->assertSee('Michael Chen');
 });

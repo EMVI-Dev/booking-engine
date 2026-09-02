@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\Bookable;
 use App\Enums\ListingStatus;
+use App\Enums\OperatorStatus;
 use App\Enums\ReservationStatus;
 use App\Models\Operator;
 use App\Models\Payment;
@@ -52,15 +53,39 @@ class StorefrontController extends Controller
     }
 
     /**
+     * Check if operator storefront is active or return suspended/pending response.
+     */
+    protected function checkOperatorStatus(?Operator $agent): ?\Symfony\Component\HttpFoundation\Response
+    {
+        if (! $agent) {
+            return null;
+        }
+
+        if ($agent->status === OperatorStatus::Suspended) {
+            return response()->view('storefront.suspended', ['agent' => $agent], 403);
+        }
+
+        if ($agent->status === OperatorStatus::Pending) {
+            return response()->view('storefront.pending', ['agent' => $agent], 503);
+        }
+
+        return null;
+    }
+
+    /**
      * Display the storefront home page or central platform welcome page.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $agent = $this->resolveCurrentAgent($request);
 
         // If no agent domain is active, render central platform landing page
         if (! $agent) {
             return view('welcome');
+        }
+
+        if ($statusResponse = $this->checkOperatorStatus($agent)) {
+            return $statusResponse;
         }
 
         // Ordered by most booked (reservations count) then latest
@@ -98,12 +123,16 @@ class StorefrontController extends Controller
     /**
      * Display the complete catalog of all tour packages with search & filters.
      */
-    public function allPackages(Request $request): View
+    public function allPackages(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $agent = $this->resolveCurrentAgent($request);
 
         if (! $agent) {
             abort(404);
+        }
+
+        if ($statusResponse = $this->checkOperatorStatus($agent)) {
+            return $statusResponse;
         }
 
         $search = (string) $request->query('search', '');
@@ -137,12 +166,16 @@ class StorefrontController extends Controller
     /**
      * Display the complete catalog of all standalone activities, services & rentals.
      */
-    public function allProducts(Request $request): View
+    public function allProducts(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $agent = $this->resolveCurrentAgent($request);
 
         if (! $agent) {
             abort(404);
+        }
+
+        if ($statusResponse = $this->checkOperatorStatus($agent)) {
+            return $statusResponse;
         }
 
         $search = (string) $request->query('search', '');
@@ -177,12 +210,16 @@ class StorefrontController extends Controller
     /**
      * Display a specific tour package on the agent storefront.
      */
-    public function showPackage(Request $request, string $slug): View
+    public function showPackage(Request $request, string $slug): View|\Symfony\Component\HttpFoundation\Response
     {
         $agent = $this->resolveCurrentAgent($request);
 
         if (! $agent) {
             abort(404);
+        }
+
+        if ($statusResponse = $this->checkOperatorStatus($agent)) {
+            return $statusResponse;
         }
 
         $package = $agent->packages()
@@ -200,12 +237,16 @@ class StorefrontController extends Controller
     /**
      * Display a specific standalone product on the agent storefront.
      */
-    public function showProduct(Request $request, string $slug): View
+    public function showProduct(Request $request, string $slug): View|\Symfony\Component\HttpFoundation\Response
     {
         $agent = $this->resolveCurrentAgent($request);
 
         if (! $agent) {
             abort(404);
+        }
+
+        if ($statusResponse = $this->checkOperatorStatus($agent)) {
+            return $statusResponse;
         }
 
         $product = $agent->products()
@@ -223,12 +264,16 @@ class StorefrontController extends Controller
     /**
      * Display agent storefront booking terms & policies.
      */
-    public function showTerms(Request $request): View
+    public function showTerms(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $agent = $this->resolveCurrentAgent($request);
 
         if (! $agent) {
             abort(404);
+        }
+
+        if ($statusResponse = $this->checkOperatorStatus($agent)) {
+            return $statusResponse;
         }
 
         return view('storefront.terms', [

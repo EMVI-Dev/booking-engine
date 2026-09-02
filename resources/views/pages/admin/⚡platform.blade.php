@@ -32,7 +32,7 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
 
         $this->platform_name = (string) ($settings['platform_name'] ?? 'TravelEngine');
         $this->support_email = (string) ($settings['support_email'] ?? 'admin@emvi.dev');
-        $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.00) * 100);
+        $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.0) * 100);
         $this->guest_service_fee_percentage = (float) (($settings['guest_service_fee_rate'] ?? 0.05) * 100);
         $this->booking_hold_minutes = (int) ($settings['booking_hold_minutes'] ?? 30);
         $this->currency_code = (string) ($settings['currency_code'] ?? 'IDR');
@@ -81,7 +81,7 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400">
+                <span class="p-2 rounded-xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
                     <i class="fa-solid fa-sliders text-lg"></i>
                 </span>
                 <div>
@@ -90,7 +90,7 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                         {{ __('Configure global platform branding, default commission take-rate, currency, and operational hold policies.') }}
-                        <span class="ml-2 text-[11px] font-bold text-purple-600 dark:text-purple-400">
+                        <span class="ml-2 text-[11px] font-bold text-[#8a7808] dark:text-[#FFEF4D]">
                             &mdash; {{ $approved_operators }}/{{ $total_operators }} {{ __('operators active') }}
                         </span>
                     </p>
@@ -102,9 +102,11 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
     <!-- Main Settings Form -->
     <form wire:submit="updatePlatformSettings" class="w-full space-y-6">
         <!-- Section: Global Platform Parameters -->
-        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
-            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
-                <span class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-xs">
+        <div
+            class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-5">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
+                <span
+                    class="p-1.5 rounded-lg bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs">
                     <i class="fa-solid fa-globe"></i>
                 </span>
                 <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -131,10 +133,13 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                 <div>
                     <x-label for="commission_percentage" :value="__('Platform Commission Take-Rate (%)')" required />
                     <div class="relative">
-                        <x-input id="commission_percentage" wire:model="commission_percentage" type="number" step="0.1" min="0" max="100" class="pr-8" :error="$errors->has('commission_percentage')" />
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                        <x-input id="commission_percentage" wire:model="commission_percentage" type="number"
+                            step="0.1" min="0" max="100" class="pr-8" :error="$errors->has('commission_percentage')" />
+                        <span
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Default platform revenue cut on customer bookings.') }}</p>
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        {{ __('Default platform revenue cut on customer bookings.') }}</p>
                     <x-input-error :messages="$errors->get('commission_percentage')" />
                 </div>
 
@@ -142,10 +147,14 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                 <div>
                     <x-label for="guest_service_fee_percentage" :value="__('Guest Service Fee (%) — Added at Checkout')" required />
                     <div class="relative">
-                        <x-input id="guest_service_fee_percentage" wire:model="guest_service_fee_percentage" type="number" step="0.1" min="0" max="100" class="pr-8" :error="$errors->has('guest_service_fee_percentage')" />
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                        <x-input id="guest_service_fee_percentage" wire:model="guest_service_fee_percentage"
+                            type="number" step="0.1" min="0" max="100" class="pr-8"
+                            :error="$errors->has('guest_service_fee_percentage')" />
+                        <span
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Convenience fee added to guest checkout (100% net goes to operator).') }}</p>
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        {{ __('Convenience fee added to guest checkout (100% net goes to operator).') }}</p>
                     <x-input-error :messages="$errors->get('guest_service_fee_percentage')" />
                 </div>
 
@@ -153,17 +162,21 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                 <div>
                     <x-label for="booking_hold_minutes" :value="__('Unpaid Hold Timeout (Minutes)')" required />
                     <div class="relative">
-                        <x-input id="booking_hold_minutes" wire:model="booking_hold_minutes" type="number" min="5" max="1440" class="pr-12" :error="$errors->has('booking_hold_minutes')" />
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">mins</span>
+                        <x-input id="booking_hold_minutes" wire:model="booking_hold_minutes" type="number"
+                            min="5" max="1440" class="pr-12" :error="$errors->has('booking_hold_minutes')" />
+                        <span
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">mins</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">{{ __('Duration availability slots are reserved during pending checkouts.') }}</p>
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        {{ __('Duration availability slots are reserved during pending checkouts.') }}</p>
                     <x-input-error :messages="$errors->get('booking_hold_minutes')" />
                 </div>
 
                 <!-- Currency Code -->
                 <div>
                     <x-label for="currency_code" :value="__('Default Currency Code')" required />
-                    <x-input id="currency_code" wire:model="currency_code" type="text" class="font-mono text-xs uppercase" :error="$errors->has('currency_code')" />
+                    <x-input id="currency_code" wire:model="currency_code" type="text"
+                        class="font-mono text-xs uppercase" :error="$errors->has('currency_code')" />
                     <x-input-error :messages="$errors->get('currency_code')" />
                 </div>
 
@@ -176,95 +189,22 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
             </div>
         </div>
 
-        <!-- Section: Internal Wiki & Scope Architecture -->
-        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
-                <div class="flex items-center gap-2.5">
-                    <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
-                        <i class="fa-solid fa-book-bookmark"></i>
-                    </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                        {{ __('Platform Scope, Commercial & Financial Specifications Wiki') }}
-                    </h3>
-                </div>
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                    Rev. 16 Baseline
-                </span>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <!-- Card 1: V1 Scope & Features -->
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/70 dark:border-zinc-800 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                            <i class="fa-solid fa-file-contract text-indigo-500"></i>
-                            V1 Scope & Features Spec
-                        </span>
-                        <span class="text-[10px] font-mono text-slate-400">Rev. 16</span>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Comprehensive blueprint covering 1-click payment links, WhatsApp dispatch, GSC verification, responsive mobile cards, and AI discovery feeds.
-                    </p>
-                    <div class="pt-1">
-                        <a href="file:///Users/mastervarol/Herd/booking/scope_and_features.md" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
-                            View scope_and_features.md ➔
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Card 2: Commercial & Pricing Model -->
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/70 dark:border-zinc-800 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                            <i class="fa-solid fa-coins text-amber-500"></i>
-                            Commercial & Pricing Matrix
-                        </span>
-                        <span class="text-[10px] font-mono text-slate-400">4 Tiers</span>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Official commercial rules: 0% operator commission, 100% net operator payout, 5% guest checkout fee pass-through, and BYO custom payment keys.
-                    </p>
-                    <div class="pt-1">
-                        <a href="file:///Users/mastervarol/Herd/booking/platform_commercial_and_pricing_model.md" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline">
-                            View commercial_model.md ➔
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Card 3: Money Rules & Settlement Spec -->
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/70 dark:border-zinc-800 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                            <i class="fa-solid fa-scale-balanced text-emerald-500"></i>
-                            Money Rules & Settlement
-                        </span>
-                        <span class="text-[10px] font-mono text-slate-400">8 States</span>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Canonical rules for double-entry ledger entries, 8-state escrow lifecycle, negative balance recovery, chargeback dispute holds, and DOKU reconciliation.
-                    </p>
-                    <div class="pt-1">
-                        <a href="file:///Users/mastervarol/Herd/booking/emvi_v1_money_rules_and_settlement_spec.md" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
-                            View money_rules_spec.md ➔
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Submit Button & Success Toast -->
         <div class="flex items-center gap-4 pt-2">
-            <x-button variant="primary" type="submit" data-test="save-platform-settings-button" class="shadow-sm bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white">
-                <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
+            <button type="submit" data-test="save-platform-settings-button"
+                class="h-10 px-5 rounded-2xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs inline-flex items-center gap-2 shadow-xs transition cursor-pointer">
+                <i class="fa-solid fa-floppy-disk text-xs"></i>
                 {{ __('Save Platform Settings') }}
-            </x-button>
+            </button>
 
-            <div x-data="{ shown: false, timeout: null }"
-                 x-init="@this.on('platform-settings-updated', () => { clearTimeout(timeout); shown = true; timeout = setTimeout(() => { shown = false }, 2500); })"
-                 x-show.transition.out.opacity.duration.1500ms="shown"
-                 x-transition:leave.opacity.duration.1500ms
-                 style="display: none;"
-                 class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <div x-data="{ shown: false, timeout: null }" x-init="@this.on('platform-settings-saved', () => {
+                clearTimeout(timeout);
+                shown = true;
+                timeout = setTimeout(() => { shown = false }, 2500);
+            })"
+                x-show.transition.out.opacity.duration.1500ms="shown" x-transition:leave.opacity.duration.1500ms
+                style="display: none;"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <i class="fa-solid fa-circle-check"></i>
                 {{ __('Platform settings updated successfully.') }}
             </div>

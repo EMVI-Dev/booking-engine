@@ -203,7 +203,7 @@
                 @foreach ($products as $prod)
                     <div class="group flex flex-col justify-between rounded-2xl sm:rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-xl hover:border-brand-400 dark:hover:border-brand-600 transition-all duration-200 overflow-hidden">
                         <!-- Card Media Header -->
-                        <div class="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 shrink-0">
+                        <div class="relative aspect-video w-full overflow-hidden bg-slate-900 dark:bg-zinc-950 shrink-0">
                             @if ($prod->cover_photo_url)
                                 <img src="{{ $prod->cover_photo_url }}" alt="{{ $prod->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             @else

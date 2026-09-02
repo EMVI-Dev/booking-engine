@@ -521,7 +521,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
+                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
                     <i class="fa-solid fa-calendar-check text-lg"></i>
                 </span>
                 <div>
@@ -551,80 +551,80 @@ new #[Title('Bookings & Reservations')] class extends Component {
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Card 1: Total Confirmed -->
         <div
-            class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+            class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-emerald-500 shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                     {{ __('Confirmed Trips') }}
                 </span>
                 <span
-                    class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs">
+                    class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-black flex items-center justify-center text-xs">
                     <i class="fa-solid fa-circle-check"></i>
                 </span>
             </div>
-            <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+            <p class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                 {{ number_format($this->metrics['confirmed']) }}
             </p>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+            <p class="text-[11px] text-slate-500 dark:text-zinc-400">
                 {{ __('Active & upcoming reservations') }}
             </p>
         </div>
 
         <!-- Card 2: Pending Holds -->
         <div
-            class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+            class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-amber-500 shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                     {{ __('Pending Holds') }}
                 </span>
                 <span
-                    class="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 text-xs">
+                    class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-black flex items-center justify-center text-xs">
                     <i class="fa-solid fa-clock"></i>
                 </span>
             </div>
-            <p class="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400">
+            <p class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
                 {{ number_format($this->metrics['pending']) }}
             </p>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+            <p class="text-[11px] text-slate-500 dark:text-zinc-400">
                 {{ __('Awaiting checkout payment (30m hold)') }}
             </p>
         </div>
 
         <!-- Card 3: Completed Trips -->
         <div
-            class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+            class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                     {{ __('Completed') }}
                 </span>
                 <span
-                    class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs">
+                    class="w-8 h-8 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 font-black flex items-center justify-center text-xs shadow-xs">
                     <i class="fa-solid fa-flag-checkered"></i>
                 </span>
             </div>
-            <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+            <p class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                 {{ number_format($this->metrics['completed']) }}
             </p>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+            <p class="text-[11px] text-slate-500 dark:text-zinc-400">
                 {{ __('Fulfilled experiences & reviews ready') }}
             </p>
         </div>
 
         <!-- Card 4: Total Revenue -->
         <div
-            class="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+            class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                     {{ __('Paid Revenue') }}
                 </span>
                 <span
-                    class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs">
+                    class="w-8 h-8 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shadow-xs">
                     <i class="fa-solid fa-rupiah-sign"></i>
                 </span>
             </div>
-            <p class="text-xl sm:text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 truncate">
+            <p class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white truncate">
                 Rp {{ number_format($this->metrics['revenue'], 0, ',', '.') }}
             </p>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+            <p class="text-[11px] text-slate-500 dark:text-zinc-400">
                 {{ __('Direct guest payments collected') }}
             </p>
         </div>
@@ -632,7 +632,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
     <!-- Search & Filter Controls Card -->
     <div
-        class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+        class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
         <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             <!-- Search Bar -->
             <div class="relative flex-1">
@@ -641,7 +641,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                 </div>
                 <input wire:model.live.debounce.300ms="search" type="text"
                     placeholder="{{ __('Search by guest name, phone, email, or reservation ID...') }}"
-                    class="h-10 w-full pl-9 pr-4 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition" />
+                    class="h-10 w-full pl-9 pr-4 rounded-xl border border-slate-200 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141824] text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-[#FFEF4D] focus:border-[#FFEF4D] transition" />
                 @if ($search !== '')
                     <button wire:click="$set('search', '')"
                         class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs">
@@ -662,7 +662,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
         </div>
 
         <!-- Status Filter Tabs -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-slate-100 dark:border-zinc-800 pt-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-slate-100 dark:border-[#1e2433] pt-3">
             @php
                 $statusTabs = [
                     'all' => __('All (:count)', ['count' => $this->metrics['total']]),
@@ -680,7 +680,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
             @foreach ($statusTabs as $tabKey => $tabLabel)
                 <button type="button" wire:click="$set('statusFilter', '{{ $tabKey }}')"
-                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $statusFilter === $tabKey ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800' }}">
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $statusFilter === $tabKey ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181d2a]' }}">
                     {{ $tabLabel }}
                 </button>
             @endforeach
@@ -689,7 +689,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
     <!-- Reservations Section -->
     <div
-        class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+        class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
         <!-- Reservations Mobile Responsive Card List (md:hidden) -->
         <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
             @forelse ($this->reservations as $res)
@@ -703,28 +703,28 @@ new #[Title('Bookings & Reservations')] class extends Component {
                     }
                     $waUrl = 'https://wa.me/' . $cleanPhone . '?text=' . urlencode(__('Hello :name, reaching out regarding your reservation (:code) with :agent', ['name' => $res->guest_name, 'code' => $resCode, 'agent' => $this->currentOperator->name]));
                 @endphp
-                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-3">
+                <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="font-extrabold text-xs text-slate-900 dark:text-white truncate">
                                 {{ $res->guest_name }}
                             </span>
-                            <span class="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 shrink-0">
+                            <span class="font-mono text-[10px] font-bold text-slate-800 dark:text-[#FFEF4D] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#FFEF4D]/10 border border-slate-200 dark:border-[#FFEF4D]/30 shrink-0">
                                 #{{ $resCode }}
                             </span>
                         </div>
                         <div class="shrink-0">
                             @if ($res->status->value === 'confirmed')
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Confirmed</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">Confirmed</span>
                             @elseif ($res->status->value === 'pending_confirmation')
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">Pending Confirmation</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">Pending Confirmation</span>
                             @else
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-slate-300">{{ ucfirst($res->status->value) }}</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-[#181d2a] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">{{ ucfirst($res->status->value) }}</span>
                             @endif
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-zinc-800">
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-[#1e2433]">
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Experience') }}</span>
                             <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">{{ $bookable->name ?? ($bookable->title ?? __('Custom Booking')) }}</span>
@@ -737,7 +737,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px]">
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#1e2433] text-[11px]">
                         <div>
                             @if ($res->guest_contact)
                                 <a href="{{ $waUrl }}" target="_blank" class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
@@ -746,7 +746,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 </a>
                             @endif
                         </div>
-                        <button type="button" wire:click="viewReservation('{{ $res->id }}')" class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 font-bold text-xs">
+                        <button type="button" wire:click="viewReservation('{{ $res->id }}')" class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-[#181d2a] text-slate-700 dark:text-slate-300 font-bold text-xs">
                             {{ __('Details') }}
                         </button>
                     </div>
@@ -762,7 +762,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead
-                    class="bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200/80 dark:border-zinc-800 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     <tr>
                         <th class="px-5 py-3.5">{{ __('Guest & Contact') }}</th>
                         <th class="px-4 py-3.5">{{ __('Booked Experience') }}</th>
@@ -772,7 +772,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         <th class="px-5 py-3.5 text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
+                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                     @forelse ($this->reservations as $res)
                         @php
                             $bookable = $res->bookable;
@@ -794,7 +794,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     ]),
                                 );
                         @endphp
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 transition group">
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
                             <!-- Guest Info -->
                             <td class="px-5 py-4">
                                 <div class="space-y-1">
@@ -803,7 +803,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                             {{ $res->guest_name }}
                                         </span>
                                         <span
-                                            class="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60">
+                                            class="font-mono text-[10px] font-bold text-slate-800 dark:text-[#FFEF4D] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-[#FFEF4D]/10 border border-slate-200 dark:border-[#FFEF4D]/30">
                                             #{{ $resCode }}
                                         </span>
                                     </div>
@@ -831,12 +831,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     <div class="flex items-center gap-1.5">
                                         @if ($res->bookable_type === 'package' || $res->bookable_type === \App\Models\Package::class)
                                             <span
-                                                class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                                                class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 shadow-xs">
                                                 {{ __('Package') }}
                                             </span>
                                         @else
                                             <span
-                                                class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                                                class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-slate-100 text-slate-800 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
                                                 {{ __('Product') }}
                                             </span>
                                         @endif
@@ -886,7 +886,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                         </p>
                                     @else
                                         <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-400">
+                                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-[#181d2a] dark:text-slate-400">
                                             {{ __('No Payment') }}
                                         </span>
                                     @endif
@@ -938,7 +938,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     </div>
                                 @elseif ($res->status === ReservationStatus::Completed)
                                     <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-[#181d2a] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
                                         <i class="fa-solid fa-flag-checkered text-[10px]"></i>
                                         {{ __('Completed') }}
                                     </span>
@@ -1101,7 +1101,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
                         <div class="flex items-start gap-3.5 min-w-0">
                             <div
-                                class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                                class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
                                 <i class="fa-solid fa-receipt"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
@@ -1638,7 +1638,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 </div>
                             @else
                                 <div
-                                    class="w-10 h-10 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                                    class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                 </div>
                             @endif

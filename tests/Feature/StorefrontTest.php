@@ -20,7 +20,7 @@ test('root platform domain serves platform welcome page', function () {
 
     $response->assertOk()
         ->assertViewIs('welcome')
-        ->assertSee('Instant Websites &amp; Booking Engine for Tour Guides &amp; Travel Operators', false);
+        ->assertSee('The simple way to sell your tours online', false);
 });
 
 test('operator subdomain serves operator storefront with published listings', function () {
@@ -132,14 +132,14 @@ test('operator storefront serves AI discovery endpoints including robots.txt, si
     Cache::flush();
 
     Plan::seedDefaultPlans();
-    $aiPlan = Plan::where('slug', 'ai_ultimate')->first();
+    $enterprisePlan = Plan::where('slug', 'enterprise')->first();
 
     $operator = Operator::factory()->create([
         'name' => 'Komodo Dragon Charters',
         'bio' => 'Private luxury liveaboard and speedboat charters across Komodo National Park.',
         'status' => OperatorStatus::Approved,
         'contact_whatsapp' => '+628199988877',
-        'plan_id' => $aiPlan?->id,
+        'plan_id' => $enterprisePlan?->id,
     ]);
 
     OperatorDomain::factory()->create([
@@ -302,4 +302,54 @@ test('storefront displays operator logo and mobile hamburger navigation menu', f
         ->assertSee('mobileMenuOpen', false)
         ->assertSee('fa-bars', false)
         ->assertSee('Packages', false);
+});
+
+test('suspended operator storefront displays suspended notice and returns 403 status', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Suspended Scuba Club',
+        'slug' => 'suspended-scuba',
+        'status' => OperatorStatus::Suspended,
+        'contact_whatsapp' => '+6281999888777',
+    ]);
+
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
+        'domain' => 'suspended-scuba.booking.test',
+        'type' => DomainType::Subdomain,
+        'status' => DomainStatus::Active,
+    ]);
+
+    $response = $this->get('http://suspended-scuba.booking.test', ['Host' => 'suspended-scuba.booking.test']);
+
+    $response->assertStatus(403)
+        ->assertViewIs('storefront.suspended')
+        ->assertSee('Storefront Temporarily Suspended')
+        ->assertSee('Suspended Scuba Club')
+        ->assertSee('6281999888777');
+});
+
+test('pending operator storefront displays pending verification notice and returns 503 status', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Pending Verification Island Tour',
+        'slug' => 'pending-tour',
+        'status' => OperatorStatus::Pending,
+    ]);
+
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
+        'domain' => 'pending-tour.booking.test',
+        'type' => DomainType::Subdomain,
+        'status' => DomainStatus::Active,
+    ]);
+
+    $response = $this->get('http://pending-tour.booking.test', ['Host' => 'pending-tour.booking.test']);
+
+    $response->assertStatus(503)
+        ->assertViewIs('storefront.pending')
+        ->assertSee('Storefront Under Verification')
+        ->assertSee('Pending Verification Island Tour');
 });
