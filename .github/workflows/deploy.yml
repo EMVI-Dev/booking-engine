@@ -43,8 +43,6 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          fingerprint: SHA256:1s/2fgtk4p/y6vZV20Qte7vo48e845bcqGZFB7seIdY
-          protocol: tcp
           script: |
             set -euo pipefail
             cd /var/www/travelengine
@@ -64,7 +62,6 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          fingerprint: SHA256:1s/2fgtk4p/y6vZV20Qte7vo48e845bcqGZFB7seIdY
           source: public/build
           target: /var/www/travelengine/public
 
@@ -74,8 +71,6 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          fingerprint: SHA256:1s/2fgtk4p/y6vZV20Qte7vo48e845bcqGZFB7seIdY
-          protocol: tcp
           script: |
             set -euo pipefail
             sudo chown -R ubuntu:www-data /var/www/travelengine/public/build
