@@ -534,6 +534,8 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'terms_snapshot' => $pkg1->generateTermsSnapshot(),
                 'status' => ReservationStatus::Confirmed,
                 'hold_expires_at' => null,
+                'public_token' => Reservation::query()->where('code', 'RSV-BALI-001')->value('public_token')
+                    ?: Reservation::generateUniquePublicToken(),
             ]
         );
 
@@ -580,6 +582,8 @@ class SampleOperatorCatalogSeeder extends Seeder
                 'terms_snapshot' => $pkg2->generateTermsSnapshot(),
                 'status' => ReservationStatus::Confirmed,
                 'hold_expires_at' => null,
+                'public_token' => Reservation::query()->where('code', 'RSV-BALI-002')->value('public_token')
+                    ?: Reservation::generateUniquePublicToken(),
             ]
         );
 

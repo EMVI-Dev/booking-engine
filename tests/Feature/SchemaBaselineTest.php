@@ -57,3 +57,10 @@ test('production seed creates plans and an admin without sample operators', func
     putenv('ADMIN_PASSWORD');
     unset($_ENV['ADMIN_PASSWORD'], $_SERVER['ADMIN_PASSWORD']);
 });
+
+test('sample catalog seeder writes reservation public tokens without model events', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    expect(Reservation::query()->where('code', 'RSV-BALI-001')->value('public_token'))->toBeString()
+        ->and(Reservation::query()->where('code', 'RSV-BALI-002')->value('public_token'))->toBeString();
+});
