@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   deploy:
-    if: github.repository == 'emvidev/booking-engine'
+    if: github.event.repository.fork == false
     runs-on: ubuntu-latest
     environment: production
 
