@@ -34,7 +34,9 @@ test('admin login page is rendered for guests', function () {
     $this->get(route('admin.login'))
         ->assertOk()
         ->assertSee('Admin sign in')
-        ->assertSee('Admin');
+        ->assertSee('Admin')
+        ->assertDontSee('admin@travelengine.online / password')
+        ->assertDontSee('Auto-fill');
 });
 
 test('non-admin user attempting admin login is rejected', function () {

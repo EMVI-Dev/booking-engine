@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
         ]);
 
+        // Sample operators stay off production. Local and tests get the catalog.
         if (! app()->environment('production')) {
             $this->call(SampleOperatorCatalogSeeder::class);
         }

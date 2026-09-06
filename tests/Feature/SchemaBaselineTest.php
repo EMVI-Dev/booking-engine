@@ -62,6 +62,12 @@ test('production seed creates plans and an admin without sample operators', func
     unset($_ENV['ADMIN_EMAIL'], $_SERVER['ADMIN_EMAIL'], $_ENV['ADMIN_PASSWORD'], $_SERVER['ADMIN_PASSWORD']);
 });
 
+test('local seed includes the sample operator catalog', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    expect(Operator::query()->count())->toBeGreaterThan(0);
+});
+
 test('sample catalog seeder writes reservation public tokens without model events', function () {
     $this->seed(DatabaseSeeder::class);
 
