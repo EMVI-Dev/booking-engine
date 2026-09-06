@@ -123,7 +123,7 @@ class Plan extends Model
     }
 
     /**
-     * Rank used for upgrade / downgrade (Essential < Pro < Agency).
+     * Rank used for upgrade / downgrade (Starter < Growth < Agency).
      */
     public function tierRank(): int
     {
@@ -136,7 +136,7 @@ class Plan extends Model
     }
 
     /**
-     * Get or create the default Essential plan.
+     * Get or create the default Starter plan.
      */
     public static function getDefaultPlan(): self
     {
@@ -165,7 +165,7 @@ class Plan extends Model
         }
 
         self::updateOrCreate(['slug' => 'starter'], [
-            'name' => 'Essential',
+            'name' => 'Starter',
             'tagline' => 'For freelance tour guides. Your website, booking, and pay in one place.',
             'price_monthly' => 0.00,
             'price_yearly' => 0.00,
@@ -179,7 +179,7 @@ class Plan extends Model
         ]);
 
         self::updateOrCreate(['slug' => 'growth'], [
-            'name' => 'Pro',
+            'name' => 'Growth',
             'tagline' => 'For freelance guides who need more, or a small group selling together.',
             'price_monthly' => 299000.00,
             'price_yearly' => 2990000.00,

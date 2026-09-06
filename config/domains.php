@@ -7,10 +7,10 @@ return [
     | Public server addresses
     |--------------------------------------------------------------------------
     |
-    | Freelance guides often connect the root name (yourname.com). That apex
-    | cannot use a CNAME at most domain shops, so they point an A / AAAA
-    | record at this Lightsail (or other) public address instead. Comma-
-    | separate more than one address if needed.
+    | Production origin is AWS Lightsail. The platform apex is on Cloudflare;
+    | slugs and custom domains hit this box directly. These addresses are
+    | what Agency apex names A / AAAA to. Prefer a CNAME to a grey hostname
+    | (cname.{platform}). Comma-separate more than one address if needed.
     |
     */
 

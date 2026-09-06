@@ -24,7 +24,7 @@ beforeEach(function () {
     $this->ultimatePlan = Plan::where('slug', 'agency')->first();
 });
 
-test('proration service calculates accurate net difference when upgrading from Starter to Pro', function () {
+test('proration service calculates accurate net difference when upgrading from Starter to Growth', function () {
     $service = app(SubscriptionProrationService::class);
 
     $proration = $service->calculateSwitch($this->operator, $this->proPlan, 'monthly');
@@ -35,7 +35,7 @@ test('proration service calculates accurate net difference when upgrading from S
         ->and($proration['net_amount_due'])->toEqual((float) $this->proPlan->price_monthly);
 });
 
-test('proration service calculates prorated credit and charge when upgrading mid-cycle from Pro to Agency', function () {
+test('proration service calculates prorated credit and charge when upgrading mid-cycle from Growth to Agency', function () {
     // Set operator to Pro with 15 days remaining out of a 30-day period
     $this->operator->update([
         'plan_id' => $this->proPlan->id,
@@ -58,7 +58,7 @@ test('operator can initiate upgrade, redirect to checkout, and complete card pay
     $this->actingAs($this->user);
 
     $component = Livewire::test('pages::settings.plan')
-        ->assertSee('Essential')
+        ->assertSee('Starter')
         ->call('initiatePlanSwitch', $this->proPlan->id)
         ->assertSet('show_switch_modal', true)
         ->assertSet('target_plan_id', $this->proPlan->id)
@@ -79,7 +79,7 @@ test('operator can initiate upgrade, redirect to checkout, and complete card pay
 
     // Now test the Plan Checkout Livewire component
     Livewire::test('pages::settings.plan-checkout', ['payment' => $payment])
-        ->assertSee('Pro')
+        ->assertSee('Growth')
         ->assertSee('Card Information')
         ->set('card_holder', 'John Operator')
         ->set('card_number', '4000 1234 5678 9010')
@@ -153,7 +153,7 @@ test('operator can schedule a downgrade to end of billing cycle and cancel it', 
         ->set('downgrade_mode', 'end_of_cycle')
         ->call('confirmPlanSwitch')
         ->assertHasNoErrors()
-        ->assertSee('Scheduled Plan Downgrade to Pro');
+        ->assertSee('Scheduled Plan Downgrade to Growth');
 
     $this->operator->refresh();
 

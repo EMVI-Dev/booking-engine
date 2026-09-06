@@ -261,7 +261,7 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
         <x-metric-card
             :label="__('Plan fees this month')"
             :value="'Rp '.number_format($this->currentMrr, 0, ',', '.')"
-            :hint="__('What operators pay for Pro and Agency')"
+            :hint="__('What operators pay for Growth and Agency')"
             icon="fa-repeat"
             :href="route('admin.plans.index')"
         />

@@ -1131,7 +1131,7 @@ new #[Title('Brand Settings')] class extends Component {
                                 <span
                                     class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
                                     <i class="fa-solid fa-lock text-[9px]"></i>
-                                    <span>{{ __('Pro') }}</span>
+                                    <span>{{ __('Growth') }}</span>
                                 </span>
                             @endif
                         </div>
@@ -1150,7 +1150,7 @@ new #[Title('Brand Settings')] class extends Component {
                                     </span>
                                     <div>
                                         <p class="text-xs font-bold text-slate-900 dark:text-white">
-                                            {{ __('Requires Pro or Agency') }}</p>
+                                            {{ __('Requires Growth or Agency') }}</p>
                                         <p class="text-[11px] text-slate-500 dark:text-slate-400">
                                             {{ __('Upgrade to unlock Google Analytics 4, Meta Pixel ROAS tracking, and automated 12-hour review request emails.') }}
                                         </p>

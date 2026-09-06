@@ -274,7 +274,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
         <div class="py-6">
             <x-feature-gate :title="__('Guest Directory CRM & Lifetime Tracking')" :description="__(
                 'Unlock comprehensive customer profiles, VIP tagging, repeat booking history, and direct WhatsApp re-engagement.',
-            )" required-plan="Pro" plan-slug="growth"
+            )" required-plan="Growth" plan-slug="growth"
                 icon="fa-solid fa-address-book" :features="[
                     __('Lead guest profiles with automatic email and WhatsApp contact indexing'),
                     __('Calculated lifetime value (LTV) and total completed trip counts'),

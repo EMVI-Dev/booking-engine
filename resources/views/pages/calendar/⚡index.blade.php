@@ -80,7 +80,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 <i class="fa-brands fa-google text-sm"></i>
                 <span>{{ __('Sync iCal Feed') }}</span>
                 @if (! $this->hasGoogleCalendarFeature)
-                    <x-plan-badge title="{{ __('Requires Pro Plan') }}" />
+                    <x-plan-badge title="{{ __('Requires Growth Plan') }}" />
                 @endif
             </x-button>
         </x-slot:actions>
@@ -94,13 +94,13 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
             <x-filter-tab :active="$viewMode === 'timeline'" icon="fa-bars-staggered" wire:click="switchView('timeline')">
                 {{ __('Resource Timeline') }}
                 @if (! $this->hasTimelineFeature)
-                    <x-plan-badge title="{{ __('Requires Pro Plan') }}" />
+                    <x-plan-badge title="{{ __('Requires Growth Plan') }}" />
                 @endif
             </x-filter-tab>
             <x-filter-tab :active="$viewMode === 'manifest'" icon="fa-clipboard-list" wire:click="switchView('manifest')">
                 {{ __('Daily Manifest') }}
                 @if (! $this->hasManifestFeature)
-                    <x-plan-badge title="{{ __('Requires Pro Plan') }}" />
+                    <x-plan-badge title="{{ __('Requires Growth Plan') }}" />
                 @endif
             </x-filter-tab>
             <x-filter-tab :active="$viewMode === 'heatmap'" icon="fa-fire-flame-curved" wire:click="switchView('heatmap')">
@@ -123,7 +123,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 <x-feature-gate
                     :title="__('Resource Timeline & Capacity Matrix')"
                     :description="__('Visualize tour guide, vehicle, and activity capacity in a Gantt-style matrix across 7-day windows. Track seat occupancy progress bars and prevent overbookings.')"
-                    requiredPlan="Pro"
+                    requiredPlan="Growth"
                     planSlug="growth"
                     icon="fa-solid fa-bars-staggered"
                     :features="[
@@ -141,7 +141,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 <x-feature-gate
                     :title="__('Daily Passenger Run-Sheet & Manifest Export')"
                     :description="__('Generate printable daily passenger run-sheets for tour drivers, captains, and guides with lead guest names, pickup notes, and WhatsApp links.')"
-                    requiredPlan="Pro"
+                    requiredPlan="Growth"
                     planSlug="growth"
                     icon="fa-solid fa-clipboard-list"
                     :features="[

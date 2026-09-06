@@ -80,7 +80,7 @@
 
     @if ($currentOperator?->isInSubscriptionGracePeriod())
         <div class="no-print shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs font-semibold text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-            {{ __('Your paid plan ran out. The booking page stays open for 3 extra days. Pay the bill to keep Pro or Agency features.') }}
+            {{ __('Your paid plan ran out. The booking page stays open for 3 extra days. Pay the bill to keep Growth or Agency features.') }}
             <a href="{{ route('settings.plan') }}" class="ml-1 underline" wire:navigate>{{ __('Open billing') }}</a>
         </div>
     @endif
@@ -171,7 +171,7 @@
                         {{ __('Guest CRM') }}
                         @if ($currentOperator && ! $currentOperator->hasFeature('guest_crm'))
                             <x-slot:meta>
-                                <x-plan-badge title="{{ __('Upgrade to Pro to unlock Guest CRM & lifetime spend analytics') }}" />
+                                <x-plan-badge title="{{ __('Upgrade to Growth to unlock Guest CRM & lifetime spend analytics') }}" />
                             </x-slot:meta>
                         @endif
                     </x-nav-link>
@@ -566,10 +566,10 @@
                             </div>
                             @if ($currentOperator && !$currentOperator->hasFeature('guest_crm'))
                                 <span
-                                    title="{{ __('Upgrade to Pro to unlock Guest CRM & lifetime spend analytics') }}"
+                                    title="{{ __('Upgrade to Growth to unlock Guest CRM & lifetime spend analytics') }}"
                                     class="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase bg-brand-400 text-brand-foreground flex items-center gap-1">
                                     <i class="fa-solid fa-lock text-[8px]"></i>
-                                    <span>{{ __('Pro') }}</span>
+                                    <span>{{ __('Growth') }}</span>
                                 </span>
                             @else
                                 <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>

@@ -24,7 +24,7 @@ beforeEach(function () {
     ]);
 
     $this->plan = Plan::create([
-        'name' => 'Pro',
+        'name' => 'Growth',
         'slug' => 'pro-operator',
         'price_monthly' => 499000,
         'price_yearly' => 4990000,
@@ -63,7 +63,7 @@ test('admin can view operators directory with rich metrics', function () {
         ->assertSee('Operators')
         ->assertSee('Komodo Island Tours')
         ->assertSee('komodo-tours')
-        ->assertSee('Pro')
+        ->assertSee('Growth')
         ->assertSee('BCA')
         ->assertSee('+628123456789');
 });

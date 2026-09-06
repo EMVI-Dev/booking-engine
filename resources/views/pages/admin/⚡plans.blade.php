@@ -711,8 +711,8 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
                             <tr
                                 class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 <th class="py-3 px-4">{{ __('Capability / Metric') }}</th>
-                                <th class="py-3 px-4">{{ __('Essential') }}</th>
-                                <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Pro') }}
+                                <th class="py-3 px-4">{{ __('Starter') }}</th>
+                                <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Growth') }}
                                 </th>
                                 <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Agency') }}
                                 </th>

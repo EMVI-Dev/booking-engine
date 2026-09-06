@@ -15,7 +15,7 @@ class PlanFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->randomElement(['Essential', 'Pro', 'Agency']),
+            'name' => fake()->randomElement(['Starter', 'Growth', 'Agency']),
             'slug' => fake()->unique()->slug(),
             'tagline' => fake()->sentence(),
             'price_monthly' => fake()->randomElement([0, 299000, 799000, 1999000]),
@@ -42,7 +42,7 @@ class PlanFactory extends Factory
     public function starter(): static
     {
         return $this->state(fn (array $attributes) => [
-            'name' => 'Essential',
+            'name' => 'Starter',
             'slug' => 'starter',
             'price_monthly' => 0.00,
             'price_yearly' => 0.00,
@@ -56,7 +56,7 @@ class PlanFactory extends Factory
     public function growth(): static
     {
         return $this->state(fn (array $attributes) => [
-            'name' => 'Pro',
+            'name' => 'Growth',
             'slug' => 'growth',
             'price_monthly' => 299000.00,
             'price_yearly' => 2990000.00,

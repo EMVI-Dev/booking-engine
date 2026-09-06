@@ -335,7 +335,7 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                         <a href="{{ route('settings.plan') }}" wire:navigate
                             class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FFEF4D] text-[#090d16] text-xs font-bold hover:bg-[#FFEF4D]/90 transition shadow-xs">
                             <i class="fa-solid fa-arrow-up text-xs"></i>
-                            <span>{{ __('Explore Premium Growth & Pro Plans') }}</span>
+                            <span>{{ __('Explore Growth and Agency plans') }}</span>
                         </a>
                     </div>
                 @endif

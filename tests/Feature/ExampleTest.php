@@ -13,9 +13,9 @@ test('home pricing uses the three public plan names', function () {
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee('Essential')
+        ->assertSee('Starter')
         ->assertSee('For freelance tour guides')
-        ->assertSee('Pro')
+        ->assertSee('Growth')
         ->assertSee('small group selling together')
         ->assertSee('Agency')
         ->assertSee('small to mid travel agencies')

@@ -885,11 +885,11 @@
                                         <th class="py-3 pr-3 font-bold uppercase tracking-wider text-[10px] w-1/5">
                                             {{ __('Plan Details') }}</th>
                                         <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center text-zinc-300">
-                                            <span>Essential</span>
+                                            <span>Starter</span>
                                             <span class="block text-[8px] font-normal text-zinc-500 mt-0.5">{{ __('Free') }}</span>
                                         </th>
                                         <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center text-[#FFEF4D] bg-zinc-900 rounded-t-xl border-t border-x border-zinc-800">
-                                            <span>Pro</span>
+                                            <span>Growth</span>
                                             <span class="block text-[8px] font-normal text-zinc-400 mt-0.5">Rp 299.000 / mo</span>
                                         </th>
                                         <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center text-zinc-300">
@@ -1135,7 +1135,7 @@
                         <div x-show="activeAccordion === 6" x-collapse
                             class="px-4 sm:px-5 pb-5 text-xs text-zinc-400 leading-relaxed border-t border-zinc-800 pt-3"
                             style="display: none;">
-                            {{ __('Essential is you and one helper. Pro and above allow as many people as you need — office staff, drivers, and guides.') }}
+                            {{ __('Starter is you and one helper. Growth and above allow as many people as you need — office staff, drivers, and guides.') }}
                         </div>
                     </div>
                 </div>
@@ -1163,7 +1163,7 @@
                 <!-- Trust Reassurance Checklist -->
                 <div class="pt-2 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-zinc-400">
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('No credit card required') }}</span>
-                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('Free Essential plan forever') }}</span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('Free Starter plan forever') }}</span>
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('Ready in under 5 minutes') }}</span>
                 </div>
             </div>

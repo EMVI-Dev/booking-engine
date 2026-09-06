@@ -23,8 +23,8 @@ test('admin can view subscription plans management page', function () {
 
     $response->assertOk()
         ->assertSee('Plans')
-        ->assertSee('Essential')
-        ->assertSee('Pro')
+        ->assertSee('Starter')
+        ->assertSee('Growth')
         ->assertSee('Agency')
         ->assertDontSee('Enterprise');
 });

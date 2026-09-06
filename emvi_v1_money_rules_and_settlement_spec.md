@@ -126,7 +126,7 @@ stateDiagram-v2
 
 ## 5. Subscription Plan Commercial Matrix (Canonical Baseline)
 
-| Capability / Metric | **Starter Essential** | **Pro Operator** | **Agency Ultimate** |
+| Capability / Metric | **Starter** | **Growth** | **Agency** |
 | :--- | :--- | :--- | :--- |
 | **Monthly Price** | **Free / Rp 0** | **Rp 299.000 / mo** | **Rp 799.000 / mo** |
 | **Annual Price** | **Free / Rp 0** | **Rp 2.990.000 / yr** | **Rp 7.990.000 / yr** |
@@ -145,10 +145,10 @@ stateDiagram-v2
 
 ## 6. Plan Upgrade, Subscription Proration & Operational Money Rules
 
-1. **Immediate Upgrade with Linear Proration**: Upgrading from *Pro Operator* to *Agency Ultimate* takes effect immediately. The exact linear prorated value of unused days on the current cycle is credited towards the new tier invoice.
+1. **Immediate Upgrade with Linear Proration**: Upgrading from *Growth* to *Agency* takes effect immediately. The exact linear prorated value of unused days on the current cycle is credited towards the new tier invoice.
 2. **3-Day Grace Period & Day 4 Fallback Engine**:
    - `Day 1 - 3`: Retry payment attempt & display warning banner in Operator Portal. Storefront remains fully operational.
-   - `Day 4`: If payment remains uncollected, account automatically falls back to *Starter Essential (Free)*. Custom domains pause to `slug.booking.emvi`, listings > 5 set to *Draft*, and guest fee reverts to 5.0%.
+   - `Day 4`: If payment remains uncollected, account automatically falls back to *Starter (Free)*. Custom domains pause to `slug.booking.emvi`, listings > 5 set to *Draft*, and guest fee reverts to 5.0%.
 3. **IDR Currency Standardization**: All transactions, checkouts, escrows, and payouts operate strictly in **Indonesian Rupiah (IDR)** for zero FX risk and 100% net operator price guarantee.
 4. **Payout Transfer Fee Policy**: Manual payout disbursements $\ge \text{Rp 500.000}$ are **100% Free** (absorbed by platform margin); payouts $< \text{Rp 500.000}$ incur a flat **Rp 2.500** BI-FAST transfer fee. Minimum payout threshold is **Rp 50.000**.
 5. **Promo Code Cost Absorption Rules**:

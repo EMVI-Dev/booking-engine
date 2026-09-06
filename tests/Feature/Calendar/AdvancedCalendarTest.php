@@ -69,7 +69,7 @@ test('free tier operator can view month grid calendar', function () {
         ->assertOk()
         ->assertSee('Month Grid')
         ->assertSee('Resource Timeline')
-        ->assertSee('Pro')
+        ->assertSee('Growth')
         ->assertSee('Agency');
 
     Livewire::test('calendar.month-grid')
@@ -85,7 +85,7 @@ test('free tier operator sees upgrade gate when switching to resource timeline',
         ->set('viewMode', 'timeline')
         ->assertOk()
         ->assertSee('Resource Timeline &amp; Capacity Matrix', false)
-        ->assertSee('Requires Pro Plan');
+        ->assertSee('Requires Growth Plan');
 });
 
 test('pro tier operator unlocks resource timeline and daily manifest views, but heatmap is gated for agency', function () {

@@ -123,7 +123,7 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                         {{ __('Listing limit reached (:count/:limit)', ['count' => $totalListings, 'limit' => $packageLimit]) }}
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        {{ __('Trips and activities share the same listing limit on your :plan plan.', ['plan' => $agentPlan?->name ?? 'Essential']) }}
+                        {{ __('Trips and activities share the same listing limit on your :plan plan.', ['plan' => $agentPlan?->name ?? 'Starter']) }}
                     </p>
                 </div>
             </div>

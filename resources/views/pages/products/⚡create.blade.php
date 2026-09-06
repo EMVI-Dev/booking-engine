@@ -182,11 +182,11 @@ new #[Title('Create Activity Item')] class extends Component {
             <x-feature-gate
                 :title="__('Listing Limit Reached (:limit Listings)', ['limit' => $this->currentOperator->getPlan()->package_limit])"
                 :description="__('Trips and activities share the same listing limit on your :plan plan. Upgrade to list more.', ['plan' => $this->currentOperator->getPlan()->name])"
-                required-plan="Pro"
+                required-plan="Growth"
                 plan-slug="growth"
                 icon="fa-solid fa-compass"
                 :features="[
-                    __('Up to 25 trips and activities on Pro (or unlimited on Agency)'),
+                    __('Up to 25 trips and activities on Growth (or unlimited on Agency)'),
                     __('Ready-made WhatsApp messages for guests'),
                     __('Guest list and trip reminders'),
                     __('Your own website address on Agency'),

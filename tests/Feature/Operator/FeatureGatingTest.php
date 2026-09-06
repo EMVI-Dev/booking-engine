@@ -49,7 +49,7 @@ test('starter plan operator sees feature gate on guest directory crm', function 
     $response = $this->actingAs($this->user)->get(route('guests.index'));
 
     $response->assertOk()
-        ->assertSee('Requires Pro Plan')
+        ->assertSee('Requires Growth Plan')
         ->assertSee('Guest Directory CRM &amp; Lifetime Tracking', false);
 });
 
@@ -59,7 +59,7 @@ test('growth plan operator has full access to guest directory crm', function () 
     $response = $this->actingAs($this->user)->get(route('guests.index'));
 
     $response->assertOk()
-        ->assertDontSee('Requires Pro Plan')
+        ->assertDontSee('Requires Growth Plan')
         ->assertSee('Guest Directory &amp; CRM', false);
 });
 
@@ -77,7 +77,7 @@ test('starter plan operator cannot exceed package limit of 5', function () {
     $response = $this->actingAs($this->user)->get(route('packages.create'));
     $response->assertOk()
         ->assertSee('Package Limit Reached (5 Listings)')
-        ->assertSee('Requires Pro Plan');
+        ->assertSee('Requires Growth Plan');
 });
 
 test('growth plan operator can have up to 25 packages', function () {
@@ -116,13 +116,13 @@ test('starter plan gates tracking pixels and automated review requests while gro
     // Starter operator sees upgrade banner on brand settings
     $response = $this->actingAs($this->user)->get(route('brand.edit'));
     $response->assertOk()
-        ->assertSee('Requires Pro or Agency');
+        ->assertSee('Requires Growth or Agency');
 
     // Upgrade to growth
     $this->operator->update(['plan_id' => $this->growthPlan->id]);
     $response = $this->actingAs($this->user)->get(route('brand.edit'));
     $response->assertOk()
-        ->assertDontSee('Requires Pro or Agency')
+        ->assertDontSee('Requires Growth or Agency')
         ->assertSee('Active &amp; Unlocked', false);
 });
 
@@ -318,7 +318,7 @@ test('starter plan shows an upgrade note instead of ready-made whatsapp messages
     Livewire::actingAs($this->user)
         ->test('pages::reservations.index')
         ->call('viewDetails', $reservation->id)
-        ->assertSee('Ready-made WhatsApp messages are on Pro')
+        ->assertSee('Ready-made WhatsApp messages are on Growth')
         ->assertDontSee('1-Click WhatsApp Guest Dispatch');
 });
 
@@ -330,9 +330,9 @@ test('seeded agency plan costs 799000 and includes hide-name and faster help', f
         ->and($this->starterPlan->hasFeature('whatsapp_dispatch'))->toBeFalse();
 });
 
-test('seeded public plans are Essential, Pro, and Agency', function () {
-    expect($this->starterPlan->name)->toBe('Essential')
-        ->and($this->growthPlan->name)->toBe('Pro')
+test('seeded public plans are Starter, Growth, and Agency', function () {
+    expect($this->starterPlan->name)->toBe('Starter')
+        ->and($this->growthPlan->name)->toBe('Growth')
         ->and($this->agencyPlan->name)->toBe('Agency')
         ->and($this->agencyPlan->tierRank())->toBe(3)
         ->and(Plan::where('slug', 'enterprise')->exists())->toBeFalse();

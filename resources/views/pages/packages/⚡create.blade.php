@@ -229,11 +229,11 @@ new #[Title('Create Tour Package')] class extends Component {
             <x-feature-gate
                 :title="__('Package Limit Reached (:limit Listings)', ['limit' => $this->currentOperator->getPlan()->package_limit])"
                 :description="__('Trips and activities share the same listing limit on your :plan plan. Upgrade to list more.', ['plan' => $this->currentOperator->getPlan()->name])"
-                required-plan="Pro"
+                required-plan="Growth"
                 plan-slug="growth"
                 icon="fa-solid fa-cubes"
                 :features="[
-                    __('Up to 25 listings on Pro (unlimited on Agency)'),
+                    __('Up to 25 listings on Growth (unlimited on Agency)'),
                     __('Google & Apple Calendar live syncing for tour bookings'),
                     __('Automated 12-hour review request emails'),
                     __('Customer Directory CRM and WhatsApp ticket dispatch'),

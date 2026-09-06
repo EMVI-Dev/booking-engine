@@ -1219,7 +1219,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         @else
                         <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60 space-y-2">
                             <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                {{ __('Ready-made WhatsApp messages are on Pro') }}
+                                {{ __('Ready-made WhatsApp messages are on Growth') }}
                             </p>
                             <p class="text-[11px] text-slate-500 dark:text-slate-400">
                                 {{ __('You can still copy the payment link. Pro writes the guest message for you.') }}
