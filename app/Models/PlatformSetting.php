@@ -43,7 +43,7 @@ class PlatformSetting extends Model
                 'currency_code' => 'IDR',
                 'currency_symbol' => 'Rp',
                 'platform_name' => config('app.name', 'Emvi Booking Platform'),
-                'support_email' => 'support@emvi.dev',
+                'support_email' => 'no-reply@travelengine.online',
                 'doku' => [
                     'mode' => config('doku.default_mode', 'sandbox'),
                     'sandbox' => [
@@ -128,7 +128,7 @@ class PlatformSetting extends Model
 
     public function getSupportEmail(): string
     {
-        return (string) ($this->settings['support_email'] ?? 'support@emvi.dev');
+        return (string) ($this->settings['support_email'] ?? 'no-reply@travelengine.online');
     }
 
     public function getDokuSandboxClientId(): string

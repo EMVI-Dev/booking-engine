@@ -8,7 +8,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component {
-    public string $email = 'admin@emvi.dev';
+    public string $email = 'admin@travelengine.online';
     public string $password = '';
     public bool $remember = true;
 
@@ -65,11 +65,11 @@ new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component 
     <div class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/80 dark:border-[#1e2433] text-xs flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
             <i class="fa-solid fa-key text-[#8a7808] dark:text-[#FFEF4D]"></i>
-            <span class="font-mono text-[11px]">admin@emvi.dev / password</span>
+            <span class="font-mono text-[11px]">admin@travelengine.online / password</span>
         </div>
         <button
             type="button"
-            x-on:click="$wire.set('email', 'admin@emvi.dev'); $wire.set('password', 'password');"
+            x-on:click="$wire.set('email', 'admin@travelengine.online'); $wire.set('password', 'password');"
             class="px-2.5 py-1 rounded-lg bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-[10px] uppercase tracking-wider transition cursor-pointer"
         >
             {{ __('Auto-fill') }}
@@ -87,7 +87,7 @@ new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component 
                 required
                 autofocus
                 autocomplete="email"
-                placeholder="admin@emvi.dev"
+                placeholder="admin@travelengine.online"
                 :error="$errors->has('email')"
             />
             <x-input-error :messages="$errors->get('email')" />

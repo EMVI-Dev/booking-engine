@@ -15,7 +15,9 @@ test('domain resolver returns null for root platform domain', function () {
 
     expect($service->resolveOperator('localhost'))->toBeNull()
         ->and($service->resolveOperator('127.0.0.1'))->toBeNull()
-        ->and($service->resolveOperator('booking.test'))->toBeNull();
+        ->and($service->resolveOperator('booking.test'))->toBeNull()
+        ->and($service->resolveOperator('travelengine.online'))->toBeNull()
+        ->and($service->resolveOperator('www.travelengine.online'))->toBeNull();
 });
 
 test('domain resolver resolves approved operator by custom domain', function () {
@@ -45,9 +47,12 @@ test('domain resolver resolves approved operator by subdomain', function () {
 
     $service = new DomainResolverService;
     $resolved = $service->resolveOperator('balitrek.booking.test');
+    $resolvedOnProductionHost = $service->resolveOperator('balitrek.travelengine.online');
 
     expect($resolved)->not->toBeNull()
-        ->and($resolved->id)->toBe($operator->id);
+        ->and($resolved->id)->toBe($operator->id)
+        ->and($resolvedOnProductionHost)->not->toBeNull()
+        ->and($resolvedOnProductionHost->id)->toBe($operator->id);
 });
 
 test('domain resolver ignores inactive domain records', function () {
@@ -89,7 +94,7 @@ test('an apex address points here when its A record matches the platform number'
         cnameTargets: [],
         ipv4s: ['203.0.113.10'],
         ipv6s: [],
-        targetHost: 'emvi.id',
+        targetHost: 'travelengine.online',
         platformIpv4: ['203.0.113.10'],
     ))->toBeTrue();
 });
@@ -101,7 +106,7 @@ test('a flattened alias points here when only A records remain', function () {
         cnameTargets: [],
         ipv4s: ['203.0.113.10', '203.0.113.11'],
         ipv6s: [],
-        targetHost: 'emvi.id',
+        targetHost: 'travelengine.online',
         platformIpv4: ['203.0.113.10'],
     ))->toBeTrue();
 });
@@ -113,7 +118,7 @@ test('an apex address points here when its AAAA record matches', function () {
         cnameTargets: [],
         ipv4s: [],
         ipv6s: ['2001:db8::10'],
-        targetHost: 'emvi.id',
+        targetHost: 'travelengine.online',
         platformIpv6: ['2001:db8::10'],
     ))->toBeTrue();
 });
@@ -122,10 +127,10 @@ test('a subdomain still points here with a CNAME and no A record', function () {
     $service = new DomainResolverService;
 
     expect($service->recordsPointHere(
-        cnameTargets: ['emvi.id'],
+        cnameTargets: ['travelengine.online'],
         ipv4s: [],
         ipv6s: [],
-        targetHost: 'emvi.id',
+        targetHost: 'travelengine.online',
         platformIpv4: ['203.0.113.10'],
     ))->toBeTrue();
 });
@@ -137,7 +142,7 @@ test('a custom address does not point here when CNAME and numbers both miss', fu
         cnameTargets: ['somewhere-else.net'],
         ipv4s: ['198.51.100.4'],
         ipv6s: [],
-        targetHost: 'emvi.id',
+        targetHost: 'travelengine.online',
         platformIpv4: ['203.0.113.10'],
     ))->toBeFalse();
 });

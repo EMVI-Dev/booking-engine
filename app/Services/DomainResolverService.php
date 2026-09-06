@@ -39,10 +39,8 @@ class DomainResolverService
             return null;
         }
 
-        $platformDomain = $this->getPlatformDomain();
-
         /** @var string|null $operatorId */
-        $operatorId = Cache::remember("resolved_operator_id_for_domain_{$host}", 60, function () use ($host, $platformDomain): ?string {
+        $operatorId = Cache::remember("resolved_operator_id_for_domain_{$host}", 60, function () use ($host): ?string {
             // 1. Check exact match in operator_domains (for custom domains or exact subdomains)
             $domainRecord = OperatorDomain::query()
                 ->where('domain', $host)
@@ -54,14 +52,8 @@ class DomainResolverService
                 return (string) $domainRecord->operator->id;
             }
 
-            // 2. Check if it's a subdomain on the platform (e.g. {slug}.platform.com, {slug}.booking.test, {slug}.booking.emvi)
             $subdomain = explode('.', $host)[0];
-            if (
-                str_ends_with($host, '.'.$platformDomain) ||
-                str_ends_with($host, '.booking.test') ||
-                str_ends_with($host, '.booking.emvi') ||
-                str_ends_with($host, '.platform.com')
-            ) {
+            if ($this->hostIsPlatformSubdomain($host)) {
                 $operator = Operator::query()
                     ->where('slug', $subdomain)
                     ->first();
@@ -86,16 +78,13 @@ class DomainResolverService
      */
     public function clearOperatorDomainCache(Operator $operator): void
     {
-        $platformDomain = $this->getPlatformDomain();
         $subdomain = strtolower($operator->slug);
 
-        $hosts = [
-            "{$subdomain}.{$platformDomain}",
-            "{$subdomain}.booking.test",
-            "{$subdomain}.booking.emvi",
-            "{$subdomain}.platform.com",
-            $operator->slug,
-        ];
+        $hosts = [$operator->slug];
+
+        foreach ($this->knownPlatformSuffixes() as $suffix) {
+            $hosts[] = "{$subdomain}.{$suffix}";
+        }
 
         foreach ($operator->domains as $d) {
             $hosts[] = strtolower($d->domain);
@@ -120,9 +109,52 @@ class DomainResolverService
     public function isPlatformRoot(string $host): bool
     {
         $host = strtolower(trim(explode(':', $host)[0]));
-        $platformDomain = $this->getPlatformDomain();
 
-        return in_array($host, [$platformDomain, 'localhost', '127.0.0.1', 'booking.test', 'booking.emvi'], true);
+        return in_array($host, $this->knownPlatformRoots(), true);
+    }
+
+    /**
+     * Apex hosts that are the platform, not an operator storefront.
+     *
+     * @return list<string>
+     */
+    public function knownPlatformRoots(): array
+    {
+        return array_values(array_unique([
+            $this->getPlatformDomain(),
+            'localhost',
+            '127.0.0.1',
+            'booking.test',
+            'www.booking.test',
+            'booking.emvi',
+            'www.booking.emvi',
+            'travelengine.online',
+            'www.travelengine.online',
+        ]));
+    }
+
+    /**
+     * Host suffixes used for operator slugs (`{slug}.{suffix}`).
+     *
+     * @return list<string>
+     */
+    public function knownPlatformSuffixes(): array
+    {
+        return array_values(array_filter(
+            $this->knownPlatformRoots(),
+            fn (string $host): bool => ! in_array($host, ['localhost', '127.0.0.1'], true),
+        ));
+    }
+
+    private function hostIsPlatformSubdomain(string $host): bool
+    {
+        foreach ($this->knownPlatformSuffixes() as $suffix) {
+            if (str_ends_with($host, '.'.$suffix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

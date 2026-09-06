@@ -11,7 +11,7 @@ use Livewire\Component;
 new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
     // Global Platform Parameters
     public string $platform_name = 'TravelEngine';
-    public string $support_email = 'admin@emvi.dev';
+    public string $support_email = 'no-reply@travelengine.online';
     public float $commission_percentage = 0.0; // 0% operator commission
     public float $guest_service_fee_percentage = 5.0; // 5% guest service fee
     public int $booking_hold_minutes = 30;
@@ -37,7 +37,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
         $settings = $platform->settings ?? [];
 
         $this->platform_name = (string) ($settings['platform_name'] ?? 'TravelEngine');
-        $this->support_email = (string) ($settings['support_email'] ?? 'admin@emvi.dev');
+        $this->support_email = (string) ($settings['support_email'] ?? 'no-reply@travelengine.online');
         $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.0) * 100);
         $this->guest_service_fee_percentage = (float) (($settings['guest_service_fee_rate'] ?? 0.05) * 100);
         $this->booking_hold_minutes = (int) ($settings['booking_hold_minutes'] ?? 30);

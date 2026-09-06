@@ -7,10 +7,11 @@ return [
     | Public server addresses
     |--------------------------------------------------------------------------
     |
-    | Production origin is AWS Lightsail. The platform apex is on Cloudflare;
-    | slugs and custom domains hit this box directly. These addresses are
-    | what Agency apex names A / AAAA to. Prefer a CNAME to a grey hostname
-    | (cname.{platform}). Comma-separate more than one address if needed.
+    | Production origin is AWS Lightsail. The apex travelengine.online is on
+    | Cloudflare; slugs and custom domains hit this box directly. These
+    | addresses are what Agency apex names A / AAAA to. Prefer a CNAME to a
+    | grey hostname (cname.travelengine.online). Comma-separate more than
+    | one address if needed.
     |
     */
 

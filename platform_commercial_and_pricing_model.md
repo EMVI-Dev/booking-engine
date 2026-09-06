@@ -22,7 +22,7 @@ Following the industry model used by **FareHarbor (Booking.com)**, **Loket.com**
 | **Guest Service Fee** | **5.0%** (Paid by Guest at Checkout) | **5.0%** (Paid by Guest at Checkout) | **0.0%** (Direct BYO Gateway Settlement) | **0.0%** (Direct BYO Gateway Settlement) |
 | **Package Listings Limit** | Up to **5** Packages | Up to **25** Packages | **Unlimited Listings** | **Unlimited Listings** |
 | **Team Staff Seats** | **Unlimited Staff** | **Unlimited Staff** | **Unlimited Staff** | **Unlimited Staff** |
-| **Storefront Subdomain** | ✅ `slug.booking.emvi` | ✅ `slug.booking.emvi` | ✅ `slug.booking.emvi` | ✅ `slug.booking.emvi` |
+| **Storefront Subdomain** | ✅ `slug.travelengine.online` | ✅ `slug.travelengine.online` | ✅ `slug.travelengine.online` | ✅ `slug.travelengine.online` |
 | **Custom Domain (`yourbrand.com`)** | 🔒 *Gated* | 🔒 *Gated* | ✅ **Included with Auto-SSL** | ✅ **Included with Auto-SSL** |
 | **Google Calendar & Live iCal Feed** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** | ✅ **Included** |
 | **Guest CRM Directory & LTV** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** | ✅ **Included** |
@@ -157,7 +157,7 @@ Following the industry model used by **FareHarbor (Booking.com)**, **Loket.com**
 ### 2. Failed Renewal Grace Period & Fallback Engine
 - **3-Day Grace Period**: A failed recurring subscription payment initiates a **3-day grace period**. The operator retains full access to their tier features while warning banners and automated WhatsApp/email notifications request updated billing details.
 - **Day 4 Fallback Execution**: On Day 4, if payment remains uncollected, the account automatically falls back to **Starter Essential (Free)**:
-  - Custom domain (`yourbrand.com`) pauses and falls back to `slug.booking.emvi`.
+  - Custom domain (`yourbrand.com`) pauses and falls back to `slug.travelengine.online`.
   - Active packages above 5 are set to *Draft*.
   - Guest service fee returns to 5.0% pass-through.
 

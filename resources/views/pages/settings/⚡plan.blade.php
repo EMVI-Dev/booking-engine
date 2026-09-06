@@ -704,7 +704,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('Custom Subdomain (`slug.booking.emvi`)') }}</td>
+                        {{ __('Custom Subdomain (`slug.travelengine.online`)') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             <i class="fa-solid fa-check text-emerald-500 text-sm"></i>

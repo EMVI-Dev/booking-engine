@@ -258,7 +258,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                             wire:model="email"
                             required
                             autocomplete="email"
-                            placeholder="admin@emvi.dev"
+                            placeholder="admin@travelengine.online"
                             :error="$errors->has('email')"
                         />
                         <x-input-error :messages="$errors->get('email')" />

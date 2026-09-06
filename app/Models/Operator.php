@@ -449,22 +449,12 @@ class Operator extends Model
         // 2. Build subdomain URL based on current request host or app.url
         $scheme = request()->getScheme() ?: 'https';
         $currentHost = request()->getHost();
-        $platformDomain = app(DomainResolverService::class)->getPlatformDomain();
+        $resolver = app(DomainResolverService::class);
 
-        if (
-            str_ends_with($currentHost, '.'.$platformDomain) ||
-            str_ends_with($currentHost, '.booking.test') ||
-            str_ends_with($currentHost, '.booking.emvi') ||
-            in_array($currentHost, [$platformDomain, 'booking.test', 'booking.emvi', 'localhost', '127.0.0.1'], true)
-        ) {
-            $baseDomain = $platformDomain;
-            if (str_ends_with($currentHost, '.booking.emvi') || $currentHost === 'booking.emvi') {
-                $baseDomain = 'booking.emvi';
-            } elseif (str_ends_with($currentHost, '.booking.test') || $currentHost === 'booking.test') {
-                $baseDomain = 'booking.test';
+        foreach ($resolver->knownPlatformSuffixes() as $suffix) {
+            if ($currentHost === $suffix || str_ends_with($currentHost, '.'.$suffix)) {
+                return "{$scheme}://{$this->slug}.{$suffix}";
             }
-
-            return "{$scheme}://{$this->slug}.{$baseDomain}";
         }
 
         $appUrlHost = parse_url((string) config('app.url', 'http://localhost'), PHP_URL_HOST) ?: 'booking.test';

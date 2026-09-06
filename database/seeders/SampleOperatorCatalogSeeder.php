@@ -109,7 +109,7 @@ class SampleOperatorCatalogSeeder extends Seeder
         OperatorDomain::firstOrCreate(
             ['operator_id' => $operator->id, 'type' => DomainType::Subdomain],
             [
-                'domain' => 'bali-ride-tours.booking.emvi',
+                'domain' => 'bali-ride-tours.travelengine.online',
                 'is_primary' => true,
                 'status' => DomainStatus::Active,
                 'verified_at' => now(),

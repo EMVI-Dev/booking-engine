@@ -1,11 +1,11 @@
-# Booking Engine Platform — V1 Spec (Rev. 21)
+# Booking Engine Platform — V1 Spec (Rev. 22)
 
 ## Vision & Audience
 
 A focused, single-day capacity booking and inventory engine built specifically for **Freelance Guides, Activity Hosts, and Travel Agencies**.
 
 Unlike complex legacy software that assumes enterprise hotel or multi-day vehicle rental operations, this platform is tailored to **Daily Capacity Booking**:
-- Each operator gets their own branded booking storefront (default subdomain `slug.booking.emvi`, upgradeable to custom domain `yourbrand.com` on Agency).
+- Each operator gets their own branded booking storefront (default subdomain `slug.travelengine.online`, upgradeable to custom domain `yourbrand.com` on Agency).
 - No cross-agent marketplace search/discovery — the root platform domain handles marketing and authentication; each operator's storefront is an independent booking destination.
 - Single calendar date selection (`requested_date`) and daily capacity limits per activity (`capacity_per_day`).
 
@@ -46,8 +46,8 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 
 ### 3. Branded Storefront & Guest Experience
 - **Subdomain & Custom Domain Routing**:
-    - Default: `slug.booking.emvi` (DNS only to Lightsail). Platform apex `booking.emvi` is Cloudflare-proxied.
-    - Custom Domain (Agency): CNAME to a grey hostname (`cname.booking.emvi` or the operator slug), or A / AAAA the apex at the Lightsail IP. Caddy issues the guest padlock. Do not CNAME at the orange apex.
+    - Default: `slug.travelengine.online` (DNS only to Lightsail). Platform apex `travelengine.online` is Cloudflare-proxied.
+    - Custom Domain (Agency): CNAME to a grey hostname (`cname.travelengine.online` or the operator slug), or A / AAAA the apex at the Lightsail IP. Caddy issues the guest padlock. Do not CNAME at the orange apex.
 - **Segmented Storefront Navigation**:
     - Direct access to *Catalog (Home)*, *Tour Packages*, *Single Activities*, and *Terms & Policies*.
 - **Direct Checkout & 30-Minute Hold Recovery**:
@@ -128,7 +128,7 @@ Guest service fee is **5% on every plan**, capped at **Rp 250.000**. Operator ge
 
 - **Framework**: Laravel 12 on PHP 8.5.
 - **UI Stack**: Livewire 4 SFCs, Tailwind CSS v4, Alpine.js, FontAwesome 6 icons.
-- **Hosting**: AWS Lightsail is the origin. Cloudflare orange-clouds the platform apex (`booking.emvi` / `www`) only. `*.booking.emvi` is DNS-only to Lightsail. Ports 80/443 stay open. Trust `X-Forwarded-*` on the proxied apex. Not Laravel Cloud. Not Cloudflare for SaaS in V1.
+- **Hosting**: AWS Lightsail is the origin. Cloudflare orange-clouds the platform apex (`travelengine.online` / `www`) only. `*.travelengine.online` is DNS-only to Lightsail. Ports 80/443 stay open. Trust `X-Forwarded-*` on the proxied apex. Not Laravel Cloud. Not Cloudflare for SaaS in V1. Mail from `no-reply@travelengine.online`.
 - **Testing**: Pest 5 with **336 automated feature and unit tests (100% passing)**.
 - **Code Style**: Formatted and enforced with Laravel Pint.
 - **Primary Keys**: ULIDs throughout.

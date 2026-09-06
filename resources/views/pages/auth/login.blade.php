@@ -33,12 +33,12 @@
                         <span
                             class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">baliridetours@gmail.com</span>
                     </button>
-                    <button type="button" @click="fillCredentials('admin@emvi.dev', 'password')"
+                    <button type="button" @click="fillCredentials('admin@travelengine.online', 'password')"
                         class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600 text-left transition cursor-pointer group shadow-2xs">
                         <span
                             class="font-bold text-slate-800 dark:text-zinc-200 block text-[11px] group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Platform
                             Admin</span>
-                        <span class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">admin@emvi.dev</span>
+                        <span class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">admin@travelengine.online</span>
                     </button>
                 </div>
             </div>

@@ -221,7 +221,7 @@
                             </div>
                             <div class="px-4 py-1 rounded-lg bg-[#131316] border border-zinc-800 text-[11px] text-zinc-300 font-mono flex items-center gap-2 max-w-xs sm:max-w-md w-full justify-center">
                                 <i class="fa-solid fa-lock text-[10px] text-emerald-400"></i>
-                                <span class="truncate" x-text="activeTab === 'storefront' ? 'https://bali-excursions.travelengine.app' : (activeTab === 'manifest' ? 'https://portal.travelengine.app/manifest/daily' : (activeTab === 'whatsapp' ? 'https://wa.me/628123456789' : 'https://portal.travelengine.app/wallet/payouts'))"></span>
+                                <span class="truncate" x-text="activeTab === 'storefront' ? 'https://bali-excursions.travelengine.online' : (activeTab === 'manifest' ? 'https://travelengine.online/manifest/daily' : (activeTab === 'whatsapp' ? 'https://wa.me/628123456789' : 'https://travelengine.online/wallet/payouts'))"></span>
                             </div>
                             <div class="flex items-center gap-1.5 text-xs text-zinc-500">
                                 <span class="text-[10px] font-bold text-[#FFEF4D] bg-[#FFEF4D]/15 px-2 py-0.5 rounded-md border border-[#FFEF4D]/30 uppercase tracking-wider">Verified Live</span>
@@ -436,7 +436,7 @@
                                     <div class="p-2.5 rounded-lg bg-[#09090b] border border-zinc-800 text-[11px] text-zinc-300 space-y-1">
                                         <div>📍 <strong>Pickup:</strong> Hilton Bali Resort (06:45 AM)</div>
                                         <div>⛵ <strong>Trip:</strong> Nusa Penida Snorkeling (2 Guests)</div>
-                                        <div>📲 <strong>Digital QR Pass:</strong> travelengine.app/v/8821</div>
+                                        <div>📲 <strong>Digital QR Pass:</strong> travelengine.online/v/8821</div>
                                     </div>
                                 </div>
                             </div>
@@ -931,7 +931,7 @@
                                         </td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
-                                        <td class="py-3 pr-3 text-zinc-300 font-medium">{{ __('Free Website Address (`yourname.travelengine.app`)') }}</td>
+                                        <td class="py-3 pr-3 text-zinc-300 font-medium">{{ __('Free Website Address (`yourname.travelengine.online`)') }}</td>
                                         <td class="py-3 px-2 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
                                         <td class="py-3 px-2 text-center bg-zinc-900/60"><i class="fa-solid fa-check text-emerald-400"></i></td>
                                         <td class="py-3 px-2 text-center"><i class="fa-solid fa-check text-emerald-400"></i></td>
