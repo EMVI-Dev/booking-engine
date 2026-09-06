@@ -6,21 +6,15 @@
     <title>{{ __('Secure Online Checkout') }} - {{ $agent->name }}</title>
     <link rel="icon" href="{{ $agent->logo_url }}" />
     <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
-    @if (! empty($agent->brand_color))
-        <style>
-            :root {
-                --brand-color: {{ $agent->brand_color }};
-            }
-        </style>
-    @endif
+    @include('storefront.partials.brand-theme')
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-4 selection:bg-brand-600 selection:text-white antialiased">
+<body class="min-h-screen bg-slate-900 text-brand-foreground flex flex-col items-center justify-center p-4 selection:bg-brand-600 selection:text-brand-foreground antialiased">
     <div class="w-full max-w-md space-y-6">
         <!-- Brand Header -->
         <div class="text-center space-y-2">
-            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-600 shadow-xl text-white text-2xl font-black mb-1">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-600 shadow-xl text-brand-foreground text-2xl font-black mb-1">
                 <i class="fa-solid fa-credit-card"></i>
             </div>
             <h1 class="text-2xl font-black tracking-tight">{{ __('DOKU Secure Checkout') }}</h1>

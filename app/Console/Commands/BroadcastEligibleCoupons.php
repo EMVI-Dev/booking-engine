@@ -6,6 +6,7 @@ use App\Models\Operator;
 use App\Models\PlatformAnnouncement;
 use App\Models\PlatformCoupon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class BroadcastEligibleCoupons extends Command
 {
@@ -48,13 +49,9 @@ class BroadcastEligibleCoupons extends Command
                     continue;
                 }
 
-                // Skip if operator already received a broadcast notification this cycle
-                $alreadyNotifiedThisCycle = $coupon->redemptions()
-                    ->where('operator_id', $operator->id)
-                    ->where('billing_cycle', $cycle)
-                    ->exists();
+                $broadcastKey = "coupon-broadcast:{$coupon->id}:{$operator->id}:{$cycle}";
 
-                if ($alreadyNotifiedThisCycle) {
+                if (Cache::has($broadcastKey)) {
                     continue;
                 }
 
@@ -86,6 +83,8 @@ class BroadcastEligibleCoupons extends Command
                     'starts_at' => now(),
                     'ends_at' => $coupon->expires_at,
                 ]);
+
+                Cache::put($broadcastKey, true, now()->addMonths(2));
 
                 $notifiedCount++;
             }

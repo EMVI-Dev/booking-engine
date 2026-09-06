@@ -69,7 +69,7 @@ class OperatorOnboardingService
                 'booking_notification_email' => $data['booking_notification_email'] ?? $data['email'],
                 'billing_email' => $data['billing_email'] ?? $data['email'],
                 'status' => OperatorStatus::Approved,
-                'terms_and_conditions' => 'Standard tour operator terms & conditions.',
+                'terms_and_conditions' => null,
                 'bank_account_ref' => $data['bank_account_ref'] ?? null,
                 'settings' => [
                     'sellable_standalone_default' => true,

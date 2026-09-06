@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Concerns\SendsOperatorBrandedMail;
 use App\Models\Reservation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -12,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 
 class GuestReviewRequestMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SendsOperatorBrandedMail, SerializesModels;
 
     public function __construct(
         public Reservation $reservation,
@@ -21,10 +22,12 @@ class GuestReviewRequestMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $agentName = $this->reservation->agent->name ?? config('app.name', 'Booking');
+        $operator = $this->reservation->operator;
+        $agentName = $operator?->name ?? config('app.name', 'Booking');
 
-        return new Envelope(
-            subject: "⭐ How was your experience with {$agentName}?",
+        return $this->operatorBrandedEnvelope(
+            $operator,
+            "⭐ How was your experience with {$agentName}?",
         );
     }
 

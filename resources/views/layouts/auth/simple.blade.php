@@ -9,12 +9,12 @@
             <div class="w-full max-w-lg space-y-6">
                 <!-- Platform Brand Header -->
                 <a href="{{ route('home') }}" class="flex items-center justify-center gap-3 font-semibold group" wire:navigate>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#2A428C] shadow-md text-lg group-hover:scale-105 transition-transform duration-200 font-black">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E] shadow-md text-lg group-hover:scale-105 transition-transform duration-200 font-black">
                         <i class="fa-solid fa-compass"></i>
                     </span>
                     <div class="flex flex-col text-start">
                         <span class="text-base font-bold tracking-tight text-slate-900 dark:text-white">{{ config('app.name', 'TravelEngine') }}</span>
-                        <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">{{ __('Storefront Platform') }}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">{{ __('For tour operators') }}</span>
                     </div>
                 </a>
 

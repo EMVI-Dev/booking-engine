@@ -38,8 +38,8 @@ class CreateNewUser implements CreatesNewUsers
             'terms' => ['accepted'],
         ], [
             'business_name.required' => 'Please provide your tour operator or guide business name.',
-            'slug.unique' => 'This storefront subdomain is already taken. Please choose another.',
-            'terms.accepted' => 'You must accept the Storefront Terms & Protection to launch your storefront.',
+            'slug.unique' => 'That page address is already taken. Please choose another.',
+            'terms.accepted' => 'Please agree to the terms before creating your account.',
         ])->validate();
 
         $result = $this->onboardingService->registerOperator([
@@ -55,7 +55,7 @@ class CreateNewUser implements CreatesNewUsers
         ]);
 
         session()->flash('welcome_onboarding', true);
-        session()->flash('status', 'Welcome to your tour operator portal! Please complete your brand logo, theme color, and business details.');
+        session()->flash('status', 'Your booking page is ready. Add a trip, then add your payout bank account when you want to get paid.');
 
         return $result['user'];
     }

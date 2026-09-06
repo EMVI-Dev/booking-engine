@@ -5,6 +5,7 @@
     $payment = $reservation->latestPayment;
     $bookableTitle = $reservation->bookable?->name ?? ($reservation->bookable?->title ?? 'Direct Booking');
     $receiptUrl = route('storefront.reservation.receipt', $reservation);
+    $ticketUrl = route('storefront.reservation.ticket', $reservation);
 
     $waService = app(\App\Services\WhatsAppDispatchService::class);
     $waUrl = $agent->contact_whatsapp ? $waService->getConfirmationUrl($reservation) : null;
@@ -69,8 +70,8 @@
                                     <td align="right" style="padding: 6px 0; font-size: 12px; font-weight: 700; color: #0f172a;">{{ $reservation->requested_date->format('l, M d, Y') }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding: 6px 0; font-size: 12px; color: #64748b;">{{ __('Guests (Pax)') }}</td>
-                                    <td align="right" style="padding: 6px 0; font-size: 12px; font-weight: 700; color: #0f172a;">{{ $reservation->pax_count }} Persons</td>
+                                    <td style="padding: 6px 0; font-size: 12px; color: #64748b;">{{ __('Guests') }}</td>
+                                    <td align="right" style="padding: 6px 0; font-size: 12px; font-weight: 700; color: #0f172a;">{{ $reservation->pax_count }} {{ __('guests') }}</td>
                                 </tr>
                                 @if ($payment)
                                     <tr>
@@ -102,8 +103,11 @@
                                 @endif
                                 <tr>
                                     <td>
-                                        <a href="{{ $receiptUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 14px; font-size: 12px; font-weight: 700; text-align: center;">
-                                            🎟️ {{ __('View Digital E-Voucher & Receipt') }}
+                                        <a href="{{ $ticketUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 14px; font-size: 12px; font-weight: 700; text-align: center;">
+                                            🎟️ {{ __('Open your e-ticket') }}
+                                        </a>
+                                        <a href="{{ $receiptUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; margin-top: 8px; color: #334155; text-decoration: underline; padding: 4px 20px; font-size: 12px; font-weight: 600; text-align: center;">
+                                            {{ __('View the receipt') }}
                                         </a>
                                     </td>
                                 </tr>
@@ -117,9 +121,11 @@
                             <p style="margin: 0 0 6px 0;">
                                 {{ __('Have questions or special requests? Reach out directly via WhatsApp.') }}
                             </p>
+                            @if ($agent->showsPlatformBranding())
                             <p style="margin: 0; font-size: 10px; color: #cbd5e1;">
                                 {{ __('Powered by :app', ['app' => config('app.name', 'Booking Engine')]) }}
                             </p>
+                            @endif
                         </td>
                     </tr>
                 </table>

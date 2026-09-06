@@ -18,6 +18,12 @@ use Illuminate\Validation\ValidationException;
 
 class WalletService
 {
+    public const DISPUTE_ADMIN_FEE = 150000.00;
+
+    public const PAYOUT_TRANSFER_FEE = 2500.00;
+
+    public const PAYOUT_FEE_WAIVER_AMOUNT = 500000.00;
+
     /**
      * Credit the operator's wallet from a settled reservation payment.
      */
@@ -67,7 +73,7 @@ class WalletService
             ? $reservation->bookable->getTitle()
             : 'Tour Experience';
 
-        return WalletTransaction::query()->create([
+        $earning = WalletTransaction::query()->create([
             'operator_id' => $operator->id,
             'reservation_id' => $reservation->id,
             'type' => WalletTransactionType::BookingEarning,
@@ -78,6 +84,22 @@ class WalletService
             'available_at' => $departureDate,
             'description' => "Booking #{$reservation->code} ({$bookableTitle}) - {$reservation->guest_name}",
         ]);
+
+        if ($platformCommission > 0) {
+            WalletTransaction::query()->create([
+                'operator_id' => $operator->id,
+                'reservation_id' => $reservation->id,
+                'type' => WalletTransactionType::PlatformCommission,
+                'gross_amount' => 0,
+                'fee_amount' => $platformCommission,
+                'net_amount' => 0,
+                'status' => $status,
+                'available_at' => $departureDate,
+                'description' => "Guest service fee for booking #{$reservation->code}",
+            ]);
+        }
+
+        return $earning;
     }
 
     /**
@@ -100,14 +122,21 @@ class WalletService
             ]);
         }
 
+        $transferFee = $amount < self::PAYOUT_FEE_WAIVER_AMOUNT ? self::PAYOUT_TRANSFER_FEE : 0.0;
         $availableBalance = $operator->getAvailableBalance();
-        if ($amount > $availableBalance) {
+        if (($amount + $transferFee) > $availableBalance) {
             throw ValidationException::withMessages([
-                'amount' => __('Requested amount exceeds your available balance of Rp :balance.', ['balance' => number_format($availableBalance, 0, ',', '.')]),
+                'amount' => $transferFee > 0
+                    ? __('Payouts under Rp 500.000 include a Rp 2.500 transfer fee. You need Rp :needed available.', [
+                        'needed' => number_format($amount + $transferFee, 0, ',', '.'),
+                    ])
+                    : __('Requested amount exceeds your available balance of Rp :balance.', [
+                        'balance' => number_format($availableBalance, 0, ',', '.'),
+                    ]),
             ]);
         }
 
-        return DB::transaction(function () use ($operator, $amount, $notes): PayoutRequest {
+        return DB::transaction(function () use ($operator, $amount, $notes, $transferFee): PayoutRequest {
             /** @var PayoutRequest $payout */
             $payout = PayoutRequest::query()->create([
                 'operator_id' => $operator->id,
@@ -124,10 +153,12 @@ class WalletService
                 'payout_request_id' => $payout->id,
                 'type' => WalletTransactionType::PayoutWithdrawal,
                 'gross_amount' => 0,
-                'fee_amount' => 0,
-                'net_amount' => -1 * abs($amount),
+                'fee_amount' => $transferFee,
+                'net_amount' => -1 * abs($amount + $transferFee),
                 'status' => WalletTransactionStatus::Cleared,
-                'description' => "Payout Request #{$payout->reference_number} ({$operator->bank_provider} - {$operator->bank_account_number})",
+                'description' => $transferFee > 0
+                    ? "Payout Request #{$payout->reference_number} ({$operator->bank_provider} - {$operator->bank_account_number}) plus Rp 2.500 transfer fee"
+                    : "Payout Request #{$payout->reference_number} ({$operator->bank_provider} - {$operator->bank_account_number})",
             ]);
 
             // Auto-Disburse via DOKU API if amount <= Rp 10.000.000 (Industry Standard)
@@ -140,6 +171,10 @@ class WalletService
                             'processed_by' => 'DOKU BI-FAST API',
                             'processed_at' => now(),
                             'notes' => ($notes ? $notes.' | ' : '').$disbursement['message'].' [Ref: '.$disbursement['reference'].']',
+                        ]);
+                    } else {
+                        $payout->update([
+                            'notes' => ($notes ? $notes.' | ' : '').$disbursement['message'],
                         ]);
                     }
                 } catch (\Throwable $e) {
@@ -179,14 +214,20 @@ class WalletService
                 'processed_at' => now(),
             ]);
 
-            // Refund transaction back into wallet
+            $withdrawal = WalletTransaction::query()
+                ->where('payout_request_id', $payout->id)
+                ->where('type', WalletTransactionType::PayoutWithdrawal)
+                ->first();
+
             WalletTransaction::query()->create([
                 'operator_id' => $payout->operator_id,
                 'payout_request_id' => $payout->id,
                 'type' => WalletTransactionType::ManualAdjustment,
                 'gross_amount' => 0,
                 'fee_amount' => 0,
-                'net_amount' => abs((float) $payout->amount),
+                'net_amount' => $withdrawal
+                    ? abs((float) $withdrawal->net_amount)
+                    : abs((float) $payout->amount),
                 'status' => WalletTransactionStatus::Cleared,
                 'description' => "Reversal of Rejected Payout #{$payout->reference_number}: {$reason}",
             ]);
@@ -267,6 +308,91 @@ class WalletService
             'net_amount' => -1 * abs($refundAmount),
             'status' => WalletTransactionStatus::Cleared,
             'description' => "Partial Refund for Booking #{$reservation->code}: {$reason}",
+        ]);
+    }
+
+    /**
+     * Money still held on a booking after a card fight.
+     */
+    public function outstandingDisputeHold(Reservation $reservation): float
+    {
+        $net = $reservation->relationLoaded('walletTransactions')
+            ? (float) $reservation->walletTransactions
+                ->whereIn('type', [WalletTransactionType::DisputeHold, WalletTransactionType::DisputeRelease])
+                ->sum('net_amount')
+            : (float) WalletTransaction::query()
+                ->where('reservation_id', $reservation->id)
+                ->whereIn('type', [WalletTransactionType::DisputeHold, WalletTransactionType::DisputeRelease])
+                ->sum('net_amount');
+
+        return max(0.0, -1 * $net);
+    }
+
+    /**
+     * Hold operator funds while a card payment is being disputed.
+     */
+    public function holdDispute(Reservation $reservation, float $amount, string $reason = 'Card payment disputed'): WalletTransaction
+    {
+        $amount = abs($amount);
+
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => __('Enter an amount to hold.'),
+            ]);
+        }
+
+        if ($this->outstandingDisputeHold($reservation) > 0) {
+            throw ValidationException::withMessages([
+                'amount' => __('Money is already held on this booking.'),
+            ]);
+        }
+
+        $operator = $reservation->operator;
+
+        return WalletTransaction::query()->create([
+            'operator_id' => $operator->id,
+            'reservation_id' => $reservation->id,
+            'type' => WalletTransactionType::DisputeHold,
+            'gross_amount' => -1 * $amount,
+            'fee_amount' => 0,
+            'net_amount' => -1 * $amount,
+            'status' => WalletTransactionStatus::Cleared,
+            'description' => "Money held for a card dispute on booking #{$reservation->code}: {$reason}",
+        ]);
+    }
+
+    /**
+     * Return held money to the operator wallet after a card fight ends.
+     */
+    public function releaseDispute(Reservation $reservation, ?float $amount = null, string $reason = 'Card dispute closed'): WalletTransaction
+    {
+        $outstanding = $this->outstandingDisputeHold($reservation);
+
+        if ($outstanding <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => __('There is no held money to give back on this booking.'),
+            ]);
+        }
+
+        $releaseAmount = $amount === null ? $outstanding : abs($amount);
+
+        if ($releaseAmount <= 0 || $releaseAmount > $outstanding) {
+            throw ValidationException::withMessages([
+                'amount' => __('You can only give back the amount still held.'),
+            ]);
+        }
+
+        $operator = $reservation->operator;
+
+        return WalletTransaction::query()->create([
+            'operator_id' => $operator->id,
+            'reservation_id' => $reservation->id,
+            'type' => WalletTransactionType::DisputeRelease,
+            'gross_amount' => $releaseAmount,
+            'fee_amount' => 0,
+            'net_amount' => $releaseAmount,
+            'status' => WalletTransactionStatus::Cleared,
+            'description' => "Held money given back for booking #{$reservation->code}: {$reason}",
         ]);
     }
 }

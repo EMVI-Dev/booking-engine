@@ -46,12 +46,8 @@ test('payment settings can be configured to use built-in platform Doku payment',
         ->and($this->operator->settings['payment_gateway']['use_custom_credentials'])->toBeFalse();
 });
 
-test('payment settings can be updated with custom BYO merchant gateway', function () {
-    $enterprisePlan = Plan::factory()->create([
-        'slug' => 'enterprise',
-        'name' => 'Agency Ultimate',
-        'features' => ['byo_gateway' => true],
-    ]);
+test('agency operators cannot connect a private merchant gateway', function () {
+    $enterprisePlan = Plan::factory()->enterprise()->create();
     $this->operator->update(['plan_id' => $enterprisePlan->id]);
 
     Livewire::test('pages::settings.payments')
@@ -64,17 +60,9 @@ test('payment settings can be updated with custom BYO merchant gateway', functio
         ->set('gateway_client_id', 'MALLID_CUSTOM_999')
         ->set('gateway_shared_key', 'DOKU_CUSTOM_KEY_888')
         ->call('updatePaymentSettings')
-        ->assertHasNoErrors();
+        ->assertHasErrors(['payment_mode']);
 
     $this->operator->refresh();
 
-    expect($this->operator->bank_provider)->toBe('Mandiri')
-        ->and($this->operator->bank_account_name)->toBe('PT Paradise Expeditions')
-        ->and($this->operator->bank_account_number)->toBe('9876543210')
-        ->and($this->operator->bank_account_ref)->toBe('Mandiri - 9876543210 (PT Paradise Expeditions)')
-        ->and($this->operator->settings['payment_gateway']['provider'])->toBe('doku')
-        ->and($this->operator->settings['payment_gateway']['use_custom_credentials'])->toBeTrue()
-        ->and($this->operator->settings['payment_gateway']['environment'])->toBe('production')
-        ->and($this->operator->settings['payment_gateway']['client_id'])->toBe('MALLID_CUSTOM_999')
-        ->and($this->operator->settings['payment_gateway']['shared_key'])->toBe('DOKU_CUSTOM_KEY_888');
+    expect($this->operator->settings['payment_gateway']['use_custom_credentials'] ?? false)->toBeFalse();
 });

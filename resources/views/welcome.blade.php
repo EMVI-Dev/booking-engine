@@ -726,7 +726,7 @@
                 </div>
 
                 <!-- Centered 3-Column Pricing Cards Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch max-w-6xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch max-w-5xl mx-auto">
                     @foreach ($plans as $plan)
                         @php
                             $priceMonthly = (float) $plan->price_monthly;
@@ -776,11 +776,7 @@
                                         <div class="flex items-center justify-between text-[10px] text-zinc-500">
                                             <span>{{ __('Online Guest Fee') }}</span>
                                             <span class="font-medium text-zinc-300">
-                                                @if ($plan->slug === 'enterprise')
-                                                    {{ __('0% (Direct Merchant Gateway)') }}
-                                                @else
-                                                    {{ __('5% Paid by Customer') }}
-                                                @endif
+                                                {{ __('5% Paid by Customer') }}
                                             </span>
                                         </div>
                                     </div>
@@ -791,13 +787,13 @@
                                     <div class="p-2 rounded-lg bg-[#09090b] border border-zinc-800">
                                         <span class="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">{{ __('Tour Packages') }}</span>
                                         <span class="font-bold text-xs text-zinc-200 mt-0.5 block">
-                                            {{ $plan->package_limit ? __(':count Tours', ['count' => $plan->package_limit]) : __('Unlimited Tours') }}
+                                            {{ $plan->listingLimitLabel() }}
                                         </span>
                                     </div>
                                     <div class="p-2 rounded-lg bg-[#09090b] border border-zinc-800">
                                         <span class="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">{{ __('Staff Accounts') }}</span>
                                         <span class="font-bold text-xs text-zinc-200 mt-0.5 block">
-                                            {{ $plan->team_member_limit ? __(':count Staff', ['count' => $plan->team_member_limit]) : __('Unlimited Staff') }}
+                                            {{ $plan->teamSeatLabel() }}
                                         </span>
                                     </div>
                                 </div>
@@ -830,9 +826,9 @@
                                             <i class="fa-solid {{ $plan->hasFeature('custom_domain') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
                                             <span>{{ __('Use Your Own Domain (yourcompany.com)') }}</span>
                                         </li>
-                                        <li class="flex items-start gap-2 {{ $plan->hasFeature('byo_gateway') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
-                                            <i class="fa-solid {{ $plan->hasFeature('byo_gateway') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
-                                            <span>{{ __('Use Your Own Payment Account (Optional)') }}</span>
+                                        <li class="flex items-start gap-2 {{ $plan->hasFeature('remove_branding') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
+                                            <i class="fa-solid {{ $plan->hasFeature('remove_branding') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
+                                            <span>{{ __('Remove EMVI branding on your storefront') }}</span>
                                         </li>
                                         <li class="flex items-start gap-2 {{ $plan->hasFeature('ai_discovery') ? 'text-zinc-200 font-medium' : 'text-zinc-600 line-through' }}">
                                             <i class="fa-solid {{ $plan->hasFeature('ai_discovery') ? 'fa-check text-emerald-400' : 'fa-xmark text-zinc-700' }} text-xs mt-0.5 shrink-0"></i>
@@ -883,21 +879,21 @@
                             <span>{{ __('Scroll table sideways to compare all tiers') }}</span>
                         </div>
                         <div class="overflow-x-auto -mx-2 sm:mx-0">
-                            <table class="w-full text-left text-xs border-collapse min-w-[650px]">
+                            <table class="w-full text-left text-xs border-collapse min-w-[640px]">
                                 <thead>
                                     <tr class="border-b border-zinc-800 text-zinc-400">
-                                        <th class="py-3 pr-3 font-bold uppercase tracking-wider text-[10px] w-2/5">
+                                        <th class="py-3 pr-3 font-bold uppercase tracking-wider text-[10px] w-1/5">
                                             {{ __('Plan Details') }}</th>
-                                        <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center w-1/5 text-zinc-300">
-                                            <span>Starter Essential</span>
-                                            <span class="block text-[8px] font-normal text-zinc-500 mt-0.5">{{ __('Free Forever') }}</span>
+                                        <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center text-zinc-300">
+                                            <span>Essential</span>
+                                            <span class="block text-[8px] font-normal text-zinc-500 mt-0.5">{{ __('Free') }}</span>
                                         </th>
-                                        <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center w-1/5 text-[#FFEF4D] bg-zinc-900 rounded-t-xl border-t border-x border-zinc-800">
-                                            <span>Pro Operator</span>
+                                        <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center text-[#FFEF4D] bg-zinc-900 rounded-t-xl border-t border-x border-zinc-800">
+                                            <span>Pro</span>
                                             <span class="block text-[8px] font-normal text-zinc-400 mt-0.5">Rp 299.000 / mo</span>
                                         </th>
-                                        <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center w-1/5 text-zinc-300">
-                                            <span>Agency Ultimate</span>
+                                        <th class="py-3 px-2 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] text-center text-zinc-300">
+                                            <span>Agency</span>
                                             <span class="block text-[8px] font-normal text-zinc-400 mt-0.5">Rp 799.000 / mo</span>
                                         </th>
                                     </tr>
@@ -919,7 +915,7 @@
                                         <td class="py-3 pr-3 text-zinc-300 font-medium">{{ __('Online Customer Fee') }}</td>
                                         <td class="py-3 px-2 text-center text-zinc-400">5.0%</td>
                                         <td class="py-3 px-2 text-center text-zinc-400 bg-zinc-900/60">5.0%</td>
-                                        <td class="py-3 px-2 text-center font-bold text-zinc-200">0% (Your Own Gateway)</td>
+                                        <td class="py-3 px-2 text-center text-zinc-400">5.0%</td>
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3 pr-3 text-zinc-300 font-medium">{{ __('Direct Bank Transfers (BCA, Mandiri, BRI, BNI)') }}</td>
@@ -950,7 +946,7 @@
                                         <td class="py-3 pr-3 text-zinc-300 font-medium">{{ __('Use Your Own Payment Gateway Account') }}</td>
                                         <td class="py-3 px-2 text-center text-zinc-600"><i class="fa-solid fa-minus"></i></td>
                                         <td class="py-3 px-2 text-center text-zinc-600 bg-zinc-900/60"><i class="fa-solid fa-minus"></i></td>
-                                        <td class="py-3 px-2 text-center font-bold text-zinc-200"><i class="fa-solid fa-check text-emerald-400"></i> Included</td>
+                                        <td class="py-3 px-2 text-center text-zinc-600"><i class="fa-solid fa-minus"></i></td>
                                     </tr>
 
                                     <!-- Category: Booking Engine & Inventory -->
@@ -967,7 +963,7 @@
                                     </tr>
                                     <tr class="hover:bg-zinc-800/30 transition">
                                         <td class="py-3 pr-3 text-zinc-300 font-medium">{{ __('Staff & Guide Accounts') }}</td>
-                                        <td class="py-3 px-2 text-center font-semibold text-emerald-400">Unlimited</td>
+                                        <td class="py-3 px-2 text-center font-semibold text-zinc-300">You + 1</td>
                                         <td class="py-3 px-2 text-center font-semibold text-emerald-400 bg-zinc-900/60">Unlimited</td>
                                         <td class="py-3 px-2 text-center font-semibold text-emerald-400">Unlimited</td>
                                     </tr>
@@ -1139,7 +1135,7 @@
                         <div x-show="activeAccordion === 6" x-collapse
                             class="px-4 sm:px-5 pb-5 text-xs text-zinc-400 leading-relaxed border-t border-zinc-800 pt-3"
                             style="display: none;">
-                            {{ __('Yes! All plans (including the free plan) include unlimited staff accounts. You can invite your reservation staff, drivers, and tour guides with specific access.') }}
+                            {{ __('Essential is you and one helper. Pro and above allow as many people as you need — office staff, drivers, and guides.') }}
                         </div>
                     </div>
                 </div>
@@ -1167,7 +1163,7 @@
                 <!-- Trust Reassurance Checklist -->
                 <div class="pt-2 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-zinc-400">
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('No credit card required') }}</span>
-                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('Free Starter plan forever') }}</span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('Free Essential plan forever') }}</span>
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('Ready in under 5 minutes') }}</span>
                 </div>
             </div>
@@ -1193,6 +1189,8 @@
             </a>
 
             <div class="flex items-center gap-6">
+                <a href="{{ route('legal.terms') }}" class="hover:text-zinc-300 transition">{{ __('Terms') }}</a>
+                <a href="{{ route('legal.privacy') }}" class="hover:text-zinc-300 transition">{{ __('Privacy') }}</a>
                 <a href="{{ route('login') }}" class="hover:text-zinc-300 transition" wire:navigate>{{ __('Operator Login') }}</a>
                 <a href="{{ route('register') }}" class="hover:text-zinc-300 transition" wire:navigate>{{ __('Operator Register') }}</a>
             </div>

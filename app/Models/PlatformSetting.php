@@ -88,13 +88,11 @@ class PlatformSetting extends Model
 
     /**
      * Calculate guest service fee with high-ticket cap support (e.g. 100M transaction).
+     *
+     * Charged on every plan, including Agency. Subscription buys features, not a fee waiver.
      */
     public function calculateGuestServiceFee(float $subtotal, ?Operator $operator = null): float
     {
-        if ($operator && $operator->hasCustomPaymentGateway()) {
-            return 0.00;
-        }
-
         $rawFee = round($subtotal * $this->getGuestServiceFeeRate(), 2);
         $cap = $this->getGuestServiceFeeCap();
 
@@ -215,5 +213,25 @@ class PlatformSetting extends Model
         $val = (string) ($this->settings['doku']['live']['snap_token_url'] ?? '');
 
         return $val !== '' ? $val : (string) config('doku.live.snap_token_url', 'https://api.doku.com/authorization/v1/access-token/b2b');
+    }
+
+    /**
+     * @return list<array{payment_id: string, invoice: string, amount: float, reason: string, found_at: string}>
+     */
+    public function getUnmatchedPayments(): array
+    {
+        $items = $this->settings['unmatched_payments'] ?? [];
+
+        return is_array($items) ? array_values($items) : [];
+    }
+
+    /**
+     * @param  list<array{payment_id: string, invoice: string, amount: float, reason: string, found_at: string}>  $items
+     */
+    public function storeUnmatchedPayments(array $items): void
+    {
+        $settings = $this->settings ?? [];
+        $settings['unmatched_payments'] = $items;
+        $this->update(['settings' => $settings]);
     }
 }

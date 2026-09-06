@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
     <!-- SEO & Metadata -->
-    <title>{{ $agent->name }} &bull; {{ __('Official Direct Tour Bookings') }} &bull; {{ config('app.name') }}</title>
+    <title>{{ $agent->name }} &bull; {{ __('Official Direct Tour Bookings') }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
     <meta name="description"
         content="{{ Str::limit($agent->bio ?: __('Book direct tour packages, activities, and experiences with :name. Instant holds, transparent pricing, and secure payment.', ['name' => $agent->name]), 160) }}" />
     <link rel="canonical" href="{{ url()->current() }}" />
@@ -15,7 +15,9 @@
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine" />
+    @if ($agent->showsPlatformBranding())
+        <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine" />
+    @endif
     <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
     <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
 
@@ -34,7 +36,7 @@
     <meta property="og:url" content="{{ url()->current() }}" />
     <meta property="og:title" content="{{ $agent->name }} — {{ __('Direct Tour Bookings') }}" />
     <meta property="og:description" content="{{ $ogDescription }}" />
-    <meta property="og:site_name" content="{{ $agent->name }} • {{ config('app.name') }}" />
+    <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
     <meta property="og:image" content="{{ $ogImageUrl }}" />
     <meta property="og:image:secure_url" content="{{ $ogImageUrl }}" />
     <meta property="og:image:alt" content="{{ $agent->name }}" />
@@ -89,7 +91,7 @@
                             )
                             ->all(),
                     ],
-                    [
+                    $agent->showsPlatformBranding() ? [
                         '@type' => 'WebApplication',
                         '@id' => config('app.url') . '#platform',
                         'name' => config('app.name'),
@@ -103,7 +105,7 @@
                             'priceCurrency' => 'USD',
                             'description' => 'Free storefront for tour operators',
                         ],
-                    ],
+                    ] : null,
                 ]),
             ),
         ];
@@ -112,30 +114,7 @@
     {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
     </script>
 
-    <!-- Automated System Dark / Light Theme Sync -->
-    <script>
-        (function() {
-            function applySystemTheme() {
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
-            }
-            applySystemTheme();
-            if (window.matchMedia) {
-                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySystemTheme);
-            }
-        })();
-    </script>
-
-    @if (!empty($agent->brand_color))
-        <style>
-            :root {
-                --brand-color: {{ $agent->brand_color }};
-            }
-        </style>
-    @endif
+    @include('storefront.partials.brand-theme')
 
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -144,7 +123,7 @@
 </head>
 
 <body x-data="{ activeTab: 'all', mobileMenuOpen: false }"
-    class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white overflow-x-clip w-full max-w-full">
+    class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
     @include('storefront.partials.navbar')
 
     <!-- Hero Section (Responsive 2-Column Banner on Desktop) -->
@@ -262,7 +241,7 @@
             <div class="flex items-center gap-2">
                 <button type="button" @click="activeTab = 'all'"
                     class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                    :class="activeTab === 'all' ? 'bg-brand-600 text-white shadow-sm' :
+                    :class="activeTab === 'all' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
                         'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
                     <i class="fa-solid fa-layer-group mr-1.5 text-[11px]"></i>
                     {{ __('Top Featured (:count)', ['count' => min(5, $packages->count()) + min(5, $standaloneProducts->count())]) }}
@@ -271,7 +250,7 @@
                 @if ($packages->isNotEmpty())
                     <button type="button" @click="activeTab = 'packages'"
                         class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                        :class="activeTab === 'packages' ? 'bg-brand-600 text-white shadow-sm' :
+                        :class="activeTab === 'packages' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
                             'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
                         <i class="fa-solid fa-cubes mr-1.5 text-[11px]"></i>
                         {{ __('Packages (:count)', ['count' => $packages->count()]) }}
@@ -281,7 +260,7 @@
                 @if ($standaloneProducts->isNotEmpty())
                     <button type="button" @click="activeTab = 'products'"
                         class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                        :class="activeTab === 'products' ? 'bg-brand-600 text-white shadow-sm' :
+                        :class="activeTab === 'products' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
                             'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
                         <i class="fa-solid fa-compass mr-1.5 text-[11px]"></i>
                         {{ __('Single Activities (:count)', ['count' => $standaloneProducts->count()]) }}
@@ -291,7 +270,7 @@
                 @if ($reviews->isNotEmpty())
                     <button type="button" @click="activeTab = 'reviews'"
                         class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                        :class="activeTab === 'reviews' ? 'bg-brand-600 text-white shadow-sm' :
+                        :class="activeTab === 'reviews' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
                             'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
                         <i class="fa-solid fa-star mr-1.5 text-[11px] text-amber-400"></i>
                         {{ __('Guest Reviews (:count)', ['count' => $reviews->count()]) }}
@@ -437,7 +416,7 @@
                                     </div>
 
                                     <a href="{{ route('storefront.package', $pkg->slug) }}"
-                                        class="h-9 sm:h-10 px-4 sm:px-5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition text-center shrink-0 cursor-pointer">
+                                        class="h-9 sm:h-10 px-4 sm:px-5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground text-xs font-bold shadow-xs hover:shadow-md transition text-center shrink-0 cursor-pointer">
                                         <span>{{ __('Book Now') }}</span>
                                         <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                     </a>
@@ -557,7 +536,7 @@
                                         </p>
                                     </div>
                                     <a href="{{ route('storefront.product', $prod->slug) }}"
-                                        class="h-8 px-3.5 inline-flex items-center gap-1 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold text-xs shadow-xs transition">
+                                        class="h-8 px-3.5 inline-flex items-center gap-1 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-bold text-xs shadow-xs transition">
                                         <span>{{ __('Book') }}</span>
                                         <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                     </a>

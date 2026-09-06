@@ -62,4 +62,9 @@ class Payment extends Model
     {
         return $this->status === PaymentStatus::Paid;
     }
+
+    public function isRefunded(): bool
+    {
+        return $this->status === PaymentStatus::Refunded || $this->refund_status === 'refunded';
+    }
 }

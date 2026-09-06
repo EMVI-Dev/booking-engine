@@ -30,7 +30,7 @@ test('admin can view broadcast notices page and create announcement', function (
     Livewire::actingAs($this->admin)
         ->test('pages::admin.announcements')
         ->assertOk()
-        ->assertSee('Platform Broadcasts & Announcements')
+        ->assertSee('Notices')
         ->call('openCreateModal')
         ->set('title', 'Scheduled Maintenance Notice')
         ->set('message', 'Platform servers will undergo maintenance at 2 AM UTC.')

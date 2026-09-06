@@ -15,7 +15,7 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component {
     use PasswordValidationRules;
     use ProfileValidationRules;
 
@@ -199,29 +199,18 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
 }; ?>
 
 <div class="space-y-6 w-full">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <span class="p-2.5 rounded-2xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
-                <i class="fa-solid fa-user-shield text-lg"></i>
-            </span>
-            <div>
-                <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Admin Profile & Security') }}
-                </h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Manage your Platform Master administrative credentials, 2FA authentication, and passkeys.') }}
-                </p>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 shadow-2xs">
+    <x-page-header
+        :title="__('Your profile')"
+        :subtitle="__('Name, password, and extra sign-in protection.')"
+        icon="fa-user-shield"
+    >
+        <x-slot:actions>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-op-muted px-3 py-1 text-xs font-semibold text-op-ink">
                 <i class="fa-solid fa-crown text-[10px]"></i>
-                <span>{{ __('Platform Master Root') }}</span>
+                <span>{{ __('Admin') }}</span>
             </span>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Main Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -236,10 +225,10 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
                         </span>
                         <div>
                             <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                                {{ __('Administrative Identity') }}
+                                {{ __('Your details') }}
                             </h2>
                             <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                                {{ __('Your name and primary administrative email used for master notifications.') }}
+                                {{ __('The name and email for this admin account.') }}
                             </p>
                         </div>
                     </div>
@@ -290,7 +279,7 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
                             class="px-5 py-2.5 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs shadow-xs transition flex items-center gap-2 cursor-pointer"
                         >
                             <i class="fa-solid fa-floppy-disk text-xs"></i>
-                            <span>{{ __('Save Profile Details') }}</span>
+                            <span>{{ __('Save') }}</span>
                         </button>
                     </div>
                 </form>
@@ -305,10 +294,10 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
                         </span>
                         <div>
                             <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                                {{ __('Appearance & Theme Preference') }}
+                                {{ __('Appearance') }}
                             </h2>
                             <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                                {{ __('Choose your preferred color theme for Platform Master.') }}
+                                {{ __('Light, dark, or match the computer.') }}
                             </p>
                         </div>
                     </div>
@@ -504,7 +493,7 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
                             </div>
                         @else
                             <p class="text-slate-500 dark:text-slate-400 leading-relaxed">
-                                {{ __('When enabled, logging into Platform Master will require both your password and a temporary verification code from your authenticator app.') }}
+                                {{ __('When this is on, sign-in needs your password plus a code from your phone.') }}
                             </p>
 
                             <button
@@ -533,7 +522,7 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
                             </span>
                             <div>
                                 <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                                    {{ __('WebAuthn Passkeys') }}
+                                    {{ __('Passkeys') }}
                                 </h2>
                                 <p class="text-[11px] text-slate-500 dark:text-slate-400">
                                     {{ __('Sign in securely with biometric Touch ID, Face ID, Windows Hello, or hardware security keys.') }}
@@ -587,7 +576,7 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
                                 <div class="p-8 text-center bg-white dark:bg-[#0C0E13] space-y-1">
                                     <i class="fa-solid fa-fingerprint text-2xl text-slate-300 dark:text-zinc-600 mb-1 block"></i>
                                     <p class="font-bold text-slate-700 dark:text-slate-300">{{ __('No passkeys registered yet') }}</p>
-                                    <p class="text-xs text-slate-400">{{ __('Add a passkey to sign into Platform Master seamlessly without typing passwords.') }}</p>
+                                    <p class="text-xs text-slate-400">{{ __('Add a passkey to sign in with Face ID, Touch ID, or a security key.') }}</p>
                                 </div>
                             @endforelse
                         </div>
@@ -625,7 +614,7 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('Access Level') }}</span>
-                        <span class="font-bold text-slate-800 dark:text-slate-200">{{ __('Full Platform Root') }}</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200">{{ __('Full access') }}</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('2FA Protection') }}</span>
@@ -648,10 +637,10 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
             <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-3">
                 <div class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
                     <i class="fa-solid fa-user-lock text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                    <span>{{ __('Administrative Session Guard') }}</span>
+                    <span>{{ __('This sign-in') }}</span>
                 </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {{ __('Your session is protected by the dedicated Platform Master admin middleware. You can impersonate operator portals at any time from Operators Management without compromising root credentials.') }}
+                    {{ __('You are in admin. Open any operator from Operators without leaving this account.') }}
                 </p>
                 <div class="pt-2">
                     <form method="POST" action="{{ route('logout') }}">
@@ -661,7 +650,7 @@ new #[Title('Admin Profile & Security')] #[Layout('layouts.admin')] class extend
                             class="w-full h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer border border-rose-200 dark:border-rose-900/60"
                         >
                             <i class="fa-solid fa-right-from-bracket"></i>
-                            <span>{{ __('Log Out of Platform Master') }}</span>
+                            <span>{{ __('Log out') }}</span>
                         </button>
                     </form>
                 </div>

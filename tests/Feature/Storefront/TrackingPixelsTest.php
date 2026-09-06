@@ -69,7 +69,7 @@ it('renders purchase conversion tracking on booking confirmation receipt', funct
         'status' => PaymentStatus::Paid,
     ]);
 
-    $response = $this->get("http://{$operator->slug}.booking.test/reservations/{$reservation->id}/receipt");
+    $response = $this->get("http://{$operator->slug}.booking.test/reservations/{$reservation->public_token}/receipt");
     $response->assertOk();
     $response->assertSee("fbq('track', 'Purchase'", false);
     $response->assertSee('1500000', false);

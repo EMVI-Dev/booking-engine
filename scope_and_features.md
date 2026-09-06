@@ -61,15 +61,14 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 - **WhatsApp Floating Widget**:
     - Bottom-right floating chat with customizable pre-filled inquiry messages.
 
-### 4. Commercial & Subscription Model (4 Tiers)
+### 4. Commercial & Subscription Model (3 Tiers)
+Guest service fee (default 5%, capped) is charged on **every** plan. Subscription buys features. It does not waive checkout fees or move settlement onto the operator's merchant account.
 - **Starter Essential (Free / Base Tier)**:
-    - **100% Net Payout to Operator**. Standard 5.0% Guest Service Fee added at checkout. Up to 5 package listings, custom subdomain, and WhatsApp floating widget.
+    - **100% Net Payout to Operator**. Standard 5.0% Guest Service Fee added at checkout. Up to 5 trips and activities together, you and 1 helper, custom subdomain, and WhatsApp floating widget.
 - **Pro Operator (Rp 299.000 / mo | Rp 2.990.000 / yr)**:
-    - **100% Net Payout to Operator**. Up to 25 packages, unlocking **Google Calendar 1-Click & Live iCal Feed Sync**, **Guest Directory CRM & Lifetime Spend Analytics**, **Meta Pixel & GA4 ROAS tracking**, and **1-Click WhatsApp Dispatch Center**.
-- **Agency Ultimate (Rp 699.000 / mo | Rp 6.990.000 / yr)**:
-    - **100% Net Payout to Operator**. Unlimited packages, unlocking **Custom Domain (`yourbrand.com`) with automated SSL**, **BYO Custom Payment Gateway Keys (0% Guest Fee direct settlement)**, and **Monthly Capacity Heatmap Analytics**.
-- **AI Ultimate Agency (Rp 999.000 / mo | Rp 9.990.000 / yr)**:
-    - **100% Net Payout to Operator**. Everything in Agency Ultimate plus **Tier-Gated AI Search Discovery (`/llms.txt`)** and unthrottled AI search crawler access.
+    - **100% Net Payout to Operator**. Up to 25 trips and activities, unlimited people on your team, unlocking **Google Calendar 1-Click & Live iCal Feed Sync**, **Guest Directory CRM & Lifetime Spend Analytics**, **Meta Pixel & GA4 ROAS tracking**, and **1-Click WhatsApp Dispatch Center**.
+- **Agency Ultimate (Rp 799.000 / mo | Rp 7.990.000 / yr)**:
+    - **100% Net Payout to Operator**. Same guest service fee as other tiers. Unlimited packages, **custom domain**, **remove EMVI branding**, **capacity heatmap**, and **AI Search Discovery (`/llms.txt`)**. Checkout, escrow, and payouts stay on the EMVI DOKU wallet.
 - **Operator Plan & Billing Portal (`/settings/plan`)**:
     - Unified subscription management with interactive tier switcher, proration calculations, auto-renew controls, and invoice receipts.
 - **Platform Coupon Intelligence & Auto-Broadcast System**:
@@ -85,8 +84,8 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - Real-time payment verification (`GET /orders/v1/status/{invoice}`) upon guest return and via 1-click **"Sync with DOKU"**.
 - **Automated DOKU BI-FAST Payout Engine**:
     - Operator payout requests up to Rp 10.000.000 disbursed via DOKU Fund Transfer API (`POST /disbursement/v1/transfer`) in under 3 seconds.
-- **BYO (Bring Your Own) Merchant Account**:
-    - Agency Ultimate & AI Ultimate Agency operators can connect their own DOKU credentials for direct settlement.
+- **Single platform merchant account**:
+    - Every plan, including Agency, checks out through EMVI's DOKU wallet. Guest service fee funds gateway costs, escrow, and payouts. Agency does not connect a private merchant account.
 
 ### 6. Notifications & Communication
 - **2-Step Guest Email Lifecycle**:

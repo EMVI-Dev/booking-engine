@@ -10,7 +10,7 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
-new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
     #[Url]
     public string $tab = 'plans'; // 'plans' or 'renewals'
 
@@ -50,6 +50,11 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         'custom_domain' => false,
         'byo_gateway' => false,
         'priority_support' => false,
+        'advanced_calendar' => false,
+        'daily_manifest_export' => false,
+        'capacity_heatmap' => false,
+        'ai_discovery' => false,
+        'remove_branding' => false,
     ];
 
     /**
@@ -76,24 +81,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         $this->is_popular = $plan->is_popular;
         $this->sort_order = $plan->sort_order;
 
-        $defaultFeatures = [
-            'custom_subdomain' => true,
-            'standard_checkout' => true,
-            'reservations_management' => true,
-            'promotional_coupons' => true,
-            'whatsapp_chat_widget' => true,
-            'quick_booking_links' => true,
-            'google_calendar' => false,
-            'guest_crm' => false,
-            'whatsapp_dispatch' => false,
-            'tracking_pixels' => false,
-            'automated_review_requests' => false,
-            'custom_domain' => false,
-            'byo_gateway' => false,
-            'priority_support' => false,
-        ];
-
-        $this->features = array_merge($defaultFeatures, $plan->features ?? []);
+        $this->features = Plan::featureFlags($plan->features ?? []);
         $this->show_modal = true;
     }
 
@@ -115,22 +103,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
         $this->is_popular = false;
         $this->sort_order = Plan::count() + 1;
 
-        $this->features = [
-            'custom_subdomain' => true,
-            'standard_checkout' => true,
-            'reservations_management' => true,
-            'promotional_coupons' => true,
-            'whatsapp_chat_widget' => true,
-            'quick_booking_links' => true,
-            'google_calendar' => false,
-            'guest_crm' => false,
-            'whatsapp_dispatch' => false,
-            'tracking_pixels' => false,
-            'automated_review_requests' => false,
-            'custom_domain' => false,
-            'byo_gateway' => false,
-            'priority_support' => false,
-        ];
+        $this->features = Plan::featureFlags();
 
         $this->show_modal = true;
     }
@@ -169,7 +142,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
             'commission_rate' => round($this->commission_percentage / 100, 4),
             'package_limit' => $this->package_limit ?: null,
             'team_member_limit' => $this->team_member_limit ?: null,
-            'features' => $this->features,
+            'features' => array_merge($this->features, ['byo_gateway' => false]),
             'is_active' => $this->is_active,
             'is_popular' => $this->is_popular,
             'sort_order' => $this->sort_order,
@@ -332,58 +305,42 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
 }; ?>
 
 <div class="space-y-6">
-    <!-- Page Header & Tab Navigation -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                {{ __('Subscription Plans & Lifecycle Management') }}
-            </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Configure operator pricing tiers, feature gating, and monitor upcoming subscription expirations & renewals.') }}
-            </p>
-        </div>
-
-        <div class="flex items-center gap-2">
-            @if ($tab === 'plans')
-                <x-button type="button" variant="secondary" size="md" wire:click="resetDefaultPlans">
-                    <i class="fa-solid fa-rotate-left mr-1.5 text-xs"></i>
+    <x-page-header
+        :title="__('Plans')"
+        :subtitle="__('What operators pay, and what each plan includes.')"
+        icon="fa-layer-group"
+    >
+        @if ($tab === 'plans')
+            <x-slot:actions>
+                <x-button type="button" variant="secondary" size="sm" wire:click="resetDefaultPlans">
+                    <i class="fa-solid fa-rotate-left text-xs"></i>
                     <span>{{ __('Reset Default Tiers') }}</span>
                 </x-button>
 
-                <button type="button" wire:click="createPlan" class="h-9 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+                <x-button type="button" size="sm" wire:click="createPlan">
                     <i class="fa-solid fa-plus text-xs"></i>
                     <span>{{ __('New Plan Tier') }}</span>
-                </button>
-            @endif
-        </div>
-    </div>
+                </x-button>
+            </x-slot:actions>
+        @endif
+    </x-page-header>
 
-    <!-- Navigation Tabs -->
-    <div
-        class="flex items-center gap-2 border-b border-slate-200 dark:border-[#1e2433] overflow-x-auto whitespace-nowrap no-scrollbar select-none">
-        <button type="button" wire:click="$set('tab', 'plans')"
-            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'plans' ? 'border-[#FFEF4D] text-[#8a7808] dark:text-[#FFEF4D]' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
-            <i class="fa-solid fa-layer-group text-xs"></i>
-            <span>{{ __('Plan Tiers & Features') }}</span>
-        </button>
-
-        <button type="button" wire:click="$set('tab', 'renewals')"
-            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'renewals' ? 'border-[#FFEF4D] text-[#8a7808] dark:text-[#FFEF4D]' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
-            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
-            <span>{{ __('Renewals & Expiries') }}</span>
+    <x-filter-tabs padded>
+        <x-filter-tab wire:click="$set('tab', 'plans')" icon="fa-layer-group" :active="$tab === 'plans'">
+            {{ __('Plan Tiers & Features') }}
+        </x-filter-tab>
+        <x-filter-tab wire:click="$set('tab', 'renewals')" icon="fa-clock-rotate-left" :active="$tab === 'renewals'">
+            {{ __('Renewals & Expiries') }}
             @if ($expiringSoonCount > 0)
-                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-[#FFEF4D] text-[#090d16]">
+                <span class="ml-1 rounded-full bg-op-ink px-1.5 py-0.5 text-[10px] font-semibold text-op-surface">
                     {{ $expiringSoonCount }}
                 </span>
             @endif
-        </button>
-
-        <button type="button" wire:click="$set('tab', 'wiki')"
-            class="px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 {{ $tab === 'wiki' ? 'border-[#FFEF4D] text-[#8a7808] dark:text-[#FFEF4D]' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
-            <i class="fa-solid fa-book-bookmark text-xs"></i>
-            <span>{{ __('Commercial Model & Pricing Wiki') }}</span>
-        </button>
-    </div>
+        </x-filter-tab>
+        <x-filter-tab wire:click="$set('tab', 'wiki')" icon="fa-book-bookmark" :active="$tab === 'wiki'">
+            {{ __('Commercial Model & Pricing Wiki') }}
+        </x-filter-tab>
+    </x-filter-tabs>
 
     <!-- Feedback Alerts -->
     @if (session()->has('success'))
@@ -450,7 +407,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     {{ number_format((float) $plan->price_yearly, 0, ',', '.') }}</span>
                             </div>
                             <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                                <span>{{ __('Platform Take Rate:') }}</span>
+                                <span>{{ __('Cut from listed price:') }}</span>
                                 <span
                                     class="font-black text-[#8a7808] dark:text-[#FFEF4D] font-mono">{{ $plan->commission_rate * 100 }}%</span>
                             </div>
@@ -472,22 +429,16 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                             <div class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                                 <div class="flex items-center gap-2">
                                     <i class="fa-solid fa-cube text-[10px] text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                                    <span>{{ $plan->package_limit ? __(':count Packages Max', ['count' => $plan->package_limit]) : __('Unlimited Packages') }}</span>
+                                    <span>{{ $plan->listingLimitLabel() }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i class="fa-solid fa-users text-[10px] text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                                    <span>{{ $plan->team_member_limit ? __(':count Team Seats', ['count' => $plan->team_member_limit]) : __('Unlimited Team Seats') }}</span>
+                                    <span>{{ $plan->teamSeatLabel() }}</span>
                                 </div>
                                 @if ($plan->hasFeature('custom_domain'))
                                     <div class="flex items-center gap-2">
                                         <i class="fa-solid fa-globe text-[10px] text-emerald-500"></i>
-                                        <span>{{ __('Custom Domain') }}</span>
-                                    </div>
-                                @endif
-                                @if ($plan->hasFeature('byo_gateway'))
-                                    <div class="flex items-center gap-2">
-                                        <i class="fa-solid fa-credit-card text-[10px] text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                                        <span>{{ __('BYO Custom Payment Gateway') }}</span>
+                                        <span>{{ __('Your own website address') }}</span>
                                     </div>
                                 @endif
                                 @if ($plan->hasFeature('tracking_pixels'))
@@ -760,10 +711,10 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                             <tr
                                 class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 <th class="py-3 px-4">{{ __('Capability / Metric') }}</th>
-                                <th class="py-3 px-4">{{ __('Starter Essential') }}</th>
-                                <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Pro Operator') }}
+                                <th class="py-3 px-4">{{ __('Essential') }}</th>
+                                <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Pro') }}
                                 </th>
-                                <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Agency Ultimate') }}
+                                <th class="py-3 px-4 text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Agency') }}
                                 </th>
                             </tr>
                         </thead>
@@ -776,7 +727,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 <td class="py-3 px-4 font-mono font-bold text-[#8a7808] dark:text-[#FFEF4D]">Rp
                                     299.000 / mo (Rp 2.990.000 / yr)</td>
                                 <td class="py-3 px-4 font-mono font-bold text-[#8a7808] dark:text-[#FFEF4D]">Rp
-                                    699.000 / mo (Rp 6.990.000 / yr)</td>
+                                    799.000 / mo (Rp 7.990.000 / yr)</td>
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
@@ -790,28 +741,28 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                     {{ __('Guest Service Fee') }}</td>
                                 <td class="py-3 px-4">5.0% (Paid by Guest at Checkout)</td>
                                 <td class="py-3 px-4">5.0% (Paid by Guest at Checkout)</td>
-                                <td class="py-3 px-4">0.0% (Direct BYO Gateway Settlement)</td>
+                                <td class="py-3 px-4">5.0% (Paid by Guest at Checkout)</td>
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                                    {{ __('Package Listings Limit') }}</td>
-                                <td class="py-3 px-4">Up to 5 Listings</td>
-                                <td class="py-3 px-4">Up to 25 Listings</td>
-                                <td class="py-3 px-4 font-bold text-emerald-600">Unlimited Listings</td>
+                                    {{ __('Trips and activities') }}</td>
+                                <td class="py-3 px-4">Up to 5 together</td>
+                                <td class="py-3 px-4">Up to 25 together</td>
+                                <td class="py-3 px-4 font-bold text-emerald-600">Unlimited</td>
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                                    {{ __('Team Staff Seats') }}</td>
-                                <td class="py-3 px-4">Unlimited Staff</td>
-                                <td class="py-3 px-4">Unlimited Staff</td>
-                                <td class="py-3 px-4">Unlimited Staff</td>
+                                    {{ __('People on the team') }}</td>
+                                <td class="py-3 px-4">You and 1 helper</td>
+                                <td class="py-3 px-4">Unlimited</td>
+                                <td class="py-3 px-4">Unlimited</td>
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
                                     {{ __('Custom Domain (yourbrand.com)') }}</td>
                                 <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
                                 <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
-                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included (Auto-SSL)</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Own website address + padlock') }}</td>
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
@@ -833,13 +784,6 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
                                 <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
                                 <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
-                            </tr>
-                            <tr>
-                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                                    {{ __('Payment Gateway Credentials') }}</td>
-                                <td class="py-3 px-4">Shared Platform Gateway</td>
-                                <td class="py-3 px-4">Shared Platform Gateway</td>
-                                <td class="py-3 px-4 text-emerald-600 font-bold">BYO Custom Merchant Keys</td>
                             </tr>
                         </tbody>
                     </table>
@@ -986,7 +930,7 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                             <div>
                                 <x-label for="name" :value="__('Plan Name')" required />
                                 <x-input id="name" type="text" wire:model="name"
-                                    placeholder="{{ __('e.g. Pro Operator') }}" :error="$errors->has('name')" />
+                                    placeholder="{{ __('e.g. Pro') }}" :error="$errors->has('name')" />
                                 <x-input-error :messages="$errors->get('name')" />
                             </div>
                             <div>
@@ -1110,13 +1054,25 @@ new #[Title('Subscription Plans & Renewals')] #[Layout('layouts.admin')] class e
                                 <div
                                     class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_custom_domain" wire:model="features.custom_domain"
-                                        :label="__('Custom Domain')" :description="__('SSL on brand domain')" />
+                                        :label="__('Your own website address')" :description="__('Guests open your brand address with a padlock')" />
                                 </div>
 
                                 <div
                                     class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
-                                    <x-checkbox id="feat_byo_gateway" wire:model="features.byo_gateway" :label="__('BYO Custom Gateway')"
-                                        :description="__('Direct merchant account settlement')" />
+                                    <x-checkbox id="feat_remove_branding" wire:model="features.remove_branding"
+                                        :label="__('Hide our name')" :description="__('No platform credit on their booking page')" />
+                                </div>
+
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
+                                    <x-checkbox id="feat_ai_discovery" wire:model="features.ai_discovery"
+                                        :label="__('AI catalog page')" :description="__('Let search tools find their trips')" />
+                                </div>
+
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
+                                    <x-checkbox id="feat_priority_support" wire:model="features.priority_support"
+                                        :label="__('Faster help')" :description="__('We treat their questions first')" />
                                 </div>
 
                                 <div

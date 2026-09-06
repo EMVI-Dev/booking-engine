@@ -74,30 +74,18 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                 }
             }
             $package->delete();
-            session()->flash('success', __('Tour package deleted successfully.'));
+            $this->dispatch('toast', message: __('Tour package deleted successfully.'), type: 'success');
         }
     }
 }; ?>
 
 <div class="space-y-6">
-    <!-- Success Banner -->
-    @if (session('success'))
-        <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2 animate-fade-in">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                <span>{{ session('success') }}</span>
-            </div>
-            <button type="button" @click="$el.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-    @endif
 
     <!-- Profile Incomplete Locking Warning -->
     @if (! $this->isProfileComplete)
         <div class="p-5 rounded-3xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
             <div class="flex items-start gap-3.5">
-                <div class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center shrink-0 shadow-xs">
+                <div class="w-10 h-10 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-triangle-exclamation text-sm"></i>
                 </div>
                 <div class="space-y-1">
@@ -119,8 +107,8 @@ new #[Title('Tour Packages & Combos')] class extends Component {
     @php
         $agentPlan = $this->currentOperator?->getPlan();
         $packageLimit = $agentPlan?->package_limit;
-        $totalPackages = $this->currentOperator?->packages()->count() ?? 0;
-        $hasReachedLimit = $packageLimit !== null && $totalPackages >= $packageLimit;
+        $totalListings = $this->currentOperator?->listingCount() ?? 0;
+        $hasReachedLimit = $this->currentOperator && ! $this->currentOperator->canAddListing();
     @endphp
 
     <!-- Package Limit Banner -->
@@ -132,10 +120,10 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                 </div>
                 <div class="space-y-1">
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white">
-                        {{ __('Package Limit Reached (:count/:limit Listings)', ['count' => $totalPackages, 'limit' => $packageLimit]) }}
+                        {{ __('Listing limit reached (:count/:limit)', ['count' => $totalListings, 'limit' => $packageLimit]) }}
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        {{ __('You have reached the maximum number of tour listings allowed on your :plan plan. Upgrade your plan to list more tour packages.', ['plan' => $agentPlan?->name ?? 'Starter']) }}
+                        {{ __('Trips and activities share the same listing limit on your :plan plan.', ['plan' => $agentPlan?->name ?? 'Essential']) }}
                     </p>
                 </div>
             </div>
@@ -148,56 +136,38 @@ new #[Title('Tour Packages & Combos')] class extends Component {
 
 
 
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
-                    <i class="fa-solid fa-cubes text-lg"></i>
-                </span>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Tour Packages & Expeditions') }}
-                </h1>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-                {{ __('Create and manage multi-service experiences, private charters, and guided day trips bundled from your inventory items.') }}
-            </p>
-        </div>
+    <x-page-header
+        :title="__('Tour Packages & Expeditions')"
+        :subtitle="__('Create and manage multi-service experiences, private charters, and guided day trips bundled from your inventory items.')"
+        icon="fa-cubes"
+    >
+        <x-slot:actions>
+            @if ($this->isProfileComplete && $this->currentOperator?->canAddPackage())
+                <x-button :href="route('packages.create')" wire:navigate>
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    {{ __('Add Tour Package') }}
+                </x-button>
+            @elseif ($this->isProfileComplete)
+                <x-button :href="route('packages.create')" wire:navigate>
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    {{ __('Listing limit reached') }}
+                </x-button>
+            @else
+                <x-button disabled>
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    {{ __('Add Tour Package') }}
+                </x-button>
+            @endif
+        </x-slot:actions>
+    </x-page-header>
 
-        @if ($this->isProfileComplete)
-            <x-button
-                :href="route('packages.create')"
-                variant="primary"
-                class="shrink-0 shadow-xs transition-all"
-                wire:navigate
-            >
-                <i class="fa-solid fa-plus mr-1 text-xs"></i>
-                {{ __('Add Tour Package') }}
-            </x-button>
-        @else
-            <x-button
-                variant="primary"
-                class="shrink-0 shadow-xs transition-all opacity-50 cursor-not-allowed"
-                disabled
-            >
-                <i class="fa-solid fa-plus mr-1 text-xs"></i>
-                {{ __('Add Tour Package') }}
-            </x-button>
-        @endif
-    </div>
-
-    <!-- Search & Filter Bar -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
-        <div class="relative w-full sm:w-80">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-            <input
-                type="text"
+    <x-toolbar class="flex flex-col items-center justify-between gap-3 sm:flex-row">
+        <div class="w-full sm:w-80">
+            <x-search-input
                 wire:model.live.debounce.300ms="search"
-                placeholder="{{ __('Search packages by title or category...') }}"
-                class="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 dark:border-[#1e2433] bg-slate-50 dark:bg-[#0c0e14] text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FFEF4D]"
+                :placeholder="__('Search packages by title or category...')"
             />
         </div>
-
         <div class="w-full sm:w-44">
             <x-select
                 wire:model.live="statusFilter"
@@ -208,11 +178,66 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                 ]"
             />
         </div>
-    </div>
+    </x-toolbar>
 
     <!-- Packages Table / List -->
     @if ($this->packages->isNotEmpty())
-        <div class="overflow-hidden rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
+        <!-- Mobile Card List -->
+        <div class="space-y-3 md:hidden">
+            @foreach ($this->packages as $package)
+                <div wire:key="pkg-card-{{ $package->id }}"
+                    class="rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] p-4 shadow-xs space-y-3">
+                    <div class="flex items-start gap-3">
+                        @if ($package->cover_photo_url)
+                            <img src="{{ $package->cover_photo_url }}" alt=""
+                                class="w-14 h-14 rounded-xl object-cover border border-slate-200/80 dark:border-[#1e2433] shrink-0" />
+                        @else
+                            <div class="w-14 h-14 rounded-xl bg-[#141821] text-[#FFEF4D] border border-[#1e2433] flex items-center justify-center shrink-0"
+                                aria-hidden="true">
+                                <i class="fa-solid fa-cubes"></i>
+                            </div>
+                        @endif
+
+                        <div class="min-w-0 flex-1">
+                            <a href="{{ route('packages.edit', $package) }}" wire:navigate
+                                class="block font-bold text-sm text-slate-900 dark:text-white truncate">
+                                {{ $package->title }}
+                            </a>
+                            <p class="text-[11px] text-slate-400 truncate">
+                                {{ $package->category ?? __('Tour') }} &bull; {{ $package->location ?? __('General') }}
+                            </p>
+                            <p class="mt-1 font-mono text-sm font-bold text-slate-900 dark:text-white">
+                                Rp {{ number_format((float) $package->price, 0, ',', '.') }}
+                            </p>
+                        </div>
+
+                        <x-status-badge :status="$package->status" />
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-[#1e2433] pt-3">
+                        <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                            {{ trans_choice(':count bundled activity|:count bundled activities', $package->products->count(), ['count' => $package->products->count()]) }}
+                        </span>
+
+                        <div class="flex items-center gap-1.5">
+                            <a href="{{ route('packages.edit', $package) }}" wire:navigate
+                                class="h-9 px-3 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#1e2433] font-bold text-xs inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-pen text-[10px]" aria-hidden="true"></i>
+                                {{ __('Edit') }}
+                            </a>
+                            <button type="button"
+                                wire:click="confirmDelete('{{ $package->id }}', '{{ addslashes($package->title) }}')"
+                                aria-label="{{ __('Delete :title', ['title' => $package->title]) }}"
+                                class="h-9 w-9 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-400 border border-slate-200 dark:border-[#1e2433] inline-flex items-center justify-center cursor-pointer">
+                                <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="hidden md:block overflow-hidden rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs sm:text-sm">
                     <thead class="bg-slate-50 dark:bg-[#10141d] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-200/80 dark:border-[#1e2433]">
@@ -274,10 +299,7 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                                     </span>
                                 </td>
                                 <td class="px-5 py-4">
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ $package->status->value === 'published' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60' : 'bg-slate-100 text-slate-700 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]' }}">
-                                        <span class="w-1.5 h-1.5 rounded-full {{ $package->status->value === 'published' ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-slate-400' }}"></span>
-                                        {{ ucfirst($package->status->value) }}
-                                    </span>
+                                    <x-status-badge :status="$package->status" />
                                 </td>
                                 <td class="px-5 py-4 text-right">
                                     <div class="flex items-center justify-end gap-1.5">
@@ -307,28 +329,25 @@ new #[Title('Tour Packages & Combos')] class extends Component {
             </div>
         </div>
     @else
-        <div class="text-center py-16 px-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] space-y-4 shadow-xs">
-            <div class="w-12 h-12 rounded-2xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 font-black flex items-center justify-center mx-auto text-xl shadow-xs">
-                <i class="fa-solid fa-cubes"></i>
-            </div>
-            <div class="space-y-1 max-w-md mx-auto">
-                <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ __('No Tour Packages Found') }}</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Create bundled day tours, private cruises, and snorkel expeditions by combining items from your inventory.') }}
-                </p>
-            </div>
-            @if ($this->isProfileComplete)
-                <x-button :href="route('packages.create')" variant="primary" size="sm" wire:navigate>
-                    <i class="fa-solid fa-plus mr-1 text-xs"></i>
-                    {{ __('Create Your First Package') }}
-                </x-button>
-            @else
-                <x-button :href="route('brand.edit')" variant="primary" size="sm" wire:navigate>
-                    <i class="fa-solid fa-paintbrush mr-1 text-xs"></i>
-                    {{ __('Complete Brand Settings First') }}
-                </x-button>
-            @endif
-        </div>
+        <x-empty-state
+            icon="fa-cubes"
+            :title="__('No Tour Packages Found')"
+            :description="__('Create bundled day tours, private cruises, and snorkel expeditions by combining items from your inventory.')"
+        >
+            <x-slot:actions>
+                @if ($this->isProfileComplete && $this->currentOperator?->canAddPackage())
+                    <x-button :href="route('packages.create')" variant="primary" size="sm" wire:navigate>
+                        <i class="fa-solid fa-plus mr-1 text-xs" aria-hidden="true"></i>
+                        {{ __('Create Your First Package') }}
+                    </x-button>
+                @else
+                    <x-button :href="route('brand.edit')" variant="primary" size="sm" wire:navigate>
+                        <i class="fa-solid fa-paintbrush mr-1 text-xs" aria-hidden="true"></i>
+                        {{ __('Complete Brand Settings First') }}
+                    </x-button>
+                @endif
+            </x-slot:actions>
+        </x-empty-state>
     @endif
 
     <!-- System UI Confirmation Modal -->

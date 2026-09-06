@@ -1,7 +1,7 @@
 @props([
     'title' => __('Feature Locked'),
     'description' => __('This feature is available exclusively on higher tier subscription plans.'),
-    'requiredPlan' => 'Pro Operator',
+    'requiredPlan' => 'Pro',
     'planSlug' => 'growth',
     'icon' => 'fa-solid fa-lock',
     'features' => [],

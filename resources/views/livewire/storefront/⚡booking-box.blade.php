@@ -2,11 +2,13 @@
 
 use App\Contracts\Bookable;
 use App\Enums\ReservationStatus;
+use App\Exceptions\CapacityUnavailableException;
 use App\Models\Operator;
 use App\Models\Package;
 use App\Models\PlatformCoupon;
 use App\Models\Product;
 use App\Models\Reservation;
+use App\Services\CapacityService;
 use App\Services\DokuPaymentService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
@@ -61,17 +63,13 @@ new class extends Component {
     #[Computed]
     public function serviceFeeRate(): float
     {
-        if ($this->operator->getPlan()->hasFeature('byo_gateway')) {
-            return 0.0;
-        }
-
         return \App\Models\PlatformSetting::current()->getGuestServiceFeeRate();
     }
 
     #[Computed]
     public function serviceFee(): float
     {
-        return round($this->subtotal * $this->serviceFeeRate, 2);
+        return \App\Models\PlatformSetting::current()->calculateGuestServiceFee($this->subtotal, $this->operator);
     }
 
     #[Computed]
@@ -82,8 +80,13 @@ new class extends Component {
 
     public function incrementPax(): void
     {
-        $this->pax_count++;
-        $this->revalidateAppliedCoupon();
+        $remaining = $this->remainingCapacity;
+        $maxPax = $remaining === null ? 50 : min(50, max(1, $remaining));
+
+        if ($this->pax_count < $maxPax) {
+            $this->pax_count++;
+            $this->revalidateAppliedCoupon();
+        }
     }
 
     public function decrementPax(): void
@@ -180,6 +183,40 @@ new class extends Component {
         }
     }
 
+    /**
+     * Seats still available on the selected date, or null when uncapped.
+     */
+    #[Computed]
+    public function remainingCapacity(): ?int
+    {
+        if ($this->requested_date === '') {
+            return null;
+        }
+
+        return app(CapacityService::class)->remainingCapacity($this->bookable, $this->requested_date);
+    }
+
+    #[Computed]
+    public function isSoldOut(): bool
+    {
+        return $this->remainingCapacity !== null && $this->remainingCapacity <= 0;
+    }
+
+    /**
+     * Refresh availability messaging whenever the guest picks a different date.
+     */
+    public function updatedRequestedDate(): void
+    {
+        unset($this->remainingCapacity, $this->isSoldOut);
+
+        $remaining = $this->remainingCapacity;
+
+        if ($remaining !== null && $remaining > 0 && $this->pax_count > $remaining) {
+            $this->pax_count = $remaining;
+            $this->revalidateAppliedCoupon();
+        }
+    }
+
     #[Computed]
     public function blackoutDates(): array
     {
@@ -226,21 +263,33 @@ new class extends Component {
         $termsSnapshot['discount_amount'] = $this->discountAmount;
         $termsSnapshot['total_price'] = $this->totalPrice;
 
-        /** @var Reservation $reservation */
-        $reservation = Reservation::query()->create([
-            'bookable_type' => $this->bookable instanceof Package ? 'package' : 'product',
-            'bookable_id' => $this->bookable->id,
-            'operator_id' => $this->operator->id,
-            'guest_name' => $this->guest_name,
-            'guest_contact' => $this->guest_contact,
-            'guest_email' => $this->guest_email ?: null,
-            'requested_date' => $this->requested_date,
-            'pax_count' => $this->pax_count,
-            'notes' => $this->notes ?: null,
-            'terms_snapshot' => $termsSnapshot,
-            'status' => ReservationStatus::PaymentPending,
-            'hold_expires_at' => now()->addMinutes(30),
-        ]);
+        try {
+            /** @var Reservation $reservation */
+            $reservation = app(CapacityService::class)->reserve(
+                $this->bookable,
+                $this->requested_date,
+                $this->pax_count,
+                fn (): Reservation => Reservation::query()->create([
+                    'bookable_type' => $this->bookable instanceof Package ? 'package' : 'product',
+                    'bookable_id' => $this->bookable->id,
+                    'operator_id' => $this->operator->id,
+                    'guest_name' => $this->guest_name,
+                    'guest_contact' => $this->guest_contact,
+                    'guest_email' => $this->guest_email ?: null,
+                    'requested_date' => $this->requested_date,
+                    'pax_count' => $this->pax_count,
+                    'notes' => $this->notes ?: null,
+                    'terms_snapshot' => $termsSnapshot,
+                    'status' => ReservationStatus::PaymentPending,
+                    'hold_expires_at' => now()->addMinutes(30),
+                ]),
+            );
+        } catch (CapacityUnavailableException $e) {
+            $this->addError('requested_date', $e->getMessage());
+            unset($this->remainingCapacity);
+
+            return;
+        }
 
         // Increment coupon usage count if applied
         if ($this->appliedCouponCode) {
@@ -291,14 +340,36 @@ new class extends Component {
                 :error="$errors->has('requested_date')"
             />
             <x-input-error :messages="$errors->get('requested_date')" />
+
+            <!-- Live Daily Availability -->
+            @if ($this->remainingCapacity !== null)
+                <div wire:key="availability-{{ $requested_date }}" class="mt-2">
+                    @if ($this->isSoldOut)
+                        <p class="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 dark:text-rose-400" role="status">
+                            <i class="fa-solid fa-circle-xmark text-[10px]" aria-hidden="true"></i>
+                            {{ __('Fully booked on this date — please choose another day.') }}
+                        </p>
+                    @elseif ($this->remainingCapacity <= 5)
+                        <p class="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400" role="status">
+                            <i class="fa-solid fa-fire text-[10px]" aria-hidden="true"></i>
+                            {{ trans_choice('Only :count spot left for this date|Only :count spots left for this date', $this->remainingCapacity, ['count' => $this->remainingCapacity]) }}
+                        </p>
+                    @else
+                        <p class="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400" role="status">
+                            <i class="fa-solid fa-circle-check text-[10px]" aria-hidden="true"></i>
+                            {{ trans_choice(':count spot available|:count spots available', $this->remainingCapacity, ['count' => $this->remainingCapacity]) }}
+                        </p>
+                    @endif
+                </div>
+            @endif
         </div>
 
         <!-- Guests / Pax Counter (Mobile-First Touch Target) -->
         <div>
-            <x-label :value="__('Number of Guests (Pax)')" required />
+            <x-label :value="__('Number of guests')" required />
             <div class="flex items-center justify-between p-2 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/80">
                 <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 pl-2">
-                    {{ __(':count Guests / Pax', ['count' => $pax_count]) }}
+                    {{ __(':count guests', ['count' => $pax_count]) }}
                 </span>
                 <div class="flex items-center gap-2">
                     <button
@@ -312,7 +383,8 @@ new class extends Component {
                     <button
                         type="button"
                         wire:click="incrementPax"
-                        class="h-10 w-10 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer font-black text-base shadow-xs"
+                        @if ($this->remainingCapacity !== null && $this->pax_count >= $this->remainingCapacity) disabled @endif
+                        class="h-10 w-10 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer font-black text-base shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         +
                     </button>
@@ -388,7 +460,7 @@ new class extends Component {
                             wire:click="applyCoupon"
                             wire:loading.attr="disabled"
                             wire:target="applyCoupon"
-                            class="h-9 px-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-xs font-bold transition shadow-xs cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                            class="h-9 px-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground text-xs font-bold transition shadow-xs cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
                         >
                             <span wire:loading.remove wire:target="applyCoupon">{{ __('Apply') }}</span>
                             <span wire:loading wire:target="applyCoupon"><i class="fa-solid fa-spinner fa-spin text-xs"></i></span>
@@ -465,18 +537,25 @@ new class extends Component {
         <!-- Submit Button with Loading State -->
         <button
             type="submit"
-            @if (! $agreed_terms) disabled @endif
+            @if (! $agreed_terms || $this->isSoldOut) disabled @endif
             wire:loading.attr="disabled"
-            class="w-full h-12 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-black text-sm shadow-md shadow-brand-500/20 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-600 disabled:shadow-none"
+            class="w-full h-12 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-black text-sm shadow-md shadow-brand-500/20 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-600 disabled:shadow-none"
         >
-            <span wire:loading.remove wire:target="submitBooking" class="flex items-center gap-2">
-                <i class="fa-solid fa-lock text-xs"></i>
-                <span>{{ __('Proceed to Secure Payment') }}</span>
-            </span>
-            <span wire:loading wire:target="submitBooking" class="flex items-center gap-2">
-                <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
-                <span>{{ __('Creating 30-Min Hold...') }}</span>
-            </span>
+            @if ($this->isSoldOut)
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-circle-xmark text-xs" aria-hidden="true"></i>
+                    <span>{{ __('Sold Out on This Date') }}</span>
+                </span>
+            @else
+                <span wire:loading.remove wire:target="submitBooking" class="flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-xs" aria-hidden="true"></i>
+                    <span>{{ __('Proceed to Secure Payment') }}</span>
+                </span>
+                <span wire:loading wire:target="submitBooking" class="flex items-center gap-2">
+                    <i class="fa-solid fa-circle-notch fa-spin text-xs" aria-hidden="true"></i>
+                    <span>{{ __('Creating 30-Min Hold...') }}</span>
+                </span>
+            @endif
         </button>
 
         <p class="text-[10px] text-center text-slate-400">

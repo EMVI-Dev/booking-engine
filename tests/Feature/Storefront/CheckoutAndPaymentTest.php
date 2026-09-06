@@ -127,6 +127,9 @@ test('doku webhook notification marks payment as paid and reservation as confirm
 });
 
 test('guest can view confirmation receipt page', function () {
+    $this->operator->brand_color = '#0ea5e9';
+    $this->operator->save();
+
     $reservation = Reservation::factory()->confirmed()->create([
         'operator_id' => $this->operator->id,
         'bookable_type' => 'package',
@@ -139,9 +142,67 @@ test('guest can view confirmation receipt page', function () {
         'amount' => 1500000.00,
     ]);
 
-    $this->get(route('storefront.reservation.receipt', $reservation->id))
+    $this->get(route('storefront.reservation.receipt', $reservation))
         ->assertOk()
-        ->assertSee('Payment Successful & Confirmed')
+        ->assertSee('Paid and confirmed')
         ->assertSee('Alex Turner')
-        ->assertSee('Rp 1.500.000');
+        ->assertSee('Rp 1.500.000')
+        ->assertSee('Your e-ticket')
+        ->assertSee('Open e-ticket')
+        ->assertSee(route('storefront.reservation.ticket', ['reservation' => $reservation, 'print' => 1]), false)
+        ->assertSee('#'.$reservation->code)
+        ->assertSee('--brand-color: #0ea5e9', false)
+        ->assertSee('prefers-color-scheme', false)
+        ->assertSee('dark:bg-ebony', false);
+});
+
+test('paid guests can open the html e-ticket page', function () {
+    $this->operator->brand_color = '#0ea5e9';
+    $this->operator->save();
+
+    $reservation = Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $this->package->id,
+        'guest_name' => 'Alex Turner',
+    ]);
+
+    Payment::factory()->paid()->create([
+        'reservation_id' => $reservation->id,
+        'amount' => 1500000.00,
+    ]);
+
+    $this->get(route('storefront.reservation.ticket', ['reservation' => $reservation, 'print' => 1]))
+        ->assertOk()
+        ->assertSee('My ticket')
+        ->assertSee('Show this page at check-in')
+        ->assertSee('Alex Turner')
+        ->assertSee('Rp 1.500.000')
+        ->assertSee('#'.$reservation->code)
+        ->assertSee('Download my ticket')
+        ->assertSee('window.setTimeout', false)
+        ->assertSee('--brand-color: #0ea5e9', false)
+        ->assertSee('prefers-color-scheme', false)
+        ->assertSee('dark:bg-ebony', false);
+});
+
+test('unpaid guests are sent back to the receipt instead of the e-ticket', function () {
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $this->package->id,
+        'guest_name' => 'Alex Turner',
+        'status' => ReservationStatus::PaymentPending,
+        'hold_expires_at' => now()->addMinutes(20),
+    ]);
+
+    $this->get(route('storefront.reservation.receipt', $reservation))
+        ->assertOk()
+        ->assertSee('Complete Your Payment')
+        ->assertDontSee('Open e-ticket')
+        ->assertDontSee('Download my ticket')
+        ->assertDontSee('My ticket');
+
+    $this->get(route('storefront.reservation.ticket', $reservation))
+        ->assertRedirect(route('storefront.reservation.receipt', $reservation));
 });

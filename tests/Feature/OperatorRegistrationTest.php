@@ -69,6 +69,26 @@ test('operator registration requires terms acceptance', function () {
     $this->assertGuest();
 });
 
+test('taken page address errors stay on the business step', function () {
+    Operator::factory()->create(['slug' => 'baliocean']);
+
+    $this->from(route('register'))
+        ->followingRedirects()
+        ->post(route('register.store'), [
+            'name' => 'Wayan Sudarma',
+            'email' => 'wayan@balitours.com',
+            'password' => 'SecurePass123!',
+            'password_confirmation' => 'SecurePass123!',
+            'agency_name' => 'Bali Ocean Treks',
+            'slug' => 'baliocean',
+            'terms' => '1',
+        ])
+        ->assertOk()
+        ->assertSee('That page address is already taken')
+        ->assertSee('Your page address')
+        ->assertSee('step: 2', false);
+});
+
 test('operator registration auto generates slug when not provided', function () {
     $this->post(route('register.store'), [
         'name' => 'Made Tours',

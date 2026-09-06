@@ -12,6 +12,8 @@ new class extends Component {
 
     public function mount(): void
     {
+        abort_unless($this->currentOperator?->hasFeature('daily_manifest_export') ?? false, 403);
+
         $this->manifestDate = now()->toDateString();
     }
 
@@ -113,7 +115,7 @@ new class extends Component {
     <div
         class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs print:hidden">
         <div class="flex items-center gap-3">
-            <span class="p-2 rounded-xl bg-[#FFEF4D] dark:bg-indigo-950/70 text-[#090d16] dark:text-indigo-400 text-sm">
+            <span class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-sm">
                 <i class="fa-solid fa-clipboard-list"></i>
             </span>
             <div>
@@ -152,7 +154,7 @@ new class extends Component {
 
             <!-- Print / Export Manifest Button -->
             <button type="button" onclick="window.print()"
-                class="h-9 px-4 rounded-xl bg-[#FFEF4D] hover:bg-indigo-700 active:bg-indigo-800 text-[#090d16] font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0">
+                class="h-9 px-4 rounded-xl bg-brand-400 hover:bg-brand-500 text-brand-foreground font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer shrink-0">
                 <i class="fa-solid fa-print"></i>
                 <span>{{ __('Print Manifest') }}</span>
             </button>

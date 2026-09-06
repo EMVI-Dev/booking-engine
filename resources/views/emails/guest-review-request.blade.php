@@ -76,7 +76,11 @@
                     <tr>
                         <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 28px; text-align: center; font-size: 11px; color: #94a3b8;">
                             <p style="margin: 0;">
-                                {{ __('Sent by :agent via :platform', ['agent' => $agent->name ?? 'Tour Operator', 'platform' => config('app.name')]) }}
+                                @if ($agent->showsPlatformBranding())
+                                    {{ __('Sent by :agent via :platform', ['agent' => $agent->name ?? 'Tour Operator', 'platform' => config('app.name')]) }}
+                                @else
+                                    {{ __('Sent by :agent', ['agent' => $agent->name ?? 'Tour Operator']) }}
+                                @endif
                             </p>
                         </td>
                     </tr>

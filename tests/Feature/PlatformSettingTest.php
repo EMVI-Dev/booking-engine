@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\DokuMode;
+use App\Models\Operator;
+use App\Models\Plan;
 use App\Models\PlatformSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -29,4 +31,21 @@ test('platform setting reads updated config', function () {
     expect($fresh->getCommissionRate())->toBe(0.15)
         ->and($fresh->getBookingHoldMinutes())->toBe(45)
         ->and($fresh->getDokuMode())->toBe(DokuMode::Live);
+});
+
+test('guest service fee applies on every plan including agency', function () {
+    $settings = PlatformSetting::current();
+    $agency = Operator::factory()->create([
+        'plan_id' => Plan::factory()->enterprise()->create()->id,
+        'settings' => [
+            'payment_gateway' => [
+                'use_custom_credentials' => true,
+                'client_id' => 'MALLID_IGNORED',
+                'shared_key' => 'KEY_IGNORED',
+            ],
+        ],
+    ]);
+
+    expect($settings->calculateGuestServiceFee(1_000_000, $agency))->toBe(50_000.0)
+        ->and($settings->calculateGuestServiceFee(10_000_000, $agency))->toBe(250_000.0);
 });

@@ -75,13 +75,22 @@
                 @endif
             </a>
 
+            <!-- Find Booking -->
+            <a
+                href="{{ route('storefront.find-booking') }}"
+                class="px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.find-booking') ? 'bg-white dark:bg-zinc-900 text-brand-600 dark:text-brand-400 shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-zinc-900/50' }}"
+            >
+                <i class="fa-solid fa-ticket text-[11px]"></i>
+                <span>{{ __('Find Booking') }}</span>
+            </a>
+
             <!-- Terms -->
             <a
                 href="{{ route('storefront.terms') }}"
                 class="px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.terms') ? 'bg-white dark:bg-zinc-900 text-brand-600 dark:text-brand-400 shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-zinc-900/50' }}"
             >
                 <i class="fa-solid fa-shield-halved text-[11px]"></i>
-                <span>{{ __('Terms & Policies') }}</span>
+                <span>{{ __('Terms') }}</span>
             </a>
         </nav>
 
@@ -106,7 +115,7 @@
                 <button
                     type="button"
                     @click="mobileBookingOpen = true"
-                    class="lg:hidden h-9 px-3.5 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                    class="lg:hidden h-9 px-3.5 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                     <i class="fa-solid fa-calendar-check text-[11px]"></i>
                     <span>{{ __('Book Now') }}</span>
@@ -182,6 +191,17 @@
             </a>
 
             <a
+                href="{{ route('storefront.find-booking') }}"
+                class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('storefront.find-booking') ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/70 dark:text-brand-300 font-extrabold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
+            >
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-ticket w-4 text-center text-brand-600 dark:text-brand-400"></i>
+                    <span>{{ __('Find Booking') }}</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+            </a>
+
+            <a
                 href="{{ route('storefront.terms') }}"
                 class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('storefront.terms') ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/70 dark:text-brand-300 font-extrabold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
             >
@@ -209,3 +229,5 @@
         @endif
     </div>
 </header>
+
+@include('storefront.partials.flash')

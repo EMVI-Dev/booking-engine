@@ -97,7 +97,7 @@ new #[Title('Storefront Settings')] class extends Component {
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <div class="flex items-center gap-2.5">
-                    <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
+                    <span class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300">
                         <i class="fa-solid fa-store text-lg"></i>
                     </span>
                     <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">

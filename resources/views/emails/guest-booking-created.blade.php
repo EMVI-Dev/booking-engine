@@ -94,7 +94,7 @@
                                         {{ __('Guests') }}
                                     </td>
                                     <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 700; color: #0f172a;">
-                                        {{ __(':count Guests (Pax)', ['count' => $reservation->pax_count]) }}
+                                        {{ __(':count guests', ['count' => $reservation->pax_count]) }}
                                     </td>
                                 </tr>
                                 <tr>

@@ -9,7 +9,16 @@ beforeEach(function () {
 test('registration screen can be rendered', function () {
     $response = $this->get(route('register'));
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertSee('Start taking bookings')
+        ->assertSee('Your business name')
+        ->assertSee('Create account')
+        ->assertDontSee('Bank Account Reference')
+        ->assertDontSee('Continue to Payouts')
+        ->assertDontSee('Tour Operator Onboarding')
+        ->assertDontSee('Wayan Sudarma')
+        ->assertDontSee('Bali Snorkel')
+        ->assertDontSee('balitours');
 });
 
 test('new users can register', function () {

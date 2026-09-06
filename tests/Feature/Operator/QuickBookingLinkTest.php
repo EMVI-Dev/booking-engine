@@ -37,7 +37,8 @@ it('allows an operator to create a direct booking reservation and generate payme
         ->call('generateBookingLink')
         ->assertHasNoErrors()
         ->assertSet('linkCreatedSuccessfully', true)
-        ->assertSet('showCreateLinkModal', true);
+        ->assertSet('showCreateLinkModal', true)
+        ->assertSet('generatedWhatsAppUrl', null);
 
     $reservation = Reservation::where('operator_id', $operator->id)->where('guest_name', 'Budi Santoso')->first();
     expect($reservation)->not->toBeNull()

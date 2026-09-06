@@ -1,11 +1,17 @@
 <?php
 
 use App\Enums\OperatorStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\WalletTransactionStatus;
+use App\Enums\WalletTransactionType;
 use App\Models\Operator;
 use App\Models\Package;
+use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Product;
+use App\Models\Reservation;
 use App\Models\User;
+use App\Models\WalletTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -18,7 +24,7 @@ beforeEach(function () {
     ]);
 
     $this->plan = Plan::create([
-        'name' => 'Pro Operator',
+        'name' => 'Pro',
         'slug' => 'pro-operator',
         'price_monthly' => 499000,
         'price_yearly' => 4990000,
@@ -54,10 +60,10 @@ test('admin can view operators directory with rich metrics', function () {
     $this->actingAs($this->adminUser)
         ->get(route('admin.operators.index'))
         ->assertOk()
-        ->assertSee('Operators Management')
+        ->assertSee('Operators')
         ->assertSee('Komodo Island Tours')
         ->assertSee('komodo-tours')
-        ->assertSee('Pro Operator')
+        ->assertSee('Pro')
         ->assertSee('BCA')
         ->assertSee('+628123456789');
 });
@@ -99,4 +105,52 @@ test('admin can switch to operator portal from operators management', function (
         ->assertRedirect(route('dashboard'));
 
     expect(session('admin_impersonated_operator_id'))->toBe($this->operator->id);
+});
+
+test('admin can hold and give back booking money from the operator page', function () {
+    $package = Package::factory()->create([
+        'operator_id' => $this->operator->id,
+        'title' => 'Komodo Sunset Cruise',
+    ]);
+
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => Package::class,
+        'bookable_id' => $package->id,
+        'guest_name' => 'Sari Dispute',
+    ]);
+
+    Payment::factory()->create([
+        'reservation_id' => $reservation->id,
+        'amount' => 1500000,
+        'status' => PaymentStatus::Paid,
+    ]);
+
+    WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'reservation_id' => $reservation->id,
+        'type' => WalletTransactionType::BookingEarning,
+        'gross_amount' => 1500000.00,
+        'fee_amount' => 0.00,
+        'net_amount' => 1500000.00,
+        'status' => WalletTransactionStatus::Cleared,
+        'description' => 'Cleared earnings',
+    ]);
+
+    Livewire::actingAs($this->adminUser)
+        ->test('pages::admin.operators.show', ['operator' => $this->operator])
+        ->assertSee('Hold money')
+        ->assertSee('Sari Dispute')
+        ->call('holdBookingMoney', $reservation->id)
+        ->assertHasNoErrors()
+        ->assertSee('Give money back')
+        ->assertSee('Money held until the card fight is finished.')
+        ->call('releaseBookingMoney', $reservation->id)
+        ->assertHasNoErrors()
+        ->assertSee('Hold money')
+        ->assertSee('Held money is back in the operator wallet.');
+
+    expect($this->operator->fresh()->getAvailableBalance())->toBe(1500000.00)
+        ->and(WalletTransaction::query()->where('reservation_id', $reservation->id)->where('type', WalletTransactionType::DisputeHold)->count())->toBe(1)
+        ->and(WalletTransaction::query()->where('reservation_id', $reservation->id)->where('type', WalletTransactionType::DisputeRelease)->count())->toBe(1);
 });

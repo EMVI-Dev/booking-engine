@@ -80,7 +80,7 @@ test('guest can complete full booking and test payment via internal doku sandbox
         'status' => 'SUCCESS',
     ]);
 
-    $confirmResponse->assertRedirect(route('storefront.reservation.receipt', $reservation->id));
+    $confirmResponse->assertRedirect(route('storefront.reservation.receipt', $reservation));
 
     // 4. Verify payment, reservation status, operator wallet credit, and emails
     $payment->refresh();
@@ -105,11 +105,19 @@ test('guest can complete full booking and test payment via internal doku sandbox
     Mail::assertSent(OperatorNewBookingNotificationMail::class);
 
     // 5. Verify digital receipt & voucher view with normalized WhatsApp URL
-    $receiptResponse = $this->get(route('storefront.reservation.receipt', $reservation->id));
+    $receiptResponse = $this->get(route('storefront.reservation.receipt', $reservation));
     $receiptResponse->assertOk()
-        ->assertSee('Payment Successful')
+        ->assertSee('Paid and confirmed')
         ->assertSee('Sarah Connor')
         ->assertSee('Nusa Penida Snorkel Safari')
         ->assertSee('#'.$reservation->code)
+        ->assertSee('Open e-ticket')
         ->assertSee('https://wa.me/6281234567890', false);
+
+    $this->get(route('storefront.reservation.ticket', $reservation))
+        ->assertOk()
+        ->assertSee('My ticket')
+        ->assertSee('Show this page at check-in')
+        ->assertSee('Sarah Connor')
+        ->assertSee('#'.$reservation->code);
 });

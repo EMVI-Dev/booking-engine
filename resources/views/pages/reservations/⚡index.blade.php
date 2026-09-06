@@ -5,16 +5,20 @@ use App\Enums\ReservationStatus;
 use App\Models\Operator;
 use App\Models\Reservation;
 use App\Concerns\ResolvesCurrentOperator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new #[Title('Bookings & Reservations')] class extends Component {
     use ResolvesCurrentOperator;
+    use WithPagination;
     public string $search = '';
     public string $statusFilter = 'all';
     public string $dateFilter = 'all'; // all, upcoming, past, this_month
@@ -72,7 +76,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
         $unitPrice = (float) $bookable->price;
         $subtotal = $unitPrice * max(1, $this->createPaxCount);
-        $serviceFee = $subtotal * 0.05;
+        $serviceFee = \App\Models\PlatformSetting::current()->calculateGuestServiceFee($subtotal, $this->currentOperator);
 
         return $subtotal + $serviceFee;
     }
@@ -228,9 +232,9 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
         $unitPrice = (float) ($bookable->price ?? 0);
         $subtotal = $unitPrice * $this->createPaxCount;
-        $serviceFeeRate = \App\Models\PlatformSetting::current()->getGuestServiceFeeRate();
-        $isEnterprise = $this->currentOperator->plan?->slug === 'enterprise';
-        $serviceFee = $isEnterprise ? 0 : round($subtotal * $serviceFeeRate);
+        $platform = \App\Models\PlatformSetting::current();
+        $serviceFeeRate = $platform->getGuestServiceFeeRate();
+        $serviceFee = $platform->calculateGuestServiceFee($subtotal, $this->currentOperator);
         $totalPrice = $subtotal + $serviceFee;
 
         $termsSnapshot = $bookable->generateTermsSnapshot();
@@ -238,24 +242,35 @@ new #[Title('Bookings & Reservations')] class extends Component {
         $termsSnapshot['pax_count'] = $this->createPaxCount;
         $termsSnapshot['subtotal'] = $subtotal;
         $termsSnapshot['service_fee'] = $serviceFee;
-        $termsSnapshot['service_fee_rate'] = $isEnterprise ? 0 : $serviceFeeRate;
+        $termsSnapshot['service_fee_rate'] = $serviceFeeRate;
         $termsSnapshot['total_price'] = $totalPrice;
 
-        /** @var Reservation $reservation */
-        $reservation = Reservation::query()->create([
-            'bookable_type' => $this->createBookableType,
-            'bookable_id' => $bookable->id,
-            'operator_id' => $this->currentOperator->id,
-            'guest_name' => $this->createGuestName,
-            'guest_contact' => $this->createGuestContact,
-            'guest_email' => $this->createGuestEmail ?: null,
-            'requested_date' => $this->createRequestedDate,
-            'pax_count' => $this->createPaxCount,
-            'notes' => $this->createNotes ?: null,
-            'terms_snapshot' => $termsSnapshot,
-            'status' => ReservationStatus::PaymentPending,
-            'hold_expires_at' => now()->addMinutes(30),
-        ]);
+        try {
+            /** @var Reservation $reservation */
+            $reservation = app(\App\Services\CapacityService::class)->reserve(
+                $bookable,
+                $this->createRequestedDate,
+                $this->createPaxCount,
+                fn (): Reservation => Reservation::query()->create([
+                    'bookable_type' => $this->createBookableType,
+                    'bookable_id' => $bookable->id,
+                    'operator_id' => $this->currentOperator->id,
+                    'guest_name' => $this->createGuestName,
+                    'guest_contact' => $this->createGuestContact,
+                    'guest_email' => $this->createGuestEmail ?: null,
+                    'requested_date' => $this->createRequestedDate,
+                    'pax_count' => $this->createPaxCount,
+                    'notes' => $this->createNotes ?: null,
+                    'terms_snapshot' => $termsSnapshot,
+                    'status' => ReservationStatus::PaymentPending,
+                    'hold_expires_at' => now()->addMinutes(30),
+                ]),
+            );
+        } catch (\App\Exceptions\CapacityUnavailableException $e) {
+            $this->addError('createRequestedDate', $e->getMessage());
+
+            return;
+        }
 
         $session = $paymentService->createPaymentSession($reservation, $totalPrice);
         $this->generatedPaymentUrl = $session['checkout_url'];
@@ -263,8 +278,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
         $itemTitle = $bookable instanceof \App\Models\Package ? $bookable->title : $bookable->name;
         $dateFormatted = Carbon::parse($this->createRequestedDate)->format('d M Y');
-        $waText = "Halo Kak {$this->createGuestName}, berikut link pesanan & pembayaran untuk *{$itemTitle}* tanggal *{$dateFormatted}* ({$this->createPaxCount} pax).\n\nTotal: Rp " . number_format($totalPrice, 0, ',', '.') . "\n\nSilakan cek detail dan selesaikan pembayaran sebelum slot hold 30 menit berakhir:\n{$this->generatedPaymentUrl}";
-        $this->generatedWhatsAppUrl = $waService->buildWhatsAppUrl($this->createGuestContact, $waText);
+        $this->generatedWhatsAppUrl = null;
+
+        if ($this->currentOperator->hasFeature('whatsapp_dispatch')) {
+            $waText = "Halo Kak {$this->createGuestName}, berikut link pesanan & pembayaran untuk *{$itemTitle}* tanggal *{$dateFormatted}* ({$this->createPaxCount} pax).\n\nTotal: Rp " . number_format($totalPrice, 0, ',', '.') . "\n\nSilakan cek detail dan selesaikan pembayaran sebelum slot hold 30 menit berakhir:\n{$this->generatedPaymentUrl}";
+            $this->generatedWhatsAppUrl = $waService->buildWhatsAppUrl($this->createGuestContact, $waText);
+        }
 
         $this->linkCreatedSuccessfully = true;
         $this->actionSuccess = true;
@@ -311,16 +330,31 @@ new #[Title('Bookings & Reservations')] class extends Component {
         ];
     }
 
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDateFilter(): void
+    {
+        $this->resetPage();
+    }
+
     /**
      * Get filtered reservations for the agent.
      *
-     * @return Collection<int, Reservation>
+     * @return LengthAwarePaginator<int, Reservation>
      */
     #[Computed]
-    public function reservations(): Collection
+    public function reservations(): LengthAwarePaginator
     {
         if (!$this->currentOperator) {
-            return new Collection();
+            return new Paginator([], 0, 20);
         }
 
         $query = $this->currentOperator->reservations()->with(['bookable', 'latestPayment', 'payments']);
@@ -355,7 +389,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
             });
         }
 
-        return $query->get();
+        return $query->paginate(20);
     }
 
     #[Computed]
@@ -516,141 +550,68 @@ new #[Title('Bookings & Reservations')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-8 animate-fade-in">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
-                    <i class="fa-solid fa-calendar-check text-lg"></i>
-                </span>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Bookings & Reservations') }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                        {{ __('Track, confirm, and manage direct guest reservations, payment receipts, and trip schedules.') }}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Actions & Counter -->
-        <div class="flex items-center gap-3">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 hidden sm:inline">
-                {{ __('Showing :count reservations', ['count' => $this->reservations->count()]) }}
+<div class="animate-fade-in space-y-6">
+    <x-page-header
+        :title="__('Bookings & Reservations')"
+        :subtitle="__('Track, confirm, and manage direct guest reservations, payment receipts, and trip schedules.')"
+        icon="fa-calendar-check"
+    >
+        <x-slot:actions>
+            <span class="hidden text-xs font-semibold text-op-subtle sm:inline">
+                {{ __('Showing :count reservations', ['count' => $this->reservations->total()]) }}
             </span>
-            <x-button type="button" variant="primary" wire:click="openCreateLinkModal" class="text-xs font-bold">
+            <x-button type="button" wire:click="openCreateLinkModal">
                 <i class="fa-solid fa-link text-xs"></i>
                 <span>{{ __('Create Booking Link') }}</span>
             </x-button>
-        </div>
+        </x-slot:actions>
+    </x-page-header>
+
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <x-metric-card
+            :label="__('Confirmed Trips')"
+            :value="number_format($this->metrics['confirmed'])"
+            :hint="__('Active & upcoming reservations')"
+            icon="fa-circle-check"
+            tone="success"
+        />
+        <x-metric-card
+            :label="__('Pending Holds')"
+            :value="number_format($this->metrics['pending'])"
+            :hint="__('Awaiting checkout payment (30m hold)')"
+            icon="fa-clock"
+            tone="warning"
+        />
+        <x-metric-card
+            :label="__('Completed')"
+            :value="number_format($this->metrics['completed'])"
+            :hint="__('Fulfilled experiences & reviews ready')"
+            icon="fa-flag-checkered"
+            tone="info"
+        />
+        <x-metric-card
+            :label="__('Paid Revenue')"
+            :value="'Rp '.number_format($this->metrics['revenue'], 0, ',', '.')"
+            :hint="__('Direct guest payments collected')"
+            icon="fa-rupiah-sign"
+            tone="brand"
+        />
     </div>
 
-    <!-- Metric Summary Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Card 1: Total Confirmed -->
-        <div
-            class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-emerald-500 shadow-xs space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                    {{ __('Confirmed Trips') }}
-                </span>
-                <span
-                    class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-black flex items-center justify-center text-xs">
-                    <i class="fa-solid fa-circle-check"></i>
-                </span>
-            </div>
-            <p class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                {{ number_format($this->metrics['confirmed']) }}
-            </p>
-            <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                {{ __('Active & upcoming reservations') }}
-            </p>
-        </div>
-
-        <!-- Card 2: Pending Holds -->
-        <div
-            class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-amber-500 shadow-xs space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                    {{ __('Pending Holds') }}
-                </span>
-                <span
-                    class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-black flex items-center justify-center text-xs">
-                    <i class="fa-solid fa-clock"></i>
-                </span>
-            </div>
-            <p class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
-                {{ number_format($this->metrics['pending']) }}
-            </p>
-            <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                {{ __('Awaiting checkout payment (30m hold)') }}
-            </p>
-        </div>
-
-        <!-- Card 3: Completed Trips -->
-        <div
-            class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                    {{ __('Completed') }}
-                </span>
-                <span
-                    class="w-8 h-8 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 font-black flex items-center justify-center text-xs shadow-xs">
-                    <i class="fa-solid fa-flag-checkered"></i>
-                </span>
-            </div>
-            <p class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                {{ number_format($this->metrics['completed']) }}
-            </p>
-            <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                {{ __('Fulfilled experiences & reviews ready') }}
-            </p>
-        </div>
-
-        <!-- Card 4: Total Revenue -->
-        <div
-            class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                    {{ __('Paid Revenue') }}
-                </span>
-                <span
-                    class="w-8 h-8 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shadow-xs">
-                    <i class="fa-solid fa-rupiah-sign"></i>
-                </span>
-            </div>
-            <p class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white truncate">
-                Rp {{ number_format($this->metrics['revenue'], 0, ',', '.') }}
-            </p>
-            <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                {{ __('Direct guest payments collected') }}
-            </p>
-        </div>
-    </div>
-
-    <!-- Search & Filter Controls Card -->
-    <div
-        class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <!-- Search Bar -->
+    <x-toolbar>
+        <div class="flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center">
             <div class="relative flex-1">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                </div>
-                <input wire:model.live.debounce.300ms="search" type="text"
-                    placeholder="{{ __('Search by guest name, phone, email, or reservation ID...') }}"
-                    class="h-10 w-full pl-9 pr-4 rounded-xl border border-slate-200 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141824] text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-[#FFEF4D] focus:border-[#FFEF4D] transition" />
+                <x-search-input
+                    wire:model.live.debounce.300ms="search"
+                    :placeholder="__('Search by guest name, phone, email, or reservation ID...')"
+                />
                 @if ($search !== '')
                     <button wire:click="$set('search', '')"
-                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs">
+                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-op-subtle hover:text-op-ink">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 @endif
             </div>
-
-            <!-- Date Filter Dropdown -->
             <div class="w-full sm:w-52">
                 <x-select wire:model.live="dateFilter" :options="[
                     'all' => __('All Trip Dates'),
@@ -661,8 +622,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
             </div>
         </div>
 
-        <!-- Status Filter Tabs -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-slate-100 dark:border-[#1e2433] pt-3">
+        <x-filter-tabs class="border-t border-op-line pt-3">
             @php
                 $statusTabs = [
                     'all' => __('All (:count)', ['count' => $this->metrics['total']]),
@@ -679,17 +639,16 @@ new #[Title('Bookings & Reservations')] class extends Component {
             @endphp
 
             @foreach ($statusTabs as $tabKey => $tabLabel)
-                <button type="button" wire:click="$set('statusFilter', '{{ $tabKey }}')"
-                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $statusFilter === $tabKey ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181d2a]' }}">
+                <x-filter-tab :active="$statusFilter === $tabKey" wire:click="$set('statusFilter', '{{ $tabKey }}')">
                     {{ $tabLabel }}
-                </button>
+                </x-filter-tab>
             @endforeach
-        </div>
-    </div>
+        </x-filter-tabs>
+    </x-toolbar>
 
     <!-- Reservations Section -->
     <div
-        class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
+        class="rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 shadow-xs overflow-hidden">
         <!-- Reservations Mobile Responsive Card List (md:hidden) -->
         <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
             @forelse ($this->reservations as $res)
@@ -703,13 +662,13 @@ new #[Title('Bookings & Reservations')] class extends Component {
                     }
                     $waUrl = 'https://wa.me/' . $cleanPhone . '?text=' . urlencode(__('Hello :name, reaching out regarding your reservation (:code) with :agent', ['name' => $res->guest_name, 'code' => $resCode, 'agent' => $this->currentOperator->name]));
                 @endphp
-                <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
+                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="font-extrabold text-xs text-slate-900 dark:text-white truncate">
                                 {{ $res->guest_name }}
                             </span>
-                            <span class="font-mono text-[10px] font-bold text-slate-800 dark:text-[#FFEF4D] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#FFEF4D]/10 border border-slate-200 dark:border-[#FFEF4D]/30 shrink-0">
+                            <span class="font-mono text-[10px] font-semibold text-stone-700 dark:text-zinc-200 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-zinc-800 shrink-0">
                                 #{{ $resCode }}
                             </span>
                         </div>
@@ -719,12 +678,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
                             @elseif ($res->status->value === 'pending_confirmation')
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">Pending Confirmation</span>
                             @else
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-[#181d2a] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">{{ ucfirst($res->status->value) }}</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-zinc-300">{{ ucfirst($res->status->value) }}</span>
                             @endif
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-[#1e2433]">
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-stone-100 dark:border-zinc-800">
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Experience') }}</span>
                             <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">{{ $bookable->name ?? ($bookable->title ?? __('Custom Booking')) }}</span>
@@ -737,7 +696,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#1e2433] text-[11px]">
+                    <div class="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-zinc-800 text-[11px]">
                         <div>
                             @if ($res->guest_contact)
                                 <a href="{{ $waUrl }}" target="_blank" class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
@@ -746,7 +705,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 </a>
                             @endif
                         </div>
-                        <button type="button" wire:click="viewReservation('{{ $res->id }}')" class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-[#181d2a] text-slate-700 dark:text-slate-300 font-bold text-xs">
+                        <button type="button" wire:click="viewReservation('{{ $res->id }}')" class="px-3 py-1 rounded-xl bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-semibold text-xs">
                             {{ __('Details') }}
                         </button>
                     </div>
@@ -762,7 +721,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead
-                    class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    class="bg-stone-50 dark:bg-zinc-800 border-b border-stone-200 dark:border-zinc-700 text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-zinc-400">
                     <tr>
                         <th class="px-5 py-3.5">{{ __('Guest & Contact') }}</th>
                         <th class="px-4 py-3.5">{{ __('Booked Experience') }}</th>
@@ -772,7 +731,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         <th class="px-5 py-3.5 text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
+                <tbody class="divide-y divide-stone-100 dark:divide-zinc-700">
                     @forelse ($this->reservations as $res)
                         @php
                             $bookable = $res->bookable;
@@ -794,7 +753,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     ]),
                                 );
                         @endphp
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
+                        <tr class="hover:bg-stone-50/70 dark:hover:bg-zinc-800/80 transition group">
                             <!-- Guest Info -->
                             <td class="px-5 py-4">
                                 <div class="space-y-1">
@@ -803,7 +762,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                             {{ $res->guest_name }}
                                         </span>
                                         <span
-                                            class="font-mono text-[10px] font-bold text-slate-800 dark:text-[#FFEF4D] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-[#FFEF4D]/10 border border-slate-200 dark:border-[#FFEF4D]/30">
+                                            class="font-mono text-[10px] font-semibold text-stone-700 dark:text-zinc-200 px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-zinc-800">
                                             #{{ $resCode }}
                                         </span>
                                     </div>
@@ -831,7 +790,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     <div class="flex items-center gap-1.5">
                                         @if ($res->bookable_type === 'package' || $res->bookable_type === \App\Models\Package::class)
                                             <span
-                                                class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 shadow-xs">
+                                                class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-amber-50 text-amber-800 dark:bg-amber-400/10 dark:text-amber-200">
                                                 {{ __('Package') }}
                                             </span>
                                         @else
@@ -923,7 +882,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                             @endif
                                         </div>
 
-                                        @if ($res->guest_contact)
+                                        @if ($res->guest_contact && $this->currentOperator?->hasFeature('whatsapp_dispatch'))
                                             <div>
                                                 <a href="{{ app(\App\Services\WhatsAppDispatchService::class)->getPaymentHoldLinkUrl($res) }}"
                                                     target="_blank"
@@ -996,7 +955,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                         </button>
                                         <div x-show="open" @click.away="open = false" x-cloak
                                             class="absolute right-0 z-20 mt-1 w-48 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-lg py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                            @if ($res->status === ReservationStatus::PaymentPending && $res->guest_contact)
+                                            @if ($res->status === ReservationStatus::PaymentPending && $res->guest_contact && $this->currentOperator?->hasFeature('whatsapp_dispatch'))
                                                 <a href="{{ app(\App\Services\WhatsAppDispatchService::class)->getPaymentHoldLinkUrl($res) }}"
                                                     target="_blank" @click="open = false"
                                                     class="w-full px-3.5 py-1.5 text-left flex items-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-600 dark:text-amber-400">
@@ -1066,6 +1025,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
                 </tbody>
             </table>
         </div>
+
+        @if ($this->reservations->hasPages())
+            <div class="px-4 py-4 border-t border-slate-100 dark:border-[#1e2433]">
+                {{ $this->reservations->onEachSide(1)->links() }}
+            </div>
+        @endif
     </div>
 
     <!-- Slide-over / Detail Modal -->
@@ -1187,6 +1152,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         </div>
 
                         <!-- 1-Click WhatsApp Dispatch Center -->
+                        @if ($this->currentOperator?->hasFeature('whatsapp_dispatch'))
                         @php
                             $waService = app(\App\Services\WhatsAppDispatchService::class);
                             $voucherWaUrl = $waService->getConfirmationUrl($res);
@@ -1250,6 +1216,19 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 </a>
                             </div>
                         </div>
+                        @else
+                        <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60 space-y-2">
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                {{ __('Ready-made WhatsApp messages are on Pro') }}
+                            </p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                {{ __('You can still copy the payment link. Pro writes the guest message for you.') }}
+                            </p>
+                            <a href="{{ route('settings.plan') }}" wire:navigate class="inline-flex text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                {{ __('See Pro') }}
+                            </a>
+                        </div>
+                        @endif
 
                         <!-- Booked Package / Product Overview -->
                         <div class="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3">
@@ -1638,7 +1617,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 </div>
                             @else
                                 <div
-                                    class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                                    class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-200 flex items-center justify-center text-base shrink-0 mt-0.5">
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                 </div>
                             @endif

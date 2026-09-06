@@ -103,6 +103,15 @@ new #[Title('Create Activity Item')] class extends Component {
             return;
         }
 
+        if (! $this->currentOperator->canAddProduct()) {
+            $this->addError('profile', __('You have reached the listing limit (:limit trips and activities) on your :plan plan. Please upgrade to add more.', [
+                'limit' => $this->currentOperator->getPlan()->package_limit,
+                'plan' => $this->currentOperator->getPlan()->name,
+            ]));
+
+            return;
+        }
+
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:100'],
@@ -168,6 +177,23 @@ new #[Title('Create Activity Item')] class extends Component {
     />
 
     <div class="hidden lg:block space-y-6">
+        @if ($this->currentOperator && ! $this->currentOperator->canAddProduct())
+        <div class="py-6">
+            <x-feature-gate
+                :title="__('Listing Limit Reached (:limit Listings)', ['limit' => $this->currentOperator->getPlan()->package_limit])"
+                :description="__('Trips and activities share the same listing limit on your :plan plan. Upgrade to list more.', ['plan' => $this->currentOperator->getPlan()->name])"
+                required-plan="Pro"
+                plan-slug="growth"
+                icon="fa-solid fa-compass"
+                :features="[
+                    __('Up to 25 trips and activities on Pro (or unlimited on Agency)'),
+                    __('Ready-made WhatsApp messages for guests'),
+                    __('Guest list and trip reminders'),
+                    __('Your own website address on Agency'),
+                ]"
+            />
+        </div>
+        @else
         <!-- Breadcrumb & Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -479,5 +505,6 @@ new #[Title('Create Activity Item')] class extends Component {
             </x-button>
         </div>
     </form>
+        @endif
     </div>
 </div>

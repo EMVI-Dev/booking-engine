@@ -4,7 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
         <!-- SEO & Metadata -->
-        <title>{{ __('Booking Policies & Terms') }} - {{ $agent->name }} &bull; {{ config('app.name') }}</title>
+        <title>{{ __('Booking Policies & Terms') }} - {{ $agent->name }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
         <meta name="description" content="{{ __('Official booking terms, instant hold policies, cancellation rules, and payment protection guidelines for direct reservations with :name.', ['name' => $agent->name]) }}" />
         <link rel="canonical" href="{{ route('storefront.terms') }}" />
 
@@ -12,7 +12,9 @@
         <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
         <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
         <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-        <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
+        @if ($agent->showsPlatformBranding())
+            <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
+        @endif
         <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
         <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
 
@@ -25,7 +27,7 @@
         <meta property="og:url" content="{{ route('storefront.terms') }}" />
         <meta property="og:title" content="{{ __('Booking Policies & Terms') }} - {{ $agent->name }}" />
         <meta property="og:description" content="{{ __('Official booking terms and policies for direct reservations with :name.', ['name' => $agent->name]) }}" />
-        <meta property="og:site_name" content="{{ $agent->name }} • {{ config('app.name') }}" />
+        <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
         @if ($agent->logo)
             <meta property="og:image" content="{{ Storage::url($agent->logo) }}" />
         @endif
@@ -66,37 +68,15 @@
         {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
         </script>
 
-        <!-- Automated System Dark / Light Theme Sync -->
-        <script>
-            (function () {
-                function applySystemTheme() {
-                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                        document.documentElement.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                    }
-                }
-                applySystemTheme();
-                if (window.matchMedia) {
-                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySystemTheme);
-                }
-            })();
-        </script>
 
-        @if (! empty($agent->brand_color))
-            <style>
-                :root {
-                    --brand-color: {{ $agent->brand_color }};
-                }
-            </style>
-        @endif
+        @include('storefront.partials.brand-theme')
 
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @include('storefront.partials.tracking-scripts', ['agent' => $agent])
         @livewireStyles
     </head>
-    <body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white overflow-x-clip w-full max-w-full">
+    <body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
         @include('storefront.partials.navbar')
 
         <!-- Main Content Area -->
@@ -154,6 +134,14 @@
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                                 {{ __('All guest information collected during the reservation and checkout process is processed strictly for fulfilling bookings, safety verification, and official transaction receipts in compliance with Indonesian Personal Data Protection regulations.') }}
+                            </p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                {{ __('If you cancel inside the free-cancel window, we send the full amount back to the same payment method, usually within a few working days.') }}
+                            </p>
+                            <p class="text-xs">
+                                <a href="{{ route('legal.privacy') }}" class="font-semibold underline">{{ __('Platform privacy') }}</a>
+                                <span class="text-slate-400"> · </span>
+                                <a href="{{ route('legal.terms') }}" class="font-semibold underline">{{ __('Platform terms') }}</a>
                             </p>
                         </div>
                     </div>

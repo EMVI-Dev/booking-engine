@@ -9,6 +9,8 @@ enum WalletTransactionType: string
     case PayoutWithdrawal = 'payout_withdrawal';
     case RefundDeduction = 'refund_deduction';
     case ManualAdjustment = 'manual_adjustment';
+    case DisputeHold = 'dispute_hold';
+    case DisputeRelease = 'dispute_release';
 
     public function label(): string
     {
@@ -16,8 +18,10 @@ enum WalletTransactionType: string
             self::BookingEarning => 'Booking Earning',
             self::PlatformCommission => 'Platform Commission',
             self::PayoutWithdrawal => 'Payout Withdrawal',
-            self::RefundDeduction => 'Refund Deduction',
-            self::ManualAdjustment => 'Manual Adjustment',
+            self::RefundDeduction => 'Refund',
+            self::ManualAdjustment => 'Adjustment',
+            self::DisputeHold => 'Card dispute hold',
+            self::DisputeRelease => 'Held money given back',
         };
     }
 }

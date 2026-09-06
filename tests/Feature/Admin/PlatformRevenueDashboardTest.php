@@ -74,9 +74,9 @@ test('admin can access platform revenue dashboard', function () {
     $this->actingAs($this->adminUser)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertSee('Platform Revenue & Financial Intelligence')
-        ->assertSee('Platform Gross GMV')
-        ->assertSee('Subscription MRR');
+        ->assertSee('Money overview')
+        ->assertSee('All guest payments')
+        ->assertSee('Plan fees this month');
 });
 
 test('revenue dashboard computes financial metrics accurately', function () {

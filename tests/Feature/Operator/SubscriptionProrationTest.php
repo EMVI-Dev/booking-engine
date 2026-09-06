@@ -21,7 +21,7 @@ beforeEach(function () {
 
     $this->starterPlan = Plan::where('slug', 'starter')->first();
     $this->proPlan = Plan::where('slug', 'growth')->first();
-    $this->ultimatePlan = Plan::where('slug', 'enterprise')->first();
+    $this->ultimatePlan = Plan::where('slug', 'agency')->first();
 });
 
 test('proration service calculates accurate net difference when upgrading from Starter to Pro', function () {
@@ -35,7 +35,7 @@ test('proration service calculates accurate net difference when upgrading from S
         ->and($proration['net_amount_due'])->toEqual((float) $this->proPlan->price_monthly);
 });
 
-test('proration service calculates prorated credit and charge when upgrading mid-cycle from Pro to Ultimate', function () {
+test('proration service calculates prorated credit and charge when upgrading mid-cycle from Pro to Agency', function () {
     // Set operator to Pro with 15 days remaining out of a 30-day period
     $this->operator->update([
         'plan_id' => $this->proPlan->id,
@@ -58,7 +58,7 @@ test('operator can initiate upgrade, redirect to checkout, and complete card pay
     $this->actingAs($this->user);
 
     $component = Livewire::test('pages::settings.plan')
-        ->assertSee('Starter Essential')
+        ->assertSee('Essential')
         ->call('initiatePlanSwitch', $this->proPlan->id)
         ->assertSet('show_switch_modal', true)
         ->assertSet('target_plan_id', $this->proPlan->id)
@@ -79,7 +79,7 @@ test('operator can initiate upgrade, redirect to checkout, and complete card pay
 
     // Now test the Plan Checkout Livewire component
     Livewire::test('pages::settings.plan-checkout', ['payment' => $payment])
-        ->assertSee('Pro Operator')
+        ->assertSee('Pro')
         ->assertSee('Card Information')
         ->set('card_holder', 'John Operator')
         ->set('card_number', '4000 1234 5678 9010')
@@ -153,11 +153,11 @@ test('operator can schedule a downgrade to end of billing cycle and cancel it', 
         ->set('downgrade_mode', 'end_of_cycle')
         ->call('confirmPlanSwitch')
         ->assertHasNoErrors()
-        ->assertSee('Scheduled Plan Downgrade to Pro Operator');
+        ->assertSee('Scheduled Plan Downgrade to Pro');
 
     $this->operator->refresh();
 
-    // The active plan is STILL Ultimate until cycle ends
+    // The active plan is still Agency until the cycle ends
     expect($this->operator->plan_id)->toBe($this->ultimatePlan->id)
         ->and($this->operator->pending_plan_id)->toBe($this->proPlan->id)
         ->and($this->operator->hasPendingPlanChange())->toBeTrue();
@@ -166,7 +166,7 @@ test('operator can schedule a downgrade to end of billing cycle and cancel it', 
     Livewire::test('pages::settings.plan')
         ->call('promptCancelScheduledDowngrade')
         ->assertSet('show_cancel_modal', true)
-        ->assertSee('Keep Your Agency Ultimate Subscription?')
+        ->assertSee('Keep Your Agency Subscription?')
         ->call('confirmCancelScheduledDowngrade')
         ->assertSet('show_cancel_modal', false)
         ->assertHasNoErrors();

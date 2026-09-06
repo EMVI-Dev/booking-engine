@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Concerns\SendsOperatorBrandedMail;
 use App\Models\Reservation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -12,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 
 class GuestBookingCreatedMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SendsOperatorBrandedMail, SerializesModels;
 
     public function __construct(
         public Reservation $reservation
@@ -20,11 +21,13 @@ class GuestBookingCreatedMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $agentName = $this->reservation->agent->name ?? config('app.name', 'Booking');
+        $operator = $this->reservation->operator;
+        $agentName = $operator?->name ?? config('app.name', 'Booking');
         $code = $this->reservation->code ?: strtoupper(substr($this->reservation->id, -8));
 
-        return new Envelope(
-            subject: "⏳ Action Required: Complete Payment for Booking #{$code} - {$agentName}",
+        return $this->operatorBrandedEnvelope(
+            $operator,
+            "⏳ Action Required: Complete Payment for Booking #{$code} - {$agentName}",
         );
     }
 

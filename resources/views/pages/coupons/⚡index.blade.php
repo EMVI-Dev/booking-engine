@@ -345,32 +345,18 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
 }; ?>
 
 <div class="space-y-6">
-    <!-- Page Header & Action -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
-                    <i class="fa-solid fa-ticket text-lg"></i>
-                </span>
-                <h1 class="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Coupons & Promo Codes') }}
-                </h1>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-                {{ __('Create discount codes to incentivize guest bookings, reward repeat clients, and run seasonal campaigns.') }}
-            </p>
-        </div>
-
-        <x-button
-            type="button"
-            wire:click="createCoupon"
-            variant="primary"
-            class="shadow-xs shrink-0"
-        >
-            <i class="fa-solid fa-plus mr-1 text-xs"></i>
-            <span>{{ __('New Promo Code') }}</span>
-        </x-button>
-    </div>
+    <x-page-header
+        :title="__('Coupons & Promo Codes')"
+        :subtitle="__('Create discount codes to incentivize guest bookings, reward repeat clients, and run seasonal campaigns.')"
+        icon="fa-ticket"
+    >
+        <x-slot:actions>
+            <x-button type="button" wire:click="createCoupon">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span>{{ __('New Promo Code') }}</span>
+            </x-button>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Alert Notifications -->
     @if (session()->has('success'))
@@ -387,53 +373,45 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         </div>
     @endif
 
-    <!-- Metrics Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Total Codes') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $totalCoupons }}</div>
-            <p class="text-xs text-slate-500 dark:text-zinc-400">{{ __('Storefront promotional codes') }}</p>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{{ __('Active On Storefront') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ $activeCoupons }}</div>
-            <p class="text-xs text-slate-500 dark:text-zinc-400">{{ __('Currently redeemable by guests') }}</p>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D]">{{ __('Guest Redemptions') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $totalRedemptions }}</div>
-            <p class="text-xs text-slate-500 dark:text-zinc-400">{{ __('Total bookings with discounts') }}</p>
-        </div>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <x-metric-card
+            :label="__('Total Codes')"
+            :value="$totalCoupons"
+            :hint="__('Storefront promotional codes')"
+            icon="fa-ticket"
+            tone="neutral"
+        />
+        <x-metric-card
+            :label="__('Active On Storefront')"
+            :value="$activeCoupons"
+            :hint="__('Currently redeemable by guests')"
+            icon="fa-circle-check"
+            tone="success"
+        />
+        <x-metric-card
+            :label="__('Guest Redemptions')"
+            :value="$totalRedemptions"
+            :hint="__('Total bookings with discounts')"
+            icon="fa-tag"
+            tone="brand"
+        />
     </div>
 
-    <!-- Filter & Search Controls Bar -->
-    <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <!-- Search Input -->
-        <div class="relative w-full sm:w-80">
-            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-            <x-input
+    <x-toolbar class="flex flex-col items-center justify-between gap-3 sm:flex-row">
+        <div class="w-full sm:w-80">
+            <x-search-input
                 wire:model.live.debounce.300ms="search"
-                type="text"
-                placeholder="{{ __('Search by code or description...') }}"
-                class="pl-9 text-xs"
+                :placeholder="__('Search by code or description...')"
             />
         </div>
-
-        <!-- Filter Tabs -->
-        <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
+        <x-filter-tabs>
             @foreach (['all' => __('All Codes'), 'active' => __('Active'), 'expired' => __('Inactive / Expired')] as $k => $label)
-                <button
-                    type="button"
-                    wire:click="$set('filter', '{{ $k }}')"
-                    class="px-3.5 py-1.5 rounded-xl text-xs font-black transition shrink-0 cursor-pointer {{ $filter === $k ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'bg-slate-100 dark:bg-[#141721] text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#262d3d]' }}"
-                >
+                <x-filter-tab :active="$filter === $k" wire:click="$set('filter', '{{ $k }}')">
                     {{ $label }}
-                </button>
+                </x-filter-tab>
             @endforeach
-        </div>
-    </div>
+        </x-filter-tabs>
+    </x-toolbar>
 
     <!-- Coupons Table Card -->
     <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">

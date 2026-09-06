@@ -25,3 +25,12 @@ Schedule::command('subscriptions:send-renewal-reminders')->daily();
 
 // 8. Broadcast platform coupon codes to operators who meet eligibility thresholds (e.g. transaction volume)
 Schedule::command('coupons:broadcast')->dailyAt('09:00');
+
+// 9. After 3 extra days unpaid, return operators to the free plan
+Schedule::command('subscriptions:return-unpaid-to-free')->daily();
+
+// 10. Flag guest payments that never reached an operator wallet
+Schedule::command('platform:match-payments')->dailyAt('03:00');
+
+// 11. Record the padlock after Caddy has issued HTTPS for a connected address
+Schedule::command('domains:probe-ssl')->everyFiveMinutes()->withoutOverlapping();

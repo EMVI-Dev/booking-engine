@@ -5,7 +5,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Guest payments')] #[Layout('layouts.admin')] class extends Component {
     // Gateway Provider
     public string $selected_provider = 'doku';
 
@@ -130,31 +130,26 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
 }; ?>
 
 <div class="space-y-6 w-full">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
-                    <i class="fa-solid fa-credit-card text-lg"></i>
-                </span>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('DOKU Payment Gateway') }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                        {{ __('Configure central platform DOKU Checkout & SNAP Open API credentials, Sandbox keys, Live production settings, and RSA certificates.') }}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2.5">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold {{ $doku_mode === 'live' ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60' : 'bg-amber-950/60 text-amber-400 border border-amber-800/60' }}">
-                <span class="w-2 h-2 rounded-full {{ $doku_mode === 'live' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400' }}"></span>
-                {{ $doku_mode === 'live' ? __('Live Production Active') : __('Sandbox Testing Active') }}
+    <x-page-header
+        :title="__('Guest payments')"
+        :subtitle="__('Keys for the checkout guests use. Test first, then switch to live when you are ready to take real money.')"
+        icon="fa-credit-card"
+    >
+        <x-slot:actions>
+            <span @class([
+                'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold',
+                'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' => $doku_mode === 'live',
+                'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' => $doku_mode !== 'live',
+            ])>
+                <span @class([
+                    'h-2 w-2 rounded-full',
+                    'bg-emerald-400' => $doku_mode === 'live',
+                    'bg-amber-400' => $doku_mode !== 'live',
+                ])></span>
+                {{ $doku_mode === 'live' ? __('Live') : __('Test') }}
             </span>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Active Gateway Engine Notice Banner -->
     <div class="p-4 rounded-3xl border border-slate-200/80 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
@@ -164,13 +159,13 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
             </span>
             <div>
                 <div class="flex items-center gap-2">
-                    <h3 class="font-bold text-sm text-slate-900 dark:text-white">{{ __('DOKU Hosted Checkout & SNAP Open API') }}</h3>
+                    <h3 class="font-bold text-sm text-slate-900 dark:text-white">{{ __('Guest checkout') }}</h3>
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
-                        {{ __('Exclusive Gateway') }}
+                        {{ __('QRIS, transfer, card') }}
                     </span>
                 </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {{ __('Processes QRIS, Virtual Accounts (BCA, Mandiri, BRI, BNI), Credit Cards, and automated operator bank split settlements.') }}
+                    {{ __('Guests pay here. After the trip, we send the listed price to the operator bank account.') }}
                 </p>
             </div>
         </div>
@@ -187,10 +182,10 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
                     </span>
                     <div>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                            {{ __('Central DOKU Payment Credentials') }}
+                            {{ __('Checkout keys') }}
                         </h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                            {{ __('All agent checkouts without custom credentials will route through this central gateway account.') }}
+                            {{ __('Every operator storefront uses these keys. Guests never pay a private merchant account.') }}
                         </p>
                     </div>
                 </div>
@@ -203,7 +198,7 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
                         class="px-3.5 py-1.5 text-xs font-black rounded-lg transition cursor-pointer {{ $doku_mode === 'sandbox' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-slate-400' }}"
                     >
                         <i class="fa-solid fa-flask mr-1 text-[10px]"></i>
-                        {{ __('Sandbox (Testing)') }}
+                        {{ __('Test') }}
                     </button>
                     <button
                         type="button"
@@ -211,7 +206,7 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
                         class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer {{ $doku_mode === 'live' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400' }}"
                     >
                         <i class="fa-solid fa-bolt mr-1 text-[10px]"></i>
-                        {{ __('Live (Production)') }}
+                        {{ __('Live') }}
                     </button>
                 </div>
             </div>
@@ -224,7 +219,7 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-flask text-amber-500 text-sm"></i>
                             <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                                {{ __('Sandbox Environment Credentials') }}
+                                {{ __('Test keys') }}
                             </h4>
                         </div>
                         @if ($doku_mode === 'sandbox')
@@ -265,7 +260,7 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
                         <button type="button" @click="openSnap = !openSnap" class="w-full flex items-center justify-between text-xs font-bold text-[#8a7808] dark:text-[#FFEF4D] hover:underline cursor-pointer">
                             <span class="flex items-center gap-1.5">
                                 <i class="fa-solid fa-key text-[10px]"></i>
-                                {{ __('SNAP Open API & Keypair Settings (Optional)') }}
+                                {{ __('SNAP keys (optional)') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" :class="openSnap ? 'rotate-180' : ''"></i>
                         </button>
@@ -301,7 +296,7 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-bolt text-emerald-500 text-sm"></i>
                             <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                                {{ __('Live Production Credentials') }}
+                                {{ __('Live keys') }}
                             </h4>
                         </div>
                         @if ($doku_mode === 'live')
@@ -342,7 +337,7 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
                         <button type="button" @click="openSnapLive = !openSnapLive" class="w-full flex items-center justify-between text-xs font-bold text-[#8a7808] dark:text-[#FFEF4D] hover:underline cursor-pointer">
                             <span class="flex items-center gap-1.5">
                                 <i class="fa-solid fa-key text-[10px]"></i>
-                                {{ __('SNAP Open API & Keypair Settings (Optional)') }}
+                                {{ __('SNAP keys (optional)') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" :class="openSnapLive ? 'rotate-180' : ''"></i>
                         </button>
@@ -377,8 +372,11 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
             <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200 dark:border-[#1e2433] space-y-2">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-webhook text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                    {{ __('DOKU Webhook Notification URL (Register in DOKU Merchant Dashboard)') }}
+                    {{ __('Webhook URL') }}
                 </span>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    {{ __('Paste this in the DOKU dashboard so we hear when a guest pays.') }}
+                </p>
                 <div class="flex items-center gap-3">
                     <code class="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-[#0C0E13] border border-slate-200 dark:border-[#1e2433] font-mono text-xs text-[#8a7808] dark:text-[#FFEF4D] select-all">
                         {{ url('/api/v1/payments/doku/notify') }}
@@ -391,7 +389,7 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
         <div class="flex items-center gap-4 pt-2">
             <button type="submit" data-test="save-payment-settings-button" class="h-10 px-5 rounded-2xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs inline-flex items-center gap-2 shadow-xs transition cursor-pointer">
                 <i class="fa-solid fa-floppy-disk text-xs"></i>
-                {{ __('Save Gateway Settings') }}
+                {{ __('Save keys') }}
             </button>
 
             <div x-data="{ shown: false, timeout: null }"
@@ -401,7 +399,7 @@ new #[Title('DOKU Payment Gateway')] #[Layout('layouts.admin')] class extends Co
                  style="display: none;"
                  class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <i class="fa-solid fa-circle-check"></i>
-                {{ __('Gateway credentials and environment saved successfully.') }}
+                {{ __('Keys saved.') }}
             </div>
         </div>
     </form>

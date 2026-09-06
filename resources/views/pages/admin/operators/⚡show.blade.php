@@ -7,7 +7,9 @@ use App\Enums\ReservationStatus;
 use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Reservation;
 use App\Services\DomainResolverService;
+use App\Services\WalletService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -63,6 +65,51 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         $this->dispatch('operator-status-updated', ['name' => $this->operator->name, 'status' => 'Plan Updated']);
     }
 
+    /**
+     * Hold wallet money on a booking while a card fight is open.
+     */
+    public function holdBookingMoney(string $reservationId): void
+    {
+        $reservation = $this->operator->reservations()->with('latestPayment')->find($reservationId);
+
+        if (! $reservation) {
+            return;
+        }
+
+        $payment = $reservation->latestPayment;
+
+        if ($payment === null || $payment->status !== PaymentStatus::Paid) {
+            session()->flash('error', __('This booking has no paid guest payment to hold.'));
+
+            return;
+        }
+
+        app(WalletService::class)->holdDispute($reservation, (float) $payment->amount);
+        unset($this->recentReservations);
+        session()->flash('success', __('Money held until the card fight is finished.'));
+    }
+
+    /**
+     * Give held booking money back to the operator wallet.
+     */
+    public function releaseBookingMoney(string $reservationId): void
+    {
+        $reservation = $this->operator->reservations()->find($reservationId);
+
+        if (! $reservation) {
+            return;
+        }
+
+        app(WalletService::class)->releaseDispute($reservation);
+        unset($this->recentReservations);
+        session()->flash('success', __('Held money is back in the operator wallet.'));
+    }
+
+    public function heldMoneyFor(Reservation $reservation): float
+    {
+        return app(WalletService::class)->outstandingDisputeHold($reservation);
+    }
+
     #[Computed]
     public function totalRevenue(): float
     {
@@ -92,7 +139,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     {
         return $this->operator
             ->reservations()
-            ->with(['bookable', 'latestPayment'])
+            ->with(['bookable', 'latestPayment', 'walletTransactions'])
             ->latest('created_at')
             ->take(8)
             ->get();
@@ -142,7 +189,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
             <a href="{{ route('admin.operators.index') }}" wire:navigate
                 class="hover:text-[#8a7808] dark:hover:text-[#FFEF4D] font-semibold transition">
                 <i class="fa-solid fa-users-gear mr-1"></i>
-                {{ __('Operators Management') }}
+                {{ __('Operators') }}
             </a>
             <i class="fa-solid fa-chevron-right text-[10px] text-slate-300 dark:text-slate-600"></i>
             <span class="font-bold text-slate-900 dark:text-white truncate">{{ $operator->name }}</span>
@@ -170,6 +217,11 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                             class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
                             {{ $operator->plan?->name ?? __('Free Plan') }}
                         </span>
+                        @if ($operator->hasFeature('priority_support'))
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                {{ __('Faster help') }}
+                            </span>
+                        @endif
                     </div>
                     <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                         <span
@@ -182,11 +234,10 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
             <!-- Right: Primary Actions -->
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-                <button type="button" wire:click="manageOperator"
-                    class="h-9 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+                <x-button type="button" size="sm" wire:click="manageOperator">
                     <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
-                    <span>{{ __('Open Operator Portal') }}</span>
-                </button>
+                    <span>{{ __('Open their dashboard') }}</span>
+                </x-button>
 
                 <a href="{{ $this->storefrontUrl }}" target="_blank"
                     class="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-[#141821] border border-slate-200 dark:border-[#1e2433] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-200 font-bold text-xs shadow-xs transition">
@@ -222,7 +273,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         <div
             class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
             <span
-                class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Gross Sales Revenue') }}</span>
+                class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Guest payments') }}</span>
             <div class="text-2xl font-black text-slate-900 dark:text-white">
                 Rp {{ number_format($this->totalRevenue, 0, ',', '.') }}
             </div>
@@ -272,18 +323,18 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                             <i class="fa-solid fa-layer-group"></i>
                         </span>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                            {{ __('Subscription Tier & Economics') }}
+                            {{ __('Plan') }}
                         </h3>
                     </div>
                     <span
                         class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
-                        {{ $operator->getEffectiveCommissionRate() * 100 }}% {{ __('Take Rate') }}
+                        {{ __('Listed price stays with the operator') }}
                     </span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start pt-1">
                     <div class="space-y-1.5">
-                        <x-label :value="__('Current Subscription Plan')" class="text-xs" />
+                        <x-label :value="__('Current plan')" class="text-xs" />
                         <div class="h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-[#141821] border border-slate-200/80 dark:border-[#1e2433] flex items-center justify-between">
                             <span class="font-black text-sm text-slate-900 dark:text-white">
                                 {{ $operator->plan?->name ?? __('Free Tier') }}
@@ -297,7 +348,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                     </div>
 
                     <div class="space-y-1.5">
-                        <x-label for="plan_switch" :value="__('Change Subscription Plan')" class="text-xs" />
+                        <x-label for="plan_switch" :value="__('Change plan')" class="text-xs" />
                         <x-select
                             id="plan_switch"
                             wire:change="assignPlan($event.target.value)"
@@ -413,7 +464,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                                             {{ $prod->category }}
                                         </td>
                                         <td class="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
-                                            {{ $prod->capacity_per_day }} {{ __('pax/day') }}
+                                            {{ $prod->capacity_per_day }} {{ __('guests / day') }}
                                         </td>
                                         <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                                             @if ($prod->sellable_standalone)
@@ -448,10 +499,18 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                             <i class="fa-solid fa-receipt"></i>
                         </span>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                            {{ __('Recent Reservations History') }}
+                            {{ __('Recent bookings') }}
                         </h3>
                     </div>
                 </div>
+
+                @if (session('success'))
+                    <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{{ session('success') }}</p>
+                @endif
+
+                @if (session('error'))
+                    <p class="text-xs font-semibold text-rose-600 dark:text-rose-400">{{ session('error') }}</p>
+                @endif
 
                 @if ($this->recentReservations->isEmpty())
                     <p class="text-xs text-slate-400 py-4 text-center">
@@ -466,14 +525,19 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                                     <th class="py-3.5 px-4">{{ __('Bookable Item') }}</th>
                                     <th class="py-3.5 px-4">{{ __('Amount') }}</th>
                                     <th class="py-3.5 px-4 text-right">{{ __('Status') }}</th>
+                                    <th class="py-3.5 px-4 text-right">{{ __('Money') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
                                 @foreach ($this->recentReservations as $res)
-                                    <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
+                                    @php
+                                        $heldMoney = $this->heldMoneyFor($res);
+                                        $paidAmount = (float) ($res->latestPayment?->amount ?? $res->getTotalAmount());
+                                    @endphp
+                                    <tr wire:key="recent-reservation-{{ $res->id }}" class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
                                         <td class="py-3.5 px-4">
                                             <span class="font-mono text-[10px] font-bold text-[#FFEF4D] px-2 py-0.5 rounded-lg bg-[#FFEF4D]/10 border border-[#FFEF4D]/30">
-                                                #{{ $res->reservation_code }}
+                                                #{{ $res->code }}
                                             </span>
                                         </td>
                                         <td class="py-3.5 px-4 text-slate-900 dark:text-white font-medium">
@@ -483,13 +547,32 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                                             {{ $res->bookable?->title ?? ($res->bookable?->name ?? 'Item') }}
                                         </td>
                                         <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
-                                            Rp {{ number_format((float) $res->total_price, 0, ',', '.') }}
+                                            Rp {{ number_format($paidAmount, 0, ',', '.') }}
                                         </td>
                                         <td class="py-3.5 px-4 text-right">
                                             <span
                                                 class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
                                                 {{ $res->status->label() }}
                                             </span>
+                                        </td>
+                                        <td class="py-3.5 px-4 text-right">
+                                            @if ($heldMoney > 0)
+                                                <button
+                                                    type="button"
+                                                    wire:click="releaseBookingMoney('{{ $res->id }}')"
+                                                    class="h-8 px-2.5 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#1e2433] hover:bg-slate-200 dark:hover:bg-[#1e2433] cursor-pointer"
+                                                >
+                                                    {{ __('Give money back') }}
+                                                </button>
+                                            @elseif ($res->latestPayment?->status === PaymentStatus::Paid)
+                                                <button
+                                                    type="button"
+                                                    wire:click="holdBookingMoney('{{ $res->id }}')"
+                                                    class="h-8 px-2.5 rounded-lg text-[11px] font-bold bg-white dark:bg-[#0C0E13] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#1e2433] hover:bg-slate-50 dark:hover:bg-[#141821] cursor-pointer"
+                                                >
+                                                    {{ __('Hold money') }}
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -506,7 +589,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
             <div
                 class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {{ __('Owner & Notification Routing') }}
+                    {{ __('Who to email') }}
                 </h3>
 
                 <div class="space-y-3 text-xs">
@@ -566,14 +649,14 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
             <div
                 class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {{ __('Direct Bank Settlement Details') }}
+                    {{ __('Payout bank account') }}
                 </h3>
 
                 <div
                     class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-3 text-xs">
                     <div>
                         <span
-                            class="text-slate-400 block text-[10px] uppercase font-bold">{{ __('Bank Provider') }}</span>
+                            class="text-slate-400 block text-[10px] uppercase font-bold">{{ __('Bank') }}</span>
                         <span
                             class="font-bold text-slate-900 dark:text-white text-sm">{{ $operator->bank_provider ?? __('Not Set') }}</span>
                     </div>
@@ -587,7 +670,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
                     <div>
                         <span
-                            class="text-slate-400 block text-[10px] uppercase font-bold">{{ __('Beneficiary Account Name') }}</span>
+                            class="text-slate-400 block text-[10px] uppercase font-bold">{{ __('Name on the account') }}</span>
                         <span
                             class="font-bold text-slate-900 dark:text-white">{{ $operator->bank_account_name ?? '-' }}</span>
                     </div>
@@ -622,7 +705,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
             <div
                 class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {{ __('Storefront Capabilities') }}
+                    {{ __('Storefront') }}
                 </h3>
 
                 @php
@@ -643,9 +726,9 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-600 dark:text-slate-400">{{ __('BYO Gateway credentials:') }}</span>
+                        <span class="text-slate-600 dark:text-slate-400">{{ __('How guests pay:') }}</span>
                         <span
-                            class="font-bold text-slate-900 dark:text-white">{{ $operator->hasCustomPaymentGateway() ? __('Active Custom') : __('Platform Managed') }}</span>
+                            class="font-bold text-slate-900 dark:text-white">{{ __('Through EMVI') }}</span>
                     </div>
                 </div>
             </div>

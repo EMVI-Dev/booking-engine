@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <!-- SEO & Metadata -->
-    <title>{{ $package->title }} &bull; {{ $agent->name }} &bull; {{ config('app.name') }}</title>
+    <title>{{ $package->title }} &bull; {{ $agent->name }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
     <meta name="description"
         content="{{ Str::limit($package->description ?: __('Book :title with :agent. Official direct reservations with instant confirmation and locked rate.', ['title' => $package->title, 'agent' => $agent->name]), 160) }}" />
     <link rel="canonical" href="{{ route('storefront.package', $package->slug) }}" />
@@ -14,7 +14,9 @@
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
+    @if ($agent->showsPlatformBranding())
+        <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
+    @endif
     <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
     <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
     <!-- Favicon & Brand Icons -->
@@ -45,7 +47,7 @@
     <meta property="og:url" content="{{ route('storefront.package', $package->slug) }}" />
     <meta property="og:title" content="{{ $package->title }} — {{ $agent->name }}" />
     <meta property="og:description" content="{{ $ogDescription }}" />
-    <meta property="og:site_name" content="{{ $agent->name }} • {{ config('app.name') }}" />
+    <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
     <meta property="og:image" content="{{ $ogImageUrl }}" />
     <meta property="og:image:secure_url" content="{{ $ogImageUrl }}" />
     <meta property="og:image:alt" content="{{ $package->title }}" />
@@ -117,30 +119,7 @@
         {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
         </script>
 
-    <!-- Automated System Dark / Light Theme Sync -->
-    <script>
-        (function() {
-            function applySystemTheme() {
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
-            }
-            applySystemTheme();
-            if (window.matchMedia) {
-                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySystemTheme);
-            }
-        })();
-    </script>
-
-    @if (!empty($agent->brand_color))
-        <style>
-            :root {
-                --brand-color: {{ $agent->brand_color }};
-            }
-        </style>
-    @endif
+    @include('storefront.partials.brand-theme')
 
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -149,7 +128,7 @@
 </head>
 
 <body x-data="{ mobileBookingOpen: false, mobileMenuOpen: false }"
-    class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white overflow-x-clip w-full max-w-full">
+    class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
     @include('storefront.partials.navbar', ['bookAction' => true])
 
     <!-- Main Package Content -->
@@ -372,7 +351,7 @@
         </div>
 
         <button type="button" @click="mobileBookingOpen = true"
-            class="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-black text-xs sm:text-sm shadow-md shadow-brand-500/25 transition cursor-pointer shrink-0">
+            class="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-black text-xs sm:text-sm shadow-md shadow-brand-500/25 transition cursor-pointer shrink-0">
             <i class="fa-solid fa-calendar-check text-xs"></i>
             <span>{{ __('Book Now') }}</span>
         </button>

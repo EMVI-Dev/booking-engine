@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Concerns\SendsOperatorBrandedMail;
 use App\Models\Reservation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -12,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 
 class OperatorNewBookingNotificationMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SendsOperatorBrandedMail, SerializesModels;
 
     public function __construct(
         public Reservation $reservation
@@ -23,8 +24,10 @@ class OperatorNewBookingNotificationMail extends Mailable
         $code = $this->reservation->code ?: strtoupper(substr($this->reservation->id, -8));
         $guestName = $this->reservation->guest_name;
 
-        return new Envelope(
-            subject: "🎉 New Booking #{$code} - {$guestName} ({$this->reservation->pax_count} Pax)",
+        return $this->operatorBrandedEnvelope(
+            $this->reservation->operator,
+            "🎉 New Booking #{$code} - {$guestName} ({$this->reservation->pax_count} Pax)",
+            replyToOperator: false,
         );
     }
 

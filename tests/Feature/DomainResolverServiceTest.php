@@ -81,3 +81,84 @@ test('domain resolver resolves operator domain and clears cache on demand', func
     $service->clearOperatorDomainCache($operator);
     expect(true)->toBeTrue();
 });
+
+test('an apex address points here when its A record matches the platform number', function () {
+    $service = new DomainResolverService;
+
+    expect($service->recordsPointHere(
+        cnameTargets: [],
+        ipv4s: ['203.0.113.10'],
+        ipv6s: [],
+        targetHost: 'emvi.id',
+        platformIpv4: ['203.0.113.10'],
+    ))->toBeTrue();
+});
+
+test('a flattened alias points here when only A records remain', function () {
+    $service = new DomainResolverService;
+
+    expect($service->recordsPointHere(
+        cnameTargets: [],
+        ipv4s: ['203.0.113.10', '203.0.113.11'],
+        ipv6s: [],
+        targetHost: 'emvi.id',
+        platformIpv4: ['203.0.113.10'],
+    ))->toBeTrue();
+});
+
+test('an apex address points here when its AAAA record matches', function () {
+    $service = new DomainResolverService;
+
+    expect($service->recordsPointHere(
+        cnameTargets: [],
+        ipv4s: [],
+        ipv6s: ['2001:db8::10'],
+        targetHost: 'emvi.id',
+        platformIpv6: ['2001:db8::10'],
+    ))->toBeTrue();
+});
+
+test('a subdomain still points here with a CNAME and no A record', function () {
+    $service = new DomainResolverService;
+
+    expect($service->recordsPointHere(
+        cnameTargets: ['emvi.id'],
+        ipv4s: [],
+        ipv6s: [],
+        targetHost: 'emvi.id',
+        platformIpv4: ['203.0.113.10'],
+    ))->toBeTrue();
+});
+
+test('a custom address does not point here when CNAME and numbers both miss', function () {
+    $service = new DomainResolverService;
+
+    expect($service->recordsPointHere(
+        cnameTargets: ['somewhere-else.net'],
+        ipv4s: ['198.51.100.4'],
+        ipv6s: [],
+        targetHost: 'emvi.id',
+        platformIpv4: ['203.0.113.10'],
+    ))->toBeFalse();
+});
+
+test('configured platform ipv4 is listed for apex instructions', function () {
+    config(['domains.public_ipv4' => '203.0.113.10, 198.51.100.20']);
+
+    $service = new DomainResolverService;
+
+    expect($service->expectedPlatformIpv4())->toContain('203.0.113.10')
+        ->and($service->expectedPlatformIpv4())->toContain('198.51.100.20');
+});
+
+test('apex instructions print only the first configured number', function () {
+    config(['domains.public_ipv4' => '203.0.113.10, 198.51.100.20']);
+
+    expect((new DomainResolverService)->instructionIpv4())->toBe(['203.0.113.10']);
+});
+
+test('loopback is not printed as an apex target', function () {
+    config(['domains.public_ipv4' => '127.0.0.1']);
+
+    expect((new DomainResolverService)->instructionIpv4())->toBe([]);
+});

@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\DokuWebhookController;
+use App\Http\Controllers\CaddyAskController;
 use App\Http\Controllers\CalendarFeedController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\StorefrontController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +13,8 @@ Route::get('/', [StorefrontController::class, 'index'])->name('home');
 Route::get('/tours', [StorefrontController::class, 'allPackages'])->name('storefront.packages');
 Route::get('/services', [StorefrontController::class, 'allProducts'])->name('storefront.products');
 Route::get('/terms', [StorefrontController::class, 'showTerms'])->name('storefront.terms');
+Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/legal', [LegalController::class, 'terms'])->name('legal.terms');
 Route::get('/robots.txt', [StorefrontController::class, 'robots'])->name('storefront.robots');
 Route::get('/sitemap.xml', [StorefrontController::class, 'sitemap'])->name('storefront.sitemap');
 Route::get('/llms.txt', [StorefrontController::class, 'llmsTxt'])->name('storefront.llms');
@@ -18,15 +22,28 @@ Route::get('/llms-full.txt', [StorefrontController::class, 'llmsFullTxt'])->name
 Route::get('/checkout/simulate', [StorefrontController::class, 'simulatePayment'])->name('storefront.payment.simulate');
 Route::post('/checkout/simulate/confirm', [StorefrontController::class, 'confirmSimulatedPayment'])->name('storefront.payment.simulate.confirm');
 Route::get('/reservations/{reservation}/receipt', [StorefrontController::class, 'showReceipt'])->name('storefront.reservation.receipt');
+Route::get('/reservations/{reservation}/e-ticket', [StorefrontController::class, 'showTicket'])->name('storefront.reservation.ticket');
 Route::get('/reservations/{reservation}/pay', [StorefrontController::class, 'payReservation'])->name('storefront.reservation.pay');
+Route::post('/reservations/{reservation}/cancel', [StorefrontController::class, 'cancelReservation'])
+    ->middleware('throttle:10,1')
+    ->name('storefront.reservation.cancel');
+Route::get('/find-booking', [StorefrontController::class, 'findBooking'])->name('storefront.find-booking');
+Route::post('/find-booking', [StorefrontController::class, 'lookupBooking'])
+    ->middleware('throttle:10,1')
+    ->name('storefront.find-booking.lookup');
 
 // Live iCal Calendar Feed for Google / Apple / Outlook Subscriptions
 Route::get('/calendar/feed/{token}', [CalendarFeedController::class, 'feed'])->name('calendar.feed');
 
 // DOKU Webhook Notification Endpoint
 Route::post('/api/v1/payments/doku/notify', [DokuWebhookController::class, 'handleNotification'])
+    ->middleware('throttle:60,1')
     ->name('doku.webhook')
     ->withoutMiddleware([ValidateCsrfToken::class]);
+
+Route::get('/internal/caddy/ask', CaddyAskController::class)
+    ->middleware('throttle:60,1')
+    ->name('caddy.ask');
 
 // Agent Dashboard & Tour Operator Catalog Management
 Route::middleware(['auth', 'verified'])->group(function () {

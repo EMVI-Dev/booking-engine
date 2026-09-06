@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\ResolvesCurrentOperator;
 use App\Models\Operator;
 use App\Models\Plan;
 use App\Services\SubscriptionProrationService;
@@ -9,6 +10,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Component {
+    use ResolvesCurrentOperator;
     public ?string $active_plan_id = null;
     public string $billing_interval = 'monthly';
 
@@ -212,6 +214,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
      */
     public function confirmPlanSwitch(SubscriptionProrationService $prorationService): void
     {
+        $this->authorizeAbility('manageBilling');
+
         $operator = auth()->user()?->currentOperator();
         $targetPlan = $this->target_plan_id ? Plan::find($this->target_plan_id) : null;
 
@@ -340,7 +344,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-zinc-800">
         <div>
             <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
+                <span class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300">
                     <i class="fa-solid fa-crown text-lg"></i>
                 </span>
                 <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
@@ -453,6 +457,11 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 <p class="text-xs text-slate-500 dark:text-slate-400">
                     {{ $currentPlan->tagline ?: __('Standard tour operator plan.') }}
                 </p>
+                @if ($currentPlan->hasFeature('priority_support'))
+                    <p class="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                        {{ __('You get faster help from us on this plan.') }}
+                    </p>
+                @endif
             </div>
         </div>
 
@@ -469,9 +478,9 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
             </div>
             <div class="pl-4 border-l border-slate-200 dark:border-[#1e2433]">
                 <span
-                    class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Package Limit') }}</span>
+                    class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Listings') }}</span>
                 <span class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">
-                    {{ $currentPlan->package_limit ? __(':count Listings', ['count' => $currentPlan->package_limit]) : __('Unlimited') }}
+                    {{ $currentPlan->listingLimitLabel() }}
                 </span>
             </div>
         </div>
@@ -495,16 +504,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                 (!$agent->plan_id && $plan->slug === 'starter');
                             $priceMonthly = (float) $plan->price_monthly;
                             $priceYearly = (float) $plan->price_yearly;
-                            $currentRank = match ($currentPlan->slug) {
-                                'enterprise' => 3,
-                                'growth' => 2,
-                                default => 1,
-                            };
-                            $targetRank = match ($plan->slug) {
-                                'enterprise' => 3,
-                                'growth' => 2,
-                                default => 1,
-                            };
+                            $currentRank = $currentPlan->tierRank();
+                            $targetRank = $plan->tierRank();
                             $isUpgradeOption =
                                 $targetRank > $currentRank ||
                                 ($targetRank === $currentRank &&
@@ -588,26 +589,26 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                     @foreach ($plans as $plan)
                         <td
                             class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-[#1e2433] font-medium text-slate-600 dark:text-slate-300">
-                            {{ $plan->hasFeature('byo_gateway') ? __('0% (Direct BYO)') : __('5% Paid by Guest') }}
+                            {{ __('5% Paid by Guest') }}
                         </td>
                     @endforeach
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('Tour Package Listings Limit') }}</td>
+                        {{ __('Trips and activities you can list') }}</td>
                     @foreach ($plans as $plan)
                         <td
                             class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-[#1e2433] font-bold text-slate-900 dark:text-white">
-                            {{ $plan->package_limit ? __(':count Listings', ['count' => $plan->package_limit]) : __('Unlimited') }}
+                            {{ $plan->listingLimitLabel() }}
                         </td>
                     @endforeach
                 </tr>
                 <tr>
-                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('Team Staff Seats') }}</td>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('People on your team') }}</td>
                     @foreach ($plans as $plan)
                         <td
                             class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60 font-bold text-slate-900 dark:text-white">
-                            {{ __('Unlimited Staff') }}
+                            {{ $plan->teamSeatLabel() }}
                         </td>
                     @endforeach
                 </tr>
@@ -725,14 +726,10 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('BYO Custom Payment Gateway Keys') }}</td>
+                        {{ __('Checkout & payouts via EMVI wallet') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
-                            @if ($plan->hasFeature('byo_gateway'))
-                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
-                            @else
-                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
-                            @endif
+                            <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
                         </td>
                     @endforeach
                 </tr>
@@ -808,6 +805,32 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                     class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-[#090d16] dark:bg-purple-950 dark:text-purple-300">
                                     <i class="fa-solid fa-check text-[#090d16]"></i> {{ __('Included') }}
                                 </span>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
+                        {{ __('Hide our name on your booking page') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('remove_branding'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                            @else
+                                <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
+                        {{ __('Faster help from us') }}</td>
+                    @foreach ($plans as $plan)
+                        <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
+                            @if ($plan->hasFeature('priority_support'))
+                                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
                             @else
                                 <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
                             @endif

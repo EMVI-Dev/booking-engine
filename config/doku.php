@@ -40,4 +40,17 @@ return [
 
     'notification_path' => '/api/v1/payments/doku/notify',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Offline Payment Simulator
+    |--------------------------------------------------------------------------
+    |
+    | The simulator marks reservations as paid without money changing hands. It
+    | is therefore restricted to local/testing unless explicitly switched on for
+    | an offline demo deployment. Never enable this alongside live credentials.
+    |
+    */
+
+    'simulator_enabled' => env('DOKU_SIMULATOR_ENABLED'),
+
 ];

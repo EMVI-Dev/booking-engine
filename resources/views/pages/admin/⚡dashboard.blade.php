@@ -16,7 +16,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
     public string $period = '12m'; // '30d', '6m', '12m'
 
     #[Computed]
@@ -206,121 +206,74 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
     }
 }; ?>
 
-<div class="space-y-8">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
-                    <i class="fa-solid fa-chart-pie text-lg"></i>
-                </span>
-                <div>
-                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Platform Revenue & Financial Intelligence') }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                        {{ __('Aggregated gross merchandise volume (GMV), subscription MRR, and platform performance metrics.') }}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Time Range Selector -->
-        <div class="flex items-center gap-1.5 bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] p-1.5 rounded-2xl shadow-xs self-start sm:self-auto">
-            @php
-                $periods = [
-                    '30d' => __('30 Days'),
-                    '6m' => __('6 Months'),
-                    '12m' => __('12 Months'),
-                ];
-            @endphp
-            @foreach ($periods as $key => $label)
-                <button
-                    type="button"
-                    wire:click="$set('period', '{{ $key }}')"
-                    class="px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer {{ $period === $key ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-[#141721]' }}"
-                >
-                    {{ $label }}
-                </button>
-            @endforeach
-        </div>
+<div class="space-y-6">
+    <div class="op-hero">
+        <x-page-header
+            :title="__('Money overview')"
+            :subtitle="__('What guests paid, and what operators pay for their plans.')"
+            icon="fa-chart-pie"
+        >
+            <x-slot:actions>
+                <x-filter-tabs padded>
+                    <x-filter-tab wire:click="$set('period', '30d')" :active="$period === '30d'">
+                        {{ __('30 Days') }}
+                    </x-filter-tab>
+                    <x-filter-tab wire:click="$set('period', '6m')" :active="$period === '6m'">
+                        {{ __('6 Months') }}
+                    </x-filter-tab>
+                    <x-filter-tab wire:click="$set('period', '12m')" :active="$period === '12m'">
+                        {{ __('12 Months') }}
+                    </x-filter-tab>
+                </x-filter-tabs>
+            </x-slot:actions>
+        </x-page-header>
     </div>
 
-    <!-- Executive KPI Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Card 1: Total Platform GMV -->
-        <div class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Platform Gross GMV') }}</span>
-                <span class="w-8 h-8 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shadow-xs">
-                    <i class="fa-solid fa-coins"></i>
-                </span>
-            </div>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                Rp {{ number_format($this->totalGmv, 0, ',', '.') }}
-            </div>
-            <p class="text-xs text-slate-500 dark:text-zinc-400">
-                {{ __('All-time processed customer payments') }}
-            </p>
-        </div>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <x-metric-card
+            :label="__('All guest payments')"
+            :value="'Rp '.number_format($this->totalGmv, 0, ',', '.')"
+            :hint="__('Every paid booking, all time')"
+            icon="fa-coins"
+            tone="featured"
+        />
 
-        <!-- Card 2: Current Month GMV & Momentum -->
-        <div class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-emerald-500 shadow-xs space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Monthly Volume (MTD)') }}</span>
-                <span class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-black flex items-center justify-center text-xs">
-                    <i class="fa-solid fa-calendar-check"></i>
-                </span>
-            </div>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                Rp {{ number_format($this->currentMonthGmv, 0, ',', '.') }}
-            </div>
-            <div class="flex items-center gap-1.5 text-xs">
+        <x-metric-card
+            :label="__('This month')"
+            :value="'Rp '.number_format($this->currentMonthGmv, 0, ',', '.')"
+            icon="fa-calendar-check"
+            tone="success"
+        >
+            <x-slot:meta>
                 @if ($this->mtdGrowthPercentage >= 0)
-                    <span class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                    <span class="font-semibold text-emerald-600 dark:text-emerald-400">
                         <i class="fa-solid fa-arrow-trend-up"></i> +{{ $this->mtdGrowthPercentage }}%
                     </span>
                 @else
-                    <span class="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-0.5">
+                    <span class="font-semibold text-rose-600 dark:text-rose-400">
                         <i class="fa-solid fa-arrow-trend-down"></i> {{ $this->mtdGrowthPercentage }}%
                     </span>
                 @endif
-                <span class="text-slate-400">{{ __('vs previous month') }}</span>
-            </div>
-        </div>
+                <span>{{ __('vs previous month') }}</span>
+            </x-slot:meta>
+        </x-metric-card>
 
-        <!-- Card 3: Active MRR -->
-        <div class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Subscription MRR') }}</span>
-                <span class="w-8 h-8 rounded-xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 font-black flex items-center justify-center text-xs">
-                    <i class="fa-solid fa-repeat"></i>
-                </span>
-            </div>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                Rp {{ number_format($this->currentMrr, 0, ',', '.') }}
-            </div>
-            <p class="text-xs text-slate-500 dark:text-zinc-400">
-                {{ __('Contracted recurring plan revenue / month') }}
-            </p>
-        </div>
+        <x-metric-card
+            :label="__('Plan fees this month')"
+            :value="'Rp '.number_format($this->currentMrr, 0, ',', '.')"
+            :hint="__('What operators pay for Pro and Agency')"
+            icon="fa-repeat"
+            :href="route('admin.plans.index')"
+        />
 
-        <!-- Card 4: Live Tour Operators -->
-        <div class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-sky-500 shadow-xs space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{{ __('Live Operators') }}</span>
-                <span class="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-black flex items-center justify-center text-xs">
-                    <i class="fa-solid fa-users-gear"></i>
-                </span>
-            </div>
-            <div class="flex items-baseline gap-2">
-                <span class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $this->approvedOperatorsCount }}</span>
-                <span class="text-xs font-bold text-slate-500 dark:text-zinc-400">/ {{ $this->totalOperatorsCount }} {{ __('registered') }}</span>
-            </div>
-            <p class="text-xs text-slate-500 dark:text-zinc-400">
-                {{ __('Approved operator storefronts selling actively') }}
-            </p>
-        </div>
+        <x-metric-card
+            :label="__('Operators')"
+            :value="$this->approvedOperatorsCount"
+            :suffix="'/ '.$this->totalOperatorsCount.' '.__('total')"
+            :hint="__('Approved and selling')"
+            icon="fa-users-gear"
+            :href="route('admin.operators.index')"
+        />
     </div>
 
     <!-- Monthly GMV Trend Visualizer -->
@@ -329,16 +282,16 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
             <div>
                 <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                     <i class="fa-solid fa-chart-column text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                    {{ __('Gross Merchandise Volume (GMV) Trend') }}
+                    {{ __('Payments over time') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Monthly transaction volume trajectory over the selected period.') }}
+                    {{ __('How much guests paid each month.') }}
                 </p>
             </div>
             <div class="flex items-center gap-4 text-xs font-semibold">
                 <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                     <span class="w-3 h-3 rounded bg-[#FFEF4D] inline-block"></span>
-                    {{ __('Reservation GMV') }}
+                    {{ __('Bookings') }}
                 </span>
             </div>
         </div>
@@ -386,10 +339,10 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
                 <div>
                     <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                         <i class="fa-solid fa-trophy text-amber-500"></i>
-                        {{ __('Top Performing Operators') }}
+                        {{ __('Top operators') }}
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        {{ __('Ranked by all-time processed gross volume.') }}
+                        {{ __('Who has taken the most guest payments.') }}
                     </p>
                 </div>
                 <a href="{{ route('admin.operators.index') }}" wire:navigate class="text-xs font-bold text-[#8a7808] dark:text-[#FFEF4D] hover:underline">
@@ -439,10 +392,10 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
             <div class="pb-3 border-b border-slate-100 dark:border-[#1e2433]">
                 <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                     <i class="fa-solid fa-layer-group text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                    {{ __('Plan Subscriptions') }}
+                    {{ __('Plans') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Active operator tier distribution.') }}
+                    {{ __('How many operators are on each plan.') }}
                 </p>
             </div>
 
@@ -472,7 +425,7 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
             <div class="pt-2">
                 <a href="{{ route('admin.plans.index') }}" wire:navigate class="w-full h-9 flex items-center justify-center rounded-xl bg-[#FFEF4D]/15 hover:bg-[#FFEF4D]/25 text-[#8a7808] dark:text-[#FFEF4D] text-xs font-bold transition border border-[#FFEF4D]/30">
                     <i class="fa-solid fa-sliders mr-1.5 text-xs"></i>
-                    {{ __('Manage Subscription Tiers') }}
+                    {{ __('Edit plans') }}
                 </a>
             </div>
         </div>
@@ -484,10 +437,10 @@ new #[Title('Platform Revenue & Executive Dashboard')] #[Layout('layouts.admin')
             <div>
                 <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                     <i class="fa-solid fa-receipt text-emerald-500"></i>
-                    {{ __('Recent Processed Payments') }}
+                    {{ __('Recent payments') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Real-time transaction feed across all operator storefronts.') }}
+                    {{ __('Latest guest payments across all operators.') }}
                 </p>
             </div>
             <a href="{{ route('admin.payouts.index') }}" wire:navigate class="text-xs font-bold text-[#8a7808] dark:text-[#FFEF4D] hover:underline">

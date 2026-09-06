@@ -7,200 +7,149 @@
 </head>
 
 <body
-    class="min-h-screen bg-slate-50 dark:bg-[#0D0E12] text-slate-900 dark:text-slate-100 flex selection:bg-[#FFEF4D] selection:text-[#090d16] antialiased"
+    class="op-shell op-palette-ebony flex min-h-dvh flex-col bg-canvas text-stone-900 antialiased selection:bg-brand-400 selection:text-brand-foreground dark:bg-canvas-dark dark:text-zinc-100"
     x-data="{ sidebarOpen: false }">
-    <!-- Mobile Sidebar Backdrop -->
+    <a href="#main-content"
+        class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-slate-900 focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-brand-500">
+        {{ __('Skip to main content') }}
+    </a>
+
+    <x-toast />
+
     <div x-show="sidebarOpen" x-cloak x-on:click="sidebarOpen = false"
-        class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden"></div>
+        class="fixed inset-0 z-40 bg-[#12181E]/60 backdrop-blur-xs lg:hidden"></div>
 
     @php
         $platform = \App\Models\PlatformSetting::current();
         $dokuMode = $platform->getDokuMode();
         $totalOperators = \App\Models\Operator::count();
+        $pendingPayouts = \App\Models\PayoutRequest::where('status', \App\Enums\PayoutStatus::Pending)->count();
+        $activeAnnouncements = \App\Models\PlatformAnnouncement::active()->count();
     @endphp
 
-    <!-- Sticky Desktop Sidebar / Slide-over Mobile Sidebar -->
-    <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-        class="fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white dark:bg-[#090B10] border-r border-slate-200/80 dark:border-[#1e2433] transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 shrink-0 select-none">
-        
-        <!-- Platform Admin Header (Fixed 64px) -->
-        <div class="h-16 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-[#1e2433] shrink-0 bg-slate-100/50 dark:bg-[#090B10]">
-            <a href="{{ route('admin.platform.edit') }}" class="flex items-center gap-3 font-semibold text-sm group min-w-0" wire:navigate>
-                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#090d16] font-black text-sm shadow-xs group-hover:scale-105 transition-transform duration-200 shrink-0">
-                    <i class="fa-solid fa-compass text-lg"></i>
+    <div class="flex min-h-0 w-full flex-1">
+    <aside
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        class="op-sidebar fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 select-none flex-col border-r border-op-line bg-op-sidebar transition-transform duration-200 ease-in-out print:hidden lg:sticky lg:top-0 lg:translate-x-0"
+    >
+        <div class="flex h-16 shrink-0 items-center justify-between border-b border-op-line px-4">
+            <a href="{{ route('admin.dashboard') }}" class="group flex min-w-0 items-center gap-3 text-sm font-semibold" wire:navigate>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-400 text-sm font-bold text-brand-foreground">
+                    <i class="fa-solid fa-compass"></i>
                 </span>
-                <div class="flex flex-col min-w-0">
-                    <span class="font-bold text-sm truncate text-slate-900 dark:text-white leading-tight">
-                        {{ config('app.name', 'TravelEngine') }} <span class="text-[#8a7808] dark:text-[#FFEF4D] font-extrabold">Admin</span>
+                <div class="flex min-w-0 flex-col">
+                    <span class="truncate text-sm font-bold leading-tight text-op-ink">
+                        {{ config('app.name', 'TravelEngine') }}
                     </span>
-                    <span class="text-[10px] text-[#8a7808] dark:text-[#FFEF4D] font-bold uppercase tracking-wider">
-                        {{ __('Platform Master') }}
+                    <span class="truncate text-[11px] font-normal text-op-subtle">
+                        {{ __('Admin') }}
                     </span>
                 </div>
             </a>
             <button x-on:click="sidebarOpen = false" type="button"
-                class="lg:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg">
+                class="rounded-lg p-1.5 text-op-subtle hover:text-op-ink lg:hidden">
                 <i class="fa-solid fa-xmark text-base"></i>
             </button>
         </div>
 
-        <!-- Navigation Links -->
-        <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-            <!-- Section 1: Overview & Merchants -->
-            <div class="space-y-1">
-                <p class="px-3 text-xs font-bold tracking-wider uppercase text-slate-500 dark:text-zinc-400">
-                    {{ __('Overview & Merchants') }}
-                </p>
+        <nav class="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4 select-none">
+            <x-nav-section :title="__('Overview')">
+                <x-nav-link :href="route('admin.dashboard')" icon="fa-chart-pie" :active="request()->routeIs('admin.dashboard')">
+                    {{ __('Dashboard') }}
+                </x-nav-link>
 
-                <a href="{{ route('admin.dashboard') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.dashboard') ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#141821] hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-chart-pie w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.dashboard') ? 'text-[#090d16]' : 'text-slate-400 dark:text-zinc-400' }}"></i>
-                    <span class="truncate">{{ __('Revenue Dashboard') }}</span>
-                </a>
+                <x-nav-link :href="route('admin.operators.index')" icon="fa-users-gear" :active="request()->routeIs('admin.operators.*')" :badge="$totalOperators">
+                    {{ __('Operators') }}
+                </x-nav-link>
+            </x-nav-section>
 
-                <a href="{{ route('admin.operators.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.operators.*') ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#141821] hover:text-slate-900 dark:hover:text-white' }}">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <i class="fa-solid fa-users-gear w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.operators.*') ? 'text-[#090d16]' : 'text-slate-400 dark:text-zinc-400' }}"></i>
-                        <span class="truncate">{{ __('Operators Directory') }}</span>
-                    </div>
-                    @if ($totalOperators > 0)
-                        <span class="h-5 px-2 text-xs font-black flex items-center justify-center rounded-full {{ request()->routeIs('admin.operators.*') ? 'bg-[#090d16] text-[#FFEF4D]' : 'bg-[#FFEF4D]/20 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30' }} shrink-0">
-                            {{ $totalOperators }}
-                        </span>
-                    @endif
-                </a>
-            </div>
+            <x-nav-section :title="__('Money')">
+                <x-nav-link :href="route('admin.plans.index')" icon="fa-layer-group" :active="request()->routeIs('admin.plans.*')">
+                    {{ __('Plans') }}
+                </x-nav-link>
 
-            <!-- Section 2: Finance & Commercial -->
-            <div class="space-y-1">
-                <p class="px-3 text-xs font-bold tracking-wider uppercase text-slate-500 dark:text-zinc-400">
-                    {{ __('Finance & Commercial') }}
-                </p>
+                <x-nav-link :href="route('admin.payouts.index')" icon="fa-money-bill-transfer" :active="request()->routeIs('admin.payouts.*')" :badge="$pendingPayouts">
+                    {{ __('Payouts') }}
+                </x-nav-link>
 
-                <a href="{{ route('admin.plans.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.plans.*') ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#141821] hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-layer-group w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.plans.*') ? 'text-[#090d16]' : 'text-slate-400 dark:text-zinc-400' }}"></i>
-                    <span class="truncate">{{ __('Subscription Plans') }}</span>
-                </a>
+                <x-nav-link :href="route('admin.coupons.index')" icon="fa-ticket" :active="request()->routeIs('admin.coupons.*')">
+                    {{ __('Coupons') }}
+                </x-nav-link>
 
-                <a href="{{ route('admin.payouts.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.payouts.*') ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#141821] hover:text-slate-900 dark:hover:text-white' }}">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <i class="fa-solid fa-money-bill-transfer w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.payouts.*') ? 'text-[#090d16]' : 'text-slate-400 dark:text-zinc-400' }}"></i>
-                        <span class="truncate">{{ __('Payout Requests') }}</span>
-                    </div>
-                    @php
-                        $pendingPayouts = \App\Models\PayoutRequest::where('status', \App\Enums\PayoutStatus::Pending)->count();
-                    @endphp
-                    @if ($pendingPayouts > 0)
-                        <span class="h-5 px-2 text-xs font-black flex items-center justify-center rounded-full bg-[#FFEF4D] text-[#090d16] shrink-0 shadow-xs">
-                            {{ $pendingPayouts }}
-                        </span>
-                    @endif
-                </a>
+                <x-nav-link :href="route('admin.payments.index')" icon="fa-credit-card" :active="request()->routeIs('admin.payments.*')">
+                    {{ __('Guest payments') }}
+                </x-nav-link>
+            </x-nav-section>
 
-                <a href="{{ route('admin.coupons.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.coupons.*') ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#141821] hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-ticket w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.coupons.*') ? 'text-[#090d16]' : 'text-slate-400 dark:text-zinc-400' }}"></i>
-                    <span class="truncate">{{ __('Promo Codes') }}</span>
-                </a>
+            <x-nav-section :title="__('Platform')">
+                <x-nav-link :href="route('admin.announcements.index')" icon="fa-bullhorn" :active="request()->routeIs('admin.announcements.*')" :badge="$activeAnnouncements">
+                    {{ __('Notices') }}
+                </x-nav-link>
 
-                <a href="{{ route('admin.payments.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.payments.*') ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#141821] hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-credit-card w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.payments.*') ? 'text-[#090d16]' : 'text-slate-400 dark:text-zinc-400' }}"></i>
-                    <span class="truncate">{{ __('Payment Gateway') }}</span>
-                </a>
-            </div>
+                <x-nav-link :href="route('admin.platform.edit')" icon="fa-sliders" :active="request()->routeIs('admin.platform.*')">
+                    {{ __('Settings') }}
+                </x-nav-link>
+            </x-nav-section>
 
-            <!-- Section 3: Platform Config -->
-            <div class="space-y-1">
-                <p class="px-3 text-xs font-bold tracking-wider uppercase text-slate-500 dark:text-zinc-400">
-                    {{ __('Platform Config') }}
-                </p>
-
-                <a href="{{ route('admin.announcements.index') }}" wire:navigate
-                    class="h-10 px-3 flex items-center justify-between rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.announcements.*') ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#141821] hover:text-slate-900 dark:hover:text-white' }}">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <i class="fa-solid fa-bullhorn w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.announcements.*') ? 'text-[#090d16]' : 'text-slate-400 dark:text-zinc-400' }}"></i>
-                        <span class="truncate">{{ __('Broadcast Notices') }}</span>
-                    </div>
-                    @php
-                        $activeAnnouncements = \App\Models\PlatformAnnouncement::active()->count();
-                    @endphp
-                    @if ($activeAnnouncements > 0)
-                        <span class="h-5 px-2 text-xs font-black flex items-center justify-center rounded-full {{ request()->routeIs('admin.announcements.*') ? 'bg-[#090d16] text-[#FFEF4D]' : 'bg-[#FFEF4D]/20 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30' }} shrink-0">
-                            {{ $activeAnnouncements }}
-                        </span>
-                    @endif
-                </a>
-
-                <a href="{{ route('admin.platform.edit') }}" wire:navigate
-                    class="h-10 px-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.platform.*') ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#141821] hover:text-slate-900 dark:hover:text-white' }}">
-                    <i class="fa-solid fa-sliders w-5 text-center text-sm shrink-0 {{ request()->routeIs('admin.platform.*') ? 'text-[#090d16]' : 'text-slate-400 dark:text-zinc-400' }}"></i>
-                    <span class="truncate">{{ __('Platform Settings') }}</span>
-                </a>
-            </div>
-
-            <!-- Section: System Health & Gateway State -->
-            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] space-y-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Gateway Status') }}</span>
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">DOKU Gateway</span>
-                    <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full {{ $dokuMode->value === 'live' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' }}">
-                        <span class="w-1.5 h-1.5 rounded-full {{ $dokuMode->value === 'live' ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
-                        {{ strtoupper($dokuMode->value) }}
+            <div class="rounded-xl bg-white/5 p-3">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-op-subtle">{{ __('Checkout') }}</p>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold text-op-ink">{{ __('Guest checkout') }}</span>
+                    <span @class([
+                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                        'bg-emerald-400/15 text-emerald-300' => $dokuMode->value === 'live',
+                        'bg-amber-400/15 text-amber-300' => $dokuMode->value !== 'live',
+                    ])>
+                        <span @class([
+                            'h-1.5 w-1.5 rounded-full',
+                            'bg-emerald-400' => $dokuMode->value === 'live',
+                            'bg-amber-400' => $dokuMode->value !== 'live',
+                        ])></span>
+                        {{ $dokuMode->value === 'live' ? __('Live') : __('Test') }}
                     </span>
                 </div>
             </div>
         </nav>
 
-        <!-- Sidebar Footer: Switch Portal & Profile -->
-        <div class="p-3 border-t border-slate-200/80 dark:border-[#1e2433] space-y-2 shrink-0 bg-white dark:bg-[#090B10]">
-            <!-- Switch to Operator Portal Button -->
+        <div class="relative z-20 shrink-0 p-3">
             <a href="{{ route('dashboard') }}" wire:navigate
-                class="h-9 px-3 flex items-center justify-between rounded-xl text-xs font-bold bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 transition-colors border border-slate-200 dark:border-[#1e2433] shadow-xs">
-                <span class="flex items-center gap-2">
-                    <i class="fa-solid fa-arrow-right-arrow-left text-xs text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                    <span>{{ __('Switch to Operator Portal') }}</span>
-                </span>
-                <i class="fa-solid fa-arrow-right text-[10px] text-slate-400"></i>
+                class="mb-2 flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-white/5 text-xs font-semibold text-op-ink hover:bg-white/10">
+                <i class="fa-solid fa-arrow-right-arrow-left text-xs"></i>
+                <span>{{ __('Operator Portal') }}</span>
             </a>
 
-            <!-- Admin Profile & Logout Dropdown -->
-            <x-dropdown position="top" class="w-full">
+            <x-dropdown align="top" width="full">
                 <x-slot name="trigger">
                     <button type="button"
-                        class="w-full h-12 p-2 flex items-center gap-3 rounded-xl hover:bg-slate-100 dark:hover:bg-[#141821] transition-colors text-left cursor-pointer">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFEF4D] text-[#090d16] font-black text-xs shadow-xs shrink-0">
+                        class="group flex w-full cursor-pointer items-center gap-2.5 rounded-xl bg-white/5 p-2.5 text-start hover:bg-white/10">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-400 text-xs font-bold text-brand-foreground">
                             {{ auth()->user()?->initials() ?? 'AD' }}
-                        </span>
-                        <div class="flex flex-col min-w-0 flex-1">
-                            <span class="font-bold text-xs truncate text-slate-900 dark:text-white leading-tight">
-                                {{ auth()->user()?->name ?? 'Platform Admin' }}
-                            </span>
-                            <span class="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
-                                {{ auth()->user()?->email }}
-                            </span>
                         </div>
-                        <i class="fa-solid fa-ellipsis-vertical text-slate-400 text-xs shrink-0 pr-1"></i>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-semibold leading-tight text-op-ink">
+                                {{ auth()->user()?->name ?? 'Platform Admin' }}
+                            </p>
+                            <p class="mt-0.5 truncate text-xs leading-tight text-op-subtle">
+                                {{ auth()->user()?->email }}
+                            </p>
+                        </div>
+                        <i class="fa-solid fa-chevron-up shrink-0 text-[10px] text-op-subtle"></i>
                     </button>
                 </x-slot>
-
                 <x-slot name="content">
                     <x-dropdown-item :href="route('admin.profile.edit')" wire:navigate>
-                        <i class="fa-solid fa-user-shield mr-2 text-[#8a7808] dark:text-[#FFEF4D] text-xs"></i>
-                        {{ __('Admin Profile & Security') }}
+                        <i class="fa-solid fa-user-shield mr-2 text-xs text-op-subtle"></i>
+                        {{ __('Your profile') }}
                     </x-dropdown-item>
                     <x-dropdown-item :href="route('appearance.edit')" wire:navigate>
-                        <i class="fa-solid fa-circle-half-stroke mr-2 text-[#8a7808] dark:text-[#FFEF4D] text-xs"></i>
-                        {{ __('Appearance & Theme') }}
+                        <i class="fa-solid fa-circle-half-stroke mr-2 text-xs text-op-subtle"></i>
+                        {{ __('Appearance') }}
                     </x-dropdown-item>
-                    <div class="border-t border-slate-100 dark:border-[#1e2433] my-1"></div>
+                    <div class="my-1 border-t border-op-line"></div>
                     <form method="POST" action="{{ route('logout') }}" class="w-full">
                         @csrf
                         <x-dropdown-item>
-                            <i class="fa-solid fa-right-from-bracket mr-2 text-rose-500 text-xs"></i>
+                            <i class="fa-solid fa-right-from-bracket mr-2 text-xs text-rose-500"></i>
                             {{ __('Log Out') }}
                         </x-dropdown-item>
                     </form>
@@ -209,44 +158,31 @@
         </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0">
-        <!-- Mobile Header -->
-        <header
-            class="h-16 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-[#1e2433] lg:hidden bg-white/90 dark:bg-[#090B10]/90 backdrop-blur-md sticky top-0 z-30">
+    <div class="flex min-w-0 flex-1 flex-col">
+        <header class="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-op-line px-4 lg:hidden">
             <button x-on:click="sidebarOpen = true" type="button"
-                class="h-10 w-10 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-[#141821] cursor-pointer">
+                class="flex h-10 w-10 items-center justify-center rounded-xl text-op-subtle hover:bg-op-muted hover:text-op-ink">
                 <i class="fa-solid fa-bars text-base"></i>
             </button>
-            <span class="font-bold text-sm text-slate-900 dark:text-white truncate px-2">
-                {{ __('Platform Administration') }}
+            <span class="truncate px-2 text-sm font-bold text-op-ink">
+                {{ __('Admin') }}
             </span>
             <div class="w-10"></div>
         </header>
 
-        <main class="flex-1 px-3 py-4 sm:p-6 lg:p-8 overflow-y-auto w-full">
+        <main id="main-content" tabindex="-1" class="w-full flex-1 overflow-y-auto px-3 py-4 sm:p-6 lg:p-8">
             <div class="mx-auto w-full max-w-7xl">
                 {{ $slot }}
             </div>
         </main>
 
-        <!-- Platform Master Sticky Footer -->
-        <footer class="sticky bottom-0 z-30 border-t border-slate-200/80 dark:border-[#1e2433] bg-white/95 dark:bg-[#090B10]/95 backdrop-blur-md py-3 sm:py-3.5 px-4 sm:px-6 lg:px-8 mt-auto shadow-md select-none">
-            <div class="mx-auto w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
-                <div class="flex items-center gap-2 text-center sm:text-left">
-                    <span class="font-bold text-slate-800 dark:text-slate-200">EMVI Platform Master Engine</span>
-                    <span class="text-slate-300 dark:text-zinc-700">&bull;</span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
-                        <span class="w-1.5 h-1.5 rounded-full bg-[#FFEF4D] animate-pulse"></span>
-                        v1.0.0 Stable
-                    </span>
-                </div>
-
-                <div class="flex items-center gap-3 text-center sm:text-right">
-                    <span>&copy; {{ date('Y') }} EMVI Infrastructure &bull; All Rights Reserved</span>
-                </div>
+        <footer class="mt-auto border-t border-op-line px-4 py-3 text-xs text-op-subtle sm:px-6 lg:px-8">
+            <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 sm:flex-row">
+                <span class="font-semibold text-op-ink">EMVI</span>
+                <span>&copy; {{ date('Y') }}</span>
             </div>
         </footer>
+    </div>
     </div>
     @livewireScripts
 </body>

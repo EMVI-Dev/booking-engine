@@ -31,6 +31,11 @@
                 <i class="fa-solid fa-compass text-[11px] text-slate-400"></i>
                 <span>{{ __('Single Activities') }}</span>
             </a>
+            <a href="{{ route('storefront.find-booking') }}"
+                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-ticket text-[11px] text-slate-400"></i>
+                <span>{{ __('Find Booking') }}</span>
+            </a>
             <a href="{{ route('storefront.terms') }}"
                 class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-shield-halved text-[11px] text-slate-400"></i>
@@ -50,6 +55,7 @@
             class="text-[11px] text-slate-400 dark:text-slate-500 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
             <span>&copy; {{ date('Y') }} <strong
                     class="text-slate-700 dark:text-slate-300 font-bold">{{ $agent->name }}</strong></span>
+            @if ($agent->showsPlatformBranding())
             <span>&bull;</span>
             <span>{{ __('Powered by') }}
                 <a href="https://{{ $platformDomain }}" target="_blank" rel="noopener"
@@ -58,6 +64,7 @@
                     {{ config('app.name', 'TravelEngine') }}
                 </a>
             </span>
+            @endif
         </div>
     </div>
 </footer>

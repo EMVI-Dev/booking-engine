@@ -170,6 +170,8 @@ new #[Title('Wallet & Payouts')] class extends Component {
 
     public function submitPayoutRequest(WalletService $walletService): void
     {
+        $this->authorizeAbility('manageWallet');
+
         $agent = $this->currentOperator;
         if (!$agent) {
             return;
@@ -199,37 +201,22 @@ new #[Title('Wallet & Payouts')] class extends Component {
 }; ?>
 
 <div class="space-y-6 max-w-7xl mx-auto">
-    <!-- Top Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
-                    <i class="fa-solid fa-wallet text-lg"></i>
-                </span>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Wallet & Payouts') }}
-                </h1>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-                {{ __('Track gross booking earnings, automated escrow releases, platform commissions, and bank disbursements.') }}
-            </p>
-        </div>
-
-        <!-- Header Actions -->
-        <div class="flex items-center gap-2.5">
-            <a href="{{ route('payments.edit') }}" wire:navigate
-                class="h-10 px-3.5 inline-flex items-center gap-2 rounded-xl bg-white dark:bg-[#0C0E13] border border-slate-200 dark:border-[#1e2433] hover:border-slate-300 dark:hover:border-[#262d3d] text-slate-700 dark:text-slate-300 text-xs font-bold transition shadow-2xs">
-                <i class="fa-solid fa-building-columns text-slate-400 text-xs"></i>
+    <x-page-header
+        :title="__('Wallet & Payouts')"
+        :subtitle="__('Track gross booking earnings, automated escrow releases, platform commissions, and bank disbursements.')"
+        icon="fa-wallet"
+    >
+        <x-slot:actions>
+            <x-button :href="route('payments.edit')" variant="secondary" wire:navigate>
+                <i class="fa-solid fa-building-columns text-xs"></i>
                 <span>{{ __('Bank Settings') }}</span>
-            </a>
-
-            <button type="button" wire:click="openPayoutModal"
-                class="h-10 px-4 inline-flex items-center gap-2 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] active:bg-[#fae639] text-[#090d16] text-xs font-black shadow-xs transition-all cursor-pointer">
+            </x-button>
+            <x-button type="button" wire:click="openPayoutModal">
                 <i class="fa-solid fa-arrow-up-from-bracket text-xs"></i>
                 <span>{{ __('Request Payout') }}</span>
-            </button>
-        </div>
-    </div>
+            </x-button>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Bank Account Status Banner -->
     @if ($this->currentOperator && !$this->currentOperator->hasValidBankAccount())
@@ -406,12 +393,12 @@ new #[Title('Wallet & Payouts')] class extends Component {
             <!-- Tabs Switcher -->
             <div class="flex items-center gap-2">
                 <button type="button" wire:click="switchTab('ledger')"
-                    class="h-10 px-4 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer {{ $activeTab === 'ledger' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'bg-slate-100 dark:bg-[#141721] text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#262d3d]' }}">
+                    class="h-10 px-4 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer {{ $activeTab === 'ledger' ? 'bg-amber-50 text-stone-900 dark:bg-amber-400/10 dark:text-amber-50' : 'bg-slate-100 dark:bg-[#141721] text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#262d3d]' }}">
                     <i class="fa-solid fa-list-check text-xs"></i>
                     <span>{{ __('Earnings & Ledger') }}</span>
                 </button>
                 <button type="button" wire:click="switchTab('payouts')"
-                    class="h-10 px-4 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer {{ $activeTab === 'payouts' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'bg-slate-100 dark:bg-[#141721] text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#262d3d]' }}">
+                    class="h-10 px-4 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer {{ $activeTab === 'payouts' ? 'bg-amber-50 text-stone-900 dark:bg-amber-400/10 dark:text-amber-50' : 'bg-slate-100 dark:bg-[#141721] text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#262d3d]' }}">
                     <i class="fa-solid fa-clock-rotate-left text-xs"></i>
                     <span>{{ __('Payout Requests') }}</span>
                 </button>
@@ -883,6 +870,9 @@ new #[Title('Wallet & Payouts')] class extends Component {
                                         100% (Max)
                                     </button>
                                 </div>
+                                <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                    {{ __('Payouts of Rp 500.000 or more have no transfer fee. Smaller payouts include Rp 2.500.') }}
+                                </p>
                                 <x-input-error :messages="$errors->get('payoutAmount')" />
                                 <x-input-error :messages="$errors->get('bank')" />
                                 <x-input-error :messages="$errors->get('amount')" />

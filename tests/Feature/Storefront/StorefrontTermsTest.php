@@ -21,5 +21,19 @@ test('storefront terms and policies page is accessible on operator subdomain', f
         ->assertOk()
         ->assertSee('Island Cruises Co')
         ->assertSee('Official cancellation policy: 24-hour notice required.')
-        ->assertSee('Official Direct Booking Policies');
+        ->assertSee('Official Direct Booking Policies')
+        ->assertSee('same payment method')
+        ->assertSee('Platform privacy');
+});
+
+test('platform privacy and terms pages are public', function () {
+    $this->get(route('legal.privacy'))
+        ->assertOk()
+        ->assertSee('Privacy')
+        ->assertSee('UU PDP');
+
+    $this->get(route('legal.terms'))
+        ->assertOk()
+        ->assertSee('Platform terms')
+        ->assertSee('guest service fee');
 });

@@ -28,6 +28,9 @@ class OperatorFactory extends Factory
             'billing_email' => fake()->safeEmail(),
             'status' => OperatorStatus::Approved,
             'terms_and_conditions' => 'Standard tour operator terms and conditions.',
+            'bank_provider' => 'BCA',
+            'bank_account_name' => fake()->name(),
+            'bank_account_number' => fake()->numerify('##########'),
             'bank_account_ref' => 'ID_BANK_'.fake()->numerify('##########'),
             'logo_path' => null,
             'favicon_path' => null,
@@ -51,6 +54,19 @@ class OperatorFactory extends Factory
     {
         return $this->state(fn () => [
             'status' => OperatorStatus::Suspended,
+        ]);
+    }
+
+    public function incompleteSetup(): static
+    {
+        return $this->state(fn () => [
+            'bio' => null,
+            'contact_whatsapp' => null,
+            'terms_and_conditions' => null,
+            'bank_provider' => null,
+            'bank_account_name' => null,
+            'bank_account_number' => null,
+            'bank_account_ref' => null,
         ]);
     }
 }

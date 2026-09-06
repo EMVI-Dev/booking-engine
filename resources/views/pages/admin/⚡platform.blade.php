@@ -3,11 +3,12 @@
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\PlatformSetting;
+use App\Services\PaymentMatchService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
     // Global Platform Parameters
     public string $platform_name = 'TravelEngine';
     public string $support_email = 'admin@emvi.dev';
@@ -19,6 +20,11 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
 
     public int $approved_operators = 0;
     public int $total_operators = 0;
+
+    /**
+     * @var list<array{payment_id: string, invoice: string, amount: float, reason: string, found_at: string}>
+     */
+    public array $unmatched_payments = [];
 
     public bool $saved = false;
 
@@ -41,6 +47,7 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
         // Operator context for the header note
         $this->total_operators = Operator::count();
         $this->approved_operators = Operator::where('status', OperatorStatus::Approved)->count();
+        $this->unmatched_payments = $platform->getUnmatchedPayments();
     }
 
     /**
@@ -74,29 +81,67 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
         $this->saved = true;
         $this->dispatch('platform-settings-saved');
     }
+
+    /**
+     * Scan paid guest charges that never reached an operator wallet.
+     */
+    public function checkUnmatchedPayments(): void
+    {
+        $this->unmatched_payments = app(PaymentMatchService::class)->unmatchedPaidCharges();
+    }
 }; ?>
 
 <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+    <x-page-header
+        :title="__('Settings')"
+        :subtitle="__('Platform name, guest fee, and how long we hold an unpaid spot.')"
+        icon="fa-sliders"
+    >
+        <x-slot:actions>
+            <span class="text-xs font-semibold text-op-subtle">
+                {{ $approved_operators }}/{{ $total_operators }} {{ __('operators active') }}
+            </span>
+        </x-slot:actions>
+    </x-page-header>
+
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+        <div class="flex flex-col gap-3 pb-2 border-b border-slate-100 dark:border-[#1e2433] sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
-                    <i class="fa-solid fa-sliders text-lg"></i>
+                <span class="p-1.5 rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 text-xs">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
                 </span>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Platform Settings') }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                        {{ __('Configure global platform branding, default commission take-rate, currency, and operational hold policies.') }}
-                        <span class="ml-2 text-[11px] font-bold text-[#8a7808] dark:text-[#FFEF4D]">
-                            &mdash; {{ $approved_operators }}/{{ $total_operators }} {{ __('operators active') }}
-                        </span>
-                    </p>
-                </div>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {{ __('Paid, but not in a wallet yet') }}
+                </h3>
             </div>
+            <x-button type="button" variant="secondary" size="sm" wire:click="checkUnmatchedPayments" wire:loading.attr="disabled">
+                <i class="fa-solid fa-rotate text-xs" wire:loading.class="animate-spin" wire:target="checkUnmatchedPayments"></i>
+                <span>{{ __('Check again') }}</span>
+            </x-button>
         </div>
+
+        @if ($unmatched_payments === [])
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                {{ __('Every guest payment we checked already reached an operator wallet.') }}
+            </p>
+        @else
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ __('These guests paid, but the operator wallet was not credited. Someone on the team should look at each one.') }}
+            </p>
+            <ul class="divide-y divide-slate-100 dark:divide-[#1e2433]">
+                @foreach ($unmatched_payments as $item)
+                    <li class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $item['invoice'] }}</p>
+                            <p class="text-xs text-slate-500">{{ $item['reason'] }}</p>
+                        </div>
+                        <p class="text-sm font-bold text-slate-900 dark:text-white">
+                            Rp {{ number_format((float) $item['amount'], 0, ',', '.') }}
+                        </p>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
     </div>
 
     <!-- Main Settings Form -->
@@ -110,28 +155,28 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                     <i class="fa-solid fa-globe"></i>
                 </span>
                 <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    {{ __('Platform Identity & Global Economics') }}
+                    {{ __('Name, fees, and currency') }}
                 </h3>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <!-- Platform Name -->
                 <div>
-                    <x-label for="platform_name" :value="__('Platform Brand Name')" required />
+                    <x-label for="platform_name" :value="__('Platform name')" required />
                     <x-input id="platform_name" wire:model="platform_name" type="text" :error="$errors->has('platform_name')" />
                     <x-input-error :messages="$errors->get('platform_name')" />
                 </div>
 
                 <!-- Support Email -->
                 <div>
-                    <x-label for="support_email" :value="__('Platform Support Email')" required />
+                    <x-label for="support_email" :value="__('Support email')" required />
                     <x-input id="support_email" wire:model="support_email" type="email" :error="$errors->has('support_email')" />
                     <x-input-error :messages="$errors->get('support_email')" />
                 </div>
 
                 <!-- Commission Rate (%) -->
                 <div>
-                    <x-label for="commission_percentage" :value="__('Platform Commission Take-Rate (%)')" required />
+                    <x-label for="commission_percentage" :value="__('Cut from the listed price (%)')" required />
                     <div class="relative">
                         <x-input id="commission_percentage" wire:model="commission_percentage" type="number"
                             step="0.1" min="0" max="100" class="pr-8" :error="$errors->has('commission_percentage')" />
@@ -139,13 +184,13 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                             class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-1">
-                        {{ __('Default platform revenue cut on customer bookings.') }}</p>
+                        {{ __('Usually 0. The operator still gets the listed price.') }}</p>
                     <x-input-error :messages="$errors->get('commission_percentage')" />
                 </div>
 
                 <!-- Guest Service Fee (%) -->
                 <div>
-                    <x-label for="guest_service_fee_percentage" :value="__('Guest Service Fee (%) — Added at Checkout')" required />
+                    <x-label for="guest_service_fee_percentage" :value="__('Guest fee at checkout (%)')" required />
                     <div class="relative">
                         <x-input id="guest_service_fee_percentage" wire:model="guest_service_fee_percentage"
                             type="number" step="0.1" min="0" max="100" class="pr-8"
@@ -154,13 +199,13 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                             class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-1">
-                        {{ __('Convenience fee added to guest checkout (100% net goes to operator).') }}</p>
+                        {{ __('Added on top of the listed price. The operator still gets 100% of that listed price.') }}</p>
                     <x-input-error :messages="$errors->get('guest_service_fee_percentage')" />
                 </div>
 
                 <!-- Unpaid Booking Hold Window -->
                 <div>
-                    <x-label for="booking_hold_minutes" :value="__('Unpaid Hold Timeout (Minutes)')" required />
+                    <x-label for="booking_hold_minutes" :value="__('Hold an unpaid spot for (minutes)')" required />
                     <div class="relative">
                         <x-input id="booking_hold_minutes" wire:model="booking_hold_minutes" type="number"
                             min="5" max="1440" class="pr-12" :error="$errors->has('booking_hold_minutes')" />
@@ -168,13 +213,13 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
                             class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">mins</span>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-1">
-                        {{ __('Duration availability slots are reserved during pending checkouts.') }}</p>
+                        {{ __('How long we keep a spot while the guest pays.') }}</p>
                     <x-input-error :messages="$errors->get('booking_hold_minutes')" />
                 </div>
 
                 <!-- Currency Code -->
                 <div>
-                    <x-label for="currency_code" :value="__('Default Currency Code')" required />
+                    <x-label for="currency_code" :value="__('Currency')" required />
                     <x-input id="currency_code" wire:model="currency_code" type="text"
                         class="font-mono text-xs uppercase" :error="$errors->has('currency_code')" />
                     <x-input-error :messages="$errors->get('currency_code')" />
@@ -182,7 +227,7 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
 
                 <!-- Currency Symbol -->
                 <div>
-                    <x-label for="currency_symbol" :value="__('Default Currency Symbol')" required />
+                    <x-label for="currency_symbol" :value="__('Currency symbol')" required />
                     <x-input id="currency_symbol" wire:model="currency_symbol" type="text" :error="$errors->has('currency_symbol')" />
                     <x-input-error :messages="$errors->get('currency_symbol')" />
                 </div>
@@ -191,11 +236,10 @@ new #[Title('Platform Settings')] #[Layout('layouts.admin')] class extends Compo
 
         <!-- Submit Button & Success Toast -->
         <div class="flex items-center gap-4 pt-2">
-            <button type="submit" data-test="save-platform-settings-button"
-                class="h-10 px-5 rounded-2xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs inline-flex items-center gap-2 shadow-xs transition cursor-pointer">
+            <x-button type="submit" data-test="save-platform-settings-button">
                 <i class="fa-solid fa-floppy-disk text-xs"></i>
-                {{ __('Save Platform Settings') }}
-            </button>
+                {{ __('Save') }}
+            </x-button>
 
             <div x-data="{ shown: false, timeout: null }" x-init="@this.on('platform-settings-saved', () => {
                 clearTimeout(timeout);

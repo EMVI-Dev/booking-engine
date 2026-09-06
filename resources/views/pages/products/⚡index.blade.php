@@ -72,30 +72,18 @@ new #[Title('Activities & Inventory')] class extends Component {
                 }
             }
             $product->delete();
-            session()->flash('success', __('Activity item deleted successfully.'));
+            $this->dispatch('toast', message: __('Activity item deleted successfully.'), type: 'success');
         }
     }
 }; ?>
 
 <div class="space-y-6">
-    <!-- Success Banner -->
-    @if (session('success'))
-        <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2 animate-fade-in">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                <span>{{ session('success') }}</span>
-            </div>
-            <button type="button" @click="$el.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-    @endif
 
     <!-- Profile Incomplete Locking Warning -->
     @if (! $this->isProfileComplete)
         <div class="p-5 rounded-3xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
             <div class="flex items-start gap-3.5">
-                <div class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center shrink-0 shadow-xs">
+                <div class="w-10 h-10 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-triangle-exclamation text-sm"></i>
                 </div>
                 <div class="space-y-1">
@@ -116,57 +104,38 @@ new #[Title('Activities & Inventory')] class extends Component {
 
 
 
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
-                    <i class="fa-solid fa-compass text-lg"></i>
-                </span>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Single Activities') }}
-                </h1>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-                {{ __('Manage standalone activities, guided sessions, day tickets, and services. These can be booked directly or bundled into Tour Packages.') }}
-            </p>
-        </div>
+    <x-page-header
+        :title="__('Single Activities')"
+        :subtitle="__('Manage standalone activities, guided sessions, day tickets, and services. These can be booked directly or bundled into Tour Packages.')"
+        icon="fa-compass"
+    >
+        <x-slot:actions>
+            @if ($this->isProfileComplete && $this->currentOperator?->canAddProduct())
+                <x-button :href="route('products.create')" wire:navigate>
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    {{ __('Add Single Activity') }}
+                </x-button>
+            @elseif ($this->isProfileComplete)
+                <x-button :href="route('products.create')" wire:navigate>
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    {{ __('Listing limit reached') }}
+                </x-button>
+            @else
+                <x-button disabled title="{{ __('Complete your operator profile in Settings to start adding inventory.') }}">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    {{ __('Add Single Activity') }}
+                </x-button>
+            @endif
+        </x-slot:actions>
+    </x-page-header>
 
-        @if ($this->isProfileComplete)
-            <x-button
-                :href="route('products.create')"
-                variant="primary"
-                class="shrink-0 shadow-xs transition-all"
-                wire:navigate
-            >
-                <i class="fa-solid fa-plus mr-1 text-xs"></i>
-                {{ __('Add Single Activity') }}
-            </x-button>
-        @else
-            <x-button
-                variant="primary"
-                class="shrink-0 opacity-60 cursor-not-allowed"
-                disabled
-                title="{{ __('Complete your operator profile in Settings to start adding inventory.') }}"
-            >
-                <i class="fa-solid fa-plus mr-1 text-xs"></i>
-                {{ __('Add Single Activity') }}
-            </x-button>
-        @endif
-    </div>
-
-    <!-- Search & Filter Bar -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
-        <div class="relative w-full sm:w-80">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-            <input
-                type="text"
+    <x-toolbar class="flex flex-col items-center justify-between gap-3 sm:flex-row">
+        <div class="w-full sm:w-80">
+            <x-search-input
                 wire:model.live.debounce.300ms="search"
-                placeholder="{{ __('Search by name or category...') }}"
-                class="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 dark:border-[#1e2433] bg-slate-50 dark:bg-[#0c0e14] text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FFEF4D]"
+                :placeholder="__('Search by name or category...')"
             />
         </div>
-
         <div class="w-full sm:w-44">
             <x-select
                 wire:model.live="statusFilter"
@@ -177,11 +146,73 @@ new #[Title('Activities & Inventory')] class extends Component {
                 ]"
             />
         </div>
-    </div>
+    </x-toolbar>
 
     <!-- Products Table / List -->
     @if ($this->products->isNotEmpty())
-        <div class="overflow-hidden rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
+        <!-- Mobile Card List -->
+        <div class="space-y-3 md:hidden">
+            @foreach ($this->products as $product)
+                <div wire:key="prod-card-{{ $product->id }}"
+                    class="rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] p-4 shadow-xs space-y-3">
+                    <div class="flex items-start gap-3">
+                        @if ($product->cover_photo_url)
+                            <img src="{{ $product->cover_photo_url }}" alt=""
+                                class="w-14 h-14 rounded-xl object-cover border border-slate-200/80 dark:border-[#1e2433] shrink-0" />
+                        @else
+                            <div class="w-14 h-14 rounded-xl bg-[#141821] text-[#FFEF4D] border border-[#1e2433] flex items-center justify-center shrink-0"
+                                aria-hidden="true">
+                                <i class="fa-solid fa-box"></i>
+                            </div>
+                        @endif
+
+                        <div class="min-w-0 flex-1">
+                            <a href="{{ route('products.edit', $product) }}" wire:navigate
+                                class="block font-bold text-sm text-slate-900 dark:text-white truncate">
+                                {{ $product->name }}
+                            </a>
+                            <p class="text-[11px] text-slate-400 truncate">
+                                {{ $product->category ?? __('Item') }} &bull; {{ $product->location ?? __('General') }}
+                            </p>
+                            <p class="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                {{ __(':count units/day', ['count' => $product->capacity_per_day]) }}
+                                @if ($product->sellable_standalone)
+                                    &bull; Rp {{ number_format((float) $product->price, 0, ',', '.') }}
+                                @endif
+                            </p>
+                        </div>
+
+                        <x-status-badge :status="$product->status" />
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-[#1e2433] pt-3">
+                        <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                            @if ($product->sellable_standalone)
+                                {{ __('Sold direct & in packages') }}
+                            @else
+                                {{ __('Package bundle only') }}
+                            @endif
+                        </span>
+
+                        <div class="flex items-center gap-1.5">
+                            <a href="{{ route('products.edit', $product) }}" wire:navigate
+                                class="h-9 px-3 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#1e2433] font-bold text-xs inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-pen text-[10px]" aria-hidden="true"></i>
+                                {{ __('Edit') }}
+                            </a>
+                            <button type="button"
+                                wire:click="confirmDelete('{{ $product->id }}', '{{ addslashes($product->name) }}')"
+                                aria-label="{{ __('Delete :name', ['name' => $product->name]) }}"
+                                class="h-9 w-9 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-400 border border-slate-200 dark:border-[#1e2433] inline-flex items-center justify-center cursor-pointer">
+                                <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="hidden md:block overflow-hidden rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs sm:text-sm">
                     <thead class="bg-slate-50 dark:bg-[#10141d] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-200/80 dark:border-[#1e2433]">
@@ -244,10 +275,7 @@ new #[Title('Activities & Inventory')] class extends Component {
                                     </span>
                                 </td>
                                 <td class="px-5 py-4">
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ $product->status->value === 'published' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60' : 'bg-slate-100 text-slate-700 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]' }}">
-                                        <span class="w-1.5 h-1.5 rounded-full {{ $product->status->value === 'published' ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-slate-400' }}"></span>
-                                        {{ ucfirst($product->status->value) }}
-                                    </span>
+                                    <x-status-badge :status="$product->status" />
                                 </td>
                                 <td class="px-5 py-4 text-right">
                                     <div class="flex items-center justify-end gap-1.5">
@@ -277,28 +305,25 @@ new #[Title('Activities & Inventory')] class extends Component {
             </div>
         </div>
     @else
-        <div class="text-center py-16 px-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] space-y-4 shadow-xs">
-            <div class="w-12 h-12 rounded-2xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 font-black flex items-center justify-center mx-auto text-xl shadow-xs">
-                <i class="fa-solid fa-box"></i>
-            </div>
-            <div class="space-y-1 max-w-md mx-auto">
-                <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ __('No Activities or Items Found') }}</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Create activities, workshop sessions, guide services, or admission tickets with daily capacity limits.') }}
-                </p>
-            </div>
-            @if ($this->isProfileComplete)
-                <x-button :href="route('products.create')" variant="primary" size="sm" wire:navigate>
-                    <i class="fa-solid fa-plus mr-1 text-xs"></i>
-                    {{ __('Create Your First Item') }}
-                </x-button>
-            @else
-                <x-button :href="route('brand.edit')" variant="primary" size="sm" wire:navigate>
-                    <i class="fa-solid fa-paintbrush mr-1 text-xs"></i>
-                    {{ __('Complete Brand Settings First') }}
-                </x-button>
-            @endif
-        </div>
+        <x-empty-state
+            icon="fa-box"
+            :title="__('No Activities or Items Found')"
+            :description="__('Create activities, workshop sessions, guide services, or admission tickets with daily capacity limits.')"
+        >
+            <x-slot:actions>
+                @if ($this->isProfileComplete && $this->currentOperator?->canAddProduct())
+                    <x-button :href="route('products.create')" variant="primary" size="sm" wire:navigate>
+                        <i class="fa-solid fa-plus mr-1 text-xs" aria-hidden="true"></i>
+                        {{ __('Create Your First Item') }}
+                    </x-button>
+                @else
+                    <x-button :href="route('brand.edit')" variant="primary" size="sm" wire:navigate>
+                        <i class="fa-solid fa-paintbrush mr-1 text-xs" aria-hidden="true"></i>
+                        {{ __('Complete Brand Settings First') }}
+                    </x-button>
+                @endif
+            </x-slot:actions>
+        </x-empty-state>
     @endif
 
     <!-- System UI Confirmation Modal -->

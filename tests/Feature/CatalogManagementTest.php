@@ -107,7 +107,7 @@ test('operator can edit product and delete gallery photos', function () {
         ->call('removeExistingGalleryImage', 0)
         ->call('save')
         ->assertHasNoErrors()
-        ->assertSee(__('Activity item ":name" updated successfully.', ['name' => 'Updated Clear Kayak']));
+        ->assertDispatched('toast', message: __('Activity item ":name" updated successfully.', ['name' => 'Updated Clear Kayak']), type: 'success');
 
     $product->refresh();
     expect($product->name)->toBe('Updated Clear Kayak')
@@ -183,11 +183,30 @@ test('operator can edit a package and manage inventory composition', function ()
         ->set('price', 990000)
         ->call('save')
         ->assertHasNoErrors()
-        ->assertSee(__('Tour package ":title" updated successfully.', ['title' => 'New Expedition Title']));
+        ->assertDispatched('toast', message: __('Tour package ":title" updated successfully.', ['title' => 'New Expedition Title']), type: 'success');
 
     $package->refresh();
     expect($package->title)->toBe('New Expedition Title')
         ->and((float) $package->price)->toBe(990000.0);
+});
+
+test('editing a package persists changes to its activity composition', function () {
+    $original = Product::factory()->create(['operator_id' => $this->operator->id]);
+    $added = Product::factory()->create(['operator_id' => $this->operator->id]);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+    $package->products()->attach($original->id, ['quantity_required' => 1]);
+
+    Livewire::test('pages::packages.edit', ['package' => $package])
+        ->set('selectedProducts', [$added->id => 3])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $package->refresh()->load('products');
+
+    expect($package->products)->toHaveCount(1)
+        ->and($package->products->first()->id)->toBe($added->id)
+        ->and((int) $package->products->first()->pivot->quantity_required)->toBe(3);
 });
 
 test('operator can delete product from inside edit page and index modal', function () {

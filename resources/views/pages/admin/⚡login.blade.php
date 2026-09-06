@@ -7,7 +7,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Platform Admin Login')] #[Layout('layouts.auth')] class extends Component {
+new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component {
     public string $email = 'admin@emvi.dev';
     public string $password = '';
     public bool $remember = true;
@@ -51,13 +51,13 @@ new #[Title('Platform Admin Login')] #[Layout('layouts.auth')] class extends Com
     <div class="text-center space-y-2">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
             <i class="fa-brands fa-searchengin text-sm"></i>
-            {{ __('Platform Master Control') }}
+            {{ __('Admin') }}
         </span>
         <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {{ __('Platform Admin Login') }}
+            {{ __('Admin sign in') }}
         </h1>
         <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-            {{ __('Authenticate to manage central DOKU credentials, platform take-rates, and global operations.') }}
+            {{ __('For the people who run EMVI — operators, money, and guest checkout.') }}
         </p>
     </div>
 

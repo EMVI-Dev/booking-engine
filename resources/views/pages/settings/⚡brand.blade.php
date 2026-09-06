@@ -2,6 +2,7 @@
 
 use App\Models\Operator;
 use App\Concerns\ResolvesCurrentOperator;
+use App\Services\DomainResolverService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Title;
@@ -38,7 +39,7 @@ new #[Title('Brand Settings')] class extends Component {
     public string $tiktok_url = '';
     public string $youtube_url = '';
 
-    // Custom Domain (Enterprise)
+    // Custom Domain (Agency and above)
     public string $custom_domain = '';
 
     // Marketing, Tracking Pixels & Review Links
@@ -149,6 +150,8 @@ new #[Title('Brand Settings')] class extends Component {
      */
     public function updateBrandSettings(): void
     {
+        $this->authorizeAbility('manageSettings');
+
         $user = Auth::user();
 
         $validated = $this->validate([
@@ -183,14 +186,14 @@ new #[Title('Brand Settings')] class extends Component {
         if ($operator) {
             if ($this->custom_domain !== '') {
                 if (!$operator->hasFeature('custom_domain')) {
-                    $this->addError('custom_domain', __('Custom domain connection requires the Enterprise subscription plan.'));
+                    $this->addError('custom_domain', __('Your own website address is included on the Agency plan.'));
                     return;
                 }
 
                 $cleanDomain = strtolower(trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/'))));
                 $existing = \App\Models\OperatorDomain::where('domain', $cleanDomain)->where('operator_id', '!=', $operator->id)->exists();
                 if ($existing) {
-                    $this->addError('custom_domain', __('This domain is already registered to another operator.'));
+                    $this->addError('custom_domain', __('Another business is already using that address.'));
                     return;
                 }
 
@@ -226,12 +229,16 @@ new #[Title('Brand Settings')] class extends Component {
                 'tiktok' => $validated['tiktok_url'] ?? null,
                 'youtube' => $validated['youtube_url'] ?? null,
             ];
-            $settings['tracking'] = [
-                'google_analytics_id' => $validated['google_analytics_id'] ?? null,
-                'meta_pixel_id' => $validated['meta_pixel_id'] ?? null,
-                'google_tag_manager_id' => $validated['google_tag_manager_id'] ?? null,
-                'google_site_verification' => $validated['google_site_verification'] ?? null,
-            ];
+            // Analytics pixels are a paid feature; keep any stored values untouched
+            // rather than trusting inputs the plan should not be able to submit.
+            if ($operator->hasFeature('tracking_pixels')) {
+                $settings['tracking'] = [
+                    'google_analytics_id' => $validated['google_analytics_id'] ?? null,
+                    'meta_pixel_id' => $validated['meta_pixel_id'] ?? null,
+                    'google_tag_manager_id' => $validated['google_tag_manager_id'] ?? null,
+                    'google_site_verification' => $validated['google_site_verification'] ?? null,
+                ];
+            }
             $settings['marketing'] = [
                 'review_url' => $validated['review_url'] ?? null,
             ];
@@ -252,30 +259,21 @@ new #[Title('Brand Settings')] class extends Component {
     }
 
     /**
-     * Test DNS CNAME record for custom domain.
+     * Check whether the operator's own website address already points here.
      */
-    public function verifyCustomDomainDns(): void
+    public function verifyCustomDomainDns(DomainResolverService $domains): void
     {
+        $this->authorizeAbility('manageSettings');
+
         $operator = $this->currentOperator;
         if (!$operator || !$this->custom_domain) {
-            session()->flash('error', __('Please enter your custom domain name first.'));
+            session()->flash('error', __('Type your website address first.'));
             return;
         }
 
         $cleanDomain = strtolower(trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/'))));
-        $targetHost = parse_url(config('app.url', 'https://emvi.id'), PHP_URL_HOST) ?? 'emvi.id';
-
-        $records = @dns_get_record($cleanDomain, DNS_CNAME);
-        $found = false;
-
-        if ($records) {
-            foreach ($records as $rec) {
-                if (isset($rec['target']) && strtolower(rtrim((string) $rec['target'], '.')) === strtolower(rtrim($targetHost, '.'))) {
-                    $found = true;
-                    break;
-                }
-            }
-        }
+        $targetHost = $domains->getPlatformDomain();
+        $found = $domains->customDomainPointsHere($cleanDomain, $targetHost);
 
         $customDomainRecord = $operator->domains()->where('type', \App\Enums\DomainType::Custom)->first();
 
@@ -284,12 +282,18 @@ new #[Title('Brand Settings')] class extends Component {
                 $customDomainRecord->update([
                     'status' => \App\Enums\DomainStatus::Active,
                     'verified_at' => now(),
-                    'ssl_issued_at' => now(),
+                    'ssl_issued_at' => null,
                 ]);
             }
-            session()->flash('success', __('DNS verification successful! :domain is correctly pointing to :target.', ['domain' => $cleanDomain, 'target' => $targetHost]));
+            session()->flash('success', __('The address :domain is connected. The padlock appears by itself in a few minutes.', ['domain' => $cleanDomain]));
         } else {
-            session()->flash('error', __('DNS CNAME record not detected yet for :domain pointing to :target. Please allow 5-15 minutes for global DNS propagation.', ['domain' => $cleanDomain, 'target' => $targetHost]));
+            $targets = implode(' / ', array_values(array_filter([
+                $targetHost,
+                ...$domains->expectedPlatformIpv4(),
+                ...$domains->expectedPlatformIpv6(),
+            ])));
+
+            session()->flash('error', __('We cannot see :domain pointing to :target yet. Use a CNAME for a smaller name, or an A setting on yourname.com. Changes at your domain shop can take a little while. Try again in 15 minutes.', ['domain' => $cleanDomain, 'target' => $targets]));
         }
     }
 }; ?>
@@ -308,7 +312,7 @@ new #[Title('Brand Settings')] class extends Component {
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <div class="flex items-center gap-2.5">
-                    <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
+                    <span class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300">
                         <i class="fa-solid fa-paintbrush text-lg"></i>
                     </span>
                     <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -328,7 +332,7 @@ new #[Title('Brand Settings')] class extends Component {
                 class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs">
+                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
                         <i class="fa-solid fa-image"></i>
                     </span>
                     <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -394,7 +398,7 @@ new #[Title('Brand Settings')] class extends Component {
                 class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs">
+                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
                         <i class="fa-solid fa-id-card"></i>
                     </span>
                     <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -667,7 +671,7 @@ new #[Title('Brand Settings')] class extends Component {
                 class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
                 <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs">
+                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
                         <i class="fa-solid fa-bell"></i>
                     </span>
                     <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -719,7 +723,7 @@ new #[Title('Brand Settings')] class extends Component {
                                 </span>
                             </div>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                {{ __('Social media channels, custom website domain (CNAME), and Meta / Google Ads tracking.') }}
+                                {{ __('Social media, your own website address, and ads tracking.') }}
                             </p>
                         </div>
                     </div>
@@ -737,7 +741,7 @@ new #[Title('Brand Settings')] class extends Component {
                         class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
                         <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
                             <span
-                                class="p-1.5 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs">
+                                class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
                                 <i class="fa-solid fa-share-nodes"></i>
                             </span>
                             <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -811,7 +815,7 @@ new #[Title('Brand Settings')] class extends Component {
                         </div>
                     </div>
 
-                    <!-- Card: Custom Website Domain (Enterprise) -->
+                    <!-- Card: Custom Website Domain (Agency and above) -->
                     @php
                         $hasCustomDomain = $this->currentOperator?->hasFeature('custom_domain') ?? false;
                     @endphp
@@ -821,7 +825,7 @@ new #[Title('Brand Settings')] class extends Component {
                             class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#1e2433]">
                             <div class="flex items-center gap-2.5">
                                 <span
-                                    class="p-1.5 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs">
+                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
                                     <i class="fa-solid fa-globe"></i>
                                 </span>
                                 <h3
@@ -838,13 +842,13 @@ new #[Title('Brand Settings')] class extends Component {
                                 <span
                                     class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
                                     <i class="fa-solid fa-lock text-[9px]"></i>
-                                    <span>{{ __('Agency Ultimate') }}</span>
+                                    <span>{{ __('Agency') }}</span>
                                 </span>
                             @endif
                         </div>
 
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            {{ __('Point your own custom domain (e.g. tours.baliadventures.com or youragency.com) to your storefront with automated SSL security.') }}
+                            {{ __('This storefront is your website — guests book and pay here. Use yourname.com if you do not already have a site (typical for freelance guides). Use tours.yourname.com if you already have a website and only want bookings on a smaller name. After the name points here, the padlock appears by itself in a few minutes.') }}
                         </p>
 
                         @if (!$hasCustomDomain)
@@ -852,14 +856,14 @@ new #[Title('Brand Settings')] class extends Component {
                                 class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/60 border border-slate-200 dark:border-[#1e2433] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div class="flex items-center gap-2.5">
                                     <span
-                                        class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs font-black">
+                                        class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs shadow-xs font-black">
                                         <i class="fa-solid fa-crown"></i>
                                     </span>
                                     <div>
                                         <p class="text-xs font-bold text-slate-900 dark:text-white">
-                                            {{ __('Custom Domains Require Agency Ultimate Plan') }}</p>
+                                            {{ __('Custom Domains Require the Agency Plan') }}</p>
                                         <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                                            {{ __('Upgrade to Agency Ultimate to white-label your storefront on your own .com domain.') }}
+                                            {{ __('Upgrade to Agency to use your own website address.') }}
                                         </p>
                                     </div>
                                 </div>
@@ -874,28 +878,41 @@ new #[Title('Brand Settings')] class extends Component {
 
                         <div class="{{ !$hasCustomDomain ? 'opacity-50 pointer-events-none' : '' }} space-y-4">
                             <div>
-                                <x-label for="custom_domain" :value="__('Your Custom Domain / Subdomain')" />
+                                <x-label for="custom_domain" :value="__('Your website address')" />
                                 <div class="relative">
                                     <i
                                         class="fa-solid fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                     <x-input id="custom_domain" wire:model="custom_domain" type="text"
-                                        placeholder="tours.yourdomain.com" class="pl-9 font-mono text-xs"
+                                        placeholder="yourname.com" class="pl-9 font-mono text-xs"
                                         :disabled="!$hasCustomDomain" :error="$errors->has('custom_domain')" />
                                 </div>
                                 <p class="text-[11px] text-slate-500 mt-1">
-                                    {{ __('Enter the custom hostname where your guest booking storefront should be served (e.g. tours.yourdomain.com or booking.youragency.com).') }}
+                                    {{ __('Type yourname.com if this is your only website, or tours.yourname.com if you already have a site.') }}
                                 </p>
                                 <x-input-error :messages="$errors->get('custom_domain')" />
                             </div>
 
                             <!-- Step-by-Step DNS CNAME Configuration Box -->
                             @php
-                                $targetHost =
-                                    parse_url(config('app.url', 'https://emvi.id'), PHP_URL_HOST) ?? 'emvi.id';
+                                $domainResolver = app(DomainResolverService::class);
+                                $targetHost = $domainResolver->getPlatformDomain();
+                                $apexIpv4 = $domainResolver->instructionIpv4();
+                                $apexIpv6 = $domainResolver->instructionIpv6();
                                 $customDomainModel = $this->currentOperator
                                     ?->domains()
                                     ->where('type', \App\Enums\DomainType::Custom)
                                     ->first();
+                                $typedHost = strtolower(
+                                    trim(
+                                        (string) preg_replace(
+                                            '#^https?://#',
+                                            '',
+                                            rtrim($this->custom_domain, '/'),
+                                        ),
+                                    ),
+                                );
+                                $typedParts = $typedHost !== '' ? explode('.', $typedHost) : [];
+                                $cnameName = count($typedParts) > 2 ? $typedParts[0] : 'tours';
                             @endphp
 
                             <div
@@ -904,15 +921,15 @@ new #[Title('Brand Settings')] class extends Component {
                                     class="flex items-center justify-between border-b border-slate-200 dark:border-[#1e2433] pb-3">
                                     <div class="flex items-center gap-2">
                                         <span
-                                            class="p-1.5 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs">
+                                            class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
                                             <i class="fa-solid fa-network-wired"></i>
                                         </span>
                                         <div>
                                             <h4
                                                 class="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider">
-                                                {{ __('Step-by-Step DNS CNAME Setup') }}</h4>
+                                                {{ __('How to connect your own address') }}</h4>
                                             <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                                                {{ __('Point your custom domain DNS records to EMVI servers') }}</p>
+                                                {{ __('Pick one path below. Root names use a number. Smaller names use our website name.') }}</p>
                                         </div>
                                     </div>
 
@@ -921,13 +938,13 @@ new #[Title('Brand Settings')] class extends Component {
                                             <span
                                                 class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
                                                 <i class="fa-solid fa-circle-check text-[9px]"></i>
-                                                <span>{{ __('Verified & SSL Active') }}</span>
+                                                <span>{{ $customDomainModel->ssl_issued_at ? __('Connected & padlock on') : __('Connected. Padlock in a few minutes.') }}</span>
                                             </span>
                                         @else
                                             <span
                                                 class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 flex items-center gap-1">
                                                 <i class="fa-solid fa-clock text-[9px] animate-pulse"></i>
-                                                <span>{{ __('Pending Propagation') }}</span>
+                                                <span>{{ __('Still waiting') }}</span>
                                             </span>
                                         @endif
                                     @endif
@@ -939,9 +956,9 @@ new #[Title('Brand Settings')] class extends Component {
                                         <thead>
                                             <tr
                                                 class="text-[10px] font-extrabold uppercase text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#1e2433] pb-2">
-                                                <th class="py-2 px-3">{{ __('Record Type') }}</th>
-                                                <th class="py-2 px-3">{{ __('Host / Name') }}</th>
-                                                <th class="py-2 px-3">{{ __('Target / Points To') }}</th>
+                                                <th class="py-2 px-3">{{ __('Type of setting') }}</th>
+                                                <th class="py-2 px-3">{{ __('The name you own') }}</th>
+                                                <th class="py-2 px-3">{{ __('Point it at') }}</th>
                                                 <th class="py-2 px-3 text-right">{{ __('Action') }}</th>
                                             </tr>
                                         </thead>
@@ -954,27 +971,7 @@ new #[Title('Brand Settings')] class extends Component {
                                                 </td>
                                                 <td
                                                     class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-amber-300">
-                                                    @if ($this->custom_domain)
-                                                        @php
-                                                            $parts = explode(
-                                                                '.',
-                                                                strtolower(
-                                                                    trim(
-                                                                        (string) preg_replace(
-                                                                            '#^https?://#',
-                                                                            '',
-                                                                            rtrim($this->custom_domain, '/'),
-                                                                        ),
-                                                                    ),
-                                                                ),
-                                                            );
-                                                            $subdomain = count($parts) > 2 ? $parts[0] : '@';
-                                                        @endphp
-                                                        {{ $subdomain }}
-                                                    @else
-                                                        <span
-                                                            class="text-slate-400 dark:text-slate-500 italic">{{ __('tours (or @)') }}</span>
-                                                    @endif
+                                                    {{ $cnameName }}
                                                 </td>
                                                 <td
                                                     class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold select-all">
@@ -982,7 +979,7 @@ new #[Title('Brand Settings')] class extends Component {
                                                 </td>
                                                 <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
                                                     <button type="button"
-                                                        x-on:click="navigator.clipboard.writeText('{{ $targetHost }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                                        x-on:click="navigator.clipboard.writeText(@js($targetHost)); copied = true; setTimeout(() => copied = false, 2000)"
                                                         class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-[10px] transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center gap-1">
                                                         <i class="fa-solid"
                                                             :class="copied ? 'fa-check text-emerald-600 dark:text-emerald-400' :
@@ -992,6 +989,76 @@ new #[Title('Brand Settings')] class extends Component {
                                                     </button>
                                                 </td>
                                             </tr>
+                                            @forelse ($apexIpv4 as $ipv4)
+                                                <tr>
+                                                    <td class="py-2.5 px-3">
+                                                        <span
+                                                            class="px-2 py-0.5 rounded bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-bold text-[11px] border border-[#FFEF4D]/30">A</span>
+                                                    </td>
+                                                    <td
+                                                        class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-amber-300">
+                                                        {{ '@' }}
+                                                    </td>
+                                                    <td
+                                                        class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold select-all">
+                                                        {{ $ipv4 }}
+                                                    </td>
+                                                    <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
+                                                        <button type="button"
+                                                            x-on:click="navigator.clipboard.writeText(@js($ipv4)); copied = true; setTimeout(() => copied = false, 2000)"
+                                                            class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-[10px] transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center gap-1">
+                                                            <i class="fa-solid"
+                                                                :class="copied ? 'fa-check text-emerald-600 dark:text-emerald-400' :
+                                                                    'fa-copy text-slate-400'"></i>
+                                                            <span
+                                                                x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td class="py-2.5 px-3">
+                                                        <span
+                                                            class="px-2 py-0.5 rounded bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-bold text-[11px] border border-[#FFEF4D]/30">A</span>
+                                                    </td>
+                                                    <td
+                                                        class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-amber-300">
+                                                        {{ '@' }}
+                                                    </td>
+                                                    <td
+                                                        class="py-2.5 px-3 text-slate-400 dark:text-slate-500 font-sans font-semibold italic">
+                                                        {{ __('We’ll show this number once the live server is ready.') }}
+                                                    </td>
+                                                    <td class="py-2.5 px-3"></td>
+                                                </tr>
+                                            @endforelse
+                                            @foreach ($apexIpv6 as $ipv6)
+                                                <tr>
+                                                    <td class="py-2.5 px-3">
+                                                        <span
+                                                            class="px-2 py-0.5 rounded bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-bold text-[11px] border border-[#FFEF4D]/30">AAAA</span>
+                                                    </td>
+                                                    <td
+                                                        class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-amber-300">
+                                                        {{ '@' }}
+                                                    </td>
+                                                    <td
+                                                        class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold select-all">
+                                                        {{ $ipv6 }}
+                                                    </td>
+                                                    <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
+                                                        <button type="button"
+                                                            x-on:click="navigator.clipboard.writeText(@js($ipv6)); copied = true; setTimeout(() => copied = false, 2000)"
+                                                            class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-[10px] transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center gap-1">
+                                                            <i class="fa-solid"
+                                                                :class="copied ? 'fa-check text-emerald-600 dark:text-emerald-400' :
+                                                                    'fa-copy text-slate-400'"></i>
+                                                            <span
+                                                                x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
                                         </tbody>
                                     </table>
                                 </div>
@@ -1000,17 +1067,21 @@ new #[Title('Brand Settings')] class extends Component {
                                 <div
                                     class="space-y-2 text-[11px] text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-[#1e2433]">
                                     <span
-                                        class="font-bold text-slate-900 dark:text-slate-200 block uppercase tracking-wider text-[10px]">{{ __('Quick Setup Steps:') }}</span>
+                                        class="font-bold text-slate-900 dark:text-slate-200 block uppercase tracking-wider text-[10px]">{{ __('What to ask your website host:') }}</span>
                                     <ol
                                         class="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-400 leading-relaxed font-sans">
-                                        <li>{{ __('Log into your domain registrar account (Cloudflare, GoDaddy, Namecheap, Niagahoster, or Rumahweb).') }}
+                                        <li>{{ __('Sign in where you bought the website name (GoDaddy, Niagahoster, Rumahweb, or similar).') }}
                                         </li>
-                                        <li>{{ __('Go to your domain\'s DNS Management or Zone Editor panel.') }}</li>
-                                        <li>{{ __('Add a new CNAME record with Host set to your subdomain and Target set to ') }}
+                                        <li>{{ __('Open the page for website-name settings. It is often called DNS or Domain.') }}</li>
+                                        <li>
+                                            {{ __('If this is your only website (yourname.com): add an A setting on @ and point it at the number above. Some shops call this ALIAS or ANAME — that is fine if it ends up at the same number.') }}
+                                        </li>
+                                        <li>
+                                            {{ __('If you already have a website and only want bookings on a smaller name (tours.yourname.com): add a CNAME and point it at ') }}
                                             <strong
                                                 class="text-emerald-700 dark:text-emerald-400 font-mono">{{ $targetHost }}</strong>.
                                         </li>
-                                        <li>{{ __('Save changes and click "Verify DNS Connection" below to issue your automated SSL certificate.') }}
+                                        <li>{{ __('Save, then tap Check connection. The padlock appears by itself a few minutes after the name points here.') }}
                                         </li>
                                     </ol>
                                 </div>
@@ -1020,13 +1091,13 @@ new #[Title('Brand Settings')] class extends Component {
                                     class="pt-2 flex items-center justify-between gap-3 border-t border-slate-200 dark:border-[#1e2433]">
                                     <span class="text-[10px] text-slate-500 dark:text-slate-400 font-sans">
                                         <i class="fa-solid fa-circle-info text-[#8a7808] dark:text-[#FFEF4D] mr-1"></i>
-                                        {{ __('DNS changes typically take 2 to 15 minutes to propagate globally.') }}
+                                        {{ __('The change can take a few minutes. If it is not ready, try again in 15 minutes.') }}
                                     </span>
                                     <button type="button" wire:click="verifyCustomDomainDns"
                                         class="px-4 py-2 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-sans font-black text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0">
                                         <i class="fa-solid fa-rotate text-[10px]" wire:loading.class="animate-spin"
                                             wire:target="verifyCustomDomainDns"></i>
-                                        <span>{{ __('Verify DNS Connection') }}</span>
+                                        <span>{{ __('Check connection') }}</span>
                                     </button>
                                 </div>
                             </div>
@@ -1043,7 +1114,7 @@ new #[Title('Brand Settings')] class extends Component {
                             class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#1e2433]">
                             <div class="flex items-center gap-2.5">
                                 <span
-                                    class="p-1.5 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs">
+                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
                                     <i class="fa-solid fa-chart-line"></i>
                                 </span>
                                 <h3
@@ -1060,7 +1131,7 @@ new #[Title('Brand Settings')] class extends Component {
                                 <span
                                     class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
                                     <i class="fa-solid fa-lock text-[9px]"></i>
-                                    <span>{{ __('Pro Operator') }}</span>
+                                    <span>{{ __('Pro') }}</span>
                                 </span>
                             @endif
                         </div>
@@ -1074,12 +1145,12 @@ new #[Title('Brand Settings')] class extends Component {
                                 class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/60 border border-slate-200 dark:border-[#1e2433] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div class="flex items-center gap-2.5">
                                     <span
-                                        class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs shadow-xs font-black">
+                                        class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs shadow-xs font-black">
                                         <i class="fa-solid fa-crown"></i>
                                     </span>
                                     <div>
                                         <p class="text-xs font-bold text-slate-900 dark:text-white">
-                                            {{ __('Requires Pro Operator or Agency Ultimate Tier') }}</p>
+                                            {{ __('Requires Pro or Agency') }}</p>
                                         <p class="text-[11px] text-slate-500 dark:text-slate-400">
                                             {{ __('Upgrade to unlock Google Analytics 4, Meta Pixel ROAS tracking, and automated 12-hour review request emails.') }}
                                         </p>

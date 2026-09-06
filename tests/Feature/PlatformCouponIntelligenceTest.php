@@ -187,3 +187,20 @@ test('broadcast command dry-run reports eligible operators without creating anno
     // No announcements should have been created
     expect(PlatformAnnouncement::count())->toBe(0);
 });
+
+test('broadcast command does not notify the same operator twice in one billing cycle', function () {
+    $coupon = PlatformCoupon::factory()
+        ->withEligibilityRule('min_monthly_transactions', 3)
+        ->create();
+
+    Reservation::factory()->count(5)->create([
+        'operator_id' => $this->operator->id,
+        'status' => 'confirmed',
+        'created_at' => now()->subDays(2),
+    ]);
+
+    $this->artisan('coupons:broadcast')->assertSuccessful();
+    $this->artisan('coupons:broadcast')->assertSuccessful();
+
+    expect(PlatformAnnouncement::where('title', "🎉 Exclusive promo code for you: {$coupon->code}")->count())->toBe(1);
+});

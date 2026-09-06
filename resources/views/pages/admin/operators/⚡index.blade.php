@@ -9,7 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component {
     use WithPagination;
 
     public string $search = '';
@@ -137,104 +137,64 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
     }
 }; ?>
 
-<div class="space-y-6 max-w-7xl mx-auto">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="w-10 h-10 rounded-2xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] flex items-center justify-center text-lg border border-[#FFEF4D]/30 shadow-2xs">
-                    <i class="fa-solid fa-users-gear"></i>
-                </span>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Operators Management') }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                        {{ __('Monitor all registered tour operators, inspect catalog density, manage their portal, and update approval status.') }}
-                    </p>
-                </div>
-            </div>
-        </div>
+<div class="space-y-6">
+    <x-page-header
+        :title="__('Operators')"
+        :subtitle="__('Who is on the platform, and whether they can sell.')"
+        icon="fa-users-gear"
+    />
+
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <x-metric-card
+            :label="__('Total Operators')"
+            :value="$totalCount"
+            icon="fa-users"
+            wire:click="$set('status_filter', 'all')"
+        />
+        <x-metric-card
+            :label="__('Approved & Live')"
+            :value="$approvedCount"
+            icon="fa-circle-check"
+            tone="success"
+            wire:click="$set('status_filter', 'approved')"
+        />
+        <x-metric-card
+            :label="__('Pending Review')"
+            :value="$pendingCount"
+            icon="fa-clock"
+            tone="warning"
+            wire:click="$set('status_filter', 'pending')"
+        />
+        <x-metric-card
+            :label="__('Suspended')"
+            :value="$suspendedCount"
+            icon="fa-ban"
+            wire:click="$set('status_filter', 'suspended')"
+        />
     </div>
 
-    <!-- Overview Counters Strip -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex items-center justify-between">
-            <div class="space-y-0.5">
-                <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Total Operators') }}</span>
-                <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $totalCount }}</div>
-            </div>
-            <span class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-[#141821] text-slate-500 flex items-center justify-center text-base shrink-0">
-                <i class="fa-solid fa-users"></i>
-            </span>
-        </div>
+    <x-toolbar class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <x-search-input
+            class="w-full sm:w-96"
+            wire:model.live.debounce.300ms="search"
+            :placeholder="__('Search operator name, owner email, WhatsApp, or bank...')"
+        />
 
-        <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex items-center justify-between">
-            <div class="space-y-0.5">
-                <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{{ __('Approved & Live') }}</span>
-                <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ $approvedCount }}</div>
-            </div>
-            <span class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base shrink-0">
-                <i class="fa-solid fa-circle-check"></i>
-            </span>
-        </div>
-
-        <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex items-center justify-between">
-            <div class="space-y-0.5">
-                <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">{{ __('Pending Review') }}</span>
-                <div class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">{{ $pendingCount }}</div>
-            </div>
-            <span class="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base shrink-0">
-                <i class="fa-solid fa-clock"></i>
-            </span>
-        </div>
-
-        <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex items-center justify-between">
-            <div class="space-y-0.5">
-                <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">{{ __('Suspended') }}</span>
-                <div class="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">{{ $suspendedCount }}</div>
-            </div>
-            <span class="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base shrink-0">
-                <i class="fa-solid fa-ban"></i>
-            </span>
-        </div>
-    </div>
-
-    <!-- Filters & Search Bar -->
-    <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <!-- Search -->
-        <div class="relative w-full sm:w-96">
-            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-            <x-input
-                wire:model.live.debounce.300ms="search"
-                type="text"
-                placeholder="{{ __('Search operator name, owner email, WhatsApp, or bank...') }}"
-                class="pl-9 text-xs"
-            />
-        </div>
-
-        <!-- Status Filter Pills -->
-        <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-            @php
-                $statusTabs = [
-                    'all' => __('All (:count)', ['count' => $totalCount]),
-                    'approved' => __('Approved (:count)', ['count' => $approvedCount]),
-                    'pending' => __('Pending (:count)', ['count' => $pendingCount]),
-                    'suspended' => __('Suspended (:count)', ['count' => $suspendedCount]),
-                ];
-            @endphp
-
-            @foreach ($statusTabs as $val => $label)
-                <button
-                    type="button"
-                    wire:click="$set('status_filter', '{{ $val }}')"
-                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $status_filter === $val ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'bg-slate-100 dark:bg-[#141821] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1e2433]' }}"
-                >
-                    {{ $label }}
-                </button>
-            @endforeach
-        </div>
-    </div>
+        <x-filter-tabs>
+            <x-filter-tab wire:click="$set('status_filter', 'all')" :active="$status_filter === 'all'">
+                {{ __('All (:count)', ['count' => $totalCount]) }}
+            </x-filter-tab>
+            <x-filter-tab wire:click="$set('status_filter', 'approved')" :active="$status_filter === 'approved'">
+                {{ __('Approved (:count)', ['count' => $approvedCount]) }}
+            </x-filter-tab>
+            <x-filter-tab wire:click="$set('status_filter', 'pending')" :active="$status_filter === 'pending'">
+                {{ __('Pending (:count)', ['count' => $pendingCount]) }}
+            </x-filter-tab>
+            <x-filter-tab wire:click="$set('status_filter', 'suspended')" :active="$status_filter === 'suspended'">
+                {{ __('Suspended (:count)', ['count' => $suspendedCount]) }}
+            </x-filter-tab>
+        </x-filter-tabs>
+    </x-toolbar>
 
     <!-- Operators Directory Section -->
     <!-- Operators Table Card -->
@@ -372,7 +332,7 @@ new #[Title('Operators Management')] #[Layout('layouts.admin')] class extends Co
                                         {{ $activePlan->name }}
                                     </span>
                                     <div class="text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
-                                        {{ $operator->getEffectiveCommissionRate() * 100 }}% {{ __('take-rate') }}
+                                        {{ __('Listed price stays with them') }}
                                     </div>
                                 </div>
                             </td>

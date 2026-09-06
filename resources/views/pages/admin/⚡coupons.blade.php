@@ -8,7 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Coupons')] #[Layout('layouts.admin')] class extends Component {
     public bool $show_modal = false;
     public ?string $editing_id = null;
 
@@ -276,31 +276,18 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
 }; ?>
 
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <span class="p-2.5 rounded-2xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
-                <i class="fa-solid fa-ticket text-lg"></i>
-            </span>
-            <div>
-                <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Platform Subscription Promo Codes') }}
-                </h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Create and manage discount codes for tour operators subscribing to or upgrading SaaS plans.') }}
-                </p>
-            </div>
-        </div>
-
-        <button
-            type="button"
-            wire:click="openCreateModal"
-            class="h-10 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs shadow-xs shrink-0 inline-flex items-center gap-1.5 cursor-pointer"
-        >
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span>{{ __('New Subscription Promo Code') }}</span>
-        </button>
-    </div>
+    <x-page-header
+        :title="__('Coupons')"
+        :subtitle="__('Discount codes for operator plan bills.')"
+        icon="fa-ticket"
+    >
+        <x-slot:actions>
+            <x-button type="button" wire:click="openCreateModal">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span>{{ __('New coupon') }}</span>
+            </x-button>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Feedback Alerts -->
     @if (session()->has('success'))
@@ -310,61 +297,46 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
         </div>
     @endif
 
-    <!-- Summary KPI Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Active Promo Codes') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $activeCount }}</div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Available for customer checkout') }}</p>
-        </div>
-
-        <div class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Total Redemptions') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ $totalRedemptions }}</div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Coupons claimed by guests') }}</p>
-        </div>
-
-        <div class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{{ __('Engine Status') }}</span>
-            <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ __('Operational') }}</div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Platform subscription discount rules') }}</p>
-        </div>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <x-metric-card
+            :label="__('Active Promo Codes')"
+            :value="$activeCount"
+            :hint="__('Available for customer checkout')"
+            icon="fa-ticket"
+            tone="featured"
+        />
+        <x-metric-card
+            :label="__('Total Redemptions')"
+            :value="$totalRedemptions"
+            :hint="__('Coupons claimed by guests')"
+            icon="fa-receipt"
+        />
+        <x-metric-card
+            :label="__('Engine Status')"
+            :value="__('Operational')"
+            :hint="__('Platform subscription discount rules')"
+            icon="fa-circle-check"
+            tone="success"
+        />
     </div>
 
-    <!-- Search and Status Tabs Bar -->
-    <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <!-- Search Input -->
-        <div class="relative w-full sm:w-80">
-            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-            <x-input
-                wire:model.live.debounce.300ms="search"
-                type="text"
-                placeholder="{{ __('Search code or description...') }}"
-                class="pl-9 text-xs"
-            />
-        </div>
+    <x-toolbar class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <x-search-input
+            class="w-full sm:w-80"
+            wire:model.live.debounce.300ms="search"
+            :placeholder="__('Search code or description...')"
+        />
 
-        <!-- Status Filter Pills -->
-        <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-            @php
-                $statusTabs = [
-                    'all' => __('All'),
-                    'active' => __('Active (:count)', ['count' => $activeCount]),
-                    'expired' => __('Expired / Ended'),
-                ];
-            @endphp
-
-            @foreach ($statusTabs as $val => $label)
-                <button
-                    type="button"
-                    wire:click="$set('status_filter', '{{ $val }}')"
-                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $status_filter === $val ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700' }}"
-                >
-                    {{ $label }}
-                </button>
-            @endforeach
-        </div>
-    </div>
+        <x-filter-tabs>
+            <x-filter-tab wire:click="$set('status_filter', 'all')" :active="$status_filter === 'all'">{{ __('All') }}</x-filter-tab>
+            <x-filter-tab wire:click="$set('status_filter', 'active')" :active="$status_filter === 'active'">
+                {{ __('Active (:count)', ['count' => $activeCount]) }}
+            </x-filter-tab>
+            <x-filter-tab wire:click="$set('status_filter', 'expired')" :active="$status_filter === 'expired'">
+                {{ __('Expired / Ended') }}
+            </x-filter-tab>
+        </x-filter-tabs>
+    </x-toolbar>
 
     <!-- Coupons Table -->
     <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
@@ -718,7 +690,7 @@ new #[Title('Platform Coupons & Promo Codes')] #[Layout('layouts.admin')] class 
                                 :options="[
                                     ['value' => '', 'label' => __('🖐 Manual Only — Admin broadcasts manually')],
                                     ['value' => 'min_monthly_transactions', 'label' => __('📊 Min. Monthly Confirmed Bookings (volume milestone)')],
-                                    ['value' => 'min_monthly_revenue', 'label' => __('💰 Min. Monthly Revenue (GMV milestone)')],
+                                    ['value' => 'min_monthly_revenue', 'label' => __('Min. guest payments this month')],
                                     ['value' => 'subscription_age_months', 'label' => __('🎂 Subscription Age (loyalty reward)')],
                                 ]"
                                 :error="$errors->has('eligibility_rule_type')"

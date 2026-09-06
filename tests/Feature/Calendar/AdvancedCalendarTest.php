@@ -33,7 +33,7 @@ beforeEach(function () {
     ]);
 
     $this->enterprisePlan = Plan::factory()->create([
-        'slug' => 'enterprise',
+        'slug' => 'agency',
         'features' => [
             'basic_calendar' => true,
             'advanced_calendar' => true,
@@ -69,8 +69,8 @@ test('free tier operator can view month grid calendar', function () {
         ->assertOk()
         ->assertSee('Month Grid')
         ->assertSee('Resource Timeline')
-        ->assertSee('PRO')
-        ->assertSee('ULTIMATE');
+        ->assertSee('Pro')
+        ->assertSee('Agency');
 
     Livewire::test('calendar.month-grid')
         ->assertOk()
@@ -85,10 +85,10 @@ test('free tier operator sees upgrade gate when switching to resource timeline',
         ->set('viewMode', 'timeline')
         ->assertOk()
         ->assertSee('Resource Timeline &amp; Capacity Matrix', false)
-        ->assertSee('Requires Pro Operator Plan');
+        ->assertSee('Requires Pro Plan');
 });
 
-test('pro tier operator unlocks resource timeline and daily manifest views, but heatmap is gated for ultimate', function () {
+test('pro tier operator unlocks resource timeline and daily manifest views, but heatmap is gated for agency', function () {
     $this->actingAs($this->proUser);
 
     $product = Product::factory()->create([
@@ -135,15 +135,15 @@ test('pro tier operator unlocks resource timeline and daily manifest views, but 
         ->assertSee('Alice Wonderland')
         ->assertSee('Print Manifest');
 
-    // Pro operator checking Heatmap should see Agency Ultimate upgrade gate
+    // Pro operator checking Heatmap should see Agency upgrade gate
     Livewire::test('pages::calendar.index')
         ->set('viewMode', 'heatmap')
         ->assertOk()
         ->assertSee('Capacity &amp; Occupancy Heatmap Analytics', false)
-        ->assertSee('Requires Agency Ultimate Plan');
+        ->assertSee('Requires Agency Plan');
 });
 
-test('ultimate tier operator unlocks capacity heatmap view', function () {
+test('agency tier operator unlocks capacity heatmap view', function () {
     $this->actingAs($this->ultimateUser);
 
     Reservation::factory()->create([

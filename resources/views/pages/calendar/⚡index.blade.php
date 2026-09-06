@@ -68,116 +68,48 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
 };
 ?>
 
-<div class="space-y-8 animate-fade-in print:space-y-0">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
-        <div>
-            <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                <span>{{ __('Operations Hub') }}</span>
-                <span>&bull;</span>
-                <span class="text-slate-800 dark:text-[#FFEF4D] font-bold">{{ __('Calendar & Operations Schedule') }}</span>
-            </div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
-                    <i class="fa-solid fa-calendar-days text-lg"></i>
-                </span>
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    {{ __('Booking Calendar & Availability') }}
-                </h1>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Manage scheduled guest departures, resource allocation, run-sheet manifests, and blackout dates.') }}
-            </p>
-        </div>
-
-        <div class="flex items-center gap-2.5">
-            <!-- Google / Apple Calendar Sync Button -->
-            <button
-                type="button"
-                wire:click="openGoogleSyncModal"
-                class="h-10 px-4 rounded-xl bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 font-bold text-xs shadow-2xs transition flex items-center gap-2 cursor-pointer"
-            >
-                <i class="fa-brands fa-google text-indigo-600 dark:text-indigo-400 text-sm"></i>
+<div class="animate-fade-in space-y-6 print:space-y-0">
+    <x-page-header
+        class="print:hidden"
+        :title="__('Booking Calendar & Availability')"
+        :subtitle="__('Manage scheduled guest departures, resource allocation, run-sheet manifests, and blackout dates.')"
+        icon="fa-calendar-days"
+    >
+        <x-slot:actions>
+            <x-button type="button" variant="secondary" wire:click="openGoogleSyncModal">
+                <i class="fa-brands fa-google text-sm"></i>
                 <span>{{ __('Sync iCal Feed') }}</span>
-                @if (!$this->hasGoogleCalendarFeature)
-                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16] flex items-center gap-1">
-                        <i class="fa-solid fa-lock text-[8px]"></i>
-                        <span>PRO</span>
-                    </span>
+                @if (! $this->hasGoogleCalendarFeature)
+                    <x-plan-badge title="{{ __('Requires Pro Plan') }}" />
                 @endif
-            </button>
-        </div>
-    </div>
+            </x-button>
+        </x-slot:actions>
+    </x-page-header>
 
-    <!-- Flash Notifications -->
-    @if (session('success'))
-        <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center gap-2 animate-fade-in shadow-xs print:hidden">
-            <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-sm"></i>
-            <span>{{ session('success') }}</span>
-        </div>
-    @endif
-
-    <!-- Calendar View Mode Tabs Navigator -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-[#1e2433] pb-3 print:hidden">
-        <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-[#141721] border border-slate-200 dark:border-[#262d3d] overflow-x-auto max-w-full">
-            <!-- 1. Month Grid View (Free) -->
-            <button
-                type="button"
-                wire:click="switchView('month')"
-                class="px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'month' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white' }}"
-            >
-                <i class="fa-solid fa-calendar-days"></i>
-                <span>{{ __('Month Grid') }}</span>
-            </button>
-
-            <!-- 2. Resource Timeline (Pro) -->
-            <button
-                type="button"
-                wire:click="switchView('timeline')"
-                class="px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'timeline' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white' }}"
-            >
-                <i class="fa-solid fa-bars-staggered"></i>
-                <span>{{ __('Resource Timeline') }}</span>
-                @if (!$this->hasTimelineFeature)
-                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16] border border-[#fae639] flex items-center gap-1">
-                        <i class="fa-solid fa-lock text-[8px]"></i>
-                        <span>PRO</span>
-                    </span>
+    <div class="border-b border-op-line pb-3 print:hidden">
+        <x-filter-tabs padded>
+            <x-filter-tab :active="$viewMode === 'month'" icon="fa-calendar-days" wire:click="switchView('month')">
+                {{ __('Month Grid') }}
+            </x-filter-tab>
+            <x-filter-tab :active="$viewMode === 'timeline'" icon="fa-bars-staggered" wire:click="switchView('timeline')">
+                {{ __('Resource Timeline') }}
+                @if (! $this->hasTimelineFeature)
+                    <x-plan-badge title="{{ __('Requires Pro Plan') }}" />
                 @endif
-            </button>
-
-            <!-- 3. Daily Run-Sheet & Manifest (Pro) -->
-            <button
-                type="button"
-                wire:click="switchView('manifest')"
-                class="px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'manifest' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white' }}"
-            >
-                <i class="fa-solid fa-clipboard-list"></i>
-                <span>{{ __('Daily Manifest') }}</span>
-                @if (!$this->hasManifestFeature)
-                    <span title="{{ __('Requires Pro Operator Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16] border border-[#fae639] flex items-center gap-1">
-                        <i class="fa-solid fa-lock text-[8px]"></i>
-                        <span>PRO</span>
-                    </span>
+            </x-filter-tab>
+            <x-filter-tab :active="$viewMode === 'manifest'" icon="fa-clipboard-list" wire:click="switchView('manifest')">
+                {{ __('Daily Manifest') }}
+                @if (! $this->hasManifestFeature)
+                    <x-plan-badge title="{{ __('Requires Pro Plan') }}" />
                 @endif
-            </button>
-
-            <!-- 4. Occupancy Heatmap (Ultimate) -->
-            <button
-                type="button"
-                wire:click="switchView('heatmap')"
-                class="px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'heatmap' ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white' }}"
-            >
-                <i class="fa-solid fa-fire-flame-curved"></i>
-                <span>{{ __('Capacity Heatmap') }}</span>
-                @if (!$this->hasHeatmapFeature)
-                    <span title="{{ __('Requires Agency Ultimate Plan') }}" class="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16] border border-[#fae639] flex items-center gap-1">
-                        <i class="fa-solid fa-lock text-[8px]"></i>
-                        <span>ULTIMATE</span>
-                    </span>
+            </x-filter-tab>
+            <x-filter-tab :active="$viewMode === 'heatmap'" icon="fa-fire-flame-curved" wire:click="switchView('heatmap')">
+                {{ __('Capacity Heatmap') }}
+                @if (! $this->hasHeatmapFeature)
+                    <x-plan-badge :label="__('Agency')" title="{{ __('Requires Agency Plan') }}" />
                 @endif
-            </button>
-        </div>
+            </x-filter-tab>
+        </x-filter-tabs>
     </div>
 
     <!-- Active Independent Subcomponent / Feature Gating -->
@@ -191,7 +123,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 <x-feature-gate
                     :title="__('Resource Timeline & Capacity Matrix')"
                     :description="__('Visualize tour guide, vehicle, and activity capacity in a Gantt-style matrix across 7-day windows. Track seat occupancy progress bars and prevent overbookings.')"
-                    requiredPlan="Pro Operator"
+                    requiredPlan="Pro"
                     planSlug="growth"
                     icon="fa-solid fa-bars-staggered"
                     :features="[
@@ -209,7 +141,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 <x-feature-gate
                     :title="__('Daily Passenger Run-Sheet & Manifest Export')"
                     :description="__('Generate printable daily passenger run-sheets for tour drivers, captains, and guides with lead guest names, pickup notes, and WhatsApp links.')"
-                    requiredPlan="Pro Operator"
+                    requiredPlan="Pro"
                     planSlug="growth"
                     icon="fa-solid fa-clipboard-list"
                     :features="[
@@ -227,8 +159,8 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 <x-feature-gate
                     :title="__('Capacity & Occupancy Heatmap Analytics')"
                     :description="__('Discover booking density and peak departure days with color-graded monthly utilization heatmaps. Analyze capacity load and optimize seasonal scheduling.')"
-                    requiredPlan="Agency Ultimate"
-                    planSlug="enterprise"
+                    requiredPlan="Agency"
+                    planSlug="agency"
                     icon="fa-solid fa-fire-flame-curved"
                     :features="[
                         __('Color-coded monthly heatmap showing occupancy density (0-100%)'),

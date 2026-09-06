@@ -376,10 +376,6 @@ class SubscriptionProrationService
      */
     protected function getPlanTierRank(Plan $plan): int
     {
-        return match ($plan->slug) {
-            'enterprise' => 3,
-            'growth' => 2,
-            default => 1,
-        };
+        return $plan->tierRank();
     }
 }

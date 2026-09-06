@@ -15,25 +15,24 @@ class PlanFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->randomElement(['Starter Essential', 'Pro Operator', 'Agency Ultimate']),
+            'name' => fake()->randomElement(['Essential', 'Pro', 'Agency']),
             'slug' => fake()->unique()->slug(),
             'tagline' => fake()->sentence(),
-            'price_monthly' => fake()->randomElement([0, 299000, 699000]),
-            'price_yearly' => fake()->randomElement([0, 2990000, 6990000]),
+            'price_monthly' => fake()->randomElement([0, 299000, 799000, 1999000]),
+            'price_yearly' => fake()->randomElement([0, 2990000, 7990000, 19990000]),
             'commission_rate' => 0.0000,
             'package_limit' => fake()->randomElement([5, 25, null]),
             'team_member_limit' => null,
-            'features' => [
-                'custom_subdomain' => true,
-                'standard_checkout' => true,
-                'reservations_management' => true,
-                'whatsapp_chat_widget' => true,
+            'features' => Plan::featureFlags([
+                'advanced_calendar' => fake()->boolean(),
+                'daily_manifest_export' => fake()->boolean(),
                 'google_calendar' => fake()->boolean(),
                 'guest_crm' => fake()->boolean(),
                 'whatsapp_dispatch' => fake()->boolean(),
+                'tracking_pixels' => fake()->boolean(),
+                'automated_review_requests' => fake()->boolean(),
                 'custom_domain' => fake()->boolean(),
-                'byo_gateway' => fake()->boolean(),
-            ],
+            ]),
             'is_active' => true,
             'is_popular' => false,
             'sort_order' => fake()->numberBetween(1, 10),
@@ -43,73 +42,74 @@ class PlanFactory extends Factory
     public function starter(): static
     {
         return $this->state(fn (array $attributes) => [
-            'name' => 'Starter Essential',
+            'name' => 'Essential',
             'slug' => 'starter',
             'price_monthly' => 0.00,
             'price_yearly' => 0.00,
             'commission_rate' => 0.0000,
             'package_limit' => 5,
-            'team_member_limit' => null,
-            'features' => [
-                'custom_subdomain' => true,
-                'standard_checkout' => true,
-                'reservations_management' => true,
-                'whatsapp_chat_widget' => true,
-                'google_calendar' => false,
-                'guest_crm' => false,
-                'whatsapp_dispatch' => false,
-                'custom_domain' => false,
-                'byo_gateway' => false,
-            ],
+            'team_member_limit' => 2,
+            'features' => Plan::featureFlags(),
         ]);
     }
 
     public function growth(): static
     {
         return $this->state(fn (array $attributes) => [
-            'name' => 'Pro Operator',
+            'name' => 'Pro',
             'slug' => 'growth',
             'price_monthly' => 299000.00,
             'price_yearly' => 2990000.00,
             'commission_rate' => 0.0000,
             'package_limit' => 25,
             'team_member_limit' => null,
-            'features' => [
-                'custom_subdomain' => true,
-                'standard_checkout' => true,
-                'reservations_management' => true,
-                'whatsapp_chat_widget' => true,
+            'features' => Plan::featureFlags([
+                'advanced_calendar' => true,
+                'daily_manifest_export' => true,
                 'google_calendar' => true,
                 'guest_crm' => true,
                 'whatsapp_dispatch' => true,
-                'custom_domain' => false,
-                'byo_gateway' => false,
-            ],
+                'tracking_pixels' => true,
+                'automated_review_requests' => true,
+            ]),
             'is_popular' => true,
         ]);
     }
 
-    public function enterprise(): static
+    public function agency(): static
     {
         return $this->state(fn (array $attributes) => [
-            'name' => 'Agency Ultimate',
-            'slug' => 'enterprise',
-            'price_monthly' => 699000.00,
-            'price_yearly' => 6990000.00,
+            'name' => 'Agency',
+            'slug' => 'agency',
+            'price_monthly' => 799000.00,
+            'price_yearly' => 7990000.00,
             'commission_rate' => 0.0000,
             'package_limit' => null,
             'team_member_limit' => null,
-            'features' => [
-                'custom_subdomain' => true,
-                'standard_checkout' => true,
-                'reservations_management' => true,
-                'whatsapp_chat_widget' => true,
+            'features' => Plan::featureFlags([
+                'advanced_calendar' => true,
+                'daily_manifest_export' => true,
+                'capacity_heatmap' => true,
                 'google_calendar' => true,
                 'guest_crm' => true,
                 'whatsapp_dispatch' => true,
+                'tracking_pixels' => true,
+                'automated_review_requests' => true,
                 'custom_domain' => true,
-                'byo_gateway' => true,
-            ],
+                'priority_support' => true,
+                'ai_discovery' => true,
+                'remove_branding' => true,
+            ]),
+        ]);
+    }
+
+    /**
+     * Top-tier fixture used by tests that need Agency capabilities.
+     */
+    public function enterprise(): static
+    {
+        return $this->agency()->state(fn (): array => [
+            'slug' => fake()->unique()->slug(),
         ]);
     }
 }

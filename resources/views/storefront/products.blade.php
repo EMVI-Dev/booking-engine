@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
     <!-- SEO & Metadata -->
-    <title>{{ __('Single Activities') }} &bull; {{ $agent->name }} &bull; {{ config('app.name') }}</title>
+    <title>{{ __('Single Activities') }} &bull; {{ $agent->name }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
     <meta name="description" content="{{ __('Book single activities, day tours, and guided experiences directly with :name. Instant holds, transparent pricing, and secure payment.', ['name' => $agent->name]) }}" />
     <link rel="canonical" href="{{ route('storefront.products') }}" />
 
@@ -13,7 +13,9 @@
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine" />
+    @if ($agent->showsPlatformBranding())
+        <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine" />
+    @endif
     <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
     <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
     <!-- Favicon & Brand Icons -->
@@ -25,7 +27,7 @@
     <meta property="og:url" content="{{ route('storefront.products') }}" />
     <meta property="og:title" content="{{ __('Single Activities') }} &bull; {{ $agent->name }}" />
     <meta property="og:description" content="{{ __('Browse single activities, tours, and experiences by :name.', ['name' => $agent->name]) }}" />
-    <meta property="og:site_name" content="{{ $agent->name }} • {{ config('app.name') }}" />
+    <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
     @if ($agent->logo)
         <meta property="og:image" content="{{ Storage::url($agent->logo) }}" />
     @endif
@@ -63,7 +65,7 @@
                 [
                     '@type' => 'ItemList',
                     'name' => $agent->name . ' - ' . __('Single Activities'),
-                    'numberOfItems' => $products->count(),
+                    'numberOfItems' => $products->total(),
                     'itemListElement' => $products->values()->map(fn ($p, $idx) => [
                         '@type' => 'ListItem',
                         'position' => $idx + 1,
@@ -88,30 +90,8 @@
     {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
     </script>
 
-    <!-- Automated System Dark / Light Theme Sync -->
-    <script>
-        (function() {
-            function applySystemTheme() {
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
-            }
-            applySystemTheme();
-            if (window.matchMedia) {
-                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySystemTheme);
-            }
-        })();
-    </script>
 
-    @if (! empty($agent->brand_color))
-        <style>
-            :root {
-                --brand-color: {{ $agent->brand_color }};
-            }
-        </style>
-    @endif
+    @include('storefront.partials.brand-theme')
 
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -119,7 +99,7 @@
     @livewireStyles
 </head>
 
-<body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-white overflow-x-clip w-full max-w-full">
+<body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
     <!-- Ambient Glow -->
     @include('storefront.partials.navbar')
 
@@ -144,7 +124,7 @@
                 </div>
 
                 <span class="self-start md:self-auto px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shrink-0">
-                    {{ __(':count Items Available', ['count' => $products->count()]) }}
+                    {{ __(':count Items Available', ['count' => $products->total()]) }}
                 </span>
             </div>
         </div>
@@ -168,7 +148,7 @@
                 @endif
 
                 <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <button type="submit" class="h-11 px-6 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-xs font-bold shadow-xs transition w-full sm:w-auto cursor-pointer">
+                    <button type="submit" class="h-11 px-6 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground text-xs font-bold shadow-xs transition w-full sm:w-auto cursor-pointer">
                         {{ __('Search') }}
                     </button>
 
@@ -184,12 +164,12 @@
             @if ($categories->isNotEmpty())
                 <div class="flex items-center gap-2 overflow-x-auto pt-2 border-t border-slate-100 dark:border-zinc-800/80 no-scrollbar">
                     <a href="{{ route('storefront.products', array_filter(['search' => $search])) }}"
-                        class="h-8 px-3.5 inline-flex items-center rounded-xl text-xs font-bold transition shrink-0 {{ empty($selectedCategory) ? 'bg-brand-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                        class="h-8 px-3.5 inline-flex items-center rounded-xl text-xs font-bold transition shrink-0 {{ empty($selectedCategory) ? 'bg-brand-600 text-brand-foreground shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-brand-foreground' }}">
                         {{ __('All Categories') }}
                     </a>
                     @foreach ($categories as $cat)
                         <a href="{{ route('storefront.products', array_filter(['search' => $search, 'category' => $cat])) }}"
-                            class="h-8 px-3.5 inline-flex items-center rounded-xl text-xs font-bold transition shrink-0 {{ $selectedCategory === $cat ? 'bg-brand-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                            class="h-8 px-3.5 inline-flex items-center rounded-xl text-xs font-bold transition shrink-0 {{ $selectedCategory === $cat ? 'bg-brand-600 text-brand-foreground shadow-xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-brand-foreground' }}">
                             {{ $cat }}
                         </a>
                     @endforeach
@@ -252,7 +232,7 @@
                                     </p>
                                 </div>
                                 <a href="{{ route('storefront.product', $prod->slug) }}"
-                                    class="h-8 px-3.5 inline-flex items-center gap-1 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold text-xs shadow-xs transition">
+                                    class="h-8 px-3.5 inline-flex items-center gap-1 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-bold text-xs shadow-xs transition">
                                     <span>{{ __('Book') }}</span>
                                     <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                 </a>
@@ -261,6 +241,12 @@
                     </div>
                 @endforeach
             </div>
+
+            @if ($products->hasPages())
+                <div class="mt-8">
+                    {!! $products->onEachSide(1)->links() !!}
+                </div>
+            @endif
         @else
             <div class="text-center py-16 px-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 space-y-3">
                 <div class="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto text-xl">

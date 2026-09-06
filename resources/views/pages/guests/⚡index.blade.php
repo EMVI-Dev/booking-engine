@@ -228,6 +228,8 @@ new #[Title('Guest Directory & CRM')] class extends Component {
      */
     public function saveGuest(): void
     {
+        abort_unless($this->currentOperator?->hasFeature('guest_crm') ?? false, 403);
+
         $this->validate([
             'editName' => ['required', 'string', 'max:255'],
             'editEmail' => ['nullable', 'email', 'max:255'],
@@ -272,7 +274,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
         <div class="py-6">
             <x-feature-gate :title="__('Guest Directory CRM & Lifetime Tracking')" :description="__(
                 'Unlock comprehensive customer profiles, VIP tagging, repeat booking history, and direct WhatsApp re-engagement.',
-            )" required-plan="Pro Operator" plan-slug="growth"
+            )" required-plan="Pro" plan-slug="growth"
                 icon="fa-solid fa-address-book" :features="[
                     __('Lead guest profiles with automatic email and WhatsApp contact indexing'),
                     __('Calculated lifetime value (LTV) and total completed trip counts'),
@@ -281,140 +283,64 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                 ]" />
         </div>
     @else
-        <!-- Page Header & Title -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2.5">
-                    <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
-                        <i class="fa-solid fa-address-book text-lg"></i>
-                    </span>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Guest Directory & CRM') }}
-                    </h1>
-                </div>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-                    {{ __('Dedicated customer directory with contact references, CRM notes, tags, and lifetime trip history.') }}
-                </p>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <a href="{{ route('reservations.index') }}"
-                    class="h-9 px-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13] text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 dark:hover:bg-[#141721] transition">
-                    <i class="fa-solid fa-calendar-check text-slate-400"></i>
+        <x-page-header
+            :title="__('Guest Directory & CRM')"
+            :subtitle="__('Dedicated customer directory with contact references, CRM notes, tags, and lifetime trip history.')"
+            icon="fa-address-book"
+        >
+            <x-slot:actions>
+                <x-button :href="route('reservations.index')" variant="secondary" wire:navigate>
+                    <i class="fa-solid fa-calendar-check text-xs"></i>
                     <span>{{ __('All Bookings') }}</span>
-                </a>
-            </div>
+                </x-button>
+            </x-slot:actions>
+        </x-page-header>
+
+        <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <x-metric-card
+                :label="__('Unique Guests')"
+                :value="number_format($this->metrics['total_unique_guests'])"
+                :hint="__('Dedicated customer profiles')"
+                icon="fa-users"
+                tone="brand"
+            />
+            <x-metric-card
+                :label="__('Repeat Customers')"
+                :value="number_format($this->metrics['repeat_guests_count'])"
+                :suffix="'('.$this->metrics['repeat_rate'].'%)'"
+                :hint="__('Customers with 2+ bookings')"
+                icon="fa-repeat"
+                tone="success"
+            />
+            <x-metric-card
+                :label="__('Total Passengers')"
+                :value="number_format($this->metrics['total_pax'])"
+                :hint="__('Lifetime passenger headcount')"
+                icon="fa-person-walking-luggage"
+                tone="info"
+            />
+            <x-metric-card
+                :label="__('Avg. Guest Value')"
+                :value="'Rp '.number_format($this->metrics['avg_guest_value'], 0, ',', '.')"
+                :hint="__('Total: Rp :amount', ['amount' => number_format($this->metrics['total_revenue'], 0, ',', '.')])"
+                icon="fa-rupiah-sign"
+                tone="info"
+            />
         </div>
-
-        <!-- Metric Counter Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Card 1: Unique Guests -->
-            <div
-                class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-[#FFEF4D] shadow-xs space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                        {{ __('Unique Guests') }}
-                    </span>
-                    <span
-                        class="w-8 h-8 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shadow-xs">
-                        <i class="fa-solid fa-users"></i>
-                    </span>
-                </div>
-                <p class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {{ number_format($this->metrics['total_unique_guests']) }}
-                </p>
-                <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                    {{ __('Dedicated customer profiles') }}
-                </p>
-            </div>
-
-            <!-- Card 2: Repeat Guests -->
-            <div
-                class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-emerald-500 shadow-xs space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                        {{ __('Repeat Customers') }}
-                    </span>
-                    <span
-                        class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-black flex items-center justify-center text-xs">
-                        <i class="fa-solid fa-repeat"></i>
-                    </span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                        {{ number_format($this->metrics['repeat_guests_count']) }}
-                    </p>
-                    <span class="text-xs font-bold text-slate-400">
-                        ({{ $this->metrics['repeat_rate'] }}%)
-                    </span>
-                </div>
-                <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                    {{ __('Customers with 2+ bookings') }}
-                </p>
-            </div>
-
-            <!-- Card 3: Total Pax Served -->
-            <div
-                class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-indigo-500 shadow-xs space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                        {{ __('Total Passengers') }}
-                    </span>
-                    <span
-                        class="w-8 h-8 rounded-xl bg-indigo-500/15 text-[#090d16] dark:text-indigo-400 border border-[#FFEF4D] font-black flex items-center justify-center text-xs">
-                        <i class="fa-solid fa-person-walking-luggage"></i>
-                    </span>
-                </div>
-                <p class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {{ number_format($this->metrics['total_pax']) }}
-                </p>
-                <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                    {{ __('Lifetime passenger headcount') }}
-                </p>
-            </div>
-
-            <!-- Card 4: Lifetime Direct Revenue -->
-            <div
-                class="card-interactive p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] border-t-2 border-t-sky-500 shadow-xs space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                        {{ __('Avg. Guest Value') }}
-                    </span>
-                    <span
-                        class="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-black flex items-center justify-center text-xs">
-                        <i class="fa-solid fa-rupiah-sign"></i>
-                    </span>
-                </div>
-                <p class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white truncate">
-                    Rp {{ number_format($this->metrics['avg_guest_value'], 0, ',', '.') }}
-                </p>
-                <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                    {{ __('Total: Rp :amount', ['amount' => number_format($this->metrics['total_revenue'], 0, ',', '.')]) }}
-                </p>
-            </div>
-        </div>
-
-        <!-- Search & Filter Controls Card -->
-        <div
-            class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                <!-- Search Input -->
+        <x-toolbar>
+            <div class="flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center">
                 <div class="relative flex-1">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                    </div>
-                    <input wire:model.live.debounce.300ms="search" type="text"
-                        placeholder="{{ __('Search by guest name, email, WhatsApp, or CRM notes...') }}"
-                        class="w-full h-10 pl-9 pr-8 rounded-xl border border-slate-200 dark:border-[#1e2433] bg-slate-50 dark:bg-[#0c0e14] text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FFEF4D] transition" />
+                    <x-search-input
+                        wire:model.live.debounce.300ms="search"
+                        :placeholder="__('Search by guest name, email, WhatsApp, or CRM notes...')"
+                    />
                     @if ($search !== '')
                         <button wire:click="$set('search', '')"
-                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs">
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-op-subtle hover:text-op-ink">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     @endif
                 </div>
-
-                <!-- Sort By Dropdown -->
                 <div class="w-full sm:w-56">
                     <x-select wire:model.live="sortBy" :options="[
                         'recent' => __('Recently Active'),
@@ -425,9 +351,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                 </div>
             </div>
 
-            <!-- Quick Filter Tabs -->
-            <div
-                class="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-slate-100 dark:border-zinc-800 pt-3">
+            <x-filter-tabs class="border-t border-op-line pt-3">
                 @php
                     $filterTabs = [
                         'all' => __('All Guests (:count)', ['count' => $this->metrics['total_unique_guests']]),
@@ -438,13 +362,12 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                 @endphp
 
                 @foreach ($filterTabs as $tabKey => $tabLabel)
-                    <button type="button" wire:click="$set('filter', '{{ $tabKey }}')"
-                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $filter === $tabKey ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181d2a]' }}">
+                    <x-filter-tab :active="$filter === $tabKey" wire:click="$set('filter', '{{ $tabKey }}')">
                         {{ $tabLabel }}
-                    </button>
+                    </x-filter-tab>
                 @endforeach
-            </div>
-        </div>
+            </x-filter-tabs>
+        </x-toolbar>
 
         <!-- Guests List Section -->
         <div
@@ -992,7 +915,7 @@ new #[Title('Guest Directory & CRM')] class extends Component {
                                                     <span class="text-[11px] text-slate-400">
                                                         {{ __('Booked on :date', ['date' => $res->created_at?->format('M d, Y H:i') ?? '—']) }}
                                                     </span>
-                                                    @if ($guest->phone)
+                                                    @if ($guest->phone && $this->currentOperator?->hasFeature('whatsapp_dispatch'))
                                                         @php
                                                             $resWaUrl = app(
                                                                 \App\Services\WhatsAppDispatchService::class,

@@ -18,7 +18,7 @@
                     type="email"
                     required
                     autofocus
-                    placeholder="email@example.com"
+                    placeholder="{{ __('you@email.com') }}"
                     :error="$errors->has('email')"
                 />
                 <x-input-error :messages="$errors->get('email')" />

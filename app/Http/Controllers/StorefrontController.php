@@ -6,18 +6,27 @@ use App\Contracts\Bookable;
 use App\Enums\ListingStatus;
 use App\Enums\OperatorStatus;
 use App\Enums\ReservationStatus;
+use App\Exceptions\CapacityUnavailableException;
 use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Services\CapacityService;
 use App\Services\DokuPaymentService;
 use App\Services\DomainResolverService;
+use App\Services\GuestCancellationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class StorefrontController extends Controller
 {
+    /**
+     * Listings shown per page on the /tours and /services catalog pages.
+     */
+    private const CATALOG_PAGE_SIZE = 12;
+
     public function __construct(
         protected DomainResolverService $domainResolver
     ) {}
@@ -66,7 +75,17 @@ class StorefrontController extends Controller
         }
 
         if ($agent->status === OperatorStatus::Pending) {
-            return response()->view('storefront.pending', ['agent' => $agent], 503);
+            return response()->view('storefront.pending', [
+                'agent' => $agent,
+                'reason' => 'pending',
+            ], 503);
+        }
+
+        if (! $agent->isStorefrontSetupComplete()) {
+            return response()->view('storefront.pending', [
+                'agent' => $agent,
+                'reason' => 'setup',
+            ], 503);
         }
 
         return null;
@@ -146,7 +165,8 @@ class StorefrontController extends Controller
             ->when($category, fn ($q) => $q->where('category', $category))
             ->orderByDesc('reservations_count')
             ->latest()
-            ->get();
+            ->paginate(self::CATALOG_PAGE_SIZE)
+            ->withQueryString();
 
         $categories = $agent->packages()
             ->where('status', ListingStatus::Published)
@@ -189,7 +209,8 @@ class StorefrontController extends Controller
             ->when($category, fn ($q) => $q->where('category', $category))
             ->orderByDesc('reservations_count')
             ->latest()
-            ->get();
+            ->paginate(self::CATALOG_PAGE_SIZE)
+            ->withQueryString();
 
         $categories = $agent->products()
             ->where('status', ListingStatus::Published)
@@ -282,17 +303,30 @@ class StorefrontController extends Controller
     }
 
     /**
+     * Abort unless the offline payment simulator is enabled for this environment.
+     *
+     * The simulator marks payments as paid without money changing hands, so it must
+     * never be reachable on a deployment wired to a real gateway.
+     */
+    protected function guardSimulatorEnabled(): void
+    {
+        abort_unless(DokuPaymentService::simulatorEnabled(), 404);
+    }
+
+    /**
      * Simulated DOKU Sandbox payment gateway screen for testing.
      */
     public function simulatePayment(Request $request): View
     {
+        $this->guardSimulatorEnabled();
+
         $reservationId = (string) $request->query('reservation');
         $paymentId = (string) $request->query('payment');
 
         /** @var Reservation $reservation */
         $reservation = Reservation::query()->with(['agent', 'bookable'])->findOrFail($reservationId);
         /** @var Payment $payment */
-        $payment = Payment::query()->findOrFail($paymentId);
+        $payment = Payment::query()->where('reservation_id', $reservation->id)->findOrFail($paymentId);
 
         return view('storefront.payment-simulate', [
             'reservation' => $reservation,
@@ -306,6 +340,8 @@ class StorefrontController extends Controller
      */
     public function confirmSimulatedPayment(Request $request, DokuPaymentService $paymentService): RedirectResponse
     {
+        $this->guardSimulatorEnabled();
+
         $reservationId = (string) $request->input('reservation_id');
         $status = (string) $request->input('status', 'SUCCESS');
 
@@ -321,14 +357,28 @@ class StorefrontController extends Controller
             ]);
         }
 
-        return redirect()->route('storefront.reservation.receipt', $reservation->id);
+        return redirect()->route('storefront.reservation.receipt', $reservation);
+    }
+
+    /**
+     * Abort when a reservation is requested from a storefront that does not own it.
+     */
+    protected function guardReservationBelongsToCurrentStorefront(Request $request, Reservation $reservation): void
+    {
+        $operator = $this->resolveCurrentOperator($request);
+
+        if ($operator && $operator->id !== $reservation->operator_id) {
+            abort(404);
+        }
     }
 
     /**
      * Show guest reservation confirmation receipt.
      */
-    public function showReceipt(Reservation $reservation, DokuPaymentService $paymentService): View
+    public function showReceipt(Request $request, Reservation $reservation, DokuPaymentService $paymentService): View
     {
+        $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
+
         $reservation->load(['agent', 'bookable', 'latestPayment']);
 
         // Auto-check live status with DOKU if still pending
@@ -345,10 +395,37 @@ class StorefrontController extends Controller
     }
 
     /**
+     * Show the guest-facing HTML e-ticket.
+     */
+    public function showTicket(Request $request, Reservation $reservation): View|RedirectResponse
+    {
+        $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
+
+        $reservation->load(['agent', 'bookable', 'latestPayment']);
+
+        $isPaid = $reservation->latestPayment?->isPaid()
+            && in_array($reservation->status, [
+                ReservationStatus::Confirmed,
+                ReservationStatus::PendingConfirmation,
+            ], true);
+
+        if (! $isPaid) {
+            return redirect()->route('storefront.reservation.receipt', $reservation);
+        }
+
+        return view('storefront.e-ticket', [
+            'reservation' => $reservation,
+            'agent' => $reservation->agent,
+        ]);
+    }
+
+    /**
      * Resume or initiate payment for a pending reservation hold.
      */
-    public function payReservation(Reservation $reservation, DokuPaymentService $paymentService): RedirectResponse
+    public function payReservation(Request $request, Reservation $reservation, DokuPaymentService $paymentService): RedirectResponse
     {
+        $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
+
         $reservation->load(['agent', 'bookable', 'latestPayment']);
 
         if ($reservation->status === ReservationStatus::Confirmed || $reservation->latestPayment?->isPaid()) {
@@ -367,6 +444,20 @@ class StorefrontController extends Controller
             ? (float) $termsSnapshot['total_price']
             : ($latestPayment ? (float) $latestPayment->amount : ($reservation->pax_count * $unitPrice));
 
+        // Extending a hold re-claims inventory, so the date must still have room for this party
+        if ($reservation->bookable instanceof Bookable) {
+            try {
+                app(CapacityService::class)->assertCanAccommodate(
+                    $reservation->bookable,
+                    $reservation->requested_date,
+                    $reservation->pax_count,
+                    $reservation->id,
+                );
+            } catch (CapacityUnavailableException $e) {
+                return redirect()->route('home')->with('error', $e->getMessage());
+            }
+        }
+
         // When guest retries payment, ensure status is PaymentPending and hold is active
         if ($reservation->status !== ReservationStatus::Confirmed) {
             $reservation->update([
@@ -381,7 +472,89 @@ class StorefrontController extends Controller
     }
 
     /**
-     * Generate dynamic robots.txt optimized for search engines & AI crawlers.
+     * Let a guest cancel from the public receipt while payment is unpaid or still inside the free-cancel window.
+     */
+    public function cancelReservation(Request $request, Reservation $reservation, GuestCancellationService $cancellations): RedirectResponse
+    {
+        $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
+
+        try {
+            $cancellations->cancel($reservation);
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->route('storefront.reservation.receipt', $reservation)
+                ->withErrors($exception->errors());
+        }
+
+        return redirect()
+            ->route('storefront.reservation.receipt', $reservation)
+            ->with('success', __('Your booking has been cancelled.'));
+    }
+
+    /**
+     * Let a guest recover their booking from the confirmation email code plus contact details.
+     */
+    public function findBooking(Request $request): View|\Symfony\Component\HttpFoundation\Response
+    {
+        $agent = $this->resolveCurrentOperator($request);
+
+        if (! $agent) {
+            abort(404);
+        }
+
+        if ($statusResponse = $this->checkOperatorStatus($agent)) {
+            return $statusResponse;
+        }
+
+        return view('storefront.find-booking', [
+            'agent' => $agent,
+        ]);
+    }
+
+    /**
+     * Resolve a guest booking lookup and send them to the receipt page.
+     */
+    public function lookupBooking(Request $request): RedirectResponse
+    {
+        $agent = $this->resolveCurrentOperator($request);
+
+        if (! $agent) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:32'],
+            'contact' => ['required', 'string', 'max:255'],
+        ]);
+
+        $code = strtoupper(trim($validated['code']));
+        $contact = strtolower(trim($validated['contact']));
+        $digits = preg_replace('/\D+/', '', $contact) ?? '';
+
+        $reservation = Reservation::query()
+            ->where('operator_id', $agent->id)
+            ->where('code', $code)
+            ->where(function ($query) use ($contact, $digits): void {
+                $query->whereRaw('LOWER(guest_email) = ?', [$contact])
+                    ->orWhereRaw('LOWER(guest_name) = ?', [$contact]);
+
+                if ($digits !== '') {
+                    $query->orWhere('guest_contact', 'like', '%'.$digits.'%');
+                }
+            })
+            ->first();
+
+        if (! $reservation) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'code' => __('We could not find a booking with those details. Check the code from your email or WhatsApp message.'),
+                ]);
+        }
+
+        return redirect()->route('storefront.reservation.receipt', $reservation);
+    }
+
     /**
      * Generate dynamic robots.txt for current domain.
      */
@@ -391,6 +564,14 @@ class StorefrontController extends Controller
         $baseUrl = $request->getSchemeAndHttpHost();
 
         $content = "User-agent: *\n";
+
+        if ($agent && ! $agent->isStorefrontPublic()) {
+            $content .= "Disallow: /\n\n";
+            $content .= "Sitemap: {$baseUrl}/sitemap.xml\n";
+
+            return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
         $content .= "Allow: /\n";
         $content .= "Disallow: /admin/\n";
         $content .= "Disallow: /dashboard/\n";
@@ -412,7 +593,7 @@ class StorefrontController extends Controller
             $content .= "User-agent: cohere-ai\nAllow: /\n";
             $content .= "User-agent: anthropic-ai\nAllow: /\n\n";
         } else {
-            $content .= "# AI Discovery Crawlers Disallowed (Upgrade to AI Ultimate Agency Plan to enable AI Search indexing)\n";
+            $content .= "# AI Discovery Crawlers Disallowed (Upgrade to Agency Plan to enable AI Search indexing)\n";
             $content .= "User-agent: GPTBot\nDisallow: /\n";
             $content .= "User-agent: ChatGPT-User\nDisallow: /\n";
             $content .= "User-agent: PerplexityBot\nDisallow: /\n";
@@ -448,7 +629,7 @@ class StorefrontController extends Controller
         // Homepage
         $xml .= "  <url>\n    <loc>{$baseUrl}</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n";
 
-        if ($agent) {
+        if ($agent && $agent->isStorefrontPublic()) {
             // Packages Catalog
             $xml .= "  <url>\n    <loc>{$baseUrl}/tours</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n";
             // Standalone Products Catalog
@@ -490,9 +671,13 @@ class StorefrontController extends Controller
             return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
         }
 
+        if (! $agent->isStorefrontPublic()) {
+            return response("# This booking page is not open yet.\n", 503, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
         if (! $agent->hasFeature('ai_discovery')) {
             $content = "# AI Discovery Not Unlocked for {$agent->name}\n\n";
-            $content .= "AI Search indexing and ChatGPT recommendation feeds (/llms.txt) are exclusive to the **AI Ultimate Agency** subscription plan.\n";
+            $content .= "AI Search indexing and ChatGPT recommendation feeds (/llms.txt) are exclusive to the **Agency** subscription plan.\n";
             $content .= "Upgrade at {$baseUrl}/settings/plan to activate AI Search Engine discovery.\n";
 
             return response($content, 403, ['Content-Type' => 'text/plain; charset=UTF-8']);
@@ -557,6 +742,18 @@ class StorefrontController extends Controller
             $content = "# Direct Booking Engine\n\nPlatform for direct verified tour operator storefronts.\n";
 
             return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        if (! $agent->isStorefrontPublic()) {
+            return response("# This booking page is not open yet.\n", 503, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        if (! $agent->hasFeature('ai_discovery')) {
+            $content = "# AI Discovery Not Unlocked for {$agent->name}\n\n";
+            $content .= "AI Search indexing and ChatGPT recommendation feeds (/llms-full.txt) are exclusive to the **Agency** subscription plan.\n";
+            $content .= "Upgrade at {$baseUrl}/settings/plan to activate AI Search Engine discovery.\n";
+
+            return response($content, 403, ['Content-Type' => 'text/plain; charset=UTF-8']);
         }
 
         $packages = $agent->packages()->where('status', ListingStatus::Published)->with(['products'])->get();

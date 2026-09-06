@@ -20,7 +20,9 @@ test('root platform domain serves platform welcome page', function () {
 
     $response->assertOk()
         ->assertViewIs('welcome')
-        ->assertSee('The simple way to sell your tours online', false);
+        ->assertSee('The simple way to sell your tours online', false)
+        ->assertSee('Privacy')
+        ->assertSee('Terms');
 });
 
 test('operator subdomain serves operator storefront with published listings', function () {
@@ -132,14 +134,14 @@ test('operator storefront serves AI discovery endpoints including robots.txt, si
     Cache::flush();
 
     Plan::seedDefaultPlans();
-    $enterprisePlan = Plan::where('slug', 'enterprise')->first();
+    $agencyPlan = Plan::where('slug', 'agency')->first();
 
     $operator = Operator::factory()->create([
         'name' => 'Komodo Dragon Charters',
         'bio' => 'Private luxury liveaboard and speedboat charters across Komodo National Park.',
         'status' => OperatorStatus::Approved,
         'contact_whatsapp' => '+628199988877',
-        'plan_id' => $enterprisePlan?->id,
+        'plan_id' => $agencyPlan?->id,
     ]);
 
     OperatorDomain::factory()->create([
@@ -350,6 +352,7 @@ test('pending operator storefront displays pending verification notice and retur
 
     $response->assertStatus(503)
         ->assertViewIs('storefront.pending')
-        ->assertSee('Storefront Under Verification')
+        ->assertSee('This page is not open yet')
+        ->assertSee('still being reviewed')
         ->assertSee('Pending Verification Island Tour');
 });

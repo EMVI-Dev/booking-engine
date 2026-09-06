@@ -3,9 +3,9 @@
     'footer' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xs overflow-hidden']) }}>
+<div {{ $attributes->class('op-card overflow-hidden') }}>
     @if ($header)
-        <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30">
+        <div class="border-b border-op-line bg-op-muted/60 px-6 py-4">
             {{ $header }}
         </div>
     @endif
@@ -15,7 +15,7 @@
     </div>
 
     @if ($footer)
-        <div class="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 flex items-center justify-between">
+        <div class="flex items-center justify-between border-t border-op-line bg-op-muted/60 px-6 py-4">
             {{ $footer }}
         </div>
     @endif

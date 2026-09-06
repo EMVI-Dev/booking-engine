@@ -625,22 +625,16 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
                     <ul class="space-y-1 text-slate-500 dark:text-slate-400">
                         <li class="flex items-center gap-2">
                             <i class="fa-solid fa-check text-emerald-500 text-[10px]"></i>
-                            <span>{{ $payment->plan->max_packages ? $payment->plan->max_packages . ' Package Listings' : 'Unlimited Package Listings' }}</span>
+                            <span>{{ $payment->plan->listingLimitLabel() }}</span>
                         </li>
                         <li class="flex items-center gap-2">
                             <i class="fa-solid fa-check text-emerald-500 text-[10px]"></i>
-                            <span>{{ $payment->plan->max_team_members ? $payment->plan->max_team_members . ' Team Staff Seats' : 'Unlimited Team Staff Seats' }}</span>
+                            <span>{{ $payment->plan->teamSeatLabel() }}</span>
                         </li>
                         @if ($payment->plan->hasFeature('custom_domain'))
                             <li class="flex items-center gap-2">
                                 <i class="fa-solid fa-check text-emerald-500 text-[10px]"></i>
-                                <span>{{ __('Custom Domain (yourbrand.com)') }}</span>
-                            </li>
-                        @endif
-                        @if ($payment->plan->hasFeature('custom_payment_gateway'))
-                            <li class="flex items-center gap-2">
-                                <i class="fa-solid fa-check text-emerald-500 text-[10px]"></i>
-                                <span>{{ __('BYO Custom Payment Gateway Keys') }}</span>
+                                <span>{{ __('Your own website address') }}</span>
                             </li>
                         @endif
                     </ul>

@@ -9,7 +9,7 @@
 Every monetary calculation, API payload, invoice, and ledger transaction across EMVI Platform MUST adhere strictly to the following 15 canonical definitions:
 
 1. **Booking Listed Price ($P_{list}$)**: The net tour package or product price specified by the operator (e.g., `Rp 1.000.000`).
-2. **Guest Service Fee ($F_{guest}$)**: The standard platform fee (e.g., 5.0% = `Rp 50.000`) added to the guest's checkout cart on *Starter Essential* and *Pro Operator* tiers. Set to `0.0%` for *Agency Ultimate* and *AI Ultimate Agency* (BYO Gateway).
+2. **Guest Service Fee ($F_{guest}$)**: The standard platform fee (e.g., 5.0% = `Rp 50.000`, capped) added to the guest's checkout cart on **every** plan, including Agency. Subscription does not waive this fee. EMVI remains merchant of record and pays DOKU from this margin.
 3. **Guest Total Paid ($T_{guest}$)**: Total amount collected from guest at checkout:
    $$T_{guest} = P_{list} + F_{guest}$$
 4. **Gateway Processing Fee ($F_{gw}$)**: Non-refundable fee charged by DOKU or card acquirers (e.g., 0.7% for QRIS = `Rp 7.350` on `Rp 1.050.000`).
@@ -126,26 +126,26 @@ stateDiagram-v2
 
 ## 5. Subscription Plan Commercial Matrix (Canonical Baseline)
 
-| Capability / Metric | **Starter Essential** | **Pro Operator** | **Agency Ultimate** | **AI Ultimate Agency** |
-| :--- | :--- | :--- | :--- | :--- |
-| **Monthly Price** | **Free / Rp 0** | **Rp 299.000 / mo** | **Rp 699.000 / mo** | **Rp 999.000 / mo** |
-| **Annual Price** | **Free / Rp 0** | **Rp 2.990.000 / yr** | **Rp 6.990.000 / yr** | **Rp 9.990.000 / yr** |
-| **Operator Commission Cut** | **0.0% (100% Net)** | **0.0% (100% Net)** | **0.0% (100% Net)** | **0.0% (100% Net)** |
-| **Guest Service Fee** | **5.0%** (Paid by Guest) | **5.0%** (Paid by Guest) | **0.0%** (Direct BYO Gateway) | **0.0%** (Direct BYO Gateway) |
-| **Package Listings Limit** | Up to **5** Packages | Up to **25** Packages | **Unlimited Listings** | **Unlimited Listings** |
-| **Team Staff Seats** | **Unlimited Staff** | **Unlimited Staff** | **Unlimited Staff** | **Unlimited Staff** |
-| **Custom Domain (`yourbrand.com`)** | 🔒 *Gated* | 🔒 *Gated* | ✅ **Included with Auto-SSL** | ✅ **Included with Auto-SSL** |
-| **Google Calendar & Live iCal Feed** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** | ✅ **Included** |
-| **Guest CRM Directory & LTV** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** | ✅ **Included** |
-| **1-Click WhatsApp Dispatch Center** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** | ✅ **Included** |
-| **BYO Gateway Credentials** | Shared Platform Gateway | Shared Platform Gateway | **BYO Custom Merchant Keys** | **BYO Custom Merchant Keys** |
-| **AI Search Discovery (`/llms.txt`)** | 🔒 *Gated* | 🔒 *Gated* | 🔒 *Gated* | ✅ **Exclusive Flagship Included** |
+| Capability / Metric | **Starter Essential** | **Pro Operator** | **Agency Ultimate** |
+| :--- | :--- | :--- | :--- |
+| **Monthly Price** | **Free / Rp 0** | **Rp 299.000 / mo** | **Rp 799.000 / mo** |
+| **Annual Price** | **Free / Rp 0** | **Rp 2.990.000 / yr** | **Rp 7.990.000 / yr** |
+| **Operator Commission Cut** | **0.0% (100% Net)** | **0.0% (100% Net)** | **0.0% (100% Net)** |
+| **Guest Service Fee** | **5.0%** (Paid by Guest) | **5.0%** (Paid by Guest) | **5.0%** (Paid by Guest) |
+| **Package Listings Limit** | Up to **5** trips and activities together | Up to **25** trips and activities together | **Unlimited Listings** |
+| **Team Staff Seats** | **You and 1 helper** | **Unlimited people** | **Unlimited people** |
+| **Custom Domain (`yourbrand.com`)** | 🔒 *Gated* | 🔒 *Gated* | ✅ **Included** |
+| **Google Calendar & Live iCal Feed** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** |
+| **Guest CRM Directory & LTV** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** |
+| **1-Click WhatsApp Dispatch Center** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** |
+| **Payment rails** | EMVI DOKU wallet | EMVI DOKU wallet | EMVI DOKU wallet |
+| **AI Search Discovery (`/llms.txt`)** | 🔒 *Gated* | 🔒 *Gated* | ✅ **Included** |
 
 ---
 
 ## 6. Plan Upgrade, Subscription Proration & Operational Money Rules
 
-1. **Immediate Upgrade with Linear Proration**: Upgrading from *Pro Operator* to *Agency Ultimate* or *AI Ultimate Agency* takes effect immediately. The exact linear prorated value of unused days on the current cycle is credited towards the new tier invoice.
+1. **Immediate Upgrade with Linear Proration**: Upgrading from *Pro Operator* to *Agency Ultimate* takes effect immediately. The exact linear prorated value of unused days on the current cycle is credited towards the new tier invoice.
 2. **3-Day Grace Period & Day 4 Fallback Engine**:
    - `Day 1 - 3`: Retry payment attempt & display warning banner in Operator Portal. Storefront remains fully operational.
    - `Day 4`: If payment remains uncollected, account automatically falls back to *Starter Essential (Free)*. Custom domains pause to `slug.booking.emvi`, listings > 5 set to *Draft*, and guest fee reverts to 5.0%.

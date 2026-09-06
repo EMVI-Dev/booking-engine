@@ -95,7 +95,48 @@ class Plan extends Model
     }
 
     /**
-     * Get or create the default Starter plan.
+     * Everyday label for how many people can run the business on this plan.
+     */
+    public function teamSeatLabel(): string
+    {
+        if ($this->team_member_limit === null) {
+            return __('Unlimited people');
+        }
+
+        if ($this->team_member_limit === 2) {
+            return __('You and 1 helper');
+        }
+
+        return __(':count people', ['count' => $this->team_member_limit]);
+    }
+
+    /**
+     * Everyday label for the shared trips + activities listing cap.
+     */
+    public function listingLimitLabel(): string
+    {
+        if ($this->package_limit === null) {
+            return __('Unlimited trips and activities');
+        }
+
+        return __(':count trips and activities', ['count' => $this->package_limit]);
+    }
+
+    /**
+     * Rank used for upgrade / downgrade (Essential < Pro < Agency).
+     */
+    public function tierRank(): int
+    {
+        return match ($this->slug) {
+            'enterprise' => 4,
+            'agency' => 3,
+            'growth' => 2,
+            default => 1,
+        };
+    }
+
+    /**
+     * Get or create the default Essential plan.
      */
     public static function getDefaultPlan(): self
     {
@@ -118,88 +159,56 @@ class Plan extends Model
      */
     public static function seedDefaultPlans(): void
     {
+        $legacyAgency = self::where('slug', 'enterprise')->first();
+        if ($legacyAgency && ! self::where('slug', 'agency')->exists()) {
+            $legacyAgency->update(['slug' => 'agency']);
+        }
+
         self::updateOrCreate(['slug' => 'starter'], [
-            'name' => 'Starter Essential',
-            'tagline' => 'Launch your tour business with zero monthly subscription cost and pay-as-you-book model.',
+            'name' => 'Essential',
+            'tagline' => 'For freelance tour guides. Your website, booking, and pay in one place.',
             'price_monthly' => 0.00,
             'price_yearly' => 0.00,
-            'commission_rate' => 0.0000, // 100% Net to Operator
+            'commission_rate' => 0.0000,
             'package_limit' => 5,
-            'team_member_limit' => null, // unlimited
-            'features' => [
-                'custom_subdomain' => true,
-                'standard_checkout' => true,
-                'reservations_management' => true,
-                'promotional_coupons' => true,
-                'whatsapp_chat_widget' => true,
-                'quick_booking_links' => true,
-                'basic_calendar' => true,
-                'advanced_calendar' => false,
-                'daily_manifest_export' => false,
-                'capacity_heatmap' => false,
-                'google_calendar' => false,
-                'guest_crm' => false,
-                'whatsapp_dispatch' => false,
-                'tracking_pixels' => false,
-                'automated_review_requests' => false,
-                'custom_domain' => false,
-                'byo_gateway' => false,
-                'priority_support' => false,
-            ],
+            'team_member_limit' => 2,
+            'features' => self::featureFlags(),
             'is_active' => true,
             'is_popular' => false,
             'sort_order' => 1,
         ]);
 
         self::updateOrCreate(['slug' => 'growth'], [
-            'name' => 'Pro Operator',
-            'tagline' => 'Designed for growing tour operators and activity companies needing Resource Timeline Matrix, CRM, and automation.',
+            'name' => 'Pro',
+            'tagline' => 'For freelance guides who need more, or a small group selling together.',
             'price_monthly' => 299000.00,
             'price_yearly' => 2990000.00,
-            'commission_rate' => 0.0000, // 100% Net to Operator
+            'commission_rate' => 0.0000,
             'package_limit' => 25,
-            'team_member_limit' => null, // unlimited
-            'features' => [
-                'custom_subdomain' => true,
-                'standard_checkout' => true,
-                'reservations_management' => true,
-                'promotional_coupons' => true,
-                'whatsapp_chat_widget' => true,
-                'quick_booking_links' => true,
-                'basic_calendar' => true,
+            'team_member_limit' => null,
+            'features' => self::featureFlags([
                 'advanced_calendar' => true,
                 'daily_manifest_export' => true,
-                'capacity_heatmap' => false,
                 'google_calendar' => true,
                 'guest_crm' => true,
                 'whatsapp_dispatch' => true,
                 'tracking_pixels' => true,
                 'automated_review_requests' => true,
-                'custom_domain' => false,
-                'byo_gateway' => false,
-                'priority_support' => false,
-            ],
+            ]),
             'is_active' => true,
             'is_popular' => true,
             'sort_order' => 2,
         ]);
 
-        $enterprise = self::updateOrCreate(['slug' => 'enterprise'], [
-            'name' => 'Agency Ultimate',
-            'tagline' => 'White-label branding on your custom domain with SSL, BYO payment gateway, AI ChatGPT Search Discovery, Capacity Heatmap Analytics, and unlimited listings.',
+        $agency = self::updateOrCreate(['slug' => 'agency'], [
+            'name' => 'Agency',
+            'tagline' => 'For small to mid travel agencies. Your own website address and white-label booking page.',
             'price_monthly' => 799000.00,
             'price_yearly' => 7990000.00,
-            'commission_rate' => 0.0000, // 100% Net to Operator
-            'package_limit' => null, // unlimited
-            'team_member_limit' => null, // unlimited
-            'features' => [
-                'custom_subdomain' => true,
-                'standard_checkout' => true,
-                'reservations_management' => true,
-                'promotional_coupons' => true,
-                'whatsapp_chat_widget' => true,
-                'quick_booking_links' => true,
-                'basic_calendar' => true,
+            'commission_rate' => 0.0000,
+            'package_limit' => null,
+            'team_member_limit' => null,
+            'features' => self::featureFlags([
                 'advanced_calendar' => true,
                 'daily_manifest_export' => true,
                 'capacity_heatmap' => true,
@@ -209,21 +218,59 @@ class Plan extends Model
                 'tracking_pixels' => true,
                 'automated_review_requests' => true,
                 'custom_domain' => true,
-                'byo_gateway' => true,
                 'priority_support' => true,
                 'ai_discovery' => true,
                 'remove_branding' => true,
-            ],
+            ]),
             'is_active' => true,
             'is_popular' => false,
             'sort_order' => 3,
         ]);
 
-        // Clean up legacy ai_ultimate tier if present and migrate operators to Agency Ultimate
+        $hiddenEnterprise = self::where('slug', 'enterprise')->first();
+        if ($hiddenEnterprise) {
+            Operator::where('plan_id', $hiddenEnterprise->id)->update(['plan_id' => $agency->id]);
+            $hiddenEnterprise->delete();
+        }
+
         $legacyAiPlan = self::where('slug', 'ai_ultimate')->first();
         if ($legacyAiPlan) {
-            Operator::where('plan_id', $legacyAiPlan->id)->update(['plan_id' => $enterprise->id]);
+            Operator::where('plan_id', $legacyAiPlan->id)->update(['plan_id' => $agency->id]);
             $legacyAiPlan->delete();
         }
+    }
+
+    /**
+     * @param  array<string, bool>  $overrides
+     * @return array<string, bool>
+     */
+    public static function featureFlags(array $overrides = []): array
+    {
+        return [
+            'custom_subdomain' => true,
+            'standard_checkout' => true,
+            'reservations_management' => true,
+            'promotional_coupons' => true,
+            'whatsapp_chat_widget' => true,
+            'quick_booking_links' => true,
+            'basic_calendar' => true,
+            'advanced_calendar' => false,
+            'daily_manifest_export' => false,
+            'capacity_heatmap' => false,
+            'google_calendar' => false,
+            'guest_crm' => false,
+            'whatsapp_dispatch' => false,
+            'tracking_pixels' => false,
+            'automated_review_requests' => false,
+            'custom_domain' => false,
+            'byo_gateway' => false,
+            'priority_support' => false,
+            'ai_discovery' => false,
+            'remove_branding' => false,
+            'qr_checkin' => false,
+            'departure_slots' => false,
+            'ground_crew_roles' => false,
+            ...$overrides,
+        ];
     }
 }

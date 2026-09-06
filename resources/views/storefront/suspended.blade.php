@@ -12,11 +12,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <style>
-        :root {
-            --brand-color: {{ $agent->brand_color ?: '#4f46e5' }};
-        }
-    </style>
+    @include('storefront.partials.brand-theme')
 </head>
 <body class="h-full bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 font-sans antialiased flex flex-col justify-between">
     <!-- Top Branded Header -->
@@ -105,7 +101,7 @@
 
     <!-- Footer -->
     <footer class="py-6 border-t border-slate-200/60 dark:border-zinc-800/60 text-center text-xs text-slate-400">
-        <p>&copy; {{ date('Y') }} {{ $agent->displayName }}. {{ __('Powered by Booking Engine.') }}</p>
+        <p>&copy; {{ date('Y') }} {{ $agent->displayName }}@if ($agent->showsPlatformBranding()). {{ __('Powered by Booking Engine.') }}@endif</p>
     </footer>
 </body>
 </html>

@@ -12,6 +12,8 @@ new class extends Component {
 
     public function mount(): void
     {
+        abort_unless($this->currentOperator?->hasFeature('capacity_heatmap') ?? false, 403);
+
         $now = now();
         $this->heatmapYear = (int) $now->format('Y');
         $this->heatmapMonth = (int) $now->format('n');

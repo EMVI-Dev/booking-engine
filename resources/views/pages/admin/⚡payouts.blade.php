@@ -12,7 +12,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
-new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
     use WithFileUploads, WithPagination;
 
     public string $statusFilter = 'all';
@@ -134,9 +134,9 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
                 'processed_at' => now(),
                 'notes' => ($payout->notes ? $payout->notes . ' | ' : '') . $res['message'] . ' [Ref: ' . $res['reference'] . ']',
             ]);
-            session()->flash('success', __('Payout #:ref disbursed via DOKU BI-FAST API successfully!', ['ref' => $payout->reference_number]));
+            session()->flash('success', __('Sent payout :ref to their bank.', ['ref' => $payout->reference_number]));
         } else {
-            session()->flash('error', __('Failed to disburse payout via DOKU API. Please check account details.'));
+            session()->flash('error', __('Could not send this payout. Check the bank account details.'));
         }
     }
 
@@ -161,31 +161,19 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
     }
 }; ?>
 
-<div class="space-y-6 max-w-7xl mx-auto">
-    <!-- Top Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black shadow-xs">
-                    <i class="fa-solid fa-money-bill-transfer text-lg"></i>
-                </span>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Automated DOKU Payout Audit & Settlement') }}
-                </h1>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Automated DOKU BI-FAST disbursement logs, auto-transfer audits, and exception controls.') }}
-            </p>
-        </div>
-    </div>
-
-        <div class="flex items-center gap-2">
-            <span class="px-3 py-1.5 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{{ __('DOKU BI-FAST Auto-Disbursement: ACTIVE') }}</span>
+<div class="space-y-6">
+    <x-page-header
+        :title="__('Payouts')"
+        :subtitle="__('Send operator money to their bank. Check anything that needs a second look.')"
+        icon="fa-money-bill-transfer"
+    >
+        <x-slot:actions>
+            <span class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
+                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                <span>{{ __('Auto send is on') }}</span>
             </span>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Summary Metrics Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -201,7 +189,7 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
             <p class="text-2xl font-black text-slate-900 dark:text-white">
                 Rp {{ number_format($this->metrics['pending_amount'], 0, ',', '.') }}
             </p>
-            <span class="text-[11px] text-amber-700 dark:text-amber-300">{{ __('Requires operator bank disbursement') }}</span>
+            <span class="text-[11px] text-amber-700 dark:text-amber-300">{{ __('Waiting to send to their bank') }}</span>
         </div>
 
         <div class="p-5 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 shadow-xs flex flex-col justify-between space-y-3">
@@ -365,7 +353,7 @@ new #[Title('Payout Requests')] #[Layout('layouts.admin')] class extends Compone
                                         <button type="button" wire:click="disburseViaDokuApi('{{ $payout->id }}')"
                                             class="h-8 px-2.5 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs shadow-xs transition cursor-pointer inline-flex items-center gap-1">
                                             <i class="fa-solid fa-bolt text-[10px]"></i>
-                                            <span>{{ __('DOKU BI-FAST') }}</span>
+                                            <span>{{ __('Send to bank') }}</span>
                                         </button>
                                         <button type="button" wire:click="openApproveModal('{{ $payout->id }}')"
                                             class="h-8 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer inline-flex items-center">

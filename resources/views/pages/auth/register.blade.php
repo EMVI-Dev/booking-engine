@@ -1,219 +1,317 @@
-<x-layouts::auth :title="__('Create Tour Operator Storefront')">
-    <div class="flex flex-col gap-6" x-data="{
-        step: 1,
-        agencyName: @js(old('agency_name', '')),
-        slug: @js(old('slug', '')),
-        autoSlug: true,
-        agreedTerms: false,
-        updateSlug() {
-            if (this.autoSlug && this.agencyName) {
-                this.slug = this.agencyName.toLowerCase()
-                    .replace(/[^\w\s-]/g, '')
-                    .trim()
-                    .replace(/\s+/g, '-');
-            }
-        },
-        goToStep(s) {
-            this.step = s;
-        }
-    }">
-        <!-- Header -->
-        <div class="text-center space-y-2">
-            <span
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+<x-layouts::auth :title="__('Create your account')">
+    @php
+        $platformDomain = app(\App\Services\DomainResolverService::class)->getPlatformDomain();
+        $startStep = $errors->hasAny(['name', 'email', 'password', 'password_confirmation'])
+            ? 1
+            : ($errors->any() ? 2 : 1);
+    @endphp
+
+    <div
+        class="flex flex-col gap-6"
+        x-data="{
+            step: {{ $startStep }},
+            agencyName: @js(old('agency_name', '')),
+            slug: @js(old('slug', '')),
+            autoSlug: {{ old('slug') ? 'false' : 'true' }},
+            agreedTerms: {{ old('terms') ? 'true' : 'false' }},
+            submitting: false,
+            platformDomain: @js($platformDomain),
+            updateSlug() {
+                if (this.autoSlug && this.agencyName) {
+                    this.slug = this.agencyName.toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .trim()
+                        .replace(/\s+/g, '-');
+                }
+            },
+            fieldValid(id) {
+                const el = document.getElementById(id);
+                return ! el || el.checkValidity();
+            },
+            accountReady() {
+                return ['name', 'email', 'password', 'password_confirmation'].every((id) => this.fieldValid(id));
+            },
+            goToStep(next) {
+                if (next > this.step && ! this.accountReady()) {
+                    ['name', 'email', 'password', 'password_confirmation'].some((id) => {
+                        const el = document.getElementById(id);
+                        if (el && ! el.checkValidity()) {
+                            el.reportValidity();
+                            return true;
+                        }
+                        return false;
+                    });
+                    return;
+                }
+                this.step = next;
+            },
+            continueToBusiness() {
+                this.goToStep(2);
+            },
+            handleSubmit(event) {
+                if (! this.accountReady()) {
+                    event.preventDefault();
+                    this.step = 1;
+                    this.$nextTick(() => {
+                        ['name', 'email', 'password', 'password_confirmation'].some((id) => {
+                            const el = document.getElementById(id);
+                            if (el && ! el.checkValidity()) {
+                                el.reportValidity();
+                                return true;
+                            }
+                            return false;
+                        });
+                    });
+                    return;
+                }
+
+                const business = document.getElementById('agency_name');
+                if (business && ! business.checkValidity()) {
+                    event.preventDefault();
+                    this.step = 2;
+                    this.$nextTick(() => business.reportValidity());
+                    return;
+                }
+
+                if (! this.agreedTerms) {
+                    event.preventDefault();
+                    this.step = 2;
+                    return;
+                }
+
+                this.submitting = true;
+            },
+        }"
+    >
+        <div class="space-y-2 text-center">
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-[#FFEF4D]/40 bg-[#FFEF4D]/15 px-3 py-1 text-xs font-semibold text-[#8a7808] dark:border-[#FFEF4D]/30 dark:bg-[#FFEF4D]/10 dark:text-[#FFEF4D]">
                 <i class="fa-solid fa-store text-xs"></i>
-                {{ __('Tour Operator Onboarding') }}
+                {{ __('New operator') }}
             </span>
             <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                {{ __('Launch your booking storefront') }}
+                {{ __('Start taking bookings') }}
             </h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-                {{ __('Set up your direct booking page with real-time inventory in 3 quick steps.') }}
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+                {{ __('A few details now. Bank account and bio can wait until after you sign in.') }}
             </p>
         </div>
 
-        <!-- Step Indicator -->
-        <div class="flex items-center justify-between relative px-2 pt-2">
-            <div class="absolute left-6 right-6 top-6 -translate-y-1/2 h-0.5 bg-slate-200 dark:bg-zinc-800 -z-0"></div>
-            <div class="absolute left-6 top-6 -translate-y-1/2 h-0.5 bg-indigo-600 transition-all duration-300 -z-0"
-                :style="'width: ' + ((step - 1) / 2 * 100) + '%; max-width: calc(100% - 48px);'"></div>
+        <div class="relative flex items-center justify-between px-2 pt-2">
+            <div class="absolute top-6 right-6 left-6 -z-0 h-0.5 -translate-y-1/2 bg-slate-200 dark:bg-zinc-800"></div>
+            <div
+                class="absolute top-6 left-6 -z-0 h-0.5 -translate-y-1/2 bg-brand-400 motion-safe:transition-all motion-safe:duration-300"
+                :style="'width: ' + ((step - 1) * 100) + '%; max-width: calc(100% - 48px);'"
+            ></div>
 
-            <!-- Step 1 Indicator -->
-            <button type="button" @click="goToStep(1)"
-                class="relative z-10 flex flex-col items-center gap-1.5 focus:outline-none cursor-pointer">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200"
-                    :class="step >= 1 ? 'bg-indigo-600 text-white shadow-sm ring-4 ring-indigo-50 dark:ring-indigo-950/80' :
-                        'bg-slate-200 dark:bg-zinc-800 text-slate-500'">
+            <button
+                type="button"
+                @click="goToStep(1)"
+                class="relative z-10 flex cursor-pointer flex-col items-center gap-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70"
+                :aria-current="step === 1 ? 'step' : false"
+            >
+                <div
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold motion-safe:transition-colors motion-safe:duration-200"
+                    :class="step === 1
+                        ? 'bg-brand-400 text-brand-foreground shadow-sm ring-4 ring-brand-400/20'
+                        : 'bg-[#12181E] text-[#FFEF4D]'"
+                >
                     1
                 </div>
-                <span class="text-xs font-medium"
-                    :class="step === 1 ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500'">
-                    {{ __('Account') }}
+                <span
+                    class="text-xs font-medium"
+                    :class="step === 1 ? 'font-semibold text-[#8a7808] dark:text-[#FFEF4D]' : 'text-slate-500'"
+                >
+                    {{ __('You') }}
                 </span>
             </button>
 
-            <!-- Step 2 Indicator -->
-            <button type="button" @click="goToStep(2)"
-                class="relative z-10 flex flex-col items-center gap-1.5 focus:outline-none cursor-pointer">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200"
-                    :class="step >= 2 ? 'bg-indigo-600 text-white shadow-sm ring-4 ring-indigo-50 dark:ring-indigo-950/80' :
-                        'bg-slate-200 dark:bg-zinc-800 text-slate-500'">
+            <button
+                type="button"
+                @click="goToStep(2)"
+                class="relative z-10 flex cursor-pointer flex-col items-center gap-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70"
+                :aria-current="step === 2 ? 'step' : false"
+            >
+                <div
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold motion-safe:transition-colors motion-safe:duration-200"
+                    :class="step === 2
+                        ? 'bg-brand-400 text-brand-foreground shadow-sm ring-4 ring-brand-400/20'
+                        : (step > 2 ? 'bg-[#12181E] text-[#FFEF4D]' : 'bg-slate-200 text-slate-500 dark:bg-zinc-800')"
+                >
                     2
                 </div>
-                <span class="text-xs font-medium"
-                    :class="step === 2 ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500'">
-                    {{ __('Storefront') }}
-                </span>
-            </button>
-
-            <!-- Step 3 Indicator -->
-            <button type="button" @click="goToStep(3)"
-                class="relative z-10 flex flex-col items-center gap-1.5 focus:outline-none cursor-pointer">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200"
-                    :class="step >= 3 ? 'bg-indigo-600 text-white shadow-sm ring-4 ring-indigo-50 dark:ring-indigo-950/80' :
-                        'bg-slate-200 dark:bg-zinc-800 text-slate-500'">
-                    3
-                </div>
-                <span class="text-xs font-medium"
-                    :class="step === 3 ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500'">
-                    {{ __('Payouts') }}
+                <span
+                    class="text-xs font-medium"
+                    :class="step === 2 ? 'font-semibold text-[#8a7808] dark:text-[#FFEF4D]' : 'text-slate-500'"
+                >
+                    {{ __('Your business') }}
                 </span>
             </button>
         </div>
 
-        <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
-        <form method="POST" action="{{ route('register.store') }}" class="flex flex-col gap-5 mt-2">
+        <form
+            method="POST"
+            action="{{ route('register.store') }}"
+            class="mt-2 flex flex-col gap-5"
+            @submit="handleSubmit($event)"
+        >
             @csrf
 
-            <!-- STEP 1: Account Credentials -->
-            <div x-show="step === 1" x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0"
-                class="space-y-4">
+            <div
+                x-show="step === 1"
+                class="space-y-4 motion-safe:transition-opacity motion-safe:duration-200"
+                x-transition:enter="motion-safe:transition motion-safe:ease-out motion-safe:duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+            >
                 <div>
-                    <x-label for="name" :value="__('Your Full Name (Owner)')" required />
-                    <x-input id="name" name="name" :value="old('name')" type="text" required autofocus
-                        autocomplete="name" placeholder="John Doe" :error="$errors->has('name')" />
+                    <x-label for="name" :value="__('Your name')" required />
+                    <x-input
+                        id="name"
+                        name="name"
+                        :value="old('name')"
+                        type="text"
+                        required
+                        autofocus
+                        autocomplete="name"
+                        placeholder="{{ __('Your name') }}"
+                        :error="$errors->has('name')"
+                    />
                     <x-input-error :messages="$errors->get('name')" />
                 </div>
 
                 <div>
-                    <x-label for="email" :value="__('Work Email Address')" required />
-                    <x-input id="email" name="email" :value="old('email')" type="email" required
-                        autocomplete="email" placeholder="john@example.com" :error="$errors->has('email')" />
+                    <x-label for="email" :value="__('Work email')" required />
+                    <x-input
+                        id="email"
+                        name="email"
+                        :value="old('email')"
+                        type="email"
+                        required
+                        autocomplete="email"
+                        placeholder="{{ __('you@email.com') }}"
+                        :error="$errors->has('email')"
+                    />
                     <x-input-error :messages="$errors->get('email')" />
                 </div>
 
                 <div>
                     <x-label for="password" :value="__('Password')" required />
-                    <x-input id="password" name="password" type="password" required autocomplete="new-password"
-                        placeholder="••••••••" :error="$errors->has('password')" />
+                    <x-input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        autocomplete="new-password"
+                        placeholder="••••••••"
+                        :error="$errors->has('password')"
+                    />
+                    <p class="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
+                        {{ __('At least 8 characters.') }}
+                    </p>
                     <x-input-error :messages="$errors->get('password')" />
                 </div>
 
                 <div>
-                    <x-label for="password_confirmation" :value="__('Confirm Password')" required />
-                    <x-input id="password_confirmation" name="password_confirmation" type="password" required
-                        autocomplete="new-password" placeholder="••••••••" :error="$errors->has('password_confirmation')" />
+                    <x-label for="password_confirmation" :value="__('Type the password again')" required />
+                    <x-input
+                        id="password_confirmation"
+                        name="password_confirmation"
+                        type="password"
+                        required
+                        autocomplete="new-password"
+                        placeholder="••••••••"
+                        :error="$errors->has('password_confirmation')"
+                    />
                     <x-input-error :messages="$errors->get('password_confirmation')" />
                 </div>
 
                 <div class="pt-2">
-                    <x-button type="button" variant="primary" class="w-full" @click="step = 2">
-                        {{ __('Continue to Storefront Details') }}
-                        <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
+                    <x-button type="button" variant="primary" class="w-full" @click="continueToBusiness()">
+                        {{ __('Continue') }}
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
                     </x-button>
                 </div>
             </div>
 
-            <!-- STEP 2: Storefront & Brand -->
-            <div x-show="step === 2" x-cloak style="display: none;"
-                x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-4"
-                x-transition:enter-end="opacity-100 translate-x-0" class="space-y-4">
+            <div
+                x-show="step === 2"
+                x-cloak
+                style="display: none;"
+                class="space-y-4 motion-safe:transition-opacity motion-safe:duration-200"
+                x-transition:enter="motion-safe:transition motion-safe:ease-out motion-safe:duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+            >
                 <div>
-                    <x-label for="agency_name" :value="__('Agency or Guide Name')" required />
-                    <x-input id="agency_name" name="agency_name" x-model="agencyName" @input="updateSlug()"
-                        type="text" placeholder="e.g. Bali Snorkel & Trek Tours" :error="$errors->has('agency_name')" />
+                    <x-label for="agency_name" :value="__('Your business name')" required />
+                    <x-input
+                        id="agency_name"
+                        name="agency_name"
+                        x-model="agencyName"
+                        @input="updateSlug()"
+                        type="text"
+                        required
+                        autocomplete="organization"
+                        placeholder="{{ __('Your business name') }}"
+                        :error="$errors->has('agency_name')"
+                    />
                     <x-input-error :messages="$errors->get('agency_name')" />
                 </div>
 
                 <div>
-                    <x-label for="slug" :value="__('Storefront Subdomain')" required />
-                    <x-input id="slug" name="slug" x-model="slug" @input="autoSlug = false" type="text"
-                        placeholder="balitours" :error="$errors->has('slug')" />
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1">
-                        <span>{{ __('Your direct URL will be:') }}</span>
-                        <span class="font-mono font-medium text-indigo-600 dark:text-indigo-400"
-                            x-text="(slug || 'your-agency') + '.booking.emvi'"></span>
+                    <x-label for="slug" :value="__('Your page address')" />
+                    <x-input
+                        id="slug"
+                        name="slug"
+                        x-model="slug"
+                        @input="autoSlug = false"
+                        type="text"
+                        autocomplete="off"
+                        placeholder="{{ __('your-page') }}"
+                        :error="$errors->has('slug')"
+                    />
+                    <p class="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+                        <span>{{ __('Guests will open:') }}</span>
+                        <span
+                            class="font-mono font-medium text-[#8a7808] dark:text-[#FFEF4D]"
+                            x-text="(slug || 'your-name') + '.' + platformDomain"
+                        ></span>
                     </p>
                     <x-input-error :messages="$errors->get('slug')" />
                 </div>
 
                 <div>
-                    <x-label for="contact_whatsapp" :value="__('WhatsApp Contact Number')" />
-                    <x-input id="contact_whatsapp" name="contact_whatsapp" :value="old('contact_whatsapp')" type="text"
-                        placeholder="+62 812 3456 7890" :error="$errors->has('contact_whatsapp')" />
-                    <p class="text-xs text-slate-500 mt-1">
-                        {{ __('Used as instant guest contact fallback on your storefront.') }}</p>
+                    <x-label for="contact_whatsapp" :value="__('WhatsApp number')" />
+                    <x-input
+                        id="contact_whatsapp"
+                        name="contact_whatsapp"
+                        :value="old('contact_whatsapp')"
+                        type="tel"
+                        autocomplete="tel"
+                        placeholder="{{ __('Your WhatsApp number') }}"
+                        :error="$errors->has('contact_whatsapp')"
+                    />
+                    <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                        {{ __('Optional. Guests can message you from your page.') }}
+                    </p>
                     <x-input-error :messages="$errors->get('contact_whatsapp')" />
                 </div>
 
-                <div class="flex items-center gap-3 pt-2">
-                    <x-button type="button" variant="outline" class="w-1/3" @click="step = 1">
-                        {{ __('Back') }}
-                    </x-button>
-                    <x-button type="button" variant="primary" class="w-2/3" @click="step = 3">
-                        {{ __('Continue to Payouts') }}
-                        <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
-                    </x-button>
-                </div>
-            </div>
+                <div class="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
+                    <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                        {{ __('You can add your payout bank account later. We hold guest money until the trip, then send the listed price to you.') }}
+                    </p>
 
-            <!-- STEP 3: Payouts & Launch -->
-            <div x-show="step === 3" x-cloak style="display: none;"
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0"
-                class="space-y-4">
-                <div>
-                    <x-label for="bank_account_ref" :value="__('Bank Account Reference / Settlement Ref')" />
-                    <x-input id="bank_account_ref" name="bank_account_ref" :value="old('bank_account_ref')" type="text"
-                        placeholder="e.g. BCA - 1234567890" :error="$errors->has('bank_account_ref')" />
-                    <p class="text-xs text-slate-500 mt-1">
-                        {{ __('Used for direct bank payouts and automated split settlements. Can be updated or customized later in dashboard.') }}</p>
-                    <x-input-error :messages="$errors->get('bank_account_ref')" />
-                </div>
-
-                <div>
-                    <x-label for="bio" :value="__('Short Agency Bio / Introduction')" />
-                    <x-textarea id="bio" name="bio" rows="2"
-                        placeholder="Tell guests about your experience, local expertise, and tour offerings..."
-                        :error="$errors->has('bio')">{{ old('bio') }}</x-textarea>
-                    <x-input-error :messages="$errors->get('bio')" />
-                </div>
-
-                <!-- Terms & Protection Agreement Checkbox -->
-                <div
-                    class="rounded-2xl p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-3">
-                    <div class="space-y-1 text-xs text-slate-600 dark:text-slate-400">
-                        <p class="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-1.5">
-                            <i class="fa-solid fa-shield-halved text-indigo-500"></i>
-                            {{ __('Storefront Terms & Protection') }}
-                        </p>
-                        <p>{{ __('By creating your storefront, you agree to our tour operator platform terms, automated split settlements, and customer data protection compliance (UU PDP).') }}
-                        </p>
-                    </div>
-
-                    <div class="pt-2 border-t border-slate-200 dark:border-zinc-700/60">
-                        <x-checkbox
-                            id="terms"
-                            name="terms"
-                            value="1"
-                            x-model="agreedTerms"
-                            required
-                        >
-                            <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 select-none">
-                                {{ __('I agree to the Storefront Terms, Settlement Schedule & Privacy Policy') }} <span class="text-rose-500">*</span>
+                    <div class="border-t border-slate-200 pt-2 dark:border-zinc-700/60">
+                        <x-checkbox id="terms" name="terms" value="1" x-model="agreedTerms" required>
+                            <span class="select-none text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                {{ __('I agree to the') }}
+                                <a href="{{ route('legal.terms') }}" target="_blank" class="underline">{{ __('platform terms') }}</a>
+                                {{ __('and') }}
+                                <a href="{{ route('legal.privacy') }}" target="_blank" class="underline">{{ __('privacy') }}</a>
+                                <span class="text-rose-500">*</span>
                             </span>
                         </x-checkbox>
                         <x-input-error :messages="$errors->get('terms')" />
@@ -221,29 +319,37 @@
                 </div>
 
                 <div class="flex items-center gap-3 pt-2">
-                    <x-button type="button" variant="outline" class="w-1/3" @click="step = 2">
+                    <x-button type="button" variant="outline" class="w-1/3" @click="goToStep(1)">
                         {{ __('Back') }}
                     </x-button>
                     <x-button
                         type="submit"
                         variant="primary"
-                        class="w-2/3 shadow-sm font-semibold transition-all duration-200"
-                        x-bind:disabled="!agreedTerms"
-                        x-bind:class="!agreedTerms ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'"
+                        class="w-2/3 font-semibold shadow-sm"
+                        x-bind:disabled="!agreedTerms || submitting"
+                        x-bind:class="(!agreedTerms || submitting) ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'"
                         data-test="register-user-button"
                     >
-                        <i class="fa-solid fa-circle-check mr-1.5 text-emerald-400"></i>
-                        {{ __('Launch Storefront') }}
+                        <span x-show="!submitting" class="inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check text-xs"></i>
+                            {{ __('Create account') }}
+                        </span>
+                        <span x-show="submitting" x-cloak class="inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-notch animate-spin text-xs"></i>
+                            {{ __('Creating your account…') }}
+                        </span>
                     </x-button>
                 </div>
             </div>
         </form>
 
-        <div class="text-sm text-center text-slate-600 dark:text-slate-400 pt-1">
-            <span>{{ __('Already have an operator account?') }}</span>
-            <a href="{{ route('login') }}"
-                class="font-semibold underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
-                wire:navigate>{{ __('Log in') }}</a>
+        <div class="pt-1 text-center text-sm text-slate-600 dark:text-slate-400">
+            <span>{{ __('Already have an account?') }}</span>
+            <a
+                href="{{ route('login') }}"
+                class="font-semibold text-[#8a7808] underline hover:text-[#6b5d06] dark:text-[#FFEF4D] dark:hover:text-[#fae639]"
+                wire:navigate
+            >{{ __('Log in') }}</a>
         </div>
     </div>
 </x-layouts::auth>

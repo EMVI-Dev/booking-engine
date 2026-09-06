@@ -30,7 +30,7 @@ test('admin can view coupons page and create a new promo code', function () {
     Livewire::actingAs($this->admin)
         ->test('pages::admin.coupons')
         ->assertOk()
-        ->assertSee('Platform Subscription Promo Codes')
+        ->assertSee('Coupons')
         ->call('openCreateModal')
         ->set('code', 'TREK15')
         ->set('description', '15% Off Trekking Launch')

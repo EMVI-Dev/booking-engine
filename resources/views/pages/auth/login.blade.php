@@ -7,8 +7,8 @@
     }">
         <div class="text-center space-y-2">
             <span
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                <i class="fa-solid fa-compass text-xs text-indigo-600 dark:text-indigo-400"></i>
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FFEF4D]/15 text-[#8a7808] dark:bg-[#FFEF4D]/10 dark:text-[#FFEF4D] border border-[#FFEF4D]/40 dark:border-[#FFEF4D]/30">
+                <i class="fa-solid fa-compass text-xs"></i>
                 {{ __('Operator Portal') }}
             </span>
             <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
@@ -56,7 +56,7 @@
             <div>
                 <x-label for="email" :value="__('Email address')" required />
                 <x-input id="email" name="email" :value="old('email')" type="email" required autofocus
-                    autocomplete="email" placeholder="baliridetours@gmail.com" :error="$errors->has('email')" />
+                    autocomplete="email" placeholder="{{ __('you@email.com') }}" :error="$errors->has('email')" />
                 <x-input-error :messages="$errors->get('email')" />
             </div>
 
@@ -65,7 +65,7 @@
                 <div class="flex items-center justify-between mb-1">
                     <x-label for="password" :value="__('Password')" required />
                     @if (Route::has('password.request'))
-                        <a class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                        <a class="text-xs font-medium text-[#8a7808] hover:underline dark:text-[#FFEF4D]"
                             href="{{ route('password.request') }}" wire:navigate>
                             {{ __('Forgot password?') }}
                         </a>
@@ -92,8 +92,8 @@
         <div class="text-sm text-center text-zinc-600 dark:text-zinc-400">
             <span>{{ __('New tour operator or guide?') }}</span>
             <a href="{{ route('register') }}"
-                class="font-semibold underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
-                wire:navigate>{{ __('Create operator account') }}</a>
+                class="font-semibold text-[#8a7808] underline hover:text-[#6b5d06] dark:text-[#FFEF4D] dark:hover:text-[#fae639]"
+                wire:navigate>{{ __('Create an account') }}</a>
         </div>
     </div>
 </x-layouts::auth>

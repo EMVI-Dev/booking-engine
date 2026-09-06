@@ -33,8 +33,8 @@ test('unauthenticated guest accessing admin dashboard is redirected to admin log
 test('admin login page is rendered for guests', function () {
     $this->get(route('admin.login'))
         ->assertOk()
-        ->assertSee('Platform Admin Login')
-        ->assertSee('Platform Master Control');
+        ->assertSee('Admin sign in')
+        ->assertSee('Admin');
 });
 
 test('non-admin user attempting admin login is rejected', function () {
@@ -72,11 +72,11 @@ test('platform admin can access dedicated admin profile and security page', func
     $this->actingAs($this->adminUser)
         ->get(route('admin.profile.edit'))
         ->assertOk()
-        ->assertSee('Admin Profile & Security')
-        ->assertSee('Administrative Identity')
+        ->assertSee('Your profile')
+        ->assertSee('Your details')
         ->assertSee('Update Password')
         ->assertSee('Two-Factor Authentication')
-        ->assertSee('WebAuthn Passkeys');
+        ->assertSee('Passkeys');
 });
 
 test('platform admin can update their profile information and password from admin profile page', function () {
@@ -105,8 +105,8 @@ test('platform admin can access platform settings page', function () {
     $this->actingAs($this->adminUser)
         ->get(route('admin.platform.edit'))
         ->assertOk()
-        ->assertSee('Platform Settings')
-        ->assertSee('Platform Identity & Global Economics');
+        ->assertSee('Settings')
+        ->assertSee('Name, fees, and currency');
 });
 
 test('platform admin can update global platform settings', function () {
@@ -134,8 +134,12 @@ test('platform admin can access payment gateways settings page', function () {
     $this->actingAs($this->adminUser)
         ->get(route('admin.payments.index'))
         ->assertOk()
-        ->assertSee('DOKU Payment Gateway')
-        ->assertSee('Central DOKU Payment Credentials');
+        ->assertSee('Guest payments')
+        ->assertSee('Checkout keys')
+        ->assertSee('Client ID / API Key')
+        ->assertSee('SNAP keys (optional)')
+        ->assertSee('Webhook URL')
+        ->assertSee('Save keys');
 });
 
 test('platform admin can update DOKU payment credentials', function () {
@@ -182,7 +186,7 @@ test('platform admin can view operators management directory', function () {
     $this->actingAs($this->adminUser)
         ->get(route('admin.operators.index'))
         ->assertOk()
-        ->assertSee('Operators Management')
+        ->assertSee('Operators')
         ->assertSee('Nusa Penida Charters')
         ->assertSee('penida-charters');
 
@@ -246,8 +250,8 @@ test('platform admin can access dedicated operator details page and view insight
         ->assertSee('Bali Sea Explorers')
         ->assertSee('999888777')
         ->assertSee('PT Sea Explorers')
-        ->assertSee('Open Operator Portal')
-        ->assertSee('Gross Sales Revenue');
+        ->assertSee('Open their dashboard')
+        ->assertSee('Guest payments');
 });
 
 test('platform admin can update operator status and plan from dedicated operator details page', function () {

@@ -97,31 +97,18 @@ new #[Title('Guest Reviews')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-8 animate-fade-in">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400">
-                    <i class="fa-solid fa-star text-lg"></i>
-                </span>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Guest Reviews') }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-                        {{ __('Verified feedback and experience ratings submitted by guests after completed reservations.') }}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-slate-500 dark:text-zinc-400">
+<div class="animate-fade-in space-y-6">
+    <x-page-header
+        :title="__('Guest Reviews')"
+        :subtitle="__('Verified feedback and experience ratings submitted by guests after completed reservations.')"
+        icon="fa-star"
+    >
+        <x-slot:actions>
+            <span class="text-xs font-semibold text-op-subtle">
                 {{ __(':count Verified Reviews', ['count' => $this->statistics['count']]) }}
             </span>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Rating Summary Metrics & Breakdown -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -191,7 +178,7 @@ new #[Title('Guest Reviews')] class extends Component {
                     <button
                         type="button"
                         wire:click="$set('ratingFilter', '{{ $rKey }}')"
-                        class="px-3.5 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap cursor-pointer {{ $ratingFilter === $rKey ? 'bg-[#FFEF4D] text-[#090d16] shadow-xs' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-[#141721]' }}"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap cursor-pointer {{ $ratingFilter === $rKey ? 'bg-amber-50 text-stone-900 dark:bg-amber-400/10 dark:text-amber-50' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-[#141721]' }}"
                     >
                         {{ $rLabel }}
                     </button>

@@ -257,24 +257,105 @@ class Operator extends Model
         $this->settings = $settings;
     }
 
+    /**
+     * Readable text colour to place on top of the operator's brand colour.
+     *
+     * Brand colours range from near-black to bright yellow, so a fixed white
+     * foreground makes light brands unreadable. This picks ink or white based on
+     * the WCAG relative luminance of the brand colour.
+     */
+    public function getBrandForegroundColorAttribute(): string
+    {
+        $hex = ltrim($this->brand_color, '#');
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        if (strlen($hex) !== 6 || ! ctype_xdigit($hex)) {
+            return '#101730';
+        }
+
+        $channels = array_map(static function (string $channel): float {
+            $value = hexdec($channel) / 255;
+
+            return $value <= 0.04045 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
+        }, str_split($hex, 2));
+
+        $luminance = (0.2126 * $channels[0]) + (0.7152 * $channels[1]) + (0.0722 * $channels[2]);
+
+        return $luminance > 0.45 ? '#101730' : '#FFFFFF';
+    }
+
     public function getSellableStandaloneDefaultAttribute(): bool
     {
         return (bool) ($this->settings['sellable_standalone_default'] ?? true);
     }
 
     /**
-     * Determine if operator has completed their business profile, WhatsApp contact, payout ref, and terms & conditions.
+     * Whether a payout bank account is on file for sending trip money.
+     */
+    public function hasPayoutBankAccount(): bool
+    {
+        return filled($this->bank_provider)
+            && filled($this->bank_account_name)
+            && filled($this->bank_account_number);
+    }
+
+    /**
+     * Setup steps that still block the public booking page.
+     *
+     * @return list<string>
+     */
+    public function missingStorefrontSetupSteps(): array
+    {
+        $missing = [];
+
+        if (! filled($this->bio) || ! filled($this->contact_whatsapp)) {
+            $missing[] = 'brand';
+        }
+
+        if (! filled($this->terms_and_conditions)) {
+            $missing[] = 'terms';
+        }
+
+        if (! $this->hasPayoutBankAccount()) {
+            $missing[] = 'bank';
+        }
+
+        if (! filled($this->billing_email)) {
+            $missing[] = 'billing';
+        }
+
+        if (! filled($this->booking_notification_email)) {
+            $missing[] = 'notifications';
+        }
+
+        return $missing;
+    }
+
+    /**
+     * Whether brand, terms, bank, and notification details are filled.
+     */
+    public function isStorefrontSetupComplete(): bool
+    {
+        return $this->missingStorefrontSetupSteps() === [];
+    }
+
+    /**
+     * Whether guests may open the public booking page.
+     */
+    public function isStorefrontPublic(): bool
+    {
+        return $this->status === OperatorStatus::Approved && $this->isStorefrontSetupComplete();
+    }
+
+    /**
+     * Determine if operator has completed their business profile, WhatsApp contact, payout bank, and terms.
      */
     public function isProfileComplete(): bool
     {
-        $hasBank = ($this->bank_provider !== null && $this->bank_account_name !== null && $this->bank_account_number !== null)
-            || ! empty($this->bank_account_ref)
-            || $this->hasCustomPaymentGateway();
-
-        return ! empty($this->contact_whatsapp)
-            && ! empty($this->bio)
-            && ! empty($this->terms_and_conditions)
-            && $hasBank;
+        return $this->isStorefrontSetupComplete();
     }
 
     /**
@@ -407,6 +488,22 @@ class Operator extends Model
     }
 
     /**
+     * Paid plan expired, but the storefront still has the 3-day grace window.
+     */
+    public function isInSubscriptionGracePeriod(): bool
+    {
+        if ($this->getPlan()->isFree()) {
+            return false;
+        }
+
+        if ($this->plan_expires_at === null || $this->plan_expires_at->isFuture()) {
+            return false;
+        }
+
+        return $this->plan_expires_at->gte(now()->subDays(3));
+    }
+
+    /**
      * Check if operator has a scheduled plan change pending execution.
      */
     public function hasPendingPlanChange(): bool
@@ -443,9 +540,17 @@ class Operator extends Model
     }
 
     /**
-     * Check if the operator can publish an additional package under their tier limit.
+     * Packages and standalone activities share the plan listing cap.
      */
-    public function canAddPackage(): bool
+    public function listingCount(): int
+    {
+        return $this->packages()->count() + $this->products()->count();
+    }
+
+    /**
+     * Check if the operator can add another trip or activity under their tier limit.
+     */
+    public function canAddListing(): bool
     {
         $limit = $this->getPlan()->package_limit;
 
@@ -453,7 +558,23 @@ class Operator extends Model
             return true;
         }
 
-        return $this->packages()->count() < $limit;
+        return $this->listingCount() < $limit;
+    }
+
+    /**
+     * Check if the operator can publish an additional package under their tier limit.
+     */
+    public function canAddPackage(): bool
+    {
+        return $this->canAddListing();
+    }
+
+    /**
+     * Check if the operator can publish an additional activity under their tier limit.
+     */
+    public function canAddProduct(): bool
+    {
+        return $this->canAddListing();
     }
 
     /**
@@ -468,6 +589,52 @@ class Operator extends Model
         }
 
         return $this->users()->count() < $limit;
+    }
+
+    /**
+     * Whether guests should see the platform name (storefront, mail From, share cards).
+     */
+    public function showsPlatformBranding(): bool
+    {
+        return ! $this->hasFeature('remove_branding');
+    }
+
+    /**
+     * Share-card site name. Agency hides the platform; other plans credit it.
+     */
+    public function storefrontSiteName(): string
+    {
+        if ($this->showsPlatformBranding()) {
+            return $this->name.' • '.config('app.name');
+        }
+
+        return $this->name;
+    }
+
+    /**
+     * Inbox From name. Agency uses the operator name; other plans use the platform.
+     */
+    public function outboundMailFromName(): string
+    {
+        if ($this->showsPlatformBranding()) {
+            return (string) (config('mail.from.name') ?: config('app.name'));
+        }
+
+        return $this->name;
+    }
+
+    /**
+     * Address guests can reply to. Stays on the platform mailbox for sending.
+     */
+    public function outboundMailReplyToAddress(): ?string
+    {
+        $address = $this->booking_notification_email ?: $this->users()->first()?->email;
+
+        if (! is_string($address) || $address === '') {
+            return null;
+        }
+
+        return $address;
     }
 
     /**

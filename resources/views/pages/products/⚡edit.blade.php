@@ -194,7 +194,7 @@ new #[Title('Edit Activity Item')] class extends Component {
         $this->coverPhoto = null;
         $this->galleryFiles = [];
 
-        session()->flash('success', __('Activity item ":name" updated successfully.', ['name' => $this->name]));
+        $this->dispatch('toast', message: __('Activity item ":name" updated successfully.', ['name' => $this->name]), type: 'success');
     }
 
     public function delete(): void
@@ -227,20 +227,6 @@ new #[Title('Edit Activity Item')] class extends Component {
     )" />
 
     <div class="hidden lg:block space-y-6">
-        <!-- Success Banner -->
-        @if (session('success'))
-            <div
-                class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2 animate-fade-in">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                    <span>{{ session('success') }}</span>
-                </div>
-                <button type="button" @click="$el.parentElement.remove()"
-                    class="text-emerald-500 hover:text-emerald-700 cursor-pointer">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        @endif
 
         <!-- Breadcrumb & Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -391,7 +377,7 @@ new #[Title('Edit Activity Item')] class extends Component {
                 class="p-6 sm:p-7 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-6">
                 <div class="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-zinc-800">
                     <span
-                        class="p-1.5 rounded-lg bg-[#FFEF4D] text-slate-950 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
                         <i class="fa-solid fa-images"></i>
                     </span>
                     <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">

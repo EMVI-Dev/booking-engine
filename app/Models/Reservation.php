@@ -19,6 +19,7 @@ use Illuminate\Support\Str;
 /**
  * @property string $id
  * @property string $code
+ * @property string $public_token
  * @property string|null $guest_id
  * @property string $bookable_type
  * @property string $bookable_id
@@ -69,6 +70,10 @@ class Reservation extends Model
                 $reservation->code = static::generateUniqueCode();
             }
 
+            if (empty($reservation->public_token)) {
+                $reservation->public_token = static::generateUniquePublicToken();
+            }
+
             if (empty($reservation->guest_id) && ! empty($reservation->operator_id)) {
                 $email = trim((string) $reservation->guest_email);
                 $normalizedEmail = $email !== '' ? strtolower($email) : null;
@@ -109,6 +114,26 @@ class Reservation extends Model
         } while (static::where('code', $code)->exists());
 
         return $code;
+    }
+
+    /**
+     * Generate the unguessable token used in guest-facing receipt and payment URLs.
+     */
+    public static function generateUniquePublicToken(): string
+    {
+        do {
+            $token = Str::random(48);
+        } while (static::where('public_token', $token)->exists());
+
+        return $token;
+    }
+
+    /**
+     * Guest-facing routes are bound by the unguessable token, never the sequential-ish ULID.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'public_token';
     }
 
     protected function casts(): array
@@ -175,6 +200,14 @@ class Reservation extends Model
     }
 
     /**
+     * @return HasMany<WalletTransaction, $this>
+     */
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
+    /**
      * @return HasOne<Review, $this>
      */
     public function review(): HasOne
@@ -236,5 +269,28 @@ class Reservation extends Model
         $now = $atTime ? Carbon::parse($atTime) : now();
 
         return $now->lte($cutoff);
+    }
+
+    /**
+     * Whether the guest can cancel from the public receipt page.
+     */
+    public function canGuestCancel(): bool
+    {
+        if ($this->status === ReservationStatus::Cancelled) {
+            return false;
+        }
+
+        if ($this->status === ReservationStatus::PaymentPending) {
+            return true;
+        }
+
+        if (! in_array($this->status, [
+            ReservationStatus::Confirmed,
+            ReservationStatus::PendingConfirmation,
+        ], true)) {
+            return false;
+        }
+
+        return $this->isEligibleForFreeCancellation();
     }
 }

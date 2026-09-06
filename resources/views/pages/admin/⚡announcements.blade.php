@@ -8,7 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Platform Broadcast Notices')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
     public bool $show_modal = false;
     public ?string $editing_id = null;
 
@@ -204,33 +204,18 @@ new #[Title('Platform Broadcast Notices')] #[Layout('layouts.admin')] class exte
 }; ?>
 
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <span class="p-2.5 rounded-2xl bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30">
-                <i class="fa-solid fa-bullhorn text-lg"></i>
-            </span>
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Platform Broadcasts & Announcements') }}
-                </h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Publish system banners, maintenance notices, and feature rollouts to operator portals.') }}
-                </p>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <button
-                type="button"
-                wire:click="openCreateModal"
-                class="h-9 px-3.5 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-            >
+    <x-page-header
+        :title="__('Notices')"
+        :subtitle="__('Short messages that show on operator dashboards.')"
+        icon="fa-bullhorn"
+    >
+        <x-slot:actions>
+            <x-button type="button" size="sm" wire:click="openCreateModal">
                 <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>{{ __('New Announcement') }}</span>
-            </button>
-        </div>
-    </div>
+                <span>{{ __('New notice') }}</span>
+            </x-button>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Feedback Alerts -->
     @if (session()->has('success'))
@@ -240,33 +225,18 @@ new #[Title('Platform Broadcast Notices')] #[Layout('layouts.admin')] class exte
         </div>
     @endif
 
-    <!-- Filter & Stats Bar -->
-    <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-            @php
-                $typeTabs = [
-                    'all' => __('All'),
-                    'info' => __('Info'),
-                    'warning' => __('Warning'),
-                    'critical' => __('Critical'),
-                ];
-            @endphp
+    <x-toolbar class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <x-filter-tabs>
+            <x-filter-tab wire:click="$set('filter_type', 'all')" :active="$filter_type === 'all'">{{ __('All') }}</x-filter-tab>
+            <x-filter-tab wire:click="$set('filter_type', 'info')" :active="$filter_type === 'info'">{{ __('Info') }}</x-filter-tab>
+            <x-filter-tab wire:click="$set('filter_type', 'warning')" :active="$filter_type === 'warning'">{{ __('Warning') }}</x-filter-tab>
+            <x-filter-tab wire:click="$set('filter_type', 'critical')" :active="$filter_type === 'critical'">{{ __('Critical') }}</x-filter-tab>
+        </x-filter-tabs>
 
-            @foreach ($typeTabs as $val => $label)
-                <button
-                    type="button"
-                    wire:click="$set('filter_type', '{{ $val }}')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer {{ $filter_type === $val ? 'bg-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'bg-slate-100 dark:bg-[#141821] text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-[#1e2433]' }}"
-                >
-                    {{ $label }}
-                </button>
-            @endforeach
-        </div>
-
-        <div class="text-xs text-slate-500 font-medium self-end sm:self-auto">
-            <span class="font-bold text-[#8a7808] dark:text-[#FFEF4D]">{{ $activeCount }}</span> {{ __('currently active broadcasts') }}
-        </div>
-    </div>
+        <p class="text-xs font-medium text-op-subtle">
+            <span class="font-semibold text-op-ink">{{ $activeCount }}</span> {{ __('currently active broadcasts') }}
+        </p>
+    </x-toolbar>
 
     <!-- Announcements Feed / Table -->
     <div class="space-y-4">

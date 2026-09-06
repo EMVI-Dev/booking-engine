@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\OperatorUserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -115,5 +116,31 @@ class User extends Authenticatable implements PasskeyUser
     public function currentAgent(): ?Operator
     {
         return $this->currentOperator();
+    }
+
+    public function roleOn(?Operator $operator): ?OperatorUserRole
+    {
+        if (! $operator) {
+            return null;
+        }
+
+        if ($this->isAdmin()) {
+            return OperatorUserRole::Owner;
+        }
+
+        $membership = $this->operators()->whereKey($operator->id)->first();
+
+        $role = $membership?->pivot?->role;
+
+        return $role instanceof OperatorUserRole ? $role : null;
+    }
+
+    public function canOperate(?Operator $operator, string $ability): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->roleOn($operator)?->allows($ability) ?? false;
     }
 }

@@ -9,6 +9,7 @@ use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use App\Models\Operator;
 use App\Models\Package;
+use App\Models\Payment;
 use App\Models\PayoutRequest;
 use App\Models\Reservation;
 use App\Models\User;
@@ -359,4 +360,122 @@ test('refund after payout results in negative wallet balance and blocks payout r
     // Payout request must be blocked
     expect(fn () => $walletService->createPayoutRequest($this->operator, 50000.00))
         ->toThrow(ValidationException::class);
+});
+
+test('payouts under five hundred thousand include the bank transfer fee', function () {
+    $walletService = app(WalletService::class);
+
+    WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'type' => WalletTransactionType::BookingEarning,
+        'gross_amount' => 300000.00,
+        'fee_amount' => 0,
+        'net_amount' => 300000.00,
+        'status' => WalletTransactionStatus::Cleared,
+        'description' => 'Cleared earnings',
+    ]);
+
+    $payout = $walletService->createPayoutRequest($this->operator, 100000.00);
+
+    expect((float) $payout->amount)->toBe(100000.00)
+        ->and($this->operator->getAvailableBalance())->toBe(197500.00);
+});
+
+test('failed live payouts stay waiting instead of looking paid', function () {
+    config(['doku.simulator_enabled' => false]);
+
+    $walletService = app(WalletService::class);
+
+    WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'type' => WalletTransactionType::BookingEarning,
+        'gross_amount' => 1000000.00,
+        'fee_amount' => 0,
+        'net_amount' => 1000000.00,
+        'status' => WalletTransactionStatus::Cleared,
+        'description' => 'Cleared earnings',
+    ]);
+
+    $payout = $walletService->createPayoutRequest($this->operator, 500000.00);
+
+    expect($payout->fresh()->status)->toBe(PayoutStatus::Pending)
+        ->and($this->operator->getAvailableBalance())->toBe(500000.00);
+
+    config(['doku.simulator_enabled' => null]);
+});
+
+test('new earnings bring a negative wallet back toward zero', function () {
+    $walletService = app(WalletService::class);
+
+    WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'type' => WalletTransactionType::RefundDeduction,
+        'gross_amount' => -400000.00,
+        'fee_amount' => 0,
+        'net_amount' => -400000.00,
+        'status' => WalletTransactionStatus::Cleared,
+        'description' => 'Post-payout refund',
+    ]);
+
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => Package::class,
+        'bookable_id' => $this->package->id,
+        'requested_date' => now()->subDay()->format('Y-m-d'),
+        'status' => ReservationStatus::Confirmed,
+    ]);
+
+    $payment = Payment::factory()->paid()->create([
+        'reservation_id' => $reservation->id,
+        'amount' => 500000.00,
+        'split_details' => [
+            'agent_amount' => 500000.00,
+            'platform_commission' => 25000.00,
+        ],
+    ]);
+
+    $walletService->creditBookingPayment($payment);
+
+    expect($this->operator->getAvailableBalance())->toBe(100000.00)
+        ->and(WalletTransaction::query()->where('reservation_id', $reservation->id)->where('type', WalletTransactionType::PlatformCommission)->count())->toBe(1);
+});
+
+test('holding money for a card fight reduces available balance and can be given back', function () {
+    $walletService = app(WalletService::class);
+
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => Package::class,
+        'bookable_id' => $this->package->id,
+    ]);
+
+    WalletTransaction::create([
+        'operator_id' => $this->operator->id,
+        'reservation_id' => $reservation->id,
+        'type' => WalletTransactionType::BookingEarning,
+        'gross_amount' => 1500000.00,
+        'fee_amount' => 0.00,
+        'net_amount' => 1500000.00,
+        'status' => WalletTransactionStatus::Cleared,
+        'description' => 'Cleared earnings',
+    ]);
+
+    expect($this->operator->getAvailableBalance())->toBe(1500000.00);
+
+    $hold = $walletService->holdDispute($reservation, 1500000.00, 'Guest bank opened a card fight');
+
+    expect($hold->type)->toBe(WalletTransactionType::DisputeHold)
+        ->and((float) $hold->net_amount)->toBe(-1500000.00)
+        ->and($walletService->outstandingDisputeHold($reservation))->toBe(1500000.00)
+        ->and($this->operator->getAvailableBalance())->toBe(0.0);
+
+    expect(fn () => $walletService->holdDispute($reservation, 100000.00))
+        ->toThrow(ValidationException::class);
+
+    $release = $walletService->releaseDispute($reservation);
+
+    expect($release->type)->toBe(WalletTransactionType::DisputeRelease)
+        ->and((float) $release->net_amount)->toBe(1500000.00)
+        ->and($walletService->outstandingDisputeHold($reservation->fresh()))->toBe(0.0)
+        ->and($this->operator->getAvailableBalance())->toBe(1500000.00);
 });
