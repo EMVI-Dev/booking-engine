@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('reservations', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('code', 32)->nullable()->unique();
+            $table->string('public_token', 64)->unique();
             $table->string('bookable_type');
             $table->char('bookable_id', 26);
             $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();

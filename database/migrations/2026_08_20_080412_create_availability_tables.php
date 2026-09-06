@@ -25,6 +25,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();
             $table->foreignUlid('product_id')->nullable()->constrained('products')->cascadeOnDelete();
+            $table->foreignUlid('package_id')->nullable()->constrained('packages')->nullOnDelete();
             $table->date('date_start');
             $table->date('date_end');
             $table->string('reason')->nullable();
@@ -32,6 +33,7 @@ return new class extends Migration
 
             $table->index(['operator_id', 'date_start', 'date_end']);
             $table->index('product_id');
+            $table->index('package_id');
         });
     }
 

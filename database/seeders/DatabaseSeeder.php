@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Plan;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -14,9 +15,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        Plan::seedDefaultPlans();
+
         $this->call([
             AdminUserSeeder::class,
-            SampleOperatorCatalogSeeder::class,
         ]);
+
+        if (! app()->environment('production')) {
+            $this->call(SampleOperatorCatalogSeeder::class);
+        }
     }
 }

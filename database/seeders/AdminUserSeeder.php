@@ -6,6 +6,7 @@ use App\Models\PlatformSetting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class AdminUserSeeder extends Seeder
 {
@@ -14,17 +15,27 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $email = (string) env('ADMIN_EMAIL', 'admin@emvi.dev');
+        $password = env('ADMIN_PASSWORD');
+
+        if (! is_string($password) || $password === '') {
+            if (app()->environment('production')) {
+                throw new RuntimeException('Set ADMIN_PASSWORD in .env before seeding production.');
+            }
+
+            $password = 'password';
+        }
+
         User::updateOrCreate(
-            ['email' => 'admin@emvi.dev'],
+            ['email' => $email],
             [
                 'name' => 'EMVI',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($password),
                 'is_admin' => true,
                 'email_verified_at' => now(),
             ]
         );
 
-        // Ensure PlatformSetting current record exists with default structure
         PlatformSetting::current();
     }
 }

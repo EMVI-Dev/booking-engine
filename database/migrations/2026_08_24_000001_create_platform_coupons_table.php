@@ -21,6 +21,9 @@ return new class extends Migration
             $table->decimal('min_spend', 14, 2)->default(0);
             $table->decimal('max_discount_amount', 14, 2)->nullable();
             $table->foreignUlid('operator_id')->nullable()->constrained('operators')->cascadeOnDelete();
+            $table->string('redemption_scope', 30)->default('unlimited');
+            $table->json('eligibility_rule')->nullable();
+            $table->foreignUlid('announcement_id')->nullable()->constrained('platform_announcements')->nullOnDelete();
             $table->unsignedInteger('max_uses')->nullable();
             $table->unsignedInteger('used_count')->default(0);
             $table->boolean('is_active')->default(true);
@@ -31,6 +34,7 @@ return new class extends Migration
             $table->index(['code', 'is_active']);
             $table->index(['scope', 'is_active']);
             $table->index(['operator_id', 'is_active']);
+            $table->index('redemption_scope');
         });
     }
 
