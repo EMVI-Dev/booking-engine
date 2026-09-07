@@ -74,9 +74,36 @@ jobs:
           fi
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
             "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}" \
-            'echo LOGIN_OK && whoami && hostname'
+            'echo LOGIN_OK && whoami && hostname && command -v rsync && command -v composer && php -v | head -n 1'
 
-      - name: Pull code and refresh Laravel
+      - name: Upload application
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          set -euo pipefail
+          rsync -az --delete --info=stats2 \
+            -e 'ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes' \
+            --exclude '.git/' \
+            --exclude '.env' \
+            --exclude '.env.backup' \
+            --exclude '.env.live' \
+            --exclude '.env.production' \
+            --exclude 'node_modules/' \
+            --exclude 'vendor/' \
+            --exclude 'storage/app/' \
+            --exclude 'storage/framework/cache/' \
+            --exclude 'storage/framework/sessions/' \
+            --exclude 'storage/framework/views/' \
+            --exclude 'storage/logs/' \
+            --exclude 'storage/pail/' \
+            --exclude 'bootstrap/cache/*.php' \
+            --exclude 'public/hot' \
+            --exclude 'public/storage' \
+            --exclude '.cursor/' \
+            ./ "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}:/var/www/travelengine/"
+
+      - name: Refresh Laravel
         env:
           LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
           LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
@@ -90,27 +117,14 @@ jobs:
           cd /var/www/travelengine
           echo "connected $(hostname) as $(whoami)"
           echo "deploying ${DEPLOY_SHA}"
-          echo "origin=$(git remote get-url origin)"
-          git remote set-url origin https://github.com/EMVI-Dev/booking-engine.git
-          echo "origin now $(git remote get-url origin)"
-          git fetch origin
-          git reset --hard "$DEPLOY_SHA"
+          printf '%s\n' "$DEPLOY_SHA" > .deploy-sha
           composer install --no-dev --optimize-autoloader --no-interaction
           php artisan migrate --force --no-interaction
           php artisan optimize
           php artisan storage:link --no-interaction || true
-          sudo chown -R ubuntu:www-data storage bootstrap/cache
+          sudo chown -R ubuntu:www-data storage bootstrap/cache public/build
           sudo chmod -R ug+rwx storage bootstrap/cache
           REMOTE
-
-      - name: Upload Vite build
-        env:
-          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
-          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
-        run: |
-          set -euo pipefail
-          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -r \
-            public/build "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}:/var/www/travelengine/public/"
 
       - name: Restart queue workers
         env:
@@ -121,7 +135,6 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
             "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}" bash <<'REMOTE'
           set -euo pipefail
-          sudo chown -R ubuntu:www-data /var/www/travelengine/public/build
           sudo supervisorctl restart travelengine-worker:* travelengine-scheduler
           sudo supervisorctl status
           REMOTE
