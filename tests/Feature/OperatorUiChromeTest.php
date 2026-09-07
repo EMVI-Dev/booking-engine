@@ -2,6 +2,7 @@
 
 use App\Enums\ReservationStatus;
 use App\Models\Operator;
+use App\Models\PlatformSetting;
 use App\Models\Reservation;
 use App\Models\User;
 
@@ -14,6 +15,13 @@ beforeEach(function () {
 });
 
 test('operator dashboard and bookings share dry chrome tokens', function () {
+    $settings = PlatformSetting::current();
+    $settings->update([
+        'settings' => array_merge($settings->settings ?? [], [
+            'support_email' => 'support@emvi.dev',
+        ]),
+    ]);
+
     $this->get(route('dashboard'))
         ->assertOk()
         ->assertSee('op-shell')
@@ -66,8 +74,61 @@ test('operator settings tabs use the shared filter tab component', function () {
         ->assertSee('op-tab')
         ->assertSee(__('Brand & Identity'))
         ->assertSee(__('Storefront & Policies'))
+        ->assertDontSee(__('Your team'));
+
+    $this->get(route('settings.plan'))
+        ->assertOk()
+        ->assertSee('op-tab')
+        ->assertSee(__('Subscription & Plan'))
+        ->assertSee(__('Billing & Invoices'))
+        ->assertSee(__('Payout bank account'));
+
+    $this->get(route('payments.edit'))
+        ->assertOk()
         ->assertSee(__('Payout bank account'))
-        ->assertSee(__('Your team'));
+        ->assertSee(__('Subscription & Plan'))
+        ->assertDontSee(__('Brand & Identity'));
+
+    $this->get(route('settings.team'))
+        ->assertOk()
+        ->assertSee(__('Your team'))
+        ->assertDontSee(__('Storefront & Policies'))
+        ->assertSee(__('Team'));
+});
+
+test('sidebar lists activities before packages and keeps team out of storefront', function () {
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSeeInOrder([
+            route('products.index', absolute: false),
+            route('packages.index', absolute: false),
+        ])
+        ->assertSeeInOrder([
+            route('settings.team', absolute: false),
+            route('brand.edit', absolute: false),
+            route('settings.plan', absolute: false),
+        ]);
+});
+
+test('prefixed operator inputs keep space for icons', function () {
+    $css = file_get_contents(resource_path('css/app.css'));
+
+    expect($css)
+        ->toContain('@layer components')
+        ->toContain('.op-input.pl-10')
+        ->toContain('.op-input.pl-11')
+        ->toContain('padding-inline-start: 2.5rem')
+        ->toContain('padding-inline-start: 2.75rem');
+
+    $this->get(route('products.index'))
+        ->assertOk()
+        ->assertSee('op-input pl-10', false)
+        ->assertSee(__('Search by name or category...'));
+
+    $this->get(route('brand.edit'))
+        ->assertOk()
+        ->assertSee(__('Brand Accent Color (Hex)'))
+        ->assertSee('pl-11 font-mono text-xs uppercase', false);
 });
 
 test('the current bookings page shows a readable count badge', function () {

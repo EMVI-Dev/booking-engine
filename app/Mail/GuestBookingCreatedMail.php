@@ -27,7 +27,7 @@ class GuestBookingCreatedMail extends Mailable
 
         return $this->operatorBrandedEnvelope(
             $operator,
-            "⏳ Action Required: Complete Payment for Booking #{$code} - {$agentName}",
+            "Action Required: Complete Payment for Booking #{$code} - {$agentName}",
         );
     }
 

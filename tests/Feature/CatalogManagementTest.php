@@ -7,6 +7,7 @@ use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\MediaStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -32,12 +33,30 @@ test('operator can view products and packages list, create and edit pages', func
     $package = Package::factory()->create(['operator_id' => $this->operator->id]);
 
     $this->get(route('products.index'))->assertOk();
-    $this->get(route('products.create'))->assertOk();
-    $this->get(route('products.edit', $product))->assertOk();
+
+    $this->get(route('products.create'))
+        ->assertOk()
+        ->assertSee('op-back-link', false)
+        ->assertSee(__('Back to activities'));
+
+    $this->get(route('products.edit', $product))
+        ->assertOk()
+        ->assertSee('op-back-link', false)
+        ->assertSee(__('Back to activities'))
+        ->assertSee($product->name);
 
     $this->get(route('packages.index'))->assertOk();
-    $this->get(route('packages.create'))->assertOk();
-    $this->get(route('packages.edit', $package))->assertOk();
+
+    $this->get(route('packages.create'))
+        ->assertOk()
+        ->assertSee('op-back-link', false)
+        ->assertSee(__('Back to packages'));
+
+    $this->get(route('packages.edit', $package))
+        ->assertOk()
+        ->assertSee('op-back-link', false)
+        ->assertSee(__('Back to packages'))
+        ->assertSee($package->title);
 });
 
 test('product creation is blocked if profile and terms are incomplete', function () {
@@ -53,7 +72,7 @@ test('product creation is blocked if profile and terms are incomplete', function
 });
 
 test('operator with completed profile can create an inventory product with cover and gallery images', function () {
-    Storage::fake('public');
+    Storage::fake(MediaStore::diskName());
 
     $cover = UploadedFile::fake()->image('cover.jpg', 600, 400);
     $gallery1 = UploadedFile::fake()->image('gallery1.jpg', 600, 400);
@@ -80,15 +99,18 @@ test('operator with completed profile can create an inventory product with cover
         ->and((float) $product->price)->toBe(250000.0)
         ->and($product->sellable_standalone)->toBeTrue()
         ->and($product->status)->toBe(ListingStatus::Published)
-        ->and($product->cover_photo)->not->toBeNull()
+        ->and($product->cover_photo)->toStartWith('operators/'.$this->operator->id.'/products/covers/')
+        ->and($product->cover_photo)->toEndWith('.webp')
         ->and(count($product->gallery))->toBe(2);
 
-    Storage::disk('public')->assertExists($product->cover_photo);
-    Storage::disk('public')->assertExists($product->gallery[0]);
+    Storage::disk(MediaStore::diskName())->assertExists($product->cover_photo);
+    Storage::disk(MediaStore::diskName())->assertExists($product->gallery[0]);
+    expect($product->gallery[0])->toStartWith('operators/'.$this->operator->id.'/products/gallery/')
+        ->and($product->gallery[0])->toEndWith('.webp');
 });
 
 test('operator can edit product and delete gallery photos', function () {
-    Storage::fake('public');
+    Storage::fake(MediaStore::diskName());
 
     $product = Product::factory()->create([
         'operator_id' => $this->operator->id,
@@ -97,9 +119,9 @@ test('operator can edit product and delete gallery photos', function () {
         'gallery' => ['products/gallery/img1.jpg', 'products/gallery/img2.jpg'],
     ]);
 
-    Storage::disk('public')->put('products/covers/sample.jpg', 'fake image content');
-    Storage::disk('public')->put('products/gallery/img1.jpg', 'fake image content 1');
-    Storage::disk('public')->put('products/gallery/img2.jpg', 'fake image content 2');
+    Storage::disk(MediaStore::diskName())->put('products/covers/sample.jpg', 'fake image content');
+    Storage::disk(MediaStore::diskName())->put('products/gallery/img1.jpg', 'fake image content 1');
+    Storage::disk(MediaStore::diskName())->put('products/gallery/img2.jpg', 'fake image content 2');
 
     Livewire::test('pages::products.edit', ['product' => $product])
         ->assertSet('name', 'Original Kayak')
@@ -114,7 +136,7 @@ test('operator can edit product and delete gallery photos', function () {
         ->and(count($product->gallery))->toBe(1)
         ->and($product->gallery[0])->toBe('products/gallery/img2.jpg');
 
-    Storage::disk('public')->assertMissing('products/gallery/img1.jpg');
+    Storage::disk(MediaStore::diskName())->assertMissing('products/gallery/img1.jpg');
 });
 
 test('package creation is blocked if profile and terms are incomplete', function () {
@@ -130,7 +152,7 @@ test('package creation is blocked if profile and terms are incomplete', function
 });
 
 test('operator can create a package with product composition and cover image', function () {
-    Storage::fake('public');
+    Storage::fake(MediaStore::diskName());
 
     $productA = Product::factory()->create([
         'operator_id' => $this->operator->id,
@@ -167,9 +189,10 @@ test('operator can create a package with product composition and cover image', f
     expect($package)->not->toBeNull()
         ->and((float) $package->price)->toBe(650000.0)
         ->and($package->products()->count())->toBe(2)
-        ->and($package->cover_photo)->not->toBeNull();
+        ->and($package->cover_photo)->toStartWith('operators/'.$this->operator->id.'/packages/covers/')
+        ->and($package->cover_photo)->toEndWith('.webp');
 
-    Storage::disk('public')->assertExists($package->cover_photo);
+    Storage::disk(MediaStore::diskName())->assertExists($package->cover_photo);
 });
 
 test('operator can edit a package and manage inventory composition', function () {
@@ -210,21 +233,21 @@ test('editing a package persists changes to its activity composition', function 
 });
 
 test('operator can delete product from inside edit page and index modal', function () {
-    Storage::fake('public');
+    Storage::fake(MediaStore::diskName());
 
     $product = Product::factory()->create([
         'operator_id' => $this->operator->id,
         'name' => 'To Delete Product',
         'cover_photo' => 'products/covers/sample.jpg',
     ]);
-    Storage::disk('public')->put('products/covers/sample.jpg', 'content');
+    Storage::disk(MediaStore::diskName())->put('products/covers/sample.jpg', 'content');
 
     Livewire::test('pages::products.edit', ['product' => $product])
         ->call('delete')
         ->assertRedirect(route('products.index'));
 
     expect(Product::where('id', $product->id)->exists())->toBeFalse();
-    Storage::disk('public')->assertMissing('products/covers/sample.jpg');
+    Storage::disk(MediaStore::diskName())->assertMissing('products/covers/sample.jpg');
 
     // Test index modal deletion
     $product2 = Product::factory()->create(['operator_id' => $this->operator->id, 'name' => 'Index Delete Product']);
@@ -237,21 +260,21 @@ test('operator can delete product from inside edit page and index modal', functi
 });
 
 test('operator can delete package from inside edit page and index modal', function () {
-    Storage::fake('public');
+    Storage::fake(MediaStore::diskName());
 
     $package = Package::factory()->create([
         'operator_id' => $this->operator->id,
         'title' => 'To Delete Package',
         'cover_photo' => 'packages/covers/sample.jpg',
     ]);
-    Storage::disk('public')->put('packages/covers/sample.jpg', 'content');
+    Storage::disk(MediaStore::diskName())->put('packages/covers/sample.jpg', 'content');
 
     Livewire::test('pages::packages.edit', ['package' => $package])
         ->call('delete')
         ->assertRedirect(route('packages.index'));
 
     expect(Package::where('id', $package->id)->exists())->toBeFalse();
-    Storage::disk('public')->assertMissing('packages/covers/sample.jpg');
+    Storage::disk(MediaStore::diskName())->assertMissing('packages/covers/sample.jpg');
 
     // Test index modal deletion
     $package2 = Package::factory()->create(['operator_id' => $this->operator->id, 'title' => 'Index Delete Package']);

@@ -26,23 +26,26 @@
         $storefrontUrl = $currentOperator
             ? request()->getScheme() . '://' . $currentOperator->slug . '.' . $platformDomain
             : '#';
-        $packagesCount = $currentOperator ? $currentOperator->packages()->count() : 0;
-        $productsCount = $currentOperator ? $currentOperator->products()->count() : 0;
-        $couponsCount = $currentOperator
-            ? \App\Models\PlatformCoupon::where('operator_id', $currentOperator->id)->active()->count()
-            : 0;
-        $reservationsCount = $currentOperator
-            ? $currentOperator
-                ->reservations()
-                ->whereIn('status', [
+        if ($currentOperator) {
+            $currentOperator->loadCount([
+                'packages',
+                'products',
+                'reservations as open_reservations_count' => fn ($query) => $query->whereIn('status', [
                     \App\Enums\ReservationStatus::Confirmed->value,
                     \App\Enums\ReservationStatus::PendingConfirmation->value,
                     \App\Enums\ReservationStatus::PaymentPending->value,
-                ])
-                ->count()
+                ]),
+            ]);
+        }
+        $packagesCount = $currentOperator?->packages_count ?? 0;
+        $productsCount = $currentOperator?->products_count ?? 0;
+        $couponsCount = $currentOperator
+            ? \App\Models\PlatformCoupon::where('operator_id', $currentOperator->id)->active()->count()
             : 0;
+        $reservationsCount = $currentOperator?->open_reservations_count ?? 0;
         $operatorSupportEmail = \App\Models\PlatformSetting::current()->getOperatorSupportEmail();
         $availableBalance = $currentOperator ? $currentOperator->getAvailableBalance() : 0;
+        $canManageTeam = $currentOperator && auth()->user()?->roleOn($currentOperator)?->allows('manageTeam');
         $operatorPlan = $currentOperator?->getPlan();
         $walletBadge = $availableBalance > 0
             ? ($availableBalance >= 1_000_000
@@ -150,12 +153,12 @@
                 </x-nav-section>
 
                 <x-nav-section :title="__('Catalog & Marketing')">
-                    <x-nav-link :href="route('packages.index')" icon="fa-cubes" :active="request()->routeIs('packages.*')" :badge="$packagesCount" :title="__('Tour Packages')">
-                        {{ __('Packages') }}
-                    </x-nav-link>
-
                     <x-nav-link :href="route('products.index')" icon="fa-compass" :active="request()->routeIs('products.*')" :badge="$productsCount" :title="__('Single Activities')">
                         {{ __('Activities') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('packages.index')" icon="fa-cubes" :active="request()->routeIs('packages.*')" :badge="$packagesCount" :title="__('Tour Packages')">
+                        {{ __('Packages') }}
                     </x-nav-link>
 
                     <x-nav-link :href="route('coupons.index')" icon="fa-ticket" :active="request()->routeIs('coupons.*')" :badge="$couponsCount" :title="__('Coupons & Discounts')">
@@ -177,11 +180,17 @@
                         @endif
                     </x-nav-link>
 
-                    <x-nav-link :href="route('brand.edit')" icon="fa-sliders" :active="request()->routeIs('brand.edit', 'storefront-settings.edit', 'payments.edit')" :title="__('Storefront Settings')">
+                    @if ($canManageTeam)
+                        <x-nav-link :href="route('settings.team')" icon="fa-users" :active="request()->routeIs('settings.team')" :title="__('Team')">
+                            {{ __('Team') }}
+                        </x-nav-link>
+                    @endif
+
+                    <x-nav-link :href="route('brand.edit')" icon="fa-sliders" :active="request()->routeIs('brand.edit', 'storefront-settings.edit')" :title="__('Storefront Settings')">
                         {{ __('Storefront') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('settings.plan')" icon="fa-crown" :active="request()->routeIs('settings.plan', 'settings.plan.checkout', 'settings.billing')" :title="__('Subscription & Billing')">
+                    <x-nav-link :href="route('settings.plan')" icon="fa-crown" :active="request()->routeIs('settings.plan', 'settings.plan.checkout', 'settings.billing', 'payments.edit')" :title="__('Subscription & Billing')">
                         {{ __('Billing') }}
                     </x-nav-link>
                 </x-nav-section>
@@ -353,6 +362,13 @@
                         $platformAnnouncements = \App\Models\PlatformAnnouncement::forOperator($currentOperator)->get();
                     @endphp
 
+                    @if ($currentOperator?->isDemo())
+                        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 print:hidden dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100">
+                            <p class="font-bold">{{ __('Demo operator') }}</p>
+                            <p class="mt-1 text-xs text-amber-800 dark:text-amber-200/80">{{ __('Look around freely. Checkout is off, and this catalog resets every day.') }}</p>
+                        </div>
+                    @endif
+
                     @if ($platformAnnouncements->isNotEmpty())
                         <div class="space-y-3 print:hidden">
                             @foreach ($platformAnnouncements as $announcement)
@@ -476,26 +492,6 @@
 
                         <!-- Secondary Navigation Grid (2x2) -->
                         <div class="grid grid-cols-2 gap-2.5 pt-1">
-                            <!-- Tour Packages -->
-                            <a href="{{ route('packages.index') }}" wire:navigate
-                                x-on:click="mobileMenuOpen = false"
-                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
-                                <div class="flex items-center justify-between">
-                                    <span
-                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                        <i class="fa-solid fa-cubes"></i>
-                                    </span>
-                                    @if ($packagesCount > 0)
-                                        <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
-                                            {{ $packagesCount }}
-                                        </span>
-                                    @endif
-                                </div>
-                                <span
-                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Tour Packages') }}</span>
-                                <span class="text-[10px] text-slate-400 block">{{ __('Curated packages') }}</span>
-                            </a>
-
                             <!-- Single Activities -->
                             <a href="{{ route('products.index') }}" wire:navigate
                                 x-on:click="mobileMenuOpen = false"
@@ -515,6 +511,26 @@
                                     class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Single Activities') }}</span>
                                 <span
                                     class="text-[10px] text-slate-400 block">{{ __('Daily sessions & items') }}</span>
+                            </a>
+
+                            <!-- Tour Packages -->
+                            <a href="{{ route('packages.index') }}" wire:navigate
+                                x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
+                                <div class="flex items-center justify-between">
+                                    <span
+                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-cubes"></i>
+                                    </span>
+                                    @if ($packagesCount > 0)
+                                        <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                                            {{ $packagesCount }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <span
+                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Tour Packages') }}</span>
+                                <span class="text-[10px] text-slate-400 block">{{ __('Curated packages') }}</span>
                             </a>
 
                             <!-- Wallet & Payouts -->
@@ -595,6 +611,25 @@
                             <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
                         </a>
 
+                        @if ($canManageTeam)
+                            <a href="{{ route('settings.team') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                                <div class="flex items-center gap-2.5">
+                                    <span
+                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-users"></i>
+                                    </span>
+                                    <div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Team') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('People who help run this shop') }}</span>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                            </a>
+                        @endif
+
                         <!-- Storefront Settings Link -->
                         <a href="{{ route('brand.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                             class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
@@ -606,8 +641,8 @@
                                 <div>
                                     <span
                                         class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Storefront Settings') }}</span>
-                                    <span
-                                        class="text-[10px] text-slate-400 block">{{ __('Branding, policies, payment keys') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('Branding, policies, guest page') }}</span>
                                 </div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
@@ -625,7 +660,7 @@
                                     <span
                                         class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Subscription & Billing') }}</span>
                                     <span
-                                        class="text-[10px] text-slate-400 block">{{ __('Plan tier, features & invoices') }}</span>
+                                        class="text-[10px] text-slate-400 block">{{ __('Plan, payout bank & invoices') }}</span>
                                 </div>
                             </div>
                             @if ($operatorPlan)
@@ -727,7 +762,7 @@
             </button>
         </nav>
 
-        <x-command-palette :storefrontUrl="$storefrontUrl" />
+        <x-command-palette :storefrontUrl="$storefrontUrl" :canManageTeam="$canManageTeam" />
         @livewireScripts
 </body>
 

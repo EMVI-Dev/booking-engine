@@ -34,3 +34,9 @@ Schedule::command('platform:match-payments')->dailyAt('03:00');
 
 // 11. Record the padlock after Caddy has issued HTTPS for a connected address
 Schedule::command('domains:probe-ssl')->everyFiveMinutes()->withoutOverlapping();
+
+// 12. Reset the public demo operator so look-around data stays clean
+Schedule::command('demo:refresh')
+    ->dailyAt('03:00')
+    ->timezone('Asia/Makassar')
+    ->withoutOverlapping();

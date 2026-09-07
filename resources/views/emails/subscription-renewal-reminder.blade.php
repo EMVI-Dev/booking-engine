@@ -14,13 +14,13 @@
                     <tr>
                         <td style="background-color: #1e1b4b; padding: 28px 24px; text-align: center;">
                             <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: rgba(147, 51, 234, 0.2); color: #d8b4fe; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                                👑 {{ config('app.name', 'TravelEngine') }} {{ __('Subscription') }}
+                                {{ config('app.name', 'TravelEngine') }} {{ __('Subscription') }}
                             </span>
                             <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
                                 @if ($daysRemaining <= 0)
-                                    ⚠️ {{ __('Subscription Expired') }}
+                                    {{ __('Subscription Expired') }}
                                 @else
-                                    ⏰ {{ __('Upcoming Plan Renewal') }}
+                                    {{ __('Upcoming Plan Renewal') }}
                                 @endif
                             </h1>
                         </td>

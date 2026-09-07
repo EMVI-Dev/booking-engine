@@ -7,11 +7,17 @@
 <meta name="description" content="{{ $description }}" />
 <link rel="canonical" href="{{ $url }}" />
 
+@if ($agent->isDemo())
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet" />
+@else
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
 <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
 <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
 <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
 <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
+@endif
 
 <link rel="icon" href="{{ $favicon }}" />
 <link rel="apple-touch-icon" href="{{ $favicon }}" />
@@ -34,7 +40,7 @@
 <meta name="twitter:image" content="{{ $share['url'] }}" />
 <meta name="twitter:image:alt" content="{{ $share['alt'] }}" />
 
-@if (! empty($schema))
+@if (! empty($schema) && ! $agent->isDemo())
     <script type="application/ld+json">
         {!! json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
     </script>

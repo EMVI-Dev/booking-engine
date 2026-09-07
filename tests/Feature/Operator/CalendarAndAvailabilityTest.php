@@ -170,6 +170,30 @@ test('calendar month grid displays blackout marker on blacked out date cells', f
     $test->assertSee('Blackout (All)');
 });
 
+test('calendar experience filter uses font awesome icons instead of emoji', function () {
+    $this->actingAs($this->user);
+
+    Package::factory()->create([
+        'operator_id' => $this->operator->id,
+        'title' => 'East Coast Beach Day',
+    ]);
+
+    Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Paddleboard Session',
+    ]);
+
+    Livewire::test('calendar.month-grid')
+        ->assertSee('All Experiences (Catalog)')
+        ->assertSee('East Coast Beach Day')
+        ->assertSee('Paddleboard Session')
+        ->assertSee('fa-solid fa-cubes', false)
+        ->assertSee('fa-solid fa-compass', false)
+        ->assertSee('fa-solid fa-layer-group', false)
+        ->assertDontSee('📦')
+        ->assertDontSee('🧭');
+});
+
 test('package blackout detects underlying product blackout', function () {
     $product = Product::factory()->create(['operator_id' => $this->operator->id]);
     $package = Package::factory()->create(['operator_id' => $this->operator->id]);

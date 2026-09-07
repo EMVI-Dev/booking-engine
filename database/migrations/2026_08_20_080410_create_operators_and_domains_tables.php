@@ -21,12 +21,13 @@ return new class extends Migration
             $table->string('booking_notification_email');
             $table->string('billing_email');
             $table->string('status')->default('pending'); // pending, approved, suspended
+            $table->boolean('is_demo')->default(false);
             $table->foreignUlid('plan_id')->nullable()->constrained('plans')->nullOnDelete();
             $table->timestamp('subscribed_at')->nullable();
-            $table->timestamp('plan_expires_at')->nullable();
+            $table->timestamp('plan_expires_at')->nullable()->index();
             $table->string('subscription_interval', 20)->default('monthly');
             $table->foreignUlid('pending_plan_id')->nullable()->constrained('plans')->nullOnDelete();
-            $table->timestamp('pending_plan_action_at')->nullable();
+            $table->timestamp('pending_plan_action_at')->nullable()->index();
             $table->boolean('subscription_auto_renew')->default(true);
             $table->text('terms_and_conditions')->nullable();
             $table->string('bank_provider')->nullable();
@@ -41,6 +42,7 @@ return new class extends Migration
 
             $table->index('status');
             $table->index('plan_id');
+            $table->index('is_demo');
         });
 
         Schema::create('operator_users', function (Blueprint $table) {
@@ -65,6 +67,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['operator_id', 'status']);
+            $table->index(['type', 'status']);
         });
     }
 

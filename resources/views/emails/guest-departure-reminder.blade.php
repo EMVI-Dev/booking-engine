@@ -35,8 +35,8 @@
                     <!-- Reminder Hero -->
                     <tr>
                         <td style="padding: 32px 28px 20px 28px; text-align: center;">
-                            <div style="display: inline-block; width: 56px; height: 56px; line-height: 56px; border-radius: 18px; background-color: #e0e7ff; color: #4338ca; font-size: 26px; font-weight: bold; margin-bottom: 16px;">
-                                ⏰
+                            <div style="display: inline-block; width: 56px; height: 56px; line-height: 56px; border-radius: 18px; background-color: #e0e7ff; color: #4338ca; font-size: 13px; font-weight: 800; margin-bottom: 16px;">
+                                24h
                             </div>
                             <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">
                                 {{ __('Get ready for your trip, :name!', ['name' => $reservation->guest_name]) }}
@@ -103,7 +103,7 @@
 
                             @if ($waUrl)
                                 <a href="{{ $waUrl }}" style="display: block; width: 100%; box-sizing: border-box; background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; text-decoration: none; font-weight: 700; font-size: 13px; padding: 12px 20px; border-radius: 14px;">
-                                    💬 {{ __('Contact Operator on WhatsApp') }}
+                                    {{ __('Contact Operator on WhatsApp') }}
                                 </a>
                             @endif
                         </td>

@@ -3,9 +3,13 @@
 
 @php
     $isPlatformMarketing = request()->routeIs('home');
-    $portalOperator = $isPlatformMarketing ? null : auth()->user()?->currentOperator();
+    $portalUser = auth()->user();
+    $portalOperator = $isPlatformMarketing ? null : $portalUser?->currentOperator();
     $portalFavicon = $portalOperator?->logo_url;
     $faviconVersion = file_exists(public_path('favicon.svg')) ? filemtime(public_path('favicon.svg')) : time();
+    $blockIndexing = $portalOperator?->isDemo()
+        && $portalUser
+        && (! $portalUser->isAdmin() || session()->has('admin_impersonated_operator_id'));
 @endphp
 @if ($isPlatformMarketing)
     @php
@@ -18,22 +22,31 @@
         'schema' => $platformSeo->homeGraph(),
     ])
 @else
-<title>
-    {{ filled($title ?? null) ? $title.' - '.config('app.name', 'TravelEngine') : config('app.name', 'TravelEngine').' - Online Booking System for Tour Operators' }}
-</title>
-<meta name="description" content="The simple way to sell your tours online with 0% platform commission. Get your tour website, accept QRIS and bank payments, and manage reservations." />
+@php
+    $fallbackSeo = app(\App\Services\PlatformSeoService::class);
+    $fallbackTitle = filled($title ?? null)
+        ? $title.' - '.$fallbackSeo->platformName()
+        : $fallbackSeo->homeTitle();
+@endphp
+<title>{{ $fallbackTitle }}</title>
+<meta name="description" content="{{ $fallbackSeo->homeDescription() }}" />
+@if ($blockIndexing)
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet" />
+@endif
 
 <!-- Open Graph / WhatsApp / Facebook Sharing Tags -->
 <meta property="og:type" content="website" />
 <meta property="og:url" content="{{ url()->current() }}" />
-<meta property="og:title" content="{{ filled($title ?? null) ? $title.' - '.config('app.name', 'TravelEngine') : config('app.name', 'TravelEngine').' - Direct Tour Booking System' }}" />
-<meta property="og:description" content="The simple way to sell your tours online with 0% platform commission. Get your tour website, accept QRIS and bank payments, and manage reservations." />
+<meta property="og:title" content="{{ $fallbackTitle }}" />
+<meta property="og:description" content="{{ $fallbackSeo->homeDescription() }}" />
 <meta property="og:image" content="{{ url('/images/hero-cover.jpg') }}" />
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="{{ filled($title ?? null) ? $title.' - '.config('app.name', 'TravelEngine') : config('app.name', 'TravelEngine') }}" />
-<meta name="twitter:description" content="The simple way to sell your tours online with 0% platform commission." />
+<meta name="twitter:title" content="{{ $fallbackTitle }}" />
+<meta name="twitter:description" content="{{ $fallbackSeo->homeDescription() }}" />
 <meta name="twitter:image" content="{{ url('/images/hero-cover.jpg') }}" />
 
 @if ($portalFavicon)

@@ -202,5 +202,5 @@ test('broadcast command does not notify the same operator twice in one billing c
     $this->artisan('coupons:broadcast')->assertSuccessful();
     $this->artisan('coupons:broadcast')->assertSuccessful();
 
-    expect(PlatformAnnouncement::where('title', "🎉 Exclusive promo code for you: {$coupon->code}")->count())->toBe(1);
+    expect(PlatformAnnouncement::where('title', "Exclusive promo code for you: {$coupon->code}")->count())->toBe(1);
 });

@@ -24,7 +24,7 @@ return new class extends Migration
             $table->decimal('net_amount_paid', 14, 2)->default(0);
             $table->string('status', 20)->default('completed'); // pending, completed, failed, refunded
             $table->string('gateway', 50)->default('manual'); // doku, manual, wallet_credit, simulation
-            $table->string('gateway_ref')->nullable();
+            $table->string('gateway_ref')->nullable()->index();
             $table->json('breakdown')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();

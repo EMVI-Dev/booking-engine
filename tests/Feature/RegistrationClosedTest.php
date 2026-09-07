@@ -2,27 +2,25 @@
 
 use App\Models\User;
 
-test('registration page explains the operator portal is coming soon when disabled', function () {
+test('registration page explains operator sign-up is coming soon when disabled', function () {
     config(['fortify.registration_enabled' => false]);
 
     $this->get(route('register'))
         ->assertOk()
         ->assertSee('We are preparing the operator portal')
-        ->assertSee('operator log in and sign-up are not open yet')
+        ->assertSee('New operator accounts are not open yet')
         ->assertSee('Coming soon')
         ->assertDontSee('Create account')
         ->assertDontSee('Sign In to Operator Portal');
 });
 
-test('login page explains the operator portal is coming soon when disabled', function () {
+test('login stays open when operator sign-up is closed', function () {
     config(['fortify.registration_enabled' => false]);
 
     $this->get(route('login'))
         ->assertOk()
-        ->assertSee('We are preparing the operator portal')
-        ->assertSee('operator log in and sign-up are not open yet')
-        ->assertSee('Coming soon')
-        ->assertDontSee('Sign In to Operator Portal')
+        ->assertSee('Sign In to Operator Portal')
+        ->assertSee('We are preparing operator sign-up. Coming soon.')
         ->assertDontSee('Create an account');
 });
 
@@ -42,7 +40,7 @@ test('new operator accounts cannot be created when registration is disabled', fu
     expect(User::query()->where('email', 'wayan@balitours.com')->exists())->toBeFalse();
 });
 
-test('operators cannot log in when registration is disabled', function () {
+test('operators can log in when sign-up is closed', function () {
     config(['fortify.registration_enabled' => false]);
 
     $user = User::factory()->create();
@@ -50,9 +48,9 @@ test('operators cannot log in when registration is disabled', function () {
     $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'password',
-    ])->assertForbidden();
+    ])->assertRedirect(route('dashboard', absolute: false));
 
-    $this->assertGuest();
+    $this->assertAuthenticatedAs($user);
 });
 
 test('homepage advertises coming soon instead of sign-up when registration is disabled', function () {
@@ -60,6 +58,7 @@ test('homepage advertises coming soon instead of sign-up when registration is di
 
     $this->get(route('home'))
         ->assertOk()
+        ->assertSee('Coming soon')
         ->assertSee('Coming soon — we are preparing operator sign-up')
         ->assertDontSee('Create Your Free Tour Website', false);
 });

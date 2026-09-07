@@ -153,7 +153,7 @@ new #[Title('Coupons')] #[Layout('layouts.admin')] class extends Component {
                     : 'Rp ' . number_format($this->discount_value, 0, ',', '.') . ' OFF';
 
                 $announcement = PlatformAnnouncement::create([
-                    'title' => "🎉 New promo code available: {$cleanCode}",
+                    'title' => __('New promo code available: :code', ['code' => $cleanCode]),
                     'message' => "Use code **{$cleanCode}** to get **{$discountLabel}** on your subscription checkout!" . ($this->expires_at ? ' Valid until ' . Carbon::parse($this->expires_at)->format('d M Y') . '.' : ''),
                     'type' => 'success',
                     'is_active' => true,
@@ -255,14 +255,15 @@ new #[Title('Coupons')] #[Layout('layouts.admin')] class extends Component {
 
         $operators = Operator::with('users')->orderBy('name')->get();
         $operatorOptions = [
-            ['value' => '', 'label' => '✨ ' . __('Eligible for Any Operator (Global Promo)')],
+            ['value' => '', 'label' => __('Eligible for Any Operator (Global Promo)'), 'icon' => 'fa-solid fa-globe'],
         ];
         foreach ($operators as $op) {
             $primaryEmail = $op->users->first()?->email;
             $emailSuffix = $primaryEmail ? " ({$primaryEmail})" : '';
             $operatorOptions[] = [
                 'value' => $op->id,
-                'label' => "🏢 {$op->name}{$emailSuffix}",
+                'label' => "{$op->name}{$emailSuffix}",
+                'icon' => 'fa-solid fa-building',
             ];
         }
 
@@ -374,7 +375,7 @@ new #[Title('Coupons')] #[Layout('layouts.admin')] class extends Component {
                                         $scopeBadge = match($coupon->redemption_scope ?? 'unlimited') {
                                             'first_purchase_only' => ['label' => '1st Only', 'class' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'],
                                             'once_per_period' => ['label' => 'Per Cycle', 'class' => 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'],
-                                            default => ['label' => 'Lifetime ♾️', 'class' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'],
+                                            default => ['label' => __('Lifetime'), 'class' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'],
                                         };
                                     @endphp
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold {{ $scopeBadge['class'] }}">
@@ -663,9 +664,9 @@ new #[Title('Coupons')] #[Layout('layouts.admin')] class extends Component {
                                 id="redemption_scope"
                                 wire:model="redemption_scope"
                                 :options="[
-                                    ['value' => 'unlimited', 'label' => __('♾️ Unlimited — Every checkout & renewal (Lifetime Deal)')],
-                                    ['value' => 'first_purchase_only', 'label' => __('1️⃣ First Subscription Only — New operator onboarding discount')],
-                                    ['value' => 'once_per_period', 'label' => __('📅 Once Per Billing Cycle — Monthly / Annual renewal discount')],
+                                    ['value' => 'unlimited', 'label' => __('Unlimited — Every checkout & renewal (Lifetime Deal)'), 'icon' => 'fa-solid fa-infinity'],
+                                    ['value' => 'first_purchase_only', 'label' => __('First Subscription Only — New operator onboarding discount'), 'icon' => 'fa-solid fa-user-plus'],
+                                    ['value' => 'once_per_period', 'label' => __('Once Per Billing Cycle — Monthly / Annual renewal discount'), 'icon' => 'fa-solid fa-calendar-day'],
                                 ]"
                                 :error="$errors->has('redemption_scope')"
                             />
@@ -688,10 +689,10 @@ new #[Title('Coupons')] #[Layout('layouts.admin')] class extends Component {
                                 id="eligibility_rule_type"
                                 wire:model.live="eligibility_rule_type"
                                 :options="[
-                                    ['value' => '', 'label' => __('🖐 Manual Only — Admin broadcasts manually')],
-                                    ['value' => 'min_monthly_transactions', 'label' => __('📊 Min. Monthly Confirmed Bookings (volume milestone)')],
-                                    ['value' => 'min_monthly_revenue', 'label' => __('Min. guest payments this month')],
-                                    ['value' => 'subscription_age_months', 'label' => __('🎂 Subscription Age (loyalty reward)')],
+                                    ['value' => '', 'label' => __('Manual Only — Admin broadcasts manually'), 'icon' => 'fa-solid fa-hand'],
+                                    ['value' => 'min_monthly_transactions', 'label' => __('Min. Monthly Confirmed Bookings (volume milestone)'), 'icon' => 'fa-solid fa-chart-column'],
+                                    ['value' => 'min_monthly_revenue', 'label' => __('Min. guest payments this month'), 'icon' => 'fa-solid fa-sack-dollar'],
+                                    ['value' => 'subscription_age_months', 'label' => __('Subscription Age (loyalty reward)'), 'icon' => 'fa-solid fa-heart'],
                                 ]"
                                 :error="$errors->has('eligibility_rule_type')"
                             />
@@ -792,7 +793,7 @@ new #[Title('Coupons')] #[Layout('layouts.admin')] class extends Component {
                                     <x-checkbox
                                         id="coupon_announce_on_save"
                                         wire:model="announce_on_save"
-                                        :label="__('📢 Publish announcement to operator dashboard')"
+                                        :label="__('Publish announcement to operator dashboard')"
                                         :description="__('Creates a dismissible success announcement banner visible to all operators (or plan-targeted if applicable) when this coupon is saved.')"
                                     />
                                 </div>

@@ -27,7 +27,7 @@ class GuestBookingConfirmedMail extends Mailable
 
         return $this->operatorBrandedEnvelope(
             $operator,
-            "🎟️ Booking Confirmed #{$code} - {$agentName}",
+            "Booking Confirmed #{$code} - {$agentName}",
         );
     }
 

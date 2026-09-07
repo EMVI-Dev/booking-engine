@@ -16,7 +16,7 @@
                 @if ($maintenance)
                     {{ __('Storefront bookings and new operator accounts are paused for a short maintenance window. Existing operators can still log in. Admin still works.') }}
                 @else
-                    {{ __('TravelEngine is live as a preview. You can look around, but operator log in and sign-up are not open yet. Coming soon.') }}
+                    {{ __('TravelEngine is live as a preview. You can look around, and existing operators (including the demo desk) can log in. New operator accounts are not open yet.') }}
                 @endif
             </p>
         </div>

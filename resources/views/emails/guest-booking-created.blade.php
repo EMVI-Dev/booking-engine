@@ -37,8 +37,8 @@
                     <!-- Hold Notice Hero -->
                     <tr>
                         <td style="padding: 32px 28px 20px 28px; text-align: center;">
-                            <div style="display: inline-block; width: 56px; height: 56px; line-height: 56px; border-radius: 18px; background-color: #fef3c7; color: #d97706; font-size: 26px; font-weight: bold; margin-bottom: 16px;">
-                                ⏳
+                            <div style="display: inline-block; width: 56px; height: 56px; line-height: 56px; border-radius: 18px; background-color: #fef3c7; color: #d97706; font-size: 12px; font-weight: 800; margin-bottom: 16px; letter-spacing: 0.06em;">
+                                {{ __('HOLD') }}
                             </div>
                             <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">
                                 {{ __('Reservation Held for :name', ['name' => $reservation->guest_name]) }}
@@ -53,7 +53,7 @@
                     <tr>
                         <td style="padding: 0 28px 24px 28px; text-align: center;">
                             <a href="{{ $payUrl }}" target="_blank" style="display: block; background-color: #d97706; color: #ffffff; font-size: 15px; font-weight: 800; text-decoration: none; padding: 14px 24px; border-radius: 14px; box-shadow: 0 10px 15px -3px rgba(217, 119, 6, 0.3);">
-                                {{ __('💳 Complete Payment (Pay Now)') }}
+                                {{ __('Complete Payment (Pay Now)') }}
                             </a>
                             <p style="margin: 10px 0 0 0; font-size: 11px; color: #94a3b8;">
                                 {{ __('If your payment tab was closed or you need to retry with a different method, click above.') }}
@@ -118,7 +118,7 @@
                                         {{ __('Need help with your reservation or payment?') }}
                                     </p>
                                     <a href="{{ $waUrl }}" target="_blank" style="display: inline-block; background-color: #059669; color: #ffffff; font-size: 12px; font-weight: 700; text-decoration: none; padding: 8px 16px; border-radius: 10px;">
-                                        {{ __('💬 Chat with Operator on WhatsApp') }}
+                                        {{ __('Chat with Operator on WhatsApp') }}
                                     </a>
                                 </div>
                             </td>

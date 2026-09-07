@@ -478,20 +478,58 @@
     color: var(--op-subtle);
 }
 
-.op-input {
-    height: 2.5rem;
-    width: 100%;
-    border-radius: 0.75rem;
-    border: 1px solid var(--op-line);
-    background-color: var(--op-inset);
-    padding-inline: 0.875rem;
-    font-size: 0.8125rem;
-    color: var(--op-ink);
-    outline: none;
+@layer components {
+    .op-input {
+        height: 2.5rem;
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid var(--op-line);
+        background-color: var(--op-inset);
+        padding: 0 0.875rem;
+        font-size: 0.8125rem;
+        color: var(--op-ink);
+        outline: none;
+    }
+
+    .op-input::placeholder {
+        color: color-mix(in srgb, var(--op-subtle) 80%, transparent);
+    }
 }
 
-.op-input::placeholder {
-    color: color-mix(in srgb, var(--op-subtle) 80%, transparent);
+/*
+ * Prefix icons sit inside .op-input. Unlayered padding-inline used to beat
+ * Tailwind pl- and ps- utilities, so the icon covered the first letters.
+ * These more-specific rules set the same logical and physical start padding
+ * the utilities intend.
+ */
+.op-input.pl-8,
+.op-input.ps-8 {
+    padding-left: 2rem;
+    padding-inline-start: 2rem;
+}
+
+.op-input.pl-9,
+.op-input.ps-9 {
+    padding-left: 2.25rem;
+    padding-inline-start: 2.25rem;
+}
+
+.op-input.pl-10,
+.op-input.ps-10 {
+    padding-left: 2.5rem;
+    padding-inline-start: 2.5rem;
+}
+
+.op-input.pl-11,
+.op-input.ps-11 {
+    padding-left: 2.75rem;
+    padding-inline-start: 2.75rem;
+}
+
+.op-input.pl-12,
+.op-input.ps-12 {
+    padding-left: 3rem;
+    padding-inline-start: 3rem;
 }
 
 .op-tab {

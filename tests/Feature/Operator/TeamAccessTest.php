@@ -24,6 +24,70 @@ beforeEach(function () {
     $this->operator->users()->attach($this->owner->id, ['role' => OperatorUserRole::Owner]);
 });
 
+test('each job lists which desk areas it can and cannot use', function () {
+    expect(collect(OperatorUserRole::Reservation->deskScope())->where('allowed', true)->pluck('key')->all())
+        ->toBe(['reservations'])
+        ->and(collect(OperatorUserRole::Finance->deskScope())->where('allowed', true)->pluck('key')->all())
+        ->toBe(['wallet', 'billing'])
+        ->and(collect(OperatorUserRole::Admin->deskScope())->where('allowed', false)->pluck('key')->all())
+        ->toBe([]);
+});
+
+test('the team page shows desk coverage and a people table', function () {
+    $this->operator->update([
+        'plan_id' => Plan::query()->where('slug', 'growth')->value('id'),
+    ]);
+
+    $helper = User::factory()->create(['name' => 'Ayu Bookings']);
+    $this->operator->users()->attach($helper->id, ['role' => OperatorUserRole::Reservation]);
+
+    $this->actingAs($this->owner);
+
+    Livewire::test('pages::settings.team')
+        ->assertSee('Person')
+        ->assertSee('Desk access')
+        ->assertSee('Bookings, calendar & guests')
+        ->assertSee('Activities, packages & coupons')
+        ->assertSee('Brand & storefront')
+        ->assertSee('Wallet & payouts')
+        ->assertSee('Plan & payout bank')
+        ->assertSee('Team invites')
+        ->assertSee('Owner Person')
+        ->assertSee('Ayu Bookings')
+        ->assertSee('Remove')
+        ->assertSee('Review invite')
+        ->assertSee('inviteOpen: false', false);
+});
+
+test('reviewing an invite asks for confirmation and does not send yet', function () {
+    Notification::fake();
+
+    $this->actingAs($this->owner);
+
+    Livewire::test('pages::settings.team')
+        ->set('invite_name', 'Ayu Bookings')
+        ->set('invite_email', 'ayu@example.com')
+        ->set('invite_role', OperatorUserRole::Reservation->value)
+        ->call('promptInvite')
+        ->assertHasNoErrors()
+        ->assertDispatched('open-modal', 'confirm-team-invite')
+        ->assertSee('Send this invite?');
+
+    expect(User::query()->where('email', 'ayu@example.com')->exists())->toBeFalse();
+
+    Notification::assertNothingSent();
+});
+
+test('an incomplete invite is not opened for confirmation', function () {
+    $this->actingAs($this->owner);
+
+    Livewire::test('pages::settings.team')
+        ->call('promptInvite')
+        ->assertHasErrors(['invite_name', 'invite_email'])
+        ->assertNotDispatched('open-modal')
+        ->assertSee('inviteOpen: true', false);
+});
+
 test('the owner can invite a teammate who is not another owner', function () {
     Notification::fake();
 
@@ -113,6 +177,10 @@ test('a money teammate can save the payout bank account but cannot invite people
         ->assertHasNoErrors();
 
     Livewire::test('pages::settings.team')->assertForbidden();
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee(route('settings.team', absolute: false), false);
 
     $this->operator->refresh();
 

@@ -4,12 +4,16 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\Operator;
 use App\Models\PlatformSetting;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -39,6 +43,29 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::query()->where('email', $request->email)->first();
+
+            if (! $user || ! Hash::check((string) $request->password, $user->password)) {
+                return null;
+            }
+
+            if ($user->isAdmin()) {
+                throw ValidationException::withMessages([
+                    'email' => __('This sign-in is for tour operators. Admins use the admin sign-in page.'),
+                ]);
+            }
+
+            $operator = $request->attributes->get('current_operator');
+            if ($operator instanceof Operator && ! $user->operators()->whereKey($operator->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'email' => __('These credentials do not match this tour shop.'),
+                ]);
+            }
+
+            return $user;
+        });
     }
 
     /**

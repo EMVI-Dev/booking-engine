@@ -43,10 +43,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
         $settings = $platform->settings ?? [];
 
         $this->platform_name = (string) ($settings['platform_name'] ?? 'TravelEngine');
-        $storedSupportEmail = (string) ($settings['support_email'] ?? 'support@travelengine.online');
-        $this->support_email = str_starts_with(strtolower($storedSupportEmail), 'no-reply@')
-            ? 'support@travelengine.online'
-            : $storedSupportEmail;
+        $this->support_email = $platform->getOperatorSupportEmail();
         $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.0) * 100);
         $this->guest_service_fee_percentage = (float) (($settings['guest_service_fee_rate'] ?? 0.05) * 100);
         $this->booking_hold_minutes = (int) ($settings['booking_hold_minutes'] ?? 30);
@@ -79,7 +76,9 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
         $settings = $platform->settings ?? [];
 
         $settings['platform_name'] = $validated['platform_name'];
-        $settings['support_email'] = $validated['support_email'];
+        $settings['support_email'] = $platform->isUnusableOperatorSupportEmail($validated['support_email'])
+            ? 'support@travelengine.online'
+            : $validated['support_email'];
         $settings['commission_rate'] = round($validated['commission_percentage'] / 100, 4);
         $settings['guest_service_fee_rate'] = round($validated['guest_service_fee_percentage'] / 100, 4);
         $settings['booking_hold_minutes'] = $validated['booking_hold_minutes'];

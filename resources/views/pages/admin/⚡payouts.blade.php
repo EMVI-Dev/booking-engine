@@ -3,8 +3,8 @@
 use App\Enums\PayoutStatus;
 use App\Models\PayoutRequest;
 use App\Services\WalletService;
+use App\Concerns\UsesMediaStore;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -13,7 +13,7 @@ use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
-    use WithFileUploads, WithPagination;
+    use WithFileUploads, WithPagination, UsesMediaStore;
 
     public string $statusFilter = 'all';
     public string $search = '';
@@ -108,7 +108,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
 
         $proofPath = null;
         if ($this->proofFile) {
-            $proofPath = $this->proofFile->store('payouts/proofs', 'public');
+            $proofPath = $this->media()->storeUpload($this->proofFile, $this->media()->directoryFor($payout->operator_id, 'payouts'));
         }
 
         $walletService->approvePayout($payout, $proofPath, auth()->id());
@@ -365,7 +365,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
                                         </button>
                                     </div>
                                 @elseif ($payout->proof_document_path)
-                                    <a href="{{ Storage::url($payout->proof_document_path) }}" target="_blank"
+                                    <a href="{{ $payout->proof_document_url }}" target="_blank"
                                         class="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#1e2433] font-bold text-xs transition inline-flex items-center gap-1 shadow-2xs">
                                         <i class="fa-solid fa-file-invoice text-[10px]"></i>
                                         <span>{{ __('View Proof') }}</span>

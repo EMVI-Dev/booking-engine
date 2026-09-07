@@ -10,7 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureOperatorPortalOpen
 {
     /**
-     * Block operator log in (and passkeys) while the marketing preview is up.
+     * Block operator log in (and passkeys) only when the portal itself is closed.
+     * Sign-up can stay closed without locking existing operators or the demo desk.
      *
      * @param  Closure(Request): (Response)  $next
      */

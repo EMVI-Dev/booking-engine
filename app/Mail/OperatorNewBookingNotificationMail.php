@@ -26,7 +26,7 @@ class OperatorNewBookingNotificationMail extends Mailable
 
         return $this->operatorBrandedEnvelope(
             $this->reservation->operator,
-            "🎉 New Booking #{$code} - {$guestName} ({$this->reservation->pax_count} Pax)",
+            "New Booking #{$code} - {$guestName} ({$this->reservation->pax_count} Pax)",
             replyToOperator: false,
         );
     }

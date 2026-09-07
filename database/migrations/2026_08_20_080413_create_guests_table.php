@@ -24,6 +24,7 @@ return new class extends Migration
 
             $table->index(['operator_id', 'email']);
             $table->index(['operator_id', 'phone']);
+            $table->index(['operator_id', 'updated_at']);
         });
     }
 

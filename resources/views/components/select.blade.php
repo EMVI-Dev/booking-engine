@@ -7,7 +7,7 @@
 ])
 
 @php
-    // Normalize options array into [{value: ..., label: ...}] format
+    // Normalize options array into [{value, label, icon, hint}] format
     $normalizedOptions = [];
     if (!empty($options)) {
         foreach ($options as $key => $val) {
@@ -15,16 +15,22 @@
                 $normalizedOptions[] = [
                     'value' => (string) $val['value'],
                     'label' => (string) ($val['label'] ?? $val['value']),
+                    'icon' => (string) ($val['icon'] ?? ''),
+                    'hint' => (string) ($val['hint'] ?? ''),
                 ];
             } elseif (is_numeric($key)) {
                 $normalizedOptions[] = [
                     'value' => (string) $val,
                     'label' => (string) $val,
+                    'icon' => '',
+                    'hint' => '',
                 ];
             } else {
                 $normalizedOptions[] = [
                     'value' => (string) $key,
                     'label' => (string) $val,
+                    'icon' => '',
+                    'hint' => '',
                 ];
             }
         }
@@ -51,17 +57,26 @@
             value: @if($wireModel) @entangle($attributes->wire('model')) @else '' @endif,
             placeholderText: '{{ $placeholder ?? __('Select an option...') }}',
             options: {{ Js::from($normalizedOptions) }},
+            get selectedOption() {
+                return this.options.find(o => String(o.value) === String(this.value));
+            },
             get selectedLabel() {
-                const found = this.options.find(o => String(o.value) === String(this.value));
-                return found ? found.label : this.placeholderText;
+                return this.selectedOption ? this.selectedOption.label : this.placeholderText;
+            },
+            get selectedIcon() {
+                return this.selectedOption?.icon || '';
             },
             get hasSelection() {
-                return this.options.some(o => String(o.value) === String(this.value));
+                return Boolean(this.selectedOption);
             },
             get filteredOptions() {
                 if (!this.search) return this.options;
                 const s = this.search.toLowerCase();
-                return this.options.filter(o => o.label.toLowerCase().includes(s) || String(o.value).toLowerCase().includes(s));
+                return this.options.filter(o =>
+                    o.label.toLowerCase().includes(s)
+                    || String(o.value).toLowerCase().includes(s)
+                    || (o.hint && o.hint.toLowerCase().includes(s))
+                );
             },
             selectOption(val) {
                 if ({{ $disabled ? 'true' : 'false' }}) return;
@@ -84,11 +99,19 @@
             {{ $attributes->except('wire:model')->merge(['class' => $classes . ' px-3.5 flex items-center justify-between gap-2 text-left cursor-pointer select-none']) }}
             :class="{ 'ring-2 ring-brand-400/30 border-brand-500': open }"
         >
-            <span
-                class="truncate"
-                :class="hasSelection ? 'font-medium text-op-ink' : 'text-op-subtle'"
-                x-text="selectedLabel"
-            ></span>
+            <span class="flex min-w-0 flex-1 items-center gap-2">
+                <i
+                    x-show="selectedIcon"
+                    x-cloak
+                    :class="selectedIcon"
+                    class="w-3.5 shrink-0 text-center text-[11px] text-op-subtle"
+                ></i>
+                <span
+                    class="truncate"
+                    :class="hasSelection ? 'font-medium text-op-ink' : 'text-op-subtle'"
+                    x-text="selectedLabel"
+                ></span>
+            </span>
             <i class="fa-solid fa-chevron-down text-[11px] text-slate-400 transition-transform duration-200 shrink-0" :class="{ 'rotate-180': open }"></i>
         </button>
 
@@ -132,8 +155,24 @@
                             ? 'bg-amber-50 text-stone-900 font-semibold dark:bg-amber-400/10 dark:text-amber-50'
                             : 'text-op-ink hover:bg-op-muted'"
                     >
-                        <span x-text="item.label" class="truncate"></span>
-                        <i x-show="String(value) === String(item.value)" class="fa-solid fa-check text-xs text-amber-600 dark:text-amber-300"></i>
+                        <span class="flex min-w-0 flex-1 items-center gap-2">
+                            <i
+                                x-show="item.icon"
+                                x-cloak
+                                :class="item.icon"
+                                class="w-3.5 shrink-0 text-center text-[11px] text-op-subtle"
+                            ></i>
+                            <span x-text="item.label" class="truncate"></span>
+                        </span>
+                        <span class="flex shrink-0 items-center gap-2">
+                            <span
+                                x-show="item.hint"
+                                x-cloak
+                                x-text="item.hint"
+                                class="text-[10px] font-semibold uppercase tracking-wide text-op-subtle"
+                            ></span>
+                            <i x-show="String(value) === String(item.value)" class="fa-solid fa-check text-xs text-amber-600 dark:text-amber-300"></i>
+                        </span>
                     </button>
                 </template>
 

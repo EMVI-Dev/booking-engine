@@ -212,7 +212,7 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component {
                         <div class="flex items-center gap-2.5 min-w-0">
                             <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="w-10 h-10 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shrink-0 overflow-hidden shadow-xs">
                                 @if ($operator->logo_path)
-                                    <img src="{{ Storage::url($operator->logo_path) }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
+                                    <img src="{{ $operator->logo_url }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
                                 @else
                                     {{ strtoupper(substr($operator->name, 0, 2)) }}
                                 @endif
@@ -306,7 +306,7 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component {
                                     <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate
                                         class="size-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-xs shrink-0 overflow-hidden hover:scale-105 transition-transform shadow-xs">
                                         @if ($operator->logo_path)
-                                            <img src="{{ Storage::url($operator->logo_path) }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
+                                            <img src="{{ $operator->logo_url }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
                                         @else
                                             {{ strtoupper(substr($operator->name, 0, 2)) }}
                                         @endif

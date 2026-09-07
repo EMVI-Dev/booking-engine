@@ -100,7 +100,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     }
 
     /**
-     * @return array<int, array{value: string, label: string}>
+     * @return list<array{value: string, label: string, icon: string, hint: string}>
      */
     #[Computed]
     public function experienceOptions(): array
@@ -110,14 +110,18 @@ new #[Title('Bookings & Reservations')] class extends Component {
         foreach ($this->availablePackages as $pkg) {
             $options[] = [
                 'value' => "package:{$pkg->id}",
-                'label' => "{$pkg->title} — Rp " . number_format((float) $pkg->price, 0, ',', '.') . '/pax',
+                'label' => "{$pkg->title} — Rp ".number_format((float) $pkg->price, 0, ',', '.').'/pax',
+                'icon' => 'fa-solid fa-cubes',
+                'hint' => __('Package'),
             ];
         }
 
         foreach ($this->availableProducts as $prod) {
             $options[] = [
                 'value' => "product:{$prod->id}",
-                'label' => "{$prod->name} — Rp " . number_format((float) $prod->price, 0, ',', '.') . '/pax',
+                'label' => "{$prod->name} — Rp ".number_format((float) $prod->price, 0, ',', '.').'/pax',
+                'icon' => 'fa-solid fa-compass',
+                'hint' => __('Activity'),
             ];
         }
 
@@ -216,6 +220,8 @@ new #[Title('Bookings & Reservations')] class extends Component {
         if (!$this->currentOperator) {
             return;
         }
+
+        $this->currentOperator->assertCheckoutAllowed();
 
         /** @var \App\Models\Package|\App\Models\Product|null $bookable */
         $bookable = $this->createBookableType === 'package' ? $this->currentOperator->packages()->find($this->createBookableId) : $this->currentOperator->products()->find($this->createBookableId);

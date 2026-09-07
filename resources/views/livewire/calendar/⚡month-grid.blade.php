@@ -385,7 +385,7 @@ new class extends Component {
     /**
      * Filter options for experiences dropdown.
      *
-     * @return array<string, string>
+     * @return list<array{value: string, label: string, icon: string, hint: string}>
      */
     #[Computed]
     public function experienceFilterOptions(): array
@@ -395,15 +395,30 @@ new class extends Component {
         }
 
         $options = [
-            'all' => __('All Experiences (Catalog)'),
+            [
+                'value' => 'all',
+                'label' => __('All Experiences (Catalog)'),
+                'icon' => 'fa-solid fa-layer-group',
+                'hint' => '',
+            ],
         ];
 
         foreach ($this->currentOperator->packages()->get() as $pkg) {
-            $options["package:{$pkg->id}"] = "📦 [Package] {$pkg->title}";
+            $options[] = [
+                'value' => "package:{$pkg->id}",
+                'label' => $pkg->title,
+                'icon' => 'fa-solid fa-cubes',
+                'hint' => __('Package'),
+            ];
         }
 
         foreach ($this->currentOperator->products()->get() as $prod) {
-            $options["product:{$prod->id}"] = "🧭 [Activity] {$prod->name}";
+            $options[] = [
+                'value' => "product:{$prod->id}",
+                'label' => $prod->name,
+                'icon' => 'fa-solid fa-compass',
+                'hint' => __('Activity'),
+            ];
         }
 
         return $options;

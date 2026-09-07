@@ -6,6 +6,25 @@
                 "artisan",
                 "boost:mcp"
             ]
+        },
+        "chrome-devtools": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "chrome-devtools-mcp@latest",
+                "--acceptInsecureCerts"
+            ]
+        },
+        "tailwindcss": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "tailwindcss-mcp"
+            ],
+            "env": {
+                "TAILWIND_CONFIG_PATH": "/Users/mastervarol/Herd/booking",
+                "TAILWIND_VERSION": "4"
+            }
         }
     }
 }

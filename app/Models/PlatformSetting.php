@@ -132,17 +132,37 @@ class PlatformSetting extends Model
     }
 
     /**
-     * Inbox operators write to. no-reply is never used as a support address.
+     * Inbox operators write to. no-reply and leftover brand mailboxes are never used.
      */
     public function getOperatorSupportEmail(): string
     {
         $configured = trim((string) ($this->settings['support_email'] ?? ''));
 
-        if ($configured !== '' && ! str_starts_with(strtolower($configured), 'no-reply@')) {
+        if ($configured !== '' && ! $this->isUnusableOperatorSupportEmail($configured)) {
             return $configured;
         }
 
         return 'support@travelengine.online';
+    }
+
+    public function isUnusableOperatorSupportEmail(string $email): bool
+    {
+        $normalized = strtolower(trim($email));
+        $from = strtolower(trim((string) config('mail.from.address', '')));
+
+        if ($normalized === '' || str_starts_with($normalized, 'no-reply@')) {
+            return true;
+        }
+
+        if ($from !== '' && $normalized === $from) {
+            return true;
+        }
+
+        return in_array($normalized, [
+            'hello@travelengine.online',
+            'hello@emvi.dev',
+            'support@emvi.dev',
+        ], true);
     }
 
     /**
@@ -170,12 +190,12 @@ class PlatformSetting extends Model
     }
 
     /**
-     * Existing operators may still sign in during maintenance.
-     * REGISTRATION_ENABLED=false keeps the ads-mode coming-soon login page.
+     * Existing operators and the demo desk stay available even when
+     * REGISTRATION_ENABLED=false (sign-up can stay closed).
      */
     public function operatorLoginAllowed(): bool
     {
-        return (bool) config('fortify.registration_enabled');
+        return true;
     }
 
     /**

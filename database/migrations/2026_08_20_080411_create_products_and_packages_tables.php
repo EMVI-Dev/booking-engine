@@ -36,6 +36,7 @@ return new class extends Migration
 
             $table->unique(['operator_id', 'slug']);
             $table->index(['operator_id', 'status']);
+            $table->index(['operator_id', 'status', 'sellable_standalone']);
         });
 
         Schema::create('packages', function (Blueprint $table) {
@@ -62,6 +63,7 @@ return new class extends Migration
 
             $table->unique(['operator_id', 'slug']);
             $table->index(['operator_id', 'status']);
+            $table->index(['operator_id', 'status', 'created_at']);
         });
 
         Schema::create('package_products', function (Blueprint $table) {

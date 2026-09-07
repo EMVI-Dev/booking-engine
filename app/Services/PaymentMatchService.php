@@ -17,31 +17,25 @@ class PaymentMatchService
      */
     public function unmatchedPaidCharges(): array
     {
-        $paid = Payment::query()
+        $earningReservationIds = WalletTransaction::query()
+            ->where('type', WalletTransactionType::BookingEarning)
+            ->whereNotNull('reservation_id')
+            ->select('reservation_id');
+
+        $exceptions = Payment::query()
             ->where('status', PaymentStatus::Paid)
             ->whereNotNull('gateway_ref')
-            ->get();
-
-        $exceptions = [];
-
-        foreach ($paid as $payment) {
-            $hasEarning = WalletTransaction::query()
-                ->where('reservation_id', $payment->reservation_id)
-                ->where('type', WalletTransactionType::BookingEarning)
-                ->exists();
-
-            if ($hasEarning) {
-                continue;
-            }
-
-            $exceptions[] = [
+            ->whereNotIn('reservation_id', $earningReservationIds)
+            ->get(['id', 'reservation_id', 'gateway_ref', 'amount'])
+            ->map(fn (Payment $payment): array => [
                 'payment_id' => (string) $payment->id,
                 'invoice' => (string) $payment->gateway_ref,
                 'amount' => (float) $payment->amount,
                 'reason' => 'A guest paid, but the money is not in the operator wallet yet.',
                 'found_at' => now()->toIso8601String(),
-            ];
-        }
+            ])
+            ->values()
+            ->all();
 
         PlatformSetting::current()->storeUnmatchedPayments($exceptions);
 

@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Contracts\Bookable;
 use App\Enums\ReservationStatus;
 use App\Exceptions\CapacityUnavailableException;
+use App\Models\Package;
 use App\Models\Product;
 use App\Models\Reservation;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -93,6 +95,8 @@ class CapacityService
      */
     public function remainingCapacity(Bookable $bookable, Carbon|string $date, ?string $excludeReservationId = null): ?int
     {
+        $this->eagerLoadCapacityRelations($bookable);
+
         $requirements = $bookable->getRequiredProducts();
 
         if ($requirements->isEmpty()) {
@@ -131,6 +135,8 @@ class CapacityService
      */
     public function limitingProductTitle(Bookable $bookable, Carbon|string $date, ?string $excludeReservationId = null): ?string
     {
+        $this->eagerLoadCapacityRelations($bookable);
+
         $requirements = $bookable->getRequiredProducts();
         $committedPax = $this->committedPaxByBookable($bookable->getOperatorId(), $date, $excludeReservationId);
 
@@ -176,6 +182,8 @@ class CapacityService
     public function reserve(Bookable $bookable, Carbon|string $date, int $paxCount, callable $callback, ?string $excludeReservationId = null): mixed
     {
         return DB::transaction(function () use ($bookable, $date, $paxCount, $callback, $excludeReservationId) {
+            $this->eagerLoadCapacityRelations($bookable);
+
             $productIds = $bookable->getRequiredProducts()
                 ->map(fn (array $requirement): string => $requirement['product']->id)
                 ->all();
@@ -216,5 +224,21 @@ class CapacityService
             $remaining,
             $this->limitingProductTitle($bookable, $date, $excludeReservationId),
         );
+    }
+
+    /**
+     * Checkout and calendar walk every bundled activity's packages. Load them once
+     * so remaining-capacity checks do not N+1 the pivot table.
+     */
+    protected function eagerLoadCapacityRelations(Bookable $bookable): void
+    {
+        if ($bookable instanceof Package && ! $bookable->relationLoaded('products')) {
+            $bookable->load('products');
+        }
+
+        $products = $bookable->getRequiredProducts()
+            ->map(fn (array $requirement): Product => $requirement['product']);
+
+        (new EloquentCollection($products->all()))->loadMissing('packages');
     }
 }

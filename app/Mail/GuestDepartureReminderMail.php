@@ -27,7 +27,7 @@ class GuestDepartureReminderMail extends Mailable
 
         return $this->operatorBrandedEnvelope(
             $operator,
-            "⏰ Trip Departure Reminder #{$code} - {$agentName}",
+            "Trip Departure Reminder #{$code} - {$agentName}",
         );
     }
 

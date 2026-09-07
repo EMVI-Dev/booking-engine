@@ -19,28 +19,26 @@
             </p>
         </div>
 
-        <!-- Demo Accounts Quick Fill (Local / Development Helper) -->
-        @if (app()->environment('local', 'testing', 'staging'))
+        @php
+            $hostOperator = request()->attributes->get('current_operator');
+            $isDemoHost = $hostOperator instanceof \App\Models\Operator && $hostOperator->isDemo();
+            $demoLoginPassword = filled(config('demo.password'))
+                ? (string) config('demo.password')
+                : (app()->environment('local', 'testing', 'staging') ? 'password' : '');
+            $showDemoFill = $isDemoHost && filled($demoLoginPassword);
+        @endphp
+        @if ($showDemoFill)
             <div
                 class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700 text-xs space-y-2">
                 <span
-                    class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">{{ __('Demo Test Accounts (Click to Fill)') }}</span>
-                <div class="grid grid-cols-2 gap-2">
-                    <button type="button" @click="fillCredentials('baliridetours@gmail.com', 'password')"
-                        class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600 text-left transition cursor-pointer group shadow-2xs">
-                        <span
-                            class="font-bold text-slate-800 dark:text-zinc-200 block text-[11px] group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Operator</span>
-                        <span
-                            class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">baliridetours@gmail.com</span>
-                    </button>
-                    <button type="button" @click="fillCredentials('admin@travelengine.online', 'password')"
-                        class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600 text-left transition cursor-pointer group shadow-2xs">
-                        <span
-                            class="font-bold text-slate-800 dark:text-zinc-200 block text-[11px] group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Platform
-                            Admin</span>
-                        <span class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">admin@travelengine.online</span>
-                    </button>
-                </div>
+                    class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">{{ __('Click to fill a lookaround account') }}</span>
+                <button type="button" @click="fillCredentials('{{ config('demo.email', 'demo@travelengine.online') }}', @js($demoLoginPassword))"
+                    class="w-full p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600 text-left transition cursor-pointer group shadow-2xs">
+                    <span
+                        class="font-bold text-slate-800 dark:text-zinc-200 block text-[11px] group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ __('Demo operator') }}</span>
+                    <span
+                        class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">{{ config('demo.email', 'demo@travelengine.online') }}</span>
+                </button>
             </div>
         @endif
 
@@ -49,7 +47,7 @@
 
         <x-passkey-verify />
 
-        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-5">
+        <form method="POST" action="{{ url('/login') }}" class="flex flex-col gap-5">
             @csrf
 
             <!-- Email Address -->

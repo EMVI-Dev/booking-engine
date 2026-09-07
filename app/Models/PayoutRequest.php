@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PayoutStatus;
+use App\Services\MediaStore;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,7 @@ use Illuminate\Support\Str;
  * @property string|null $notes
  * @property string|null $rejection_reason
  * @property string|null $proof_document_path
+ * @property-read string|null $proof_document_url
  * @property string|null $processed_by
  * @property Carbon|null $processed_at
  * @property Carbon|null $created_at
@@ -89,5 +91,10 @@ class PayoutRequest extends Model
     public function walletTransactions(): HasMany
     {
         return $this->hasMany(WalletTransaction::class);
+    }
+
+    public function getProofDocumentUrlAttribute(): ?string
+    {
+        return app(MediaStore::class)->url($this->proof_document_path);
     }
 }

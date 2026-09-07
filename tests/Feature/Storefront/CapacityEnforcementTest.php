@@ -12,6 +12,7 @@ use App\Models\Package;
 use App\Models\Product;
 use App\Models\Reservation;
 use App\Services\CapacityService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 
@@ -122,8 +123,14 @@ test('a package draws down the daily capacity of every activity it bundles', fun
     // Selling the package must also reduce standalone availability of its activities
     bookSeats($this->operator, $package, $this->date, 4);
 
-    expect($this->capacity->remainingCapacity($this->product->fresh(), $this->date))->toBe(6)
-        ->and($this->capacity->remainingCapacity($boat->fresh(), $this->date))->toBe(4);
+    Model::preventLazyLoading();
+
+    try {
+        expect($this->capacity->remainingCapacity($this->product->fresh(), $this->date))->toBe(6)
+            ->and($this->capacity->remainingCapacity($boat->fresh(), $this->date))->toBe(4);
+    } finally {
+        Model::preventLazyLoading(false);
+    }
 });
 
 test('standalone activity bookings reduce availability of packages that bundle them', function () {

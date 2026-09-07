@@ -25,11 +25,11 @@ class SubscriptionRenewalReminderMail extends Mailable
         $planName = $this->plan->name;
 
         if ($this->daysRemaining <= 0) {
-            $subject = "⚠️ Important: Your {$planName} Subscription has Expired";
+            $subject = "Important: Your {$planName} Subscription has Expired";
         } elseif ($this->daysRemaining === 1) {
-            $subject = "⏰ Reminder: Your {$planName} Subscription Expires Tomorrow";
+            $subject = "Reminder: Your {$planName} Subscription Expires Tomorrow";
         } else {
-            $subject = "📅 Reminder: Your {$planName} Subscription Expires in {$this->daysRemaining} Days";
+            $subject = "Reminder: Your {$planName} Subscription Expires in {$this->daysRemaining} Days";
         }
 
         return new Envelope(

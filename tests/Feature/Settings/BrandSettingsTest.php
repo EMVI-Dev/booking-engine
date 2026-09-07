@@ -4,6 +4,7 @@ use App\Enums\OperatorStatus;
 use App\Enums\OperatorUserRole;
 use App\Models\Operator;
 use App\Models\User;
+use App\Services\MediaStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -30,7 +31,7 @@ test('brand settings page is displayed', function () {
 });
 
 test('brand settings can be updated with logo and social media links', function () {
-    Storage::fake('public');
+    Storage::fake(MediaStore::diskName());
 
     $file = UploadedFile::fake()->image('brand-logo.png', 400, 400);
 
@@ -63,7 +64,8 @@ test('brand settings can be updated with logo and social media links', function 
         ->and($this->operator->contact_whatsapp)->toBe('+628987654321')
         ->and($this->operator->booking_notification_email)->toBe('reservations@sunrise.com')
         ->and($this->operator->billing_email)->toBe('accounting@sunrise.com')
-        ->and($this->operator->logo_path)->not->toBeNull()
+        ->and($this->operator->logo_path)->toStartWith('operators/'.$this->operator->id.'/brand/')
+        ->and($this->operator->logo_path)->toEndWith('.webp')
         ->and($this->operator->settings['brand_color'])->toBe('#0ea5e9')
         ->and($this->operator->settings['whatsapp_schedule']['timezone'])->toBe('Asia/Makassar')
         ->and($this->operator->settings['whatsapp_schedule']['start_time'])->toBe('08:00')
@@ -75,7 +77,7 @@ test('brand settings can be updated with logo and social media links', function 
 
     expect($this->operator->getWhatsAppScheduleSummary())->toContain('08:00 - 18:00 (WITA');
 
-    Storage::disk('public')->assertExists($this->operator->logo_path);
+    Storage::disk(MediaStore::diskName())->assertExists($this->operator->logo_path);
 });
 
 test('brand settings validation enforces required fields and valid hex color', function () {

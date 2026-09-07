@@ -770,30 +770,30 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
                                     {{ __('Custom Domain (yourbrand.com)') }}</td>
-                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
-                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
+                                <td class="py-3 px-4 text-slate-400">{{ __('Gated') }}</td>
+                                <td class="py-3 px-4 text-slate-400">{{ __('Gated') }}</td>
                                 <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Own website address + padlock') }}</td>
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
                                     {{ __('Google Calendar & Live iCal Feed') }}</td>
-                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
-                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
-                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                                <td class="py-3 px-4 text-slate-400">{{ __('Gated') }}</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Included') }}</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Included') }}</td>
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
                                     {{ __('Guest CRM Directory & LTV') }}</td>
-                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
-                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
-                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                                <td class="py-3 px-4 text-slate-400">{{ __('Gated') }}</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Included') }}</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Included') }}</td>
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
                                     {{ __('WhatsApp Dispatch Center') }}</td>
-                                <td class="py-3 px-4 text-slate-400">🔒 Gated</td>
-                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
-                                <td class="py-3 px-4 text-emerald-600 font-bold">✅ Included</td>
+                                <td class="py-3 px-4 text-slate-400">{{ __('Gated') }}</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Included') }}</td>
+                                <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Included') }}</td>
                             </tr>
                         </tbody>
                     </table>

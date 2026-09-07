@@ -5,7 +5,7 @@
     <input
         type="search"
         {{ $attributes->merge([
-            'class' => 'op-input pl-9',
+            'class' => 'op-input pl-10',
             'placeholder' => $placeholder ?? __('Search...'),
         ]) }}
     />

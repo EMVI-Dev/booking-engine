@@ -357,7 +357,7 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
                             <span class="w-6 text-center font-black text-xs text-slate-400">{{ $index + 1 }}</span>
                             <div class="w-10 h-10 rounded-xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-[#FFEF4D]/30">
                                 @if ($operator->logo_path)
-                                    <img src="{{ Storage::url($operator->logo_path) }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
+                                    <img src="{{ $operator->logo_url }}" alt="{{ $operator->name }}" class="w-full h-full object-cover" />
                                 @else
                                     {{ strtoupper(substr($operator->name, 0, 2)) }}
                                 @endif

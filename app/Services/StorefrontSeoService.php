@@ -7,11 +7,12 @@ use App\Models\Package;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class StorefrontSeoService
 {
+    public function __construct(private MediaStore $media) {}
+
     /**
      * Absolute image URL and card size for WhatsApp / Facebook / iMessage.
      *
@@ -115,9 +116,17 @@ class StorefrontSeoService
             return $path;
         }
 
-        $storageUrl = Storage::disk('public')->url($path);
+        $storageUrl = $this->media->url($path);
+
+        if ($storageUrl === null) {
+            return null;
+        }
 
         if (str_starts_with($storageUrl, 'http://') || str_starts_with($storageUrl, 'https://')) {
+            if (MediaStore::diskName() !== 'public') {
+                return $storageUrl;
+            }
+
             $pathPart = parse_url($storageUrl, PHP_URL_PATH);
 
             return is_string($pathPart) && $pathPart !== '' ? url($pathPart) : $storageUrl;

@@ -9,6 +9,7 @@ use App\Enums\PayoutStatus;
 use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use App\Services\DomainResolverService;
+use App\Services\MediaStore;
 use Database\Factories\OperatorFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 /**
  * @property string $id
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string $booking_notification_email
  * @property string $billing_email
  * @property OperatorStatus $status
+ * @property bool $is_demo
  * @property string|null $plan_id
  * @property Carbon|null $subscribed_at
  * @property Carbon|null $plan_expires_at
@@ -61,6 +63,7 @@ class Operator extends Model
         'booking_notification_email',
         'billing_email',
         'status',
+        'is_demo',
         'plan_id',
         'subscribed_at',
         'plan_expires_at',
@@ -79,10 +82,18 @@ class Operator extends Model
         'settings',
     ];
 
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_demo' => false,
+    ];
+
     protected function casts(): array
     {
         return [
             'status' => OperatorStatus::class,
+            'is_demo' => 'boolean',
             'subscribed_at' => 'datetime',
             'plan_expires_at' => 'datetime',
             'pending_plan_action_at' => 'datetime',
@@ -205,6 +216,25 @@ class Operator extends Model
         return $this->status === OperatorStatus::Pending;
     }
 
+    public function isDemo(): bool
+    {
+        return (bool) $this->is_demo;
+    }
+
+    /**
+     * Demo storefronts may be browsed, but they must never take a real payment.
+     */
+    public function assertCheckoutAllowed(): void
+    {
+        if (! $this->isDemo()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'checkout' => __('Checkout is disabled on the demo storefront. Look around — nothing here charges a card.'),
+        ]);
+    }
+
     public function getDisplayNameAttribute(): string
     {
         return (string) ($this->settings['display_name'] ?? $this->name);
@@ -217,32 +247,12 @@ class Operator extends Model
 
     public function getLogoUrlAttribute(): string
     {
-        $path = $this->logo_path ?: $this->photo;
-
-        if (! $path) {
-            return asset('favicon.png');
-        }
-
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-
-        return Storage::url($path);
+        return app(MediaStore::class)->url($this->logo_path ?: $this->photo) ?? asset('favicon.png');
     }
 
     public function getBannerUrlAttribute(): ?string
     {
-        $path = $this->banner_path;
-
-        if (! $path) {
-            return null;
-        }
-
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-
-        return Storage::url($path);
+        return app(MediaStore::class)->url($this->banner_path);
     }
 
     public function getBrandColorAttribute(): string
@@ -436,7 +446,7 @@ class Operator extends Model
      */
     public function getStorefrontUrl(): string
     {
-        // 1. Check for active custom domain (e.g. baliridetours.com)
+        // 1. Check for an active custom domain (e.g. yourbrand.com)
         $activeCustomDomain = $this->domains()
             ->where('status', DomainStatus::Active)
             ->where('type', DomainType::Custom)

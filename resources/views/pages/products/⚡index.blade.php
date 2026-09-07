@@ -4,13 +4,14 @@ use App\Enums\ListingStatus;
 use App\Models\Operator;
 use App\Models\Product;
 use App\Concerns\ResolvesCurrentOperator;
-use Illuminate\Support\Facades\Storage;
+use App\Concerns\UsesMediaStore;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Activities & Inventory')] class extends Component {
     use ResolvesCurrentOperator;
+    use UsesMediaStore;
     public string $search = '';
     public string $statusFilter = 'all';
 
@@ -63,14 +64,8 @@ new #[Title('Activities & Inventory')] class extends Component {
         $product = $this->currentOperator?->products()->findOrFail($id);
 
         if ($product) {
-            if ($product->cover_photo) {
-                Storage::disk('public')->delete($product->cover_photo);
-            }
-            if (! empty($product->gallery)) {
-                foreach ($product->gallery as $photo) {
-                    Storage::disk('public')->delete($photo);
-                }
-            }
+            $this->media()->delete($product->cover_photo);
+            $this->media()->deleteMany($product->gallery ?? []);
             $product->delete();
             $this->dispatch('toast', message: __('Activity item deleted successfully.'), type: 'success');
         }

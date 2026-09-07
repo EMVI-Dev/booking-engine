@@ -234,10 +234,9 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
 <div class="w-full space-y-6 py-4">
     <!-- Header -->
     <div class="flex items-center justify-between">
-        <a href="{{ route('settings.plan') }}" wire:navigate class="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition">
-            <i class="fa-solid fa-arrow-left"></i>
-            <span>{{ __('Back to Plan Settings') }}</span>
-        </a>
+        <x-back-link :href="route('settings.plan')">
+            {{ __('Back to plan') }}
+        </x-back-link>
 
         <div class="flex items-center gap-2">
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">

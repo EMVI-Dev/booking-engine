@@ -27,12 +27,12 @@ class PlatformSeoService
 
     public function homeTitle(): string
     {
-        return $this->platformName().' - Online Booking System for Tour Operators';
+        return $this->platformName().' - Guests book themselves. You keep the listed price.';
     }
 
     public function homeDescription(): string
     {
-        return 'The simple way to sell your tours online with 0% platform commission. Get your tour website, accept QRIS and bank payments, and manage reservations.';
+        return 'Add your trips, share one link, and let guests pick a date and pay. QRIS or bank transfer, WhatsApp tickets, and you keep 100% of the listed price.';
     }
 
     /**
@@ -124,6 +124,13 @@ class PlatformSeoService
             'description' => $this->homeDescription(),
             'applicationCategory' => 'BusinessApplication',
             'operatingSystem' => 'Web',
+            'slogan' => 'Guests book themselves. You keep the listed price.',
+            'featureList' => [
+                'Your own tour shop',
+                'QRIS and bank transfers',
+                'Tickets on WhatsApp',
+                'You keep 100% of the listed price',
+            ],
             'offers' => [
                 '@type' => 'Offer',
                 'price' => '0',

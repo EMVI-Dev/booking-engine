@@ -2,9 +2,10 @@
 
 use App\Models\Operator;
 use App\Concerns\ResolvesCurrentOperator;
+use App\Concerns\UsesMediaStore;
 use App\Services\DomainResolverService;
+use App\Services\MediaStore;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -12,6 +13,7 @@ use Livewire\WithFileUploads;
 new #[Title('Brand Settings')] class extends Component {
     use WithFileUploads;
     use ResolvesCurrentOperator;
+    use UsesMediaStore;
 
     // Brand Logo
     public $logo;
@@ -130,7 +132,7 @@ new #[Title('Brand Settings')] class extends Component {
         /** @var Operator|null $operator */
         $operator = $this->currentOperator;
         if ($operator && $operator->logo_path) {
-            Storage::disk('public')->delete($operator->logo_path);
+            $this->media()->delete($operator->logo_path);
             $operator->update(['logo_path' => null]);
         }
     }
@@ -205,9 +207,9 @@ new #[Title('Brand Settings')] class extends Component {
             $logoPath = $this->existing_logo_path;
             if ($this->logo) {
                 if ($operator->logo_path) {
-                    Storage::disk('public')->delete($operator->logo_path);
+                    $this->media()->delete($operator->logo_path);
                 }
-                $logoPath = $this->logo->store('operators/logos', 'public');
+                $logoPath = $this->media()->storeUpload($this->logo, $this->operatorMediaDirectory('brand'), MediaStore::LOGO_MAX_WIDTH);
                 $this->existing_logo_path = $logoPath;
                 $this->logo = null;
             }
@@ -349,7 +351,7 @@ new #[Title('Brand Settings')] class extends Component {
                                 <img src="{{ $logo->temporaryUrl() }}" alt="Logo preview"
                                     class="w-full h-full object-cover" />
                             @elseif ($existing_logo_path)
-                                <img src="{{ Storage::url($existing_logo_path) }}" alt="Logo"
+                                <img src="{{ $this->mediaUrl($existing_logo_path) }}" alt="Logo"
                                     class="w-full h-full object-cover" />
                             @else
                                 <div class="text-center p-2 text-slate-400 dark:text-slate-500">

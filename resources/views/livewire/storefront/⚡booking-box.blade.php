@@ -235,6 +235,7 @@ new class extends Component {
     public function submitBooking(DokuPaymentService $paymentService): void
     {
         \App\Models\PlatformSetting::current()->assertStorefrontTransactionsAllowed();
+        $this->operator->assertCheckoutAllowed();
 
         $minDate = now()->startOfDay()->addHours($this->bookable->advance_booking_hours ?? 0);
 
@@ -334,6 +335,16 @@ new class extends Component {
         <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-5 text-center dark:border-amber-900/60 dark:bg-amber-950/40">
             <p class="text-sm font-bold text-amber-900 dark:text-amber-200">{{ __('Bookings are paused') }}</p>
             <p class="mt-1 text-xs text-amber-800/80 dark:text-amber-300/80">{{ __('You can still browse this trip. Booking and payment will open again shortly.') }}</p>
+        </div>
+    @elseif ($this->operator->isDemo())
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-center dark:border-zinc-700 dark:bg-zinc-800/60">
+            <p class="text-sm font-bold text-slate-900 dark:text-white">{{ __('Demo storefront') }}</p>
+            <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">{{ __('Checkout is off so nothing is charged. You can still browse the trip.') }}</p>
+            <button type="button" disabled
+                class="mt-4 w-full h-12 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-300 text-slate-600 font-black text-sm cursor-not-allowed dark:bg-zinc-700 dark:text-zinc-400">
+                <i class="fa-solid fa-lock text-xs" aria-hidden="true"></i>
+                <span>{{ __('Checkout disabled') }}</span>
+            </button>
         </div>
     @else
     <!-- Booking Form -->

@@ -45,6 +45,17 @@ test('operator support never uses a no-reply address', function () {
     expect($settings->fresh()->getOperatorSupportEmail())->toBe('support@travelengine.online');
 });
 
+test('operator support ignores leftover brand mailboxes', function () {
+    $settings = PlatformSetting::current();
+    $settings->update([
+        'settings' => array_merge($settings->settings ?? [], [
+            'support_email' => 'support@emvi.dev',
+        ]),
+    ]);
+
+    expect($settings->fresh()->getOperatorSupportEmail())->toBe('support@travelengine.online');
+});
+
 test('guest service fee applies on every plan including agency', function () {
     $settings = PlatformSetting::current();
     $agency = Operator::factory()->create([

@@ -5,13 +5,14 @@ use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use App\Concerns\ResolvesCurrentOperator;
-use Illuminate\Support\Facades\Storage;
+use App\Concerns\UsesMediaStore;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Tour Packages & Combos')] class extends Component {
     use ResolvesCurrentOperator;
+    use UsesMediaStore;
 
     public string $search = '';
     public string $statusFilter = 'all';
@@ -65,14 +66,8 @@ new #[Title('Tour Packages & Combos')] class extends Component {
         $package = $this->currentOperator?->packages()->findOrFail($id);
 
         if ($package) {
-            if ($package->cover_photo) {
-                Storage::disk('public')->delete($package->cover_photo);
-            }
-            if (! empty($package->gallery)) {
-                foreach ($package->gallery as $photo) {
-                    Storage::disk('public')->delete($photo);
-                }
-            }
+            $this->media()->delete($package->cover_photo);
+            $this->media()->deleteMany($package->gallery ?? []);
             $package->delete();
             $this->dispatch('toast', message: __('Tour package deleted successfully.'), type: 'success');
         }

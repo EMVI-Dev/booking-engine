@@ -32,8 +32,8 @@
                     <!-- Review Hero -->
                     <tr>
                         <td style="padding: 32px 28px 20px 28px; text-align: center;">
-                            <div style="display: inline-block; padding: 8px 16px; border-radius: 9999px; background-color: #fef3c7; color: #b45309; font-size: 16px; font-weight: bold; margin-bottom: 16px; letter-spacing: 4px;">
-                                ⭐⭐⭐⭐⭐
+                            <div style="display: inline-block; padding: 8px 16px; border-radius: 9999px; background-color: #fef3c7; color: #b45309; font-size: 12px; font-weight: 800; margin-bottom: 16px; letter-spacing: 0.08em; text-transform: uppercase;">
+                                {{ __('Review request') }}
                             </div>
                             <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">
                                 {{ __('Thank you for joining us, :name!', ['name' => $reservation->guest_name]) }}
@@ -51,7 +51,7 @@
                     <tr>
                         <td style="padding: 10px 28px 32px 28px; text-align: center;">
                             <a href="{{ $reviewUrl }}" target="_blank" style="display: inline-block; background-color: {{ $brandColor }}; color: #ffffff; font-size: 15px; font-weight: 800; text-decoration: none; padding: 14px 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.25);">
-                                ⭐ {{ __('Leave a Review on Google / TripAdvisor') }}
+                                {{ __('Leave a Review on Google / TripAdvisor') }}
                             </a>
                         </td>
                     </tr>

@@ -47,6 +47,25 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Cloudflare R2 is S3-compatible. Public files are served from
+         * https://storage.travelengine.online. Set MEDIA_DISK=r2 when the
+         * API token, bucket, and endpoint are in .env. Needs league/flysystem-aws-s3-v3.
+         */
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => env('R2_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'url' => rtrim((string) env('R2_URL', 'https://storage.travelengine.online'), '/') ?: 'https://storage.travelengine.online',
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => env('R2_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -76,5 +95,18 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Public media (covers, galleries, logos)
+    |--------------------------------------------------------------------------
+    |
+    | Raster uploads are resized and stored as WebP. Locally this is the public
+    | disk. Production can point at Cloudflare R2 with MEDIA_DISK=r2.
+    |
+    */
+
+    'media' => env('MEDIA_DISK', 'public'),
+    'media_quality' => (int) env('MEDIA_WEBP_QUALITY', 80),
 
 ];

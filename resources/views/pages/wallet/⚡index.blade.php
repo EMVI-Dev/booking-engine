@@ -739,7 +739,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
 
                                 <td class="py-3 px-3 text-slate-500 dark:text-slate-400">
                                     @if ($payout->proof_document_path)
-                                        <a href="{{ Storage::url($payout->proof_document_path) }}" target="_blank"
+                                        <a href="{{ $payout->proof_document_url }}" target="_blank"
                                             class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-800 dark:text-[#FFEF4D] hover:underline">
                                             <i
                                                 class="fa-solid fa-file-invoice text-xs text-amber-600 dark:text-[#FFEF4D]"></i>

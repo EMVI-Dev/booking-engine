@@ -113,8 +113,8 @@ new #[Title('Payout bank account')] class extends Component {
     />
 
     <div class="hidden lg:block space-y-6">
-        <!-- Unified Settings Navigation -->
-        <x-settings-nav />
+        <!-- Unified Billing Navigation -->
+        <x-billing-nav />
 
     <!-- Standalone Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

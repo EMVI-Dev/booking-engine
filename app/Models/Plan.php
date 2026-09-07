@@ -202,7 +202,7 @@ class Plan extends Model
 
         $agency = self::updateOrCreate(['slug' => 'agency'], [
             'name' => 'Agency',
-            'tagline' => 'For small to mid travel agencies. Your own website address and white-label booking page.',
+            'tagline' => 'For small to mid travel agencies. Guests open yourbrand.com and only see your name.',
             'price_monthly' => 799000.00,
             'price_yearly' => 7990000.00,
             'commission_rate' => 0.0000,

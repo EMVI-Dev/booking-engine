@@ -26,6 +26,7 @@ test('admin dashboard uses ebony palette and shared nav chrome', function () {
         ->assertSee(__('Admin'))
         ->assertSee(config('app.name', 'TravelEngine'))
         ->assertSee('by EMVI Technologies')
+        ->assertSee('sticky bottom-0', false)
         ->assertSee(__('Dashboard'))
         ->assertSee(__('Operators'))
         ->assertSee(__('Operator Portal'))
@@ -41,6 +42,7 @@ test('admin operators and settings share the same dry chrome tokens', function (
         ->assertSee('op-palette-ebony')
         ->assertSee('op-toolbar')
         ->assertSee('op-tab')
+        ->assertSee('sticky bottom-0', false)
         ->assertSee(__('Operators'));
 
     $this->get(route('admin.platform.edit'))

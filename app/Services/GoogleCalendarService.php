@@ -27,14 +27,14 @@ class GoogleCalendarService
 
         $receiptUrl = route('storefront.reservation.receipt', $reservation);
 
-        $details = "🔖 Booking Code: #{$code}\n"
-            ."👥 Guests: {$reservation->pax_count} Pax\n"
-            ."👤 Lead Guest: {$reservation->guest_name}\n"
-            ."📞 Contact: {$reservation->guest_contact}\n"
-            .'✉️ Email: '.($reservation->guest_email ?? 'N/A')."\n"
-            ."📦 Experience: {$bookableTitle}\n"
-            ."⚡ Status: {$reservation->status->label()}\n"
-            ."📄 Voucher Link: {$receiptUrl}";
+        $details = "Booking Code: #{$code}\n"
+            ."Guests: {$reservation->pax_count} Pax\n"
+            ."Lead Guest: {$reservation->guest_name}\n"
+            ."Contact: {$reservation->guest_contact}\n"
+            .'Email: '.($reservation->guest_email ?? 'N/A')."\n"
+            ."Experience: {$bookableTitle}\n"
+            ."Status: {$reservation->status->label()}\n"
+            ."Voucher Link: {$receiptUrl}";
 
         $params = [
             'action' => 'TEMPLATE',

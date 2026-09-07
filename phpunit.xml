@@ -35,5 +35,7 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="SLACK_OPERATOR_WEBHOOK_URL" value=""/>
+        <env name="DEMO_OPERATOR_PASSWORD" value="password"/>
+        <env name="MEDIA_DISK" value="public"/>
     </php>
 </phpunit>

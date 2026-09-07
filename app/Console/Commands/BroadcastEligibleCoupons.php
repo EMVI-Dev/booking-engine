@@ -74,7 +74,7 @@ class BroadcastEligibleCoupons extends Command
                     : 'Rp '.number_format((float) $coupon->discount_value, 0, ',', '.').' OFF';
 
                 PlatformAnnouncement::create([
-                    'title' => "🎉 Exclusive promo code for you: {$coupon->code}",
+                    'title' => __('Exclusive promo code for you: :code', ['code' => $coupon->code]),
                     'message' => "You've unlocked a special subscription discount! Use code **{$coupon->code}** to get **{$discountLabel}** on your next plan checkout or renewal.".($coupon->expires_at ? " Valid until {$coupon->expires_at->format('d M Y')}." : ''),
                     'type' => 'success',
                     'is_active' => true,

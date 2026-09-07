@@ -27,6 +27,7 @@ class OperatorFactory extends Factory
             'booking_notification_email' => fake()->safeEmail(),
             'billing_email' => fake()->safeEmail(),
             'status' => OperatorStatus::Approved,
+            'is_demo' => false,
             'terms_and_conditions' => 'Standard tour operator terms and conditions.',
             'bank_provider' => 'BCA',
             'bank_account_name' => fake()->name(),
@@ -41,6 +42,13 @@ class OperatorFactory extends Factory
                 'display_name' => $name,
             ],
         ];
+    }
+
+    public function demo(): static
+    {
+        return $this->state(fn () => [
+            'is_demo' => true,
+        ]);
     }
 
     public function pending(): static

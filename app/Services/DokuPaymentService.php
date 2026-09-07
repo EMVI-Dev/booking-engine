@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Mail\GuestBookingConfirmedMail;
 use App\Mail\OperatorNewBookingNotificationMail;
+use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\PayoutRequest;
 use App\Models\PlatformSetting;
@@ -39,8 +40,12 @@ class DokuPaymentService
     /**
      * Checkout, payouts, refunds, and webhooks all use the admin-selected DOKU mode.
      */
-    protected function activeMode(): string
+    protected function activeMode(?Operator $operator = null): string
     {
+        if ($operator?->isDemo()) {
+            return 'sandbox';
+        }
+
         return PlatformSetting::current()->getDokuMode()->value;
     }
 
@@ -49,10 +54,10 @@ class DokuPaymentService
      *
      * @return array{client_id: string, secret_key: string, base_url: string}
      */
-    protected function gatewayCredentials(): array
+    protected function gatewayCredentials(?Operator $operator = null): array
     {
         $platform = PlatformSetting::current();
-        $mode = $this->activeMode();
+        $mode = $this->activeMode($operator);
 
         return [
             'client_id' => $mode === 'live' ? $platform->getDokuLiveClientId() : $platform->getDokuSandboxClientId(),
@@ -139,8 +144,10 @@ class DokuPaymentService
      */
     public function createPaymentSession(Reservation $reservation, float $totalAmount): array
     {
+        $agent = $reservation->operator ?? $reservation->agent;
+        $agent?->assertCheckoutAllowed();
+
         $platform = PlatformSetting::current();
-        $agent = $reservation->agent;
 
         $termsSnapshot = $reservation->terms_snapshot ?? [];
         $subtotal = isset($termsSnapshot['subtotal']) ? (float) $termsSnapshot['subtotal'] : null;
@@ -217,7 +224,8 @@ class DokuPaymentService
      */
     public function createJokulCheckoutSession(Payment $payment, Reservation $reservation, string $invoiceNumber): ?string
     {
-        $credentials = $this->gatewayCredentials();
+        $operator = $reservation->operator ?? $reservation->agent;
+        $credentials = $this->gatewayCredentials($operator);
 
         if (trim($credentials['client_id']) === '' || trim($credentials['secret_key']) === '') {
             return null;

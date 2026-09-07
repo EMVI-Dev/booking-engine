@@ -4,7 +4,7 @@ use App\Enums\ListingStatus;
 use App\Models\Operator;
 use App\Models\Product;
 use App\Concerns\ResolvesCurrentOperator;
-use Illuminate\Support\Facades\Storage;
+use App\Concerns\UsesMediaStore;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -14,6 +14,7 @@ use Livewire\WithFileUploads;
 new #[Title('Edit Activity Item')] class extends Component {
     use WithFileUploads;
     use ResolvesCurrentOperator;
+    use UsesMediaStore;
 
     public Product $product;
 
@@ -95,7 +96,7 @@ new #[Title('Edit Activity Item')] class extends Component {
     public function removeExistingCoverPhoto(): void
     {
         if ($this->existingCoverPhoto) {
-            Storage::disk('public')->delete($this->existingCoverPhoto);
+            $this->media()->delete($this->existingCoverPhoto);
             $this->product->update(['cover_photo' => null]);
             $this->existingCoverPhoto = null;
         }
@@ -110,7 +111,7 @@ new #[Title('Edit Activity Item')] class extends Component {
     {
         if (isset($this->existingGallery[$index])) {
             $pathToDelete = $this->existingGallery[$index];
-            Storage::disk('public')->delete($pathToDelete);
+            $this->media()->delete($pathToDelete);
             unset($this->existingGallery[$index]);
             $this->existingGallery = array_values($this->existingGallery);
 
@@ -155,15 +156,15 @@ new #[Title('Edit Activity Item')] class extends Component {
         $coverPath = $this->existingCoverPhoto;
         if ($this->coverPhoto) {
             if ($this->existingCoverPhoto) {
-                Storage::disk('public')->delete($this->existingCoverPhoto);
+                $this->media()->delete($this->existingCoverPhoto);
             }
-            $coverPath = $this->coverPhoto->store('products/covers', 'public');
+            $coverPath = $this->media()->storeUpload($this->coverPhoto, $this->operatorMediaDirectory('products/covers'));
         }
 
         $galleryPaths = $this->existingGallery;
         if (!empty($this->galleryFiles)) {
             foreach ($this->galleryFiles as $gFile) {
-                $galleryPaths[] = $gFile->store('products/gallery', 'public');
+                $galleryPaths[] = $this->media()->storeUpload($gFile, $this->operatorMediaDirectory('products/gallery'));
             }
         }
 
@@ -203,14 +204,8 @@ new #[Title('Edit Activity Item')] class extends Component {
             abort(403);
         }
 
-        if ($this->product->cover_photo) {
-            Storage::disk('public')->delete($this->product->cover_photo);
-        }
-        if (!empty($this->product->gallery)) {
-            foreach ($this->product->gallery as $photo) {
-                Storage::disk('public')->delete($photo);
-            }
-        }
+        $this->media()->delete($this->product->cover_photo);
+        $this->media()->deleteMany($this->product->gallery ?? []);
 
         $name = $this->product->name;
         $this->product->delete();
@@ -231,14 +226,12 @@ new #[Title('Edit Activity Item')] class extends Component {
         <!-- Breadcrumb & Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                    <a href="{{ route('products.index') }}" wire:navigate
-                        class="hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1">
-                        <i class="fa-solid fa-arrow-left text-[10px]"></i>
-                        <span>{{ __('Activities & Inventory') }}</span>
-                    </a>
-                    <span>&bull;</span>
-                    <span class="text-slate-900 dark:text-white truncate max-w-xs">{{ $product->name }}</span>
+                <div class="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+                    <x-back-link :href="route('products.index')">
+                        {{ __('Back to activities') }}
+                    </x-back-link>
+                    <span class="hidden text-op-subtle sm:inline" aria-hidden="true">&bull;</span>
+                    <span class="hidden min-w-0 truncate text-sm font-semibold text-op-subtle sm:inline">{{ $product->name }}</span>
                 </div>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                     {{ __('Edit Activity / Inventory Item') }}
@@ -407,7 +400,7 @@ new #[Title('Edit Activity Item')] class extends Component {
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             @elseif ($existingCoverPhoto)
-                                <img src="{{ Storage::url($existingCoverPhoto) }}" alt="Cover"
+                                <img src="{{ $this->mediaUrl($existingCoverPhoto) }}" alt="Cover"
                                     class="w-full h-full object-cover" />
                                 <button type="button" wire:click="removeExistingCoverPhoto"
                                     class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm hover:bg-rose-700 transition cursor-pointer"
@@ -471,7 +464,7 @@ new #[Title('Edit Activity Item')] class extends Component {
                             @foreach ($existingGallery as $idx => $photoPath)
                                 <div
                                     class="relative group aspect-video rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 overflow-hidden shadow-xs">
-                                    <img src="{{ Storage::url($photoPath) }}"
+                                    <img src="{{ $this->mediaUrl($photoPath) }}"
                                         alt="Gallery image {{ $idx }}" class="w-full h-full object-cover" />
                                     <button type="button"
                                         wire:click="removeExistingGalleryImage({{ $idx }})"
@@ -565,7 +558,7 @@ new #[Title('Edit Activity Item')] class extends Component {
 
                     <div class="space-y-1.5 pt-2">
                         <x-label for="terms_and_conditions" :value="__('Specific Terms & Conditions (Optional)')" />
-                        <x-textarea id="terms_and_conditions" wire:model="terms_and_conditions" rows="2" />
+                        <x-textarea id="terms_and_conditions" wire:model="terms_and_conditions" rows="5" />
                         <x-input-error :messages="$errors->get('terms_and_conditions')" />
                     </div>
                 </div>

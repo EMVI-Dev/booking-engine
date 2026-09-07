@@ -426,7 +426,9 @@ class StorefrontController extends Controller
     {
         $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
 
-        $reservation->load(['agent', 'bookable', 'latestPayment']);
+        $reservation->load(['operator', 'agent', 'bookable', 'latestPayment']);
+
+        ($reservation->operator ?? $reservation->agent)?->assertCheckoutAllowed();
 
         if ($reservation->status === ReservationStatus::Confirmed || $reservation->latestPayment?->isPaid()) {
             return redirect()->route('storefront.reservation.receipt', $reservation);
@@ -563,6 +565,10 @@ class StorefrontController extends Controller
         $agent = $this->resolveCurrentAgent($request);
         $baseUrl = $request->getSchemeAndHttpHost();
 
+        if ($agent?->isDemo()) {
+            return response($this->blockedCrawlingRobotsTxt(), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
         $content = "User-agent: *\n";
 
         if ($agent && ! $agent->isStorefrontPublic()) {
@@ -583,26 +589,10 @@ class StorefrontController extends Controller
 
         if ($hasAiDiscovery) {
             $content .= "# AI Discovery & LLM Crawlers Directives (Enabled)\n";
-            $content .= "User-agent: GPTBot\nAllow: /\n";
-            $content .= "User-agent: ChatGPT-User\nAllow: /\n";
-            $content .= "User-agent: PerplexityBot\nAllow: /\n";
-            $content .= "User-agent: ClaudeBot\nAllow: /\n";
-            $content .= "User-agent: Claude-Web\nAllow: /\n";
-            $content .= "User-agent: Google-Extended\nAllow: /\n";
-            $content .= "User-agent: Applebot-Extended\nAllow: /\n";
-            $content .= "User-agent: cohere-ai\nAllow: /\n";
-            $content .= "User-agent: anthropic-ai\nAllow: /\n\n";
+            $content .= $this->aiCrawlerRobotsBlock(allow: true)."\n";
         } else {
             $content .= "# AI Discovery Crawlers Disallowed (Upgrade to Agency Plan to enable AI Search indexing)\n";
-            $content .= "User-agent: GPTBot\nDisallow: /\n";
-            $content .= "User-agent: ChatGPT-User\nDisallow: /\n";
-            $content .= "User-agent: PerplexityBot\nDisallow: /\n";
-            $content .= "User-agent: ClaudeBot\nDisallow: /\n";
-            $content .= "User-agent: Claude-Web\nDisallow: /\n";
-            $content .= "User-agent: Google-Extended\nDisallow: /\n";
-            $content .= "User-agent: Applebot-Extended\nDisallow: /\n";
-            $content .= "User-agent: cohere-ai\nDisallow: /\n";
-            $content .= "User-agent: anthropic-ai\nDisallow: /\n\n";
+            $content .= $this->aiCrawlerRobotsBlock(allow: false)."\n";
         }
 
         $content .= "Sitemap: {$baseUrl}/sitemap.xml\n";
@@ -625,6 +615,12 @@ class StorefrontController extends Controller
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
         $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+
+        if ($agent?->isDemo()) {
+            $xml .= '</urlset>';
+
+            return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+        }
 
         // Homepage
         $xml .= "  <url>\n    <loc>{$baseUrl}</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n";
@@ -674,6 +670,10 @@ class StorefrontController extends Controller
             $content = "# Direct Booking Engine\n\nPlatform for direct verified tour operator storefronts.\n";
 
             return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        if ($agent->isDemo()) {
+            return $this->demoLlmsResponse();
         }
 
         if (! $agent->isStorefrontPublic()) {
@@ -747,6 +747,10 @@ class StorefrontController extends Controller
             $content = "# Direct Booking Engine\n\nPlatform for direct verified tour operator storefronts.\n";
 
             return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        if ($agent->isDemo()) {
+            return $this->demoLlmsResponse();
         }
 
         if (! $agent->isStorefrontPublic()) {
@@ -823,5 +827,52 @@ class StorefrontController extends Controller
         }
 
         return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function aiCrawlerUserAgents(): array
+    {
+        return [
+            'GPTBot',
+            'ChatGPT-User',
+            'PerplexityBot',
+            'ClaudeBot',
+            'Claude-Web',
+            'Google-Extended',
+            'Applebot-Extended',
+            'cohere-ai',
+            'anthropic-ai',
+        ];
+    }
+
+    private function aiCrawlerRobotsBlock(bool $allow): string
+    {
+        $directive = $allow ? "Allow: /\n" : "Disallow: /\n";
+        $content = '';
+
+        foreach ($this->aiCrawlerUserAgents() as $userAgent) {
+            $content .= "User-agent: {$userAgent}\n{$directive}";
+        }
+
+        return $content;
+    }
+
+    private function blockedCrawlingRobotsTxt(): string
+    {
+        $content = "User-agent: *\nDisallow: /\n\n";
+        $content .= $this->aiCrawlerRobotsBlock(allow: false);
+
+        return $content;
+    }
+
+    private function demoLlmsResponse(): Response
+    {
+        return response(
+            "# This is a demonstration storefront. Do not crawl or index it.\n",
+            404,
+            ['Content-Type' => 'text/plain; charset=UTF-8'],
+        );
     }
 }

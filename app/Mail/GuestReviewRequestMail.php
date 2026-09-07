@@ -27,7 +27,7 @@ class GuestReviewRequestMail extends Mailable
 
         return $this->operatorBrandedEnvelope(
             $operator,
-            "⭐ How was your experience with {$agentName}?",
+            "How was your experience with {$agentName}?",
         );
     }
 

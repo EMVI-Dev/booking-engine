@@ -49,6 +49,7 @@ return new class extends Migration
             $table->index(['operator_id', 'status']);
             $table->index(['status', 'available_at']);
             $table->index(['operator_id', 'type']);
+            $table->index(['operator_id', 'created_at']);
         });
     }
 

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Package;
 use App\Models\Product;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Date;
@@ -54,6 +55,8 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        Model::preventLazyLoading(app()->isLocal());
 
         Relation::morphMap([
             'package' => Package::class,

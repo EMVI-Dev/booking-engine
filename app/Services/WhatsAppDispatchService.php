@@ -57,19 +57,19 @@ class WhatsAppDispatchService
         $latestPayment = $reservation->latestPayment;
         $isPaid = $latestPayment && $latestPayment->isPaid();
         $paymentText = $isPaid
-            ? '✅ Paid & Confirmed (Rp '.number_format((float) $latestPayment->amount, 0, ',', '.').')'
-            : '⏳ Pending Payment Confirmation';
+            ? 'Paid & Confirmed (Rp '.number_format((float) $latestPayment->amount, 0, ',', '.').')'
+            : 'Pending Payment Confirmation';
 
-        $msg = "👋 Hello {$reservation->guest_name}!\n\n"
-            ."Your booking with *{$agentName}* is confirmed! 🎉\n\n"
-            ."🔖 *Booking Code:* #{$code}\n"
-            ."🗓 *Departure Date:* {$dateFormatted}\n"
-            ."👥 *Guests:* {$pax} Pax\n"
-            ."📦 *Experience:* {$bookableTitle}\n"
-            ."💳 *Payment:* {$paymentText}\n\n"
-            ."📄 *View your digital e-ticket & voucher here:*\n"
+        $msg = "Hello {$reservation->guest_name}!\n\n"
+            ."Your booking with *{$agentName}* is confirmed.\n\n"
+            ."*Booking Code:* #{$code}\n"
+            ."*Departure Date:* {$dateFormatted}\n"
+            ."*Guests:* {$pax} Pax\n"
+            ."*Experience:* {$bookableTitle}\n"
+            ."*Payment:* {$paymentText}\n\n"
+            ."*View your digital e-ticket & voucher here:*\n"
             ."{$receiptUrl}\n\n"
-            .'If you have any questions or special requests, please reply directly to this message. See you soon! 🌊';
+            .'If you have any questions or special requests, please reply directly to this message. See you soon!';
 
         return $this->buildWhatsAppUrl($reservation->guest_contact, $msg);
     }
@@ -90,18 +90,18 @@ class WhatsAppDispatchService
 
         $receiptUrl = route('storefront.reservation.receipt', $reservation);
 
-        $msg = "⏰ *Trip Reminder: Your expedition with {$agentName} is tomorrow!* 🚤\n\n"
-            ."🔖 *Booking Code:* #{$code}\n"
-            ."🗓 *Date:* {$dateFormatted}\n"
-            ."👥 *Guests:* {$pax} Pax\n"
-            ."📦 *Tour:* {$bookableTitle}\n\n"
-            ."💡 *Departure Tips:*\n"
+        $msg = "*Trip Reminder: Your expedition with {$agentName} is tomorrow!*\n\n"
+            ."*Booking Code:* #{$code}\n"
+            ."*Date:* {$dateFormatted}\n"
+            ."*Guests:* {$pax} Pax\n"
+            ."*Tour:* {$bookableTitle}\n\n"
+            ."*Departure Tips:*\n"
             ."• Please arrive 15 minutes before departure at the harbor / meeting point.\n"
             ."• Don't forget sunscreen, sunglasses, swimwear, and comfortable sandals.\n"
             ."• Show your booking code (#{$code}) to our crew on site.\n\n"
-            ."📍 *Your Voucher & Details:*\n"
+            ."*Your Voucher & Details:*\n"
             ."{$receiptUrl}\n\n"
-            .'Wishing you an unforgettable adventure with us tomorrow! 🌊';
+            .'Wishing you an unforgettable adventure with us tomorrow!';
 
         return $this->buildWhatsAppUrl($reservation->guest_contact, $msg);
     }
@@ -117,13 +117,13 @@ class WhatsAppDispatchService
 
         $receiptUrl = route('storefront.reservation.receipt', $reservation);
 
-        $msg = "📍 *Meeting Point & Check-in Instructions for {$agentName}*\n\n"
+        $msg = "*Meeting Point & Check-in Instructions for {$agentName}*\n\n"
             ."Hello {$reservation->guest_name},\n"
             ."Here are the check-in details for your booking (#{$code}) on {$dateFormatted}:\n\n"
             ."• *Check-in Desk:* Please look for the {$agentName} booth/crew wearing official uniform.\n"
             ."• *What to bring:* ID / Passport copy and your digital voucher.\n"
             ."• *Digital Voucher Link:* {$receiptUrl}\n\n"
-            .'Let us know if you need assistance with transportation or directions! 🚤';
+            .'Let us know if you need assistance with transportation or directions.';
 
         return $this->buildWhatsAppUrl($reservation->guest_contact, $msg);
     }
@@ -149,17 +149,17 @@ class WhatsAppDispatchService
             ? 'Rp '.number_format((float) $latestPayment->amount, 0, ',', '.')
             : 'Rp '.number_format($pax * ($reservation->bookable->price ?? 0), 0, ',', '.');
 
-        $msg = "⏳ *Payment Required: Reservation #{$code} on Hold*\n\n"
-            ."👋 Hello {$reservation->guest_name},\n\n"
+        $msg = "*Payment Required: Reservation #{$code} on Hold*\n\n"
+            ."Hello {$reservation->guest_name},\n\n"
             ."Your reservation with *{$agentName}* is currently on hold. Please complete your payment to secure and confirm your trip spot.\n\n"
-            ."🔖 *Booking Code:* #{$code}\n"
-            ."🗓 *Trip Date:* {$dateFormatted}\n"
-            ."👥 *Guests:* {$pax} Pax\n"
-            ."📦 *Experience:* {$bookableTitle}\n"
-            ."💳 *Amount Due:* {$amountFormatted}\n\n"
-            ."🔗 *Click here to complete payment online:*\n"
+            ."*Booking Code:* #{$code}\n"
+            ."*Trip Date:* {$dateFormatted}\n"
+            ."*Guests:* {$pax} Pax\n"
+            ."*Experience:* {$bookableTitle}\n"
+            ."*Amount Due:* {$amountFormatted}\n\n"
+            ."*Click here to complete payment online:*\n"
             ."{$payUrl}\n\n"
-            .'_Please complete payment before your hold window expires. Reply directly if you have any questions!_ 🌊';
+            .'_Please complete payment before your hold window expires. Reply directly if you have any questions!_';
 
         return $this->buildWhatsAppUrl($reservation->guest_contact, $msg);
     }

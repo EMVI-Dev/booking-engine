@@ -30,10 +30,10 @@
                     <tr>
                         <td style="background-color: #1e1b4b; padding: 28px 24px; text-align: center;">
                             <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: rgba(99, 102, 241, 0.2); color: #a5b4fc; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                                ⚡ {{ __('Operator Notification') }}
+                                {{ __('Operator Notification') }}
                             </span>
                             <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                                🎉 {{ __('New Booking Received!') }}
+                                {{ __('New Booking Received!') }}
                             </h1>
                         </td>
                     </tr>
@@ -111,7 +111,7 @@
                                     <tr>
                                         <td style="padding-bottom: 10px;">
                                             <a href="{{ $waGuestUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #25d366; color: #ffffff; text-decoration: none; padding: 14px 20px; border-radius: 14px; font-size: 13px; font-weight: 800; text-align: center;">
-                                                💬 {{ __('Message Guest on WhatsApp') }}
+                                                {{ __('Message Guest on WhatsApp') }}
                                             </a>
                                         </td>
                                     </tr>
@@ -119,7 +119,7 @@
                                 <tr>
                                     <td>
                                         <a href="{{ $reservationUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 14px; font-size: 12px; font-weight: 700; text-align: center;">
-                                            📂 {{ __('Open in Operator Portal') }}
+                                            {{ __('Open in Operator Portal') }}
                                         </a>
                                     </td>
                                 </tr>

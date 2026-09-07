@@ -6,6 +6,7 @@ use App\Contracts\Bookable;
 use App\Enums\ListingStatus;
 use App\Models\Traits\HasCancellationPolicy;
 use App\Models\Traits\HasRating;
+use App\Services\MediaStore;
 use Database\Factories\PackageFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @property string $id
@@ -132,15 +132,7 @@ class Package extends Model implements Bookable
 
     public function getCoverPhotoUrlAttribute(): ?string
     {
-        if (! $this->cover_photo) {
-            return null;
-        }
-
-        if (str_starts_with($this->cover_photo, 'http://') || str_starts_with($this->cover_photo, 'https://')) {
-            return $this->cover_photo;
-        }
-
-        return Storage::url($this->cover_photo);
+        return app(MediaStore::class)->url($this->cover_photo);
     }
 
     /**
@@ -152,13 +144,10 @@ class Package extends Model implements Bookable
             return [];
         }
 
-        return array_map(function (string $path) {
-            if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-                return $path;
-            }
-
-            return Storage::url($path);
-        }, $this->gallery);
+        return array_values(array_filter(array_map(
+            fn (string $path): ?string => app(MediaStore::class)->url($path),
+            $this->gallery,
+        )));
     }
 
     public function getTitle(): string

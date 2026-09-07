@@ -5,6 +5,7 @@ use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use App\Concerns\ResolvesCurrentOperator;
+use App\Concerns\UsesMediaStore;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -14,6 +15,7 @@ use Livewire\WithFileUploads;
 new #[Title('Create Tour Package')] class extends Component {
     use WithFileUploads;
     use ResolvesCurrentOperator;
+    use UsesMediaStore;
 
     public string $title = '';
     public string $category = 'Day Tour';
@@ -173,13 +175,13 @@ new #[Title('Create Tour Package')] class extends Component {
 
         $coverPath = null;
         if ($this->coverPhoto) {
-            $coverPath = $this->coverPhoto->store('packages/covers', 'public');
+            $coverPath = $this->media()->storeUpload($this->coverPhoto, $this->operatorMediaDirectory('packages/covers'));
         }
 
         $galleryPaths = [];
         if (! empty($this->galleryFiles)) {
             foreach ($this->galleryFiles as $gFile) {
-                $galleryPaths[] = $gFile->store('packages/gallery', 'public');
+                $galleryPaths[] = $this->media()->storeUpload($gFile, $this->operatorMediaDirectory('packages/gallery'));
             }
         }
 
@@ -244,13 +246,10 @@ new #[Title('Create Tour Package')] class extends Component {
         <!-- Breadcrumb & Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                    <a href="{{ route('packages.index') }}" wire:navigate class="hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1">
-                        <i class="fa-solid fa-arrow-left text-[10px]"></i>
-                        <span>{{ __('Tour Packages') }}</span>
-                    </a>
-                    <span>&bull;</span>
-                    <span class="text-slate-900 dark:text-white">{{ __('Create New') }}</span>
+                <div class="mb-2">
+                    <x-back-link :href="route('packages.index')">
+                        {{ __('Back to packages') }}
+                    </x-back-link>
                 </div>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                     {{ __('Create Tour Package / Experience') }}

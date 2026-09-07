@@ -65,7 +65,8 @@ test('generates 1-click booking confirmation WhatsApp url with voucher link', fu
         ->and(urldecode($url))->toContain('Manta Bay Snorkeling Trip')
         ->and(urldecode($url))->toContain('3 Pax')
         ->and(urldecode($url))->toContain('#'.$this->reservation->code)
-        ->and(urldecode($url))->toContain(route('storefront.reservation.receipt', $this->reservation));
+        ->and(urldecode($url))->toContain(route('storefront.reservation.receipt', $this->reservation))
+        ->and(urldecode($url))->not->toMatch('/[\x{1F300}-\x{1FAFF}]/u');
 });
 
 test('generates departure reminder and meeting point WhatsApp urls', function () {

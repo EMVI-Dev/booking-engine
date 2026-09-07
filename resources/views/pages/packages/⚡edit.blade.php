@@ -5,7 +5,7 @@ use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
 use App\Concerns\ResolvesCurrentOperator;
-use Illuminate\Support\Facades\Storage;
+use App\Concerns\UsesMediaStore;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -15,6 +15,7 @@ use Livewire\WithFileUploads;
 new #[Title('Edit Tour Package')] class extends Component {
     use WithFileUploads;
     use ResolvesCurrentOperator;
+    use UsesMediaStore;
 
     public Package $package;
 
@@ -139,7 +140,7 @@ new #[Title('Edit Tour Package')] class extends Component {
     public function removeExistingCoverPhoto(): void
     {
         if ($this->existingCoverPhoto) {
-            Storage::disk('public')->delete($this->existingCoverPhoto);
+            $this->media()->delete($this->existingCoverPhoto);
             $this->package->update(['cover_photo' => null]);
             $this->existingCoverPhoto = null;
         }
@@ -154,7 +155,7 @@ new #[Title('Edit Tour Package')] class extends Component {
     {
         if (isset($this->existingGallery[$index])) {
             $pathToDelete = $this->existingGallery[$index];
-            Storage::disk('public')->delete($pathToDelete);
+            $this->media()->delete($pathToDelete);
             unset($this->existingGallery[$index]);
             $this->existingGallery = array_values($this->existingGallery);
 
@@ -200,15 +201,15 @@ new #[Title('Edit Tour Package')] class extends Component {
         $coverPath = $this->existingCoverPhoto;
         if ($this->coverPhoto) {
             if ($this->existingCoverPhoto) {
-                Storage::disk('public')->delete($this->existingCoverPhoto);
+                $this->media()->delete($this->existingCoverPhoto);
             }
-            $coverPath = $this->coverPhoto->store('packages/covers', 'public');
+            $coverPath = $this->media()->storeUpload($this->coverPhoto, $this->operatorMediaDirectory('packages/covers'));
         }
 
         $galleryPaths = $this->existingGallery;
         if (!empty($this->galleryFiles)) {
             foreach ($this->galleryFiles as $gFile) {
-                $galleryPaths[] = $gFile->store('packages/gallery', 'public');
+                $galleryPaths[] = $this->media()->storeUpload($gFile, $this->operatorMediaDirectory('packages/gallery'));
             }
         }
 
@@ -254,14 +255,8 @@ new #[Title('Edit Tour Package')] class extends Component {
             abort(403);
         }
 
-        if ($this->package->cover_photo) {
-            Storage::disk('public')->delete($this->package->cover_photo);
-        }
-        if (!empty($this->package->gallery)) {
-            foreach ($this->package->gallery as $photo) {
-                Storage::disk('public')->delete($photo);
-            }
-        }
+        $this->media()->delete($this->package->cover_photo);
+        $this->media()->deleteMany($this->package->gallery ?? []);
 
         $title = $this->package->title;
         $this->package->delete();
@@ -282,14 +277,12 @@ new #[Title('Edit Tour Package')] class extends Component {
         <!-- Breadcrumb & Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                    <a href="{{ route('packages.index') }}" wire:navigate
-                        class="hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1">
-                        <i class="fa-solid fa-arrow-left text-[10px]"></i>
-                        <span>{{ __('Tour Packages') }}</span>
-                    </a>
-                    <span>&bull;</span>
-                    <span class="text-slate-900 dark:text-white truncate max-w-xs">{{ $package->title }}</span>
+                <div class="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+                    <x-back-link :href="route('packages.index')">
+                        {{ __('Back to packages') }}
+                    </x-back-link>
+                    <span class="hidden text-op-subtle sm:inline" aria-hidden="true">&bull;</span>
+                    <span class="hidden min-w-0 truncate text-sm font-semibold text-op-subtle sm:inline">{{ $package->title }}</span>
                 </div>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                     {{ __('Edit Tour Package / Expedition') }}
@@ -500,7 +493,7 @@ new #[Title('Edit Tour Package')] class extends Component {
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             @elseif ($existingCoverPhoto)
-                                <img src="{{ Storage::url($existingCoverPhoto) }}" alt="Cover"
+                                <img src="{{ $this->mediaUrl($existingCoverPhoto) }}" alt="Cover"
                                     class="w-full h-full object-cover" />
                                 <button type="button" wire:click="removeExistingCoverPhoto"
                                     class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm hover:bg-rose-700 transition cursor-pointer"
@@ -564,7 +557,7 @@ new #[Title('Edit Tour Package')] class extends Component {
                             @foreach ($existingGallery as $idx => $photoPath)
                                 <div
                                     class="relative group aspect-video rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 overflow-hidden shadow-xs">
-                                    <img src="{{ Storage::url($photoPath) }}"
+                                    <img src="{{ $this->mediaUrl($photoPath) }}"
                                         alt="Gallery image {{ $idx }}" class="w-full h-full object-cover" />
                                     <button type="button"
                                         wire:click="removeExistingGalleryImage({{ $idx }})"

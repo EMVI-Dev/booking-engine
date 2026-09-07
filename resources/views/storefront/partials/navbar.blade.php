@@ -6,13 +6,29 @@
     $waMessage = "Hello {$agent?->name}, I am browsing your tour catalog and have an inquiry.";
     $waUrl = $cleanPhone ? $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage) : null;
 
-    $packagesCount = $agent ? $agent->packages()->where('status', \App\Enums\ListingStatus::Published)->count() : 0;
-    $productsCount = $agent ? $agent->products()->where('status', \App\Enums\ListingStatus::Published)->where('sellable_standalone', true)->count() : 0;
+    if ($agent) {
+        $agent->loadCount([
+            'packages as published_packages_count' => fn ($query) => $query->where('status', \App\Enums\ListingStatus::Published),
+            'products as standalone_products_count' => fn ($query) => $query
+                ->where('status', \App\Enums\ListingStatus::Published)
+                ->where('sellable_standalone', true),
+        ]);
+    }
+    $packagesCount = $agent?->published_packages_count ?? 0;
+    $productsCount = $agent?->standalone_products_count ?? 0;
+    $operatorLoginUrl = url('/login');
 @endphp
 
 @if (\App\Models\PlatformSetting::current()->isPlatformMaintenance())
     <div class="bg-amber-500 text-[#090d16] text-center text-xs sm:text-sm font-bold px-4 py-2">
         {{ __('Bookings and payments are paused for a short maintenance window. You can still browse.') }}
+    </div>
+@elseif ($agent?->isDemo())
+    <div class="bg-slate-900 text-center text-xs sm:text-sm font-bold px-4 py-2 text-white flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+        <span>{{ __('Demo storefront — checkout is off. Catalog resets every day.') }}</span>
+        <a href="{{ $operatorLoginUrl }}" class="underline decoration-white/40 underline-offset-2 hover:decoration-white">
+            {{ __('Try the operator desk') }}
+        </a>
     </div>
 @endif
 
@@ -100,8 +116,17 @@
             </a>
         </nav>
 
-        <!-- Right Header Actions (WhatsApp & Mobile Toggle) -->
+        <!-- Right Header Actions (WhatsApp, demo desk, Mobile Toggle) -->
         <div class="flex items-center gap-2.5">
+            @if ($agent?->isDemo())
+                <a
+                    href="{{ $operatorLoginUrl }}"
+                    class="hidden sm:inline-flex h-9 px-3.5 rounded-xl border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 font-bold text-xs shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition items-center gap-1.5"
+                >
+                    <i class="fa-solid fa-gauge text-[11px] text-brand-600 dark:text-brand-400"></i>
+                    <span>{{ __('Operator desk') }}</span>
+                </a>
+            @endif
             <!-- WhatsApp Chat Pill (Mobile / Tablet Header Only, Desktop uses Floating Button) -->
             @if ($waUrl)
                 <a
@@ -217,6 +242,19 @@
                 </div>
                 <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
             </a>
+
+            @if ($agent?->isDemo())
+                <a
+                    href="{{ $operatorLoginUrl }}"
+                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                >
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-gauge w-4 text-center text-brand-600 dark:text-brand-400"></i>
+                        <span>{{ __('Try the operator desk') }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                </a>
+            @endif
         </div>
 
         <!-- WhatsApp Direct Contact Banner in Mobile Drawer -->

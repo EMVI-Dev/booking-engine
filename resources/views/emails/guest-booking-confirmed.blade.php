@@ -37,8 +37,8 @@
                     <!-- Success Hero -->
                     <tr>
                         <td style="padding: 32px 28px 20px 28px; text-align: center;">
-                            <div style="display: inline-block; width: 56px; height: 56px; line-height: 56px; border-radius: 18px; background-color: #ecfdf5; color: #059669; font-size: 26px; font-weight: bold; margin-bottom: 16px;">
-                                ✓
+                            <div style="display: inline-block; width: 56px; height: 56px; line-height: 56px; border-radius: 18px; background-color: #ecfdf5; color: #059669; font-size: 12px; font-weight: 800; margin-bottom: 16px; letter-spacing: 0.06em;">
+                                {{ __('PAID') }}
                             </div>
                             <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">
                                 {{ __('You are all set, :name!', ['name' => $reservation->guest_name]) }}
@@ -96,7 +96,7 @@
                                     <tr>
                                         <td style="padding-bottom: 10px;">
                                             <a href="{{ $waUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #25d366; color: #ffffff; text-decoration: none; padding: 14px 20px; border-radius: 14px; font-size: 13px; font-weight: 800; text-align: center;">
-                                                💬 {{ __('Chat with Operator on WhatsApp') }}
+                                                {{ __('Chat with Operator on WhatsApp') }}
                                             </a>
                                         </td>
                                     </tr>
@@ -104,7 +104,7 @@
                                 <tr>
                                     <td>
                                         <a href="{{ $ticketUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 14px; font-size: 12px; font-weight: 700; text-align: center;">
-                                            🎟️ {{ __('Open your e-ticket') }}
+                                            {{ __('Open your e-ticket') }}
                                         </a>
                                         <a href="{{ $receiptUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; margin-top: 8px; color: #334155; text-decoration: underline; padding: 4px 20px; font-size: 12px; font-weight: 600; text-align: center;">
                                             {{ __('View the receipt') }}

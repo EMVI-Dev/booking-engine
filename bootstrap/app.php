@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureOnPlatformDomain;
 use App\Http\Middleware\EnsureOperatorPortalOpen;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\IdentifyOperatorDomain;
+use App\Http\Middleware\PreventDemoIndexing;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             IdentifyOperatorDomain::class,
+            PreventDemoIndexing::class,
             EnsureOperatorPortalOpen::class,
         ]);
 

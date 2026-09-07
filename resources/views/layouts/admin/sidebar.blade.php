@@ -158,7 +158,7 @@
         </div>
     </aside>
 
-    <div class="flex min-w-0 flex-1 flex-col">
+    <div class="flex min-h-screen min-w-0 flex-1 flex-col">
         <header class="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-op-line px-4 lg:hidden">
             <button x-on:click="sidebarOpen = true" type="button"
                 class="flex h-10 w-10 items-center justify-center rounded-xl text-op-subtle hover:bg-op-muted hover:text-op-ink">
@@ -170,14 +170,15 @@
             <div class="w-10"></div>
         </header>
 
-        <main id="main-content" tabindex="-1" class="w-full flex-1 overflow-y-auto px-3 py-4 sm:p-6 lg:p-8">
+        <main id="main-content" tabindex="-1" class="w-full flex-1 px-3 py-4 pb-16 sm:p-6 sm:pb-16 lg:p-8 lg:pb-16">
             <div class="mx-auto w-full max-w-7xl">
                 {{ $slot }}
             </div>
         </main>
 
-        <footer class="mt-auto border-t border-op-line px-4 py-3 text-xs text-op-subtle sm:px-6 lg:px-8">
-            <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 sm:flex-row">
+        <footer
+            class="sticky bottom-0 z-30 mt-auto flex h-11 items-center border-t border-op-line bg-op-sidebar/90 px-4 text-xs text-op-subtle select-none backdrop-blur-md sm:px-6 lg:px-8 print:hidden">
+            <div class="mx-auto flex w-full max-w-7xl items-center justify-between">
                 <span class="font-semibold text-op-ink">
                     {{ config('app.name', 'TravelEngine') }}
                     <span class="font-normal text-op-subtle">{{ __('by EMVI Technologies') }}</span>

@@ -34,6 +34,7 @@ return new class extends Migration
 
             $table->index(['bookable_type', 'bookable_id']);
             $table->index(['operator_id', 'status']);
+            $table->index(['operator_id', 'requested_date']);
             $table->index(['status', 'hold_expires_at']);
             $table->index(['status', 'requested_date', 'review_request_sent_at'], 'reservations_review_request_idx');
             $table->index(['status', 'requested_date', 'departure_reminder_sent_at'], 'reservations_departure_reminder_idx');
@@ -52,6 +53,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['reservation_id', 'status']);
+            $table->index(['status', 'created_at']);
         });
 
         Schema::create('reviews', function (Blueprint $table) {
@@ -66,6 +68,7 @@ return new class extends Migration
 
             $table->index(['bookable_type', 'bookable_id']);
             $table->index('operator_id');
+            $table->index(['operator_id', 'created_at']);
         });
     }
 
