@@ -3,98 +3,26 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-        <!-- SEO & Metadata -->
-        <title>{{ $product->name }} &bull; {{ $agent->name }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
-        <meta name="description" content="{{ Str::limit($product->description ?: __('Book :name with :agent. Official direct reservations with instant confirmation and locked rate.', ['name' => $product->name, 'agent' => $agent->name]), 160) }}" />
-        <link rel="canonical" href="{{ route('storefront.product', $product->slug) }}" />
-
-        <!-- Search Engine & AI Agent Discovery -->
-        <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-        <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-        @if ($agent->showsPlatformBranding())
-            <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
-        @endif
-        <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
-        <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
-        <!-- Favicon & Brand Icons -->
-        <link rel="icon" href="{{ $agent->logo_url }}" />
-        <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
-
-        <!-- OpenGraph -->
-        <meta property="og:type" content="product" />
-        <meta property="og:url" content="{{ route('storefront.product', $product->slug) }}" />
-        <meta property="og:title" content="{{ $product->name }} &bull; {{ $agent->name }}" />
-        <meta property="og:description" content="{{ Str::limit($product->description ?: __('Book :name with :agent.', ['name' => $product->name, 'agent' => $agent->name]), 160) }}" />
-        <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
-        @if ($product->cover_photo)
-            <meta property="og:image" content="{{ Storage::url($product->cover_photo) }}" />
-        @elseif ($agent->logo)
-            <meta property="og:image" content="{{ Storage::url($agent->logo) }}" />
-        @endif
-
-        <!-- Twitter -->
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="{{ $product->name }} &bull; {{ $agent->name }}" />
-        <meta name="twitter:description" content="{{ Str::limit($product->description ?: __('Book :name with :agent.', ['name' => $product->name, 'agent' => $agent->name]), 160) }}" />
-        @if ($product->cover_photo)
-            <meta name="twitter:image" content="{{ Storage::url($product->cover_photo) }}" />
-        @elseif ($agent->logo)
-            <meta name="twitter:image" content="{{ Storage::url($agent->logo) }}" />
-        @endif
-
-        <!-- Schema.org JSON-LD Structured Data -->
         @php
-            $schemaData = [
-                '@context' => 'https://schema.org',
-                '@graph' => [
-                    [
-                        '@type' => 'BreadcrumbList',
-                        'itemListElement' => [
-                            [
-                                '@type' => 'ListItem',
-                                'position' => 1,
-                                'name' => __('Home'),
-                                'item' => route('home'),
-                            ],
-                            [
-                                '@type' => 'ListItem',
-                                'position' => 2,
-                                'name' => __('Single Activities'),
-                                'item' => route('storefront.products'),
-                            ],
-                            [
-                                '@type' => 'ListItem',
-                                'position' => 3,
-                                'name' => $product->name,
-                                'item' => route('storefront.product', $product->slug),
-                            ],
-                        ],
-                    ],
-                    [
-                        '@type' => 'Product',
-                        '@id' => route('storefront.product', $product->slug) . '#product',
-                        'name' => $product->name,
-                        'description' => $product->description ?? '',
-                        'category' => $product->category ?? 'Service',
-                        'offers' => [
-                            '@type' => 'Offer',
-                            'price' => (float) $product->price,
-                            'priceCurrency' => 'IDR',
-                            'availability' => 'https://schema.org/InStock',
-                            'validFrom' => now()->toIso8601String(),
-                            'seller' => [
-                                '@type' => 'TravelAgency',
-                                'name' => $agent->name,
-                            ],
-                        ],
-                    ],
-                ],
-            ];
+            $seo = app(\App\Services\StorefrontSeoService::class);
+            $share = $seo->shareImage($agent, $product->cover_photo);
+            $share['alt'] = $product->name;
         @endphp
-        <script type="application/ld+json">
-        {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-        </script>
+        @include('storefront.partials.seo', [
+            'agent' => $agent,
+            'title' => $product->name.' · '.$agent->name,
+            'description' => $seo->listingDescription(
+                $product->description,
+                __('Book :name with :operator. See the price and reserve a spot online.', [
+                    'name' => $product->name,
+                    'operator' => $agent->name,
+                ]),
+            ),
+            'url' => route('storefront.product', $product->slug),
+            'type' => 'website',
+            'share' => $share,
+            'schema' => $seo->productGraph($agent, $product),
+        ])
 
         @include('storefront.partials.brand-theme')
 

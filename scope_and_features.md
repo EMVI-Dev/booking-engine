@@ -1,4 +1,4 @@
-# Booking Engine Platform — V1 Spec (Rev. 22)
+# Booking Engine Platform — V1 Spec (Rev. 23)
 
 ## Vision & Audience
 
@@ -88,14 +88,21 @@ Guest service fee is **5% on every plan**, capped at **Rp 250.000**. Operator ge
     - Automated scheduled daily broadcast (`coupons:broadcast`) notifying eligible operators via dashboard announcements.
 
 ### 5. Payment Gateway Engine (DOKU Hosted Checkout Exclusive)
+
+Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account manager for exceptions.
+
+- **Fees**: public list at [doku.com/harga](https://www.doku.com/harga). No setup fee, no monthly fee, pay on success only. Prices exclude PPN. Practical numbers: QRIS **0.7%**; cards **2.80% + Rp 2.000** (Amex 3.5% + Rp 2.000); VA **Rp 4.000** (BCA **Rp 4.500**); e-wallets from **1.5%**. Domestic payouts **Rp 1.500**/success (Paket 1, BI-FAST, Rp 10.000–Rp 250.000.000). Account inquiry **Rp 500**. Guest **5%** (cap Rp 250.000) is meant to cover MDR + PPN; it is tight on small VA/card tickets.
+- **Settlement: T+3**. Guest `paid` webhook is not cash we can send yet. Do not market same-day / “instant” operator bank payout. Disburse only after settlement (or from already-settled balance).
+- **Payout / cash-out**: they pointed at [Cash Out](https://docs.doku.com/payouts/cash-out). That product is **Indomaret/Alfamart cash withdrawal** (FI license + their app + partner approval). Operator bank transfers are **Domestic Payouts**, not that page. Confirm the enabled payout product with the account manager before changing code. Current code still calls Jokul `POST /disbursement/v1/transfer`.
+- **Refunds**: they pointed at [Refund Service](https://docs.doku.com/payouts/refund-service) (payout to a bank/e-wallet, Rp 10.000–Rp 25.000.000). That is not Jokul `POST /orders/v1/refund` (original payment method). Confirm which is on this MID before go-live refunds.
+- **Support**: account manager for live checks. Do not guess product enablement.
 - **Live DOKU Jokul Hosted Checkout**:
     - Full integration with `POST /checkout/v1/payment` using HMAC-SHA256 signature authorization for Virtual Accounts (BCA, Mandiri, BRI, BNI), QRIS, Credit Cards (3D Secure OTP), and E-Wallets.
 - **Zero-Config Offline Simulation**:
     - Built-in payment simulator (`/checkout/simulate`) for instant local testing and offline demos.
 - **Live Status Inquiry & Auto-Sync**:
     - Real-time payment verification (`GET /orders/v1/status/{invoice}`) upon guest return and via 1-click **"Sync with DOKU"**.
-- **Automated DOKU BI-FAST Payout Engine**:
-    - Operator payout requests up to Rp 10.000.000 disbursed via DOKU Fund Transfer API (`POST /disbursement/v1/transfer`) in under 3 seconds.
+- **Operator payouts**: after T+3 settlement, bank transfer from the platform wallet. Auto-disburse cap remains Rp 10.000.000 until the AM confirms otherwise.
 - **Single platform merchant account**:
     - Every plan, including Agency, checks out through EMVI's DOKU wallet. Guest service fee funds gateway costs, escrow, and payouts. Agency does not connect a private merchant account.
 

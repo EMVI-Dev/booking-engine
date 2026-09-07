@@ -22,7 +22,7 @@ class CaddyAskController extends Controller
 
         $host = (string) $request->query('domain', '');
 
-        if (! $domains->customDomainMayReceiveCertificate($host)) {
+        if (! $domains->hostMayReceiveCertificate($host)) {
             return response('', 404);
         }
 

@@ -220,6 +220,34 @@ class DomainResolverService
 
     /**
      * Whether Caddy may ask Let's Encrypt for a padlock on this host.
+     *
+     * Platform slugs ({slug}.travelengine.online) are included. Apex and www
+     * are refused so Cloudflare keeps those certificates.
+     */
+    public function hostMayReceiveCertificate(string $host): bool
+    {
+        $host = $this->normalizeCustomHost($host);
+
+        if ($host === null) {
+            return false;
+        }
+
+        // Apex and www are orange-cloud. Origin still needs a public padlock
+        // for Cloudflare Full (strict) after the Origin wildcard cert was
+        // removed so slugs can use Let's Encrypt.
+        if ($this->isPlatformRoot($host)) {
+            return in_array($host, ['travelengine.online', 'www.travelengine.online'], true);
+        }
+
+        if ($this->hostIsPlatformSubdomain($host)) {
+            return $this->resolveOperator($host) !== null;
+        }
+
+        return $this->customDomainMayReceiveCertificate($host);
+    }
+
+    /**
+     * Whether Caddy may ask Let's Encrypt for a padlock on a custom domain.
      */
     public function customDomainMayReceiveCertificate(string $host): bool
     {

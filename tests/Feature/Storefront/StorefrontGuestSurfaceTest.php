@@ -152,17 +152,15 @@ test('terms and find-booking are on the public storefront', function () {
         ->assertSee('Find your booking');
 });
 
-test('starter storefront credits the platform in the tab title and footer', function () {
+test('starter storefront credits the platform in the footer and share site name', function () {
     $platform = config('app.name');
 
     $this->get($this->host.'/', $this->headers)
         ->assertOk()
         ->assertSee('Powered by')
-        ->assertSee('name="generator"', false)
-        ->assertSee('&bull; '.$platform, false)
         ->assertSee($this->operator->name.' • '.$platform, false)
-        ->assertSee('WebApplication', false)
-        ->assertSee('#platform', false);
+        ->assertDontSee('WebApplication', false)
+        ->assertDontSee('#platform', false);
 });
 
 test('agency storefront does not credit the platform in titles, share cards, or footer', function () {

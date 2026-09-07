@@ -1,82 +1,106 @@
-# Tech Stack
+# TravelEngine stack
 
-## MCP Servers — Always Utilise During Development
+TravelEngine is a Laravel booking app for tour operators. Guests book on the operator’s own site. Operators and platform admin use the main domain.
 
-MCP usage is a first-class part of the workflow, not an afterthought. Every development task should check available MCP context before proceeding.
+Product rules live in `scope_and_features.md`. This file is how the software is built and hosted.
 
-- **Laravel Boost** — application-level intelligence: PHP/Laravel versions, installed packages, Eloquent models, full DB schema access, query execution
-- **Laravel Herd MCP** — infrastructure layer: local environment state, sites, PHP versions, services (MySQL, Redis, Reverb), debug data (queries, jobs, logs)
-- **GitHub MCP** — repo state, branches, issues, PRs, commits (used via Claude Code, not this chat)
+## What it is
 
-### Rules
+| Layer | Choice |
+| :--- | :--- |
+| Language | PHP 8.5 in production (Herd locally; Composer allows `^8.3`) |
+| App | Laravel 13, Blade, Livewire 4 (single-file pages with `⚡`), Blaze |
+| Auth | Laravel Fortify (operator log in / register / 2FA / passkeys). Separate Livewire admin log in at `/admin` |
+| CSS / JS | Tailwind CSS 4, Vite 8, Alpine.js, Font Awesome |
+| Payments | One EMVI DOKU (Jokul) merchant for every plan. No operator-owned gateway |
+| Tests | Pest 5, Laravel Pint |
+| Local | Laravel Herd |
 
-1. **Always check MCP context before making assumptions** — don't guess at local env state, repo state, or existing code structure when an MCP server can confirm it directly.
-2. **Commit meaningful, atomic commits via GitHub MCP** — one logical change per commit, clear messages, no bundling unrelated work.
-3. Treat MCP servers as the source of truth over stale local context or memory of the project.
+There is no React/Vue SPA. Operator UI is Livewire. Guest storefront is mostly Blade plus a Livewire booking box.
 
-## Initial Setup
+## Three hosts, one app
 
-- Remove ALL Flux-related files and references (not used in this project)
-- Replace any Flux components with native Livewire + Blade components + Tailwind equivalents
+The same Laravel app answers on three kinds of hostname:
 
-## Core
+1. **Platform** — `travelengine.online` and `www` (and local Herd hosts such as `booking.emvi`). Marketing site, operator portal, Fortify auth, platform admin.
+2. **Operator slug** — `{slug}.travelengine.online`. Guest storefront only.
+3. **Custom domain** — Agency plan, e.g. `yourbrand.com`. Guest storefront only.
 
-- Laravel (latest)
-- PHP 8.4+
-- MySQL 8.0
+`IdentifyOperatorDomain` looks at `Host` and binds the operator (or leaves platform mode). Admin routes are meant to run only on the platform host, not on slugs.
 
-## Frontend
+`REGISTRATION_ENABLED=false` keeps the marketing site up but closes operator log in and sign-up (coming-soon page). `/admin/login` still works. Tests force this flag on.
 
-- Livewire 4 (no Volt) — Single File Components, Blaze compiler, Islands, Component Slots, Teleport, Lazy Loading, Smarter Loading States
-- Reusable UI primitives (buttons, modals, selects, dropdowns, inputs, badges) built as custom Blade components (`resources/views/components/*`) with Tailwind CSS & Alpine.js
-- Tailwind CSS 4
-- Alpine.js 3
+## Request path (production)
 
-## Webserver
+```
+Guest / operator
+    │
+    ├─ travelengine.online / www     → Cloudflare (orange-cloud) → Lightsail
+    └─ {slug}.travelengine.online    → DNS only (grey) → Lightsail
+       custom domain                 → DNS only → Lightsail
 
-- Nginx
+Lightsail  18.141.202.28   app in /var/www/travelengine
 
-## Database Conventions
+    Caddy  :80 / :443
+        │    reverse_proxy
+        ▼
+    Nginx  127.0.0.1:8080
+        │    PHP-FPM
+        ▼
+    PHP 8.5  Laravel
+```
 
-- ULIDs for primary keys
-- Indexes for columns used in lookups, joins, filtering, and sorting
+Supervisor runs `travelengine-worker` and `travelengine-scheduler` (queue + schedule). Default queue driver is `database`.
 
-## Laravel Conventions
+## TLS
 
-- Enum classes over DB enums
-- DRY via service classes
-- Soft deletes where applicable
+- **Apex + www** — visitors see Cloudflare’s padlock. Origin talks to Cloudflare on 443.
+- **Slugs and custom domains** — browsers hit Lightsail directly. Caddy asks Laravel `GET /internal/caddy/ask` before Let’s Encrypt will issue a cert (`CADDY_ASK_TOKEN`). Allowed: real operator slugs, Agency custom domains, and the platform apex/www so origin TLS stays valid.
+- Do not put a Cloudflare Origin certificate that includes `*.travelengine.online` in Caddy. That cert is only trusted by Cloudflare, so grey-cloud slugs look “Not secure”.
 
-## Livewire Conventions
+First HTTPS visit to a new slug can take a few seconds while Let’s Encrypt runs.
 
-- Single File Components
-- Blaze Performance Engine
-- Islands architecture
-- Component Slots
-- Smarter Loading States
-- PHP 8.4 integration
-- Lazy Loading
-- Teleport
+## Local vs production data
 
-## Query Conventions
+| | Local | Production | Tests |
+| :--- | :--- | :--- | :--- |
+| HTTP | Herd | Caddy → Nginx → FPM | Pest HTTP kernel |
+| DB | Herd MySQL (typical) | MySQL on the box | SQLite in memory |
+| Queue | sync / database | Supervisor + database | `sync` |
+| Front-end | `npm run dev` or `composer run dev` | Vite `public/build` uploaded on deploy | n/a |
 
-- Eager load relationships (avoid N+1)
-- Use query scopes for reusable filters
-- Paginate large datasets
+`public/build` is gitignored. A deploy that skips the Vite build ships a site with no CSS/JS.
 
-## Code Quality
+## Deploy
 
-- Laravel Pint (code formatting)
-- Pest (testing)
-- Laravel Telescope (debugging, local only)
+GitHub Actions (`.github/workflows/deploy.yml`) on `master` / `main`:
 
-## Package Suggestions
+1. `npm ci` + `npm run build` on the runner
+2. `rsync` the tree to `/var/www/travelengine` (keeps `.env` and `storage/app`)
+3. `composer install --no-dev`, `php artisan migrate --force`, `php artisan optimize`
+4. Restart Supervisor
 
-- Spatie Laravel Permission (roles & permissions — HR vs admin)
-- Spatie Laravel Activity Log (alternative to manual asset_logs)
-- Spatie Laravel Media Library (device photos, receipts)
+Do not SSH, deploy, or change production without a yes (Lightsail `ubuntu@18.141.202.28`).
 
-## Dev Tooling (installed)
+Repo: `https://github.com/EMVI-Dev/booking-engine.git`
 
-- Laravel Herd (local dev)
-- TablePlus (DB GUI)
+## App layout (where to look)
+
+| Area | Path |
+| :--- | :--- |
+| Guest storefront | `app/Http/Controllers/StorefrontController.php`, `resources/views/storefront/` |
+| Operator pages | `resources/views/pages/` Livewire SFCs, `routes/web.php` under `auth` |
+| Platform admin | `resources/views/pages/admin/`, `/admin/*` |
+| Auth | `app/Providers/FortifyServiceProvider.php`, `app/Actions/Fortify/` |
+| Domains / TLS ask | `app/Services/DomainResolverService.php`, `app/Http/Controllers/CaddyAskController.php` |
+| DOKU | `app/Services/DokuPaymentService.php` |
+
+Primary keys are ULIDs. Guest reservation URLs use `public_token`, never the row id.
+
+## What we do not use
+
+- No Flux UI
+- No operator BYO payment gateway
+- No Redis/Horizon required for V1
+- Enterprise plan is not in the product (`v2.md` only)
+- Spatie Permission / Media Library are not installed

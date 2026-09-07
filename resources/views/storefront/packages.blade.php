@@ -4,91 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
-    <!-- SEO & Metadata -->
-    <title>{{ __('All Tour Packages & Expeditions') }} &bull; {{ $agent->name }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
-    <meta name="description" content="{{ __('Browse all all-inclusive tour packages, island expeditions, and day trips offered by :name. Transparent pricing, instant hold reservations, and certified guides.', ['name' => $agent->name]) }}" />
-    <link rel="canonical" href="{{ route('storefront.packages') }}" />
-
-    <!-- Search Engine & AI Agent Discovery -->
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    @if ($agent->showsPlatformBranding())
-        <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
-    @endif
-    <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
-    <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
-    <!-- Favicon & Brand Icons -->
-    <link rel="icon" href="{{ $agent->logo_url }}" />
-    <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
-
-    <!-- OpenGraph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="{{ route('storefront.packages') }}" />
-    <meta property="og:title" content="{{ __('All Tour Packages & Expeditions') }} &bull; {{ $agent->name }}" />
-    <meta property="og:description" content="{{ __('Explore complete tour packages and book directly with :name.', ['name' => $agent->name]) }}" />
-    <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
-    @if ($agent->logo)
-        <meta property="og:image" content="{{ Storage::url($agent->logo) }}" />
-    @endif
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{{ __('All Tour Packages') }} &bull; {{ $agent->name }}" />
-    <meta name="twitter:description" content="{{ __('Explore complete tour packages and book directly with :name.', ['name' => $agent->name]) }}" />
-    @if ($agent->logo)
-        <meta name="twitter:image" content="{{ Storage::url($agent->logo) }}" />
-    @endif
-
-    <!-- Schema.org JSON-LD Structured Data -->
     @php
-        $schemaData = [
-            '@context' => 'https://schema.org',
-            '@graph' => [
-                [
-                    '@type' => 'BreadcrumbList',
-                    'itemListElement' => [
-                        [
-                            '@type' => 'ListItem',
-                            'position' => 1,
-                            'name' => __('Home'),
-                            'item' => route('home'),
-                        ],
-                        [
-                            '@type' => 'ListItem',
-                            'position' => 2,
-                            'name' => __('Tour Packages'),
-                            'item' => route('storefront.packages'),
-                        ],
-                    ],
-                ],
-                [
-                    '@type' => 'ItemList',
-                    'name' => $agent->name . ' - ' . __('All Tour Packages'),
-                    'numberOfItems' => $packages->total(),
-                    'itemListElement' => $packages->values()->map(fn ($p, $idx) => [
-                        '@type' => 'ListItem',
-                        'position' => $idx + 1,
-                        'item' => [
-                            '@type' => 'TouristTrip',
-                            'name' => $p->title,
-                            'description' => Str::limit($p->description ?? '', 140),
-                            'url' => route('storefront.package', $p->slug),
-                            'offers' => [
-                                '@type' => 'Offer',
-                                'price' => (float) $p->price,
-                                'priceCurrency' => 'IDR',
-                                'availability' => 'https://schema.org/InStock',
-                            ],
-                        ],
-                    ])->all(),
-                ],
-            ],
-        ];
+        $seo = app(\App\Services\StorefrontSeoService::class);
+        $share = $seo->homeShareImage($agent, $packages);
     @endphp
-    <script type="application/ld+json">
-    {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-    </script>
+    @include('storefront.partials.seo', [
+        'agent' => $agent,
+        'title' => __('Tours').' · '.$agent->name,
+        'description' => __('See all tours from :name. Prices are listed so you can pick a trip and reserve a spot online.', ['name' => $agent->name]),
+        'url' => route('storefront.packages'),
+        'share' => $share,
+        'schema' => $seo->packageCatalogGraph($agent, $packages),
+    ])
 
 
     @include('storefront.partials.brand-theme')

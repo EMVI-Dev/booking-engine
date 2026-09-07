@@ -3,7 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ __('Privacy') }} - {{ config('app.name') }}</title>
+    @php
+        $platformSeo = app(\App\Services\PlatformSeoService::class);
+        $legalTitle = __('Privacy').' - '.$platformSeo->platformName();
+        $legalUrl = route('legal.privacy');
+    @endphp
+    @include('partials.platform-seo', [
+        'title' => $legalTitle,
+        'description' => __('We collect guest names, emails, phone numbers, and booking details so operators can run the trip and so we can take payment, send receipts, and handle refunds. We do not sell that information.'),
+        'url' => $legalUrl,
+        'type' => 'article',
+        'schema' => $platformSeo->legalGraph(__('Privacy'), $legalUrl),
+    ])
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-ebony dark:text-slate-100">

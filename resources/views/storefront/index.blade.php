@@ -5,114 +5,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
-    <!-- SEO & Metadata -->
-    <title>{{ $agent->name }} &bull; {{ __('Official Direct Tour Bookings') }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
-    <meta name="description"
-        content="{{ Str::limit($agent->bio ?: __('Book direct tour packages, activities, and experiences with :name. Instant holds, transparent pricing, and secure payment.', ['name' => $agent->name]), 160) }}" />
-    <link rel="canonical" href="{{ url()->current() }}" />
-
-    <!-- Search Engine & AI Agent Discovery -->
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    @if ($agent->showsPlatformBranding())
-        <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine" />
-    @endif
-    <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
-    <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
-
-    <!-- Favicon & Brand Icons -->
-    <link rel="icon" href="{{ $agent->logo_url }}" />
-    <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
-
-    <!-- OpenGraph & WhatsApp Social Share Cards -->
     @php
-        $ogImageUrl = $agent->logo
-            ? (Str::startsWith($agent->logo, ['http://', 'https://']) ? $agent->logo : url(Storage::url($agent->logo)))
-            : url('/favicon.png');
-        $ogDescription = Str::limit($agent->bio ?: __('Official online booking portal for :name. Explore tour packages, activities, and experiences.', ['name' => $agent->name]), 160);
+        $seo = app(\App\Services\StorefrontSeoService::class);
+        $share = $seo->homeShareImage($agent, $packages, $standaloneProducts ?? $products ?? []);
     @endphp
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="{{ url()->current() }}" />
-    <meta property="og:title" content="{{ $agent->name }} — {{ __('Direct Tour Bookings') }}" />
-    <meta property="og:description" content="{{ $ogDescription }}" />
-    <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
-    <meta property="og:image" content="{{ $ogImageUrl }}" />
-    <meta property="og:image:secure_url" content="{{ $ogImageUrl }}" />
-    <meta property="og:image:alt" content="{{ $agent->name }}" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{{ $agent->name }} — {{ __('Direct Tour Bookings') }}" />
-    <meta name="twitter:description" content="{{ $ogDescription }}" />
-    <meta name="twitter:image" content="{{ $ogImageUrl }}" />
-
-    <!-- Schema.org JSON-LD Structured Data (LocalBusiness / TravelAgency / ItemList) -->
-    @php
-        $schemaData = [
-            '@context' => 'https://schema.org',
-            '@graph' => array_values(
-                array_filter([
-                    [
-                        '@type' => 'TravelAgency',
-                        '@id' => url('/') . '#agency',
-                        'name' => $agent->name,
-                        'description' => $agent->bio ?: 'Official direct tour and marine activities operator.',
-                        'url' => url('/'),
-                        'telephone' => $agent->contact_whatsapp ?: null,
-                        'priceRange' => 'IDR',
-                        'areaServed' => 'Indonesia',
-                    ],
-                    [
-                        '@type' => 'ItemList',
-                        '@id' => url('/') . '#catalog',
-                        'name' => $agent->name . ' Featured Experiences',
-                        'itemListElement' => $packages
-                            ->take(5)
-                            ->values()
-                            ->map(
-                                fn($p, $idx) => [
-                                    '@type' => 'ListItem',
-                                    'position' => $idx + 1,
-                                    'item' => [
-                                        '@type' => 'TouristTrip',
-                                        'name' => $p->title,
-                                        'description' => Str::limit($p->description ?? '', 120),
-                                        'url' => route('storefront.package', $p->slug),
-                                        'offers' => [
-                                            '@type' => 'Offer',
-                                            'price' => (float) $p->price,
-                                            'priceCurrency' => 'IDR',
-                                            'availability' => 'https://schema.org/InStock',
-                                            'validFrom' => now()->toIso8601String(),
-                                        ],
-                                    ],
-                                ],
-                            )
-                            ->all(),
-                    ],
-                    $agent->showsPlatformBranding() ? [
-                        '@type' => 'WebApplication',
-                        '@id' => config('app.url') . '#platform',
-                        'name' => config('app.name'),
-                        'description' => 'Direct booking engine platform for tour operators. Create your storefront and accept online reservations with instant confirmation.',
-                        'url' => config('app.url'),
-                        'applicationCategory' => 'BusinessApplication',
-                        'operatingSystem' => 'Web',
-                        'offers' => [
-                            '@type' => 'Offer',
-                            'price' => '0',
-                            'priceCurrency' => 'USD',
-                            'description' => 'Free storefront for tour operators',
-                        ],
-                    ] : null,
-                ]),
-            ),
-        ];
-    @endphp
-    <script type="application/ld+json">
-    {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-    </script>
+    @include('storefront.partials.seo', [
+        'agent' => $agent,
+        'title' => $seo->homeTitle($agent),
+        'description' => $seo->homeDescription($agent),
+        'url' => url()->current(),
+        'share' => $share,
+        'schema' => $seo->homeGraph($agent, $packages),
+    ])
 
     @include('storefront.partials.brand-theme')
 

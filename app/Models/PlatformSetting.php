@@ -131,6 +131,30 @@ class PlatformSetting extends Model
         return (string) ($this->settings['support_email'] ?? 'no-reply@travelengine.online');
     }
 
+    /**
+     * Whether operators may log in and register.
+     *
+     * Admin Settings can override this. Until that toggle is saved, the
+     * REGISTRATION_ENABLED env value (config fortify.registration_enabled) is used.
+     */
+    public function isOperatorPortalOpen(): bool
+    {
+        $settings = $this->settings ?? [];
+
+        if (array_key_exists('operator_portal_open', $settings)) {
+            return filter_var($settings['operator_portal_open'], FILTER_VALIDATE_BOOLEAN);
+        }
+
+        return (bool) config('fortify.registration_enabled');
+    }
+
+    public function setOperatorPortalOpen(bool $open): void
+    {
+        $settings = $this->settings ?? [];
+        $settings['operator_portal_open'] = $open;
+        $this->update(['settings' => $settings]);
+    }
+
     public function getDokuSandboxClientId(): string
     {
         $val = (string) ($this->settings['doku']['sandbox']['client_id'] ?? '');

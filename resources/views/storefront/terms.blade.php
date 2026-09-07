@@ -3,70 +3,19 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-        <!-- SEO & Metadata -->
-        <title>{{ __('Booking Policies & Terms') }} - {{ $agent->name }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
-        <meta name="description" content="{{ __('Official booking terms, instant hold policies, cancellation rules, and payment protection guidelines for direct reservations with :name.', ['name' => $agent->name]) }}" />
-        <link rel="canonical" href="{{ route('storefront.terms') }}" />
-
-        <!-- Search Engine & AI Agent Discovery -->
-        <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-        <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-        @if ($agent->showsPlatformBranding())
-            <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
-        @endif
-        <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
-        <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
-
-        <!-- Favicon & Brand Icons -->
-        <link rel="icon" href="{{ $agent->logo_url }}" />
-        <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
-
-        <!-- OpenGraph -->
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content="{{ route('storefront.terms') }}" />
-        <meta property="og:title" content="{{ __('Booking Policies & Terms') }} - {{ $agent->name }}" />
-        <meta property="og:description" content="{{ __('Official booking terms and policies for direct reservations with :name.', ['name' => $agent->name]) }}" />
-        <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
-        @if ($agent->logo)
-            <meta property="og:image" content="{{ Storage::url($agent->logo) }}" />
-        @endif
-
-        <!-- Schema.org JSON-LD Structured Data -->
         @php
-            $schemaData = [
-                '@context' => 'https://schema.org',
-                '@graph' => [
-                    [
-                        '@type' => 'BreadcrumbList',
-                        'itemListElement' => [
-                            [
-                                '@type' => 'ListItem',
-                                'position' => 1,
-                                'name' => __('Home'),
-                                'item' => route('home'),
-                            ],
-                            [
-                                '@type' => 'ListItem',
-                                'position' => 2,
-                                'name' => __('Terms & Policies'),
-                                'item' => route('storefront.terms'),
-                            ],
-                        ],
-                    ],
-                    [
-                        '@type' => 'WebPage',
-                        '@id' => route('storefront.terms') . '#webpage',
-                        'name' => __('Booking Policies & Terms - :name', ['name' => $agent->name]),
-                        'url' => route('storefront.terms'),
-                        'description' => __('Official terms and policies for :name.', ['name' => $agent->name]),
-                    ],
-                ],
-            ];
+            $seo = app(\App\Services\StorefrontSeoService::class);
+            $share = $seo->shareImage($agent);
         @endphp
-        <script type="application/ld+json">
-        {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-        </script>
+        @include('storefront.partials.seo', [
+            'agent' => $agent,
+            'title' => __('Booking terms').' · '.$agent->name,
+            'description' => __('Cancellation, payment, and booking terms for trips with :name.', ['name' => $agent->name]),
+            'url' => route('storefront.terms'),
+            'type' => 'article',
+            'share' => $share,
+            'schema' => $seo->termsGraph($agent),
+        ])
 
 
         @include('storefront.partials.brand-theme')

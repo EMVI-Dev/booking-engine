@@ -22,7 +22,9 @@ test('root platform domain serves platform welcome page', function () {
         ->assertViewIs('welcome')
         ->assertSee('The simple way to sell your tours online', false)
         ->assertSee('Privacy')
-        ->assertSee('Terms');
+        ->assertSee('Terms')
+        ->assertSee('application/ld+json', false)
+        ->assertSee('SoftwareApplication', false);
 });
 
 test('operator subdomain serves operator storefront with published listings', function () {

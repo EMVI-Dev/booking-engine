@@ -18,6 +18,8 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
     public string $currency_code = 'IDR';
     public string $currency_symbol = 'Rp';
 
+    public bool $operator_portal_open = true;
+
     public int $approved_operators = 0;
     public int $total_operators = 0;
 
@@ -43,6 +45,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
         $this->booking_hold_minutes = (int) ($settings['booking_hold_minutes'] ?? 30);
         $this->currency_code = (string) ($settings['currency_code'] ?? 'IDR');
         $this->currency_symbol = (string) ($settings['currency_symbol'] ?? 'Rp');
+        $this->operator_portal_open = $platform->isOperatorPortalOpen();
 
         // Operator context for the header note
         $this->total_operators = Operator::count();
@@ -75,11 +78,22 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
         $settings['booking_hold_minutes'] = $validated['booking_hold_minutes'];
         $settings['currency_code'] = strtoupper($validated['currency_code']);
         $settings['currency_symbol'] = $validated['currency_symbol'];
+        $settings['operator_portal_open'] = $this->operator_portal_open;
 
         $platform->update(['settings' => $settings]);
 
         $this->saved = true;
         $this->dispatch('platform-settings-saved');
+    }
+
+    /**
+     * Open or close operator log in and sign-up immediately.
+     */
+    public function updatedOperatorPortalOpen(bool $value): void
+    {
+        PlatformSetting::current()->setOperatorPortalOpen($value);
+        $this->operator_portal_open = $value;
+        $this->dispatch('operator-portal-toggled');
     }
 
     /**
@@ -103,6 +117,35 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
             </span>
         </x-slot:actions>
     </x-page-header>
+
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-2.5">
+                <span class="p-1.5 rounded-lg bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs mt-0.5">
+                    <i class="fa-solid fa-door-open"></i>
+                </span>
+                <div>
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        {{ __('Operator log in and sign-up') }}
+                    </h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        @if ($operator_portal_open)
+                            {{ __('Open. Operators can log in and create accounts. The marketing site is unchanged.') }}
+                        @else
+                            {{ __('Closed. Guests still see the marketing site. Operators see coming soon. Admin still works.') }}
+                        @endif
+                    </p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer shrink-0 self-start sm:self-center">
+                <input type="checkbox" wire:model.live="operator_portal_open" class="sr-only peer" />
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-zinc-600 peer-checked:bg-emerald-600"></div>
+                <span class="ml-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {{ $operator_portal_open ? __('Open') : __('Closed') }}
+                </span>
+            </label>
+        </div>
+    </div>
 
     <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
         <div class="flex flex-col gap-3 pb-2 border-b border-slate-100 dark:border-[#1e2433] sm:flex-row sm:items-center sm:justify-between">

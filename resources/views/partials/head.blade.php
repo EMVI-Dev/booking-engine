@@ -1,6 +1,23 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+@php
+    $isPlatformMarketing = request()->routeIs('home');
+    $portalOperator = $isPlatformMarketing ? null : auth()->user()?->currentOperator();
+    $portalFavicon = $portalOperator?->logo_url;
+    $faviconVersion = file_exists(public_path('favicon.svg')) ? filemtime(public_path('favicon.svg')) : time();
+@endphp
+@if ($isPlatformMarketing)
+    @php
+        $platformSeo = app(\App\Services\PlatformSeoService::class);
+    @endphp
+    @include('partials.platform-seo', [
+        'title' => $platformSeo->homeTitle(),
+        'description' => $platformSeo->homeDescription(),
+        'url' => url('/'),
+        'schema' => $platformSeo->homeGraph(),
+    ])
+@else
 <title>
     {{ filled($title ?? null) ? $title.' - '.config('app.name', 'TravelEngine') : config('app.name', 'TravelEngine').' - Online Booking System for Tour Operators' }}
 </title>
@@ -11,20 +28,14 @@
 <meta property="og:url" content="{{ url()->current() }}" />
 <meta property="og:title" content="{{ filled($title ?? null) ? $title.' - '.config('app.name', 'TravelEngine') : config('app.name', 'TravelEngine').' - Direct Tour Booking System' }}" />
 <meta property="og:description" content="The simple way to sell your tours online with 0% platform commission. Get your tour website, accept QRIS and bank payments, and manage reservations." />
-<meta property="og:image" content="{{ asset('images/hero-cover.jpg') }}" />
+<meta property="og:image" content="{{ url('/images/hero-cover.jpg') }}" />
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="{{ filled($title ?? null) ? $title.' - '.config('app.name', 'TravelEngine') : config('app.name', 'TravelEngine') }}" />
 <meta name="twitter:description" content="The simple way to sell your tours online with 0% platform commission." />
-<meta name="twitter:image" content="{{ asset('images/hero-cover.jpg') }}" />
+<meta name="twitter:image" content="{{ url('/images/hero-cover.jpg') }}" />
 
-@php
-    $isMarketing = request()->routeIs('home');
-    $portalOperator = $isMarketing ? null : auth()->user()?->currentOperator();
-    $portalFavicon = $portalOperator?->logo_url;
-    $faviconVersion = file_exists(public_path('favicon.svg')) ? filemtime(public_path('favicon.svg')) : time();
-@endphp
 @if ($portalFavicon)
     <link rel="icon" href="{{ $portalFavicon }}">
     <link rel="apple-touch-icon" href="{{ $portalFavicon }}">
@@ -33,6 +44,7 @@
     <link rel="icon" href="/favicon.ico?v={{ $faviconVersion }}" sizes="any">
     <link rel="icon" href="/favicon.png?v={{ $faviconVersion }}" type="image/png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v={{ $faviconVersion }}">
+@endif
 @endif
 
 <!-- Automated System Dark / Light Theme Sync -->

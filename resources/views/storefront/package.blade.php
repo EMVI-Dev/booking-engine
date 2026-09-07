@@ -4,120 +4,30 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <!-- SEO & Metadata -->
-    <title>{{ $package->title }} &bull; {{ $agent->name }}@if ($agent->showsPlatformBranding()) &bull; {{ config('app.name') }}@endif</title>
-    <meta name="description"
-        content="{{ Str::limit($package->description ?: __('Book :title with :agent. Official direct reservations with instant confirmation and locked rate.', ['title' => $package->title, 'agent' => $agent->name]), 160) }}" />
-    <link rel="canonical" href="{{ route('storefront.package', $package->slug) }}" />
-
-    <!-- Search Engine & AI Agent Discovery -->
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    @if ($agent->showsPlatformBranding())
-        <meta name="generator" content="{{ config('app.name') }} — Direct Booking Engine for Tour Operators" />
-    @endif
-    <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
-    <link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs Text Summary" />
-    <!-- Favicon & Brand Icons -->
-    <link rel="icon" href="{{ $agent->logo_url }}" />
-    <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
-
-    <!-- OpenGraph & WhatsApp Social Share Cards -->
     @php
-        $ogImageUrl = $package->cover_photo
-            ? (Str::startsWith($package->cover_photo, ['http://', 'https://'])
-                ? $package->cover_photo
-                : url(Storage::url($package->cover_photo)))
-            : ($agent->logo
-                ? (Str::startsWith($agent->logo, ['http://', 'https://'])
-                    ? $agent->logo
-                    : url(Storage::url($agent->logo)))
-                : url('/favicon.png'));
-        $ogDescription = Str::limit(
-            $package->description ?:
-            __('Book :title with :agent. Official online direct booking with instant confirmation.', [
+        $seo = app(\App\Services\StorefrontSeoService::class);
+        $share = $seo->shareImage($agent, $package->cover_photo);
+        $share['alt'] = $package->title;
+        $packageUrl = route('storefront.package', $package->slug);
+        $packageDescription = $seo->listingDescription(
+            $package->description,
+            __('Book :title with :name. See the price and reserve a spot online.', [
                 'title' => $package->title,
-                'agent' => $agent->name,
+                'name' => $agent->name,
             ]),
-            160,
         );
     @endphp
-    <meta property="og:type" content="product" />
-    <meta property="og:url" content="{{ route('storefront.package', $package->slug) }}" />
-    <meta property="og:title" content="{{ $package->title }} — {{ $agent->name }}" />
-    <meta property="og:description" content="{{ $ogDescription }}" />
-    <meta property="og:site_name" content="{{ $agent->storefrontSiteName() }}" />
-    <meta property="og:image" content="{{ $ogImageUrl }}" />
-    <meta property="og:image:secure_url" content="{{ $ogImageUrl }}" />
-    <meta property="og:image:alt" content="{{ $package->title }}" />
+    @include('storefront.partials.seo', [
+        'agent' => $agent,
+        'title' => $package->title.' · '.$agent->name,
+        'description' => $packageDescription,
+        'url' => $packageUrl,
+        'type' => 'website',
+        'share' => $share,
+        'schema' => $seo->packageGraph($agent, $package),
+    ])
     <meta property="product:price:amount" content="{{ $package->price }}" />
     <meta property="product:price:currency" content="IDR" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{{ $package->title }} — {{ $agent->name }}" />
-    <meta name="twitter:description" content="{{ $ogDescription }}" />
-    <meta name="twitter:image" content="{{ $ogImageUrl }}" />
-
-    <!-- Schema.org JSON-LD Structured Data -->
-    @php
-        $schemaData = [
-            '@context' => 'https://schema.org',
-            '@graph' => [
-                [
-                    '@type' => 'BreadcrumbList',
-                    'itemListElement' => [
-                        [
-                            '@type' => 'ListItem',
-                            'position' => 1,
-                            'name' => __('Home'),
-                            'item' => route('home'),
-                        ],
-                        [
-                            '@type' => 'ListItem',
-                            'position' => 2,
-                            'name' => __('Tour Packages'),
-                            'item' => route('storefront.packages'),
-                        ],
-                        [
-                            '@type' => 'ListItem',
-                            'position' => 3,
-                            'name' => $package->title,
-                            'item' => route('storefront.package', $package->slug),
-                        ],
-                    ],
-                ],
-                [
-                    '@type' => 'TouristTrip',
-                    '@id' => route('storefront.package', $package->slug) . '#trip',
-                    'name' => $package->title,
-                    'description' => $package->description ?? '',
-                    'touristType' => 'Adventure',
-                    'touristAttraction' => $package->location
-                        ? [
-                            '@type' => 'TouristAttraction',
-                            'name' => $package->location,
-                        ]
-                        : null,
-                    'offers' => [
-                        '@type' => 'Offer',
-                        'price' => (float) $package->price,
-                        'priceCurrency' => 'IDR',
-                        'availability' => 'https://schema.org/InStock',
-                        'validFrom' => now()->toIso8601String(),
-                        'seller' => [
-                            '@type' => 'TravelAgency',
-                            'name' => $agent->name,
-                        ],
-                    ],
-                ],
-            ],
-        ];
-    @endphp
-    <script type="application/ld+json">
-        {!! json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-        </script>
 
     @include('storefront.partials.brand-theme')
 

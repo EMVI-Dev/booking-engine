@@ -108,6 +108,7 @@ test('platform admin can access platform settings page', function () {
         ->get(route('admin.platform.edit'))
         ->assertOk()
         ->assertSee('Settings')
+        ->assertSee('Operator log in and sign-up')
         ->assertSee('Name, fees, and currency');
 });
 
@@ -130,6 +131,51 @@ test('platform admin can update global platform settings', function () {
         ->and($settings->getSupportEmail())->toBe('ops@emvi.dev')
         ->and($settings->getCommissionRate())->toBe(0.125)
         ->and($settings->getBookingHoldMinutes())->toBe(45);
+});
+
+test('platform admin can close operator log in and sign-up from settings', function () {
+    config(['fortify.registration_enabled' => true]);
+
+    $this->actingAs($this->adminUser);
+
+    Livewire::test('pages::admin.platform')
+        ->assertSet('operator_portal_open', true)
+        ->set('operator_portal_open', false)
+        ->assertSet('operator_portal_open', false);
+
+    expect(PlatformSetting::current()->fresh()->isOperatorPortalOpen())->toBeFalse();
+
+    auth()->logout();
+
+    $this->get(route('register'))
+        ->assertOk()
+        ->assertSee('We are preparing the operator portal')
+        ->assertDontSee('Create account');
+
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertSee('Coming soon')
+        ->assertDontSee('Sign In to Operator Portal');
+});
+
+test('platform admin can reopen operator log in and sign-up from settings', function () {
+    config(['fortify.registration_enabled' => false]);
+    PlatformSetting::current()->setOperatorPortalOpen(false);
+
+    $this->actingAs($this->adminUser);
+
+    Livewire::test('pages::admin.platform')
+        ->assertSet('operator_portal_open', false)
+        ->set('operator_portal_open', true)
+        ->assertSet('operator_portal_open', true);
+
+    expect(PlatformSetting::current()->fresh()->isOperatorPortalOpen())->toBeTrue();
+
+    auth()->logout();
+
+    $this->get(route('register'))
+        ->assertOk()
+        ->assertSee('Create account');
 });
 
 test('platform admin can access payment gateways settings page', function () {

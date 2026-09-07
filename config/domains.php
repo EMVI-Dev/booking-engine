@@ -23,9 +23,11 @@ return [
     | Caddy on-demand TLS
     |--------------------------------------------------------------------------
     |
-    | Caddy calls GET /internal/caddy/ask?token=…&domain=yourname.com before
-    | it asks Let's Encrypt for a padlock. An empty token fails closed.
-    | Point Caddy at: http://127.0.0.1/internal/caddy/ask?token=…
+    | Caddy calls GET /internal/caddy/ask?token=…&domain=… before it asks
+    | Let's Encrypt for a padlock. Allowed hosts are operator slugs
+    | ({slug}.travelengine.online) and Agency custom domains. Apex and www
+    | stay on Cloudflare. An empty token fails closed. Point Caddy at:
+    | http://127.0.0.1:8080/internal/caddy/ask?token=…
     |
     */
 

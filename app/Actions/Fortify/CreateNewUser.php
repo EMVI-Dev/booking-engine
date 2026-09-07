@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Models\PlatformSetting;
 use App\Models\User;
 use App\Services\OperatorOnboardingService;
 use Illuminate\Support\Facades\Validator;
@@ -25,6 +26,8 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        abort_unless(PlatformSetting::current()->isOperatorPortalOpen(), 403);
+
         $businessName = $input['operator_name'] ?? $input['agency_name'] ?? '';
 
         Validator::make(array_merge($input, ['business_name' => $businessName]), [

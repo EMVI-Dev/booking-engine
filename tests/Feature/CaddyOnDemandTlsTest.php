@@ -72,6 +72,33 @@ test('caddy is refused for an unknown host', function () {
         ->assertNotFound();
 });
 
+test('caddy may issue a padlock for an operator slug on the platform domain', function () {
+    Operator::factory()->create([
+        'slug' => 'bali-trek',
+        'status' => OperatorStatus::Approved,
+        'plan_id' => Plan::factory()->starter()->create()->id,
+    ]);
+
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=bali-trek.travelengine.online')
+        ->assertOk();
+
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=bali-trek.booking.test')
+        ->assertOk();
+});
+
+test('caddy may issue a padlock for the orange-clouded platform hosts', function () {
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=travelengine.online')
+        ->assertOk();
+
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=www.travelengine.online')
+        ->assertOk();
+});
+
+test('caddy is refused for unknown slugs', function () {
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=no-such-operator.travelengine.online')
+        ->assertNotFound();
+});
+
 test('the ssl probe stamps the padlock after https answers', function () {
     Http::fake([
         'https://guide.test/*' => Http::response('ok', 200),

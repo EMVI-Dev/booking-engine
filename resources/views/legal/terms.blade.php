@@ -3,7 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ __('Platform terms') }} - {{ config('app.name') }}</title>
+    @php
+        $platformSeo = app(\App\Services\PlatformSeoService::class);
+        $legalTitle = __('Platform terms').' - '.$platformSeo->platformName();
+        $legalUrl = route('legal.terms');
+    @endphp
+    @include('partials.platform-seo', [
+        'title' => $legalTitle,
+        'description' => __('Operators list trips and take bookings through this platform. We collect the guest payment, hold the listed price until the trip date, then send that listed price to the operator.'),
+        'url' => $legalUrl,
+        'type' => 'article',
+        'schema' => $platformSeo->legalGraph(__('Platform terms'), $legalUrl),
+    ])
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-ebony dark:text-slate-100">

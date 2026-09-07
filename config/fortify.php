@@ -19,6 +19,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Operator registration
+    |--------------------------------------------------------------------------
+    |
+    | Default for operator log in and sign-up until an admin saves the
+    | toggle on Settings. Platform admin at /admin still works either way.
+    |
+    */
+
+    'registration_enabled' => filter_var(env('REGISTRATION_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    |--------------------------------------------------------------------------
     | Fortify Password Broker
     |--------------------------------------------------------------------------
     |

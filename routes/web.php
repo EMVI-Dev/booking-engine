@@ -70,22 +70,24 @@ Route::get('/packages/{slug}', [StorefrontController::class, 'showPackage'])->na
 Route::get('/products/{slug}', [StorefrontController::class, 'showProduct'])->name('storefront.product');
 
 // Platform Administration (Master Doku Keys, Platform Config & Separate Admin Auth)
-Route::middleware('guest')->group(function () {
-    Route::livewire('admin/login', 'pages::admin.login')->name('admin.login');
-});
+Route::middleware('platform')->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::livewire('admin/login', 'pages::admin.login')->name('admin.login');
+    });
 
-Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::livewire('/', 'pages::admin.dashboard')->name('dashboard');
-    Route::livewire('/dashboard', 'pages::admin.dashboard');
-    Route::livewire('/operators', 'pages::admin.operators.index')->name('operators.index');
-    Route::livewire('/operators/{operator}', 'pages::admin.operators.show')->name('operators.show');
-    Route::livewire('/plans', 'pages::admin.plans')->name('plans.index');
-    Route::livewire('/announcements', 'pages::admin.announcements')->name('announcements.index');
-    Route::livewire('/coupons', 'pages::admin.coupons')->name('coupons.index');
-    Route::livewire('/payouts', 'pages::admin.payouts')->name('payouts.index');
-    Route::livewire('/payments', 'pages::admin.payments')->name('payments.index');
-    Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
-    Route::livewire('/profile', 'pages::admin.profile')->name('profile.edit');
+    Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::livewire('/', 'pages::admin.dashboard')->name('dashboard');
+        Route::livewire('/dashboard', 'pages::admin.dashboard');
+        Route::livewire('/operators', 'pages::admin.operators.index')->name('operators.index');
+        Route::livewire('/operators/{operator}', 'pages::admin.operators.show')->name('operators.show');
+        Route::livewire('/plans', 'pages::admin.plans')->name('plans.index');
+        Route::livewire('/announcements', 'pages::admin.announcements')->name('announcements.index');
+        Route::livewire('/coupons', 'pages::admin.coupons')->name('coupons.index');
+        Route::livewire('/payouts', 'pages::admin.payouts')->name('payouts.index');
+        Route::livewire('/payments', 'pages::admin.payments')->name('payments.index');
+        Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
+        Route::livewire('/profile', 'pages::admin.profile')->name('profile.edit');
+    });
 });
 
 require __DIR__.'/settings.php';

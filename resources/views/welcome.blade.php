@@ -8,6 +8,7 @@
 
 <body class="min-h-screen bg-[#09090b] text-zinc-100 antialiased selection:bg-[#FFEF4D] selection:text-[#090d16] font-sans">
     @php
+        $registrationOpen = \App\Models\PlatformSetting::current()->isOperatorPortalOpen();
         $plans = \App\Models\Plan::where('is_active', true)->orderBy('sort_order')->get();
         if ($plans->isEmpty()) {
             \App\Models\Plan::seedDefaultPlans();
@@ -69,7 +70,7 @@
                     <a href="{{ route('register') }}"
                         class="h-8 sm:h-9 px-3.5 sm:px-4 rounded-lg bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                         wire:navigate>
-                        <span>{{ __('Start Free') }}</span>
+                        <span>{{ $registrationOpen ? __('Start Free') : __('Coming soon') }}</span>
                         <i class="fa-solid fa-arrow-right text-[10px] hidden sm:inline"></i>
                     </a>
                 @endauth
@@ -105,7 +106,7 @@
                     <a href="{{ route('register') }}"
                         class="w-full sm:w-auto h-11 sm:h-12 px-7 sm:px-8 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                         wire:navigate>
-                        <span>{{ __('Create Your Free Tour Website') }}</span>
+                        <span>{{ $registrationOpen ? __('Create Your Free Tour Website') : __('Coming soon — we are preparing operator sign-up') }}</span>
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </a>
                     <a href="{{ url('/nusapenida-excursions') }}" target="_blank"
@@ -811,7 +812,7 @@
                                 <a href="{{ route('register') }}"
                                     class="shrink-0 h-9 px-3 rounded-lg {{ $plan->is_popular ? 'bg-[#FFEF4D] text-[#090d16] font-black' : 'bg-zinc-800 text-zinc-100 border border-zinc-700 font-bold' }} text-xs flex items-center cursor-pointer"
                                     wire:navigate>
-                                    {{ $plan->isFree() ? __('Start free') : __('Choose') }}
+                                    {{ $registrationOpen ? ($plan->isFree() ? __('Start free') : __('Choose')) : __('Coming soon') }}
                                 </a>
                             </div>
                             <ul class="space-y-1 text-xs text-zinc-400">
@@ -945,7 +946,7 @@
                                 <a href="{{ route('register') }}"
                                     class="w-full h-10 rounded-lg {{ $plan->is_popular ? 'bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 font-bold' }} text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                                     wire:navigate>
-                                    <span>{{ __('Choose :plan', ['plan' => $plan->name]) }}</span>
+                                    <span>{{ $registrationOpen ? __('Choose :plan', ['plan' => $plan->name]) : __('Coming soon') }}</span>
                                     <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                 </a>
                             </div>
@@ -1251,13 +1252,17 @@
                     Ready to start taking direct tour bookings?
                 </h2>
                 <p class="text-xs sm:text-sm text-zinc-400 max-w-xl mx-auto leading-relaxed">
-                    Set up your tour packages, add your bank details, and start accepting online bookings in under 10 minutes.
+                    @if ($registrationOpen)
+                        Set up your tour packages, add your bank details, and start accepting online bookings in under 10 minutes.
+                    @else
+                        {{ __('We are preparing operator sign-up. Look around the platform — accounts open soon.') }}
+                    @endif
                 </p>
                 <div class="pt-2">
                     <a href="{{ route('register') }}"
                         class="h-11 sm:h-12 px-8 sm:px-9 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm sm:text-base transition inline-flex items-center gap-2 cursor-pointer shadow-sm"
                         wire:navigate>
-                        <span>{{ __('Create Your Tour Website Now') }}</span>
+                        <span>{{ $registrationOpen ? __('Create Your Tour Website Now') : __('Coming soon') }}</span>
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </a>
                 </div>
@@ -1294,7 +1299,7 @@
                 <a href="{{ route('legal.terms') }}" class="hover:text-zinc-300 transition">{{ __('Terms') }}</a>
                 <a href="{{ route('legal.privacy') }}" class="hover:text-zinc-300 transition">{{ __('Privacy') }}</a>
                 <a href="{{ route('login') }}" class="hover:text-zinc-300 transition" wire:navigate>{{ __('Operator Login') }}</a>
-                <a href="{{ route('register') }}" class="hover:text-zinc-300 transition" wire:navigate>{{ __('Operator Register') }}</a>
+                <a href="{{ route('register') }}" class="hover:text-zinc-300 transition" wire:navigate>{{ $registrationOpen ? __('Operator Register') : __('Coming soon') }}</a>
             </div>
 
             <p class="text-[11px] text-zinc-600">

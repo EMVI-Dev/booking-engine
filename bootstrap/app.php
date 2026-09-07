@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureOnPlatformDomain;
+use App\Http\Middleware\EnsureOperatorPortalOpen;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\IdentifyOperatorDomain;
 use Illuminate\Foundation\Application;
@@ -26,10 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             IdentifyOperatorDomain::class,
+            EnsureOperatorPortalOpen::class,
         ]);
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
+            'platform' => EnsureOnPlatformDomain::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

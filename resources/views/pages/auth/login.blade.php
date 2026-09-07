@@ -90,10 +90,14 @@
         </form>
 
         <div class="text-sm text-center text-zinc-600 dark:text-zinc-400">
-            <span>{{ __('New tour operator or guide?') }}</span>
-            <a href="{{ route('register') }}"
-                class="font-semibold text-[#8a7808] underline hover:text-[#6b5d06] dark:text-[#FFEF4D] dark:hover:text-[#fae639]"
-                wire:navigate>{{ __('Create an account') }}</a>
+            @if (\App\Models\PlatformSetting::current()->isOperatorPortalOpen())
+                <span>{{ __('New tour operator or guide?') }}</span>
+                <a href="{{ route('register') }}"
+                    class="font-semibold text-[#8a7808] underline hover:text-[#6b5d06] dark:text-[#FFEF4D] dark:hover:text-[#fae639]"
+                    wire:navigate>{{ __('Create an account') }}</a>
+            @else
+                <span>{{ __('We are preparing operator sign-up. Coming soon.') }}</span>
+            @endif
         </div>
     </div>
 </x-layouts::auth>

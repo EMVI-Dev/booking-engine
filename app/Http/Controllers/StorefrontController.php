@@ -629,6 +629,11 @@ class StorefrontController extends Controller
         // Homepage
         $xml .= "  <url>\n    <loc>{$baseUrl}</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n";
 
+        if (! $agent) {
+            $xml .= "  <url>\n    <loc>{$baseUrl}/legal</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n";
+            $xml .= "  <url>\n    <loc>{$baseUrl}/privacy</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n";
+        }
+
         if ($agent && $agent->isStorefrontPublic()) {
             // Packages Catalog
             $xml .= "  <url>\n    <loc>{$baseUrl}/tours</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n";
