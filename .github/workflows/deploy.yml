@@ -62,11 +62,10 @@ jobs:
           echo "Private key parsed. Fetching host keys for ${LIGHTSAIL_HOST}"
           ssh-keyscan -H "$LIGHTSAIL_HOST" >> ~/.ssh/known_hosts
 
-      - name: Pull code and refresh Laravel
+      - name: Confirm SSH login
         env:
           LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
           LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
-          DEPLOY_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           if [ -z "${LIGHTSAIL_USER:-}" ]; then
@@ -75,13 +74,29 @@ jobs:
           fi
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
             "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}" \
-            bash -s -- "$DEPLOY_SHA" <<'REMOTE'
+            'echo LOGIN_OK && whoami && hostname'
+
+      - name: Pull code and refresh Laravel
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
           set -euo pipefail
-          sha="$1"
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}" \
+            env DEPLOY_SHA="$DEPLOY_SHA" bash -s <<'REMOTE'
+          set -euo pipefail
           cd /var/www/travelengine
           echo "connected $(hostname) as $(whoami)"
+          echo "deploying ${DEPLOY_SHA}"
+          echo "origin=$(git remote get-url origin)"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+          git remote set-url origin git@github.com:EMVI-Dev/booking-engine.git
           git fetch origin
-          git reset --hard "$sha"
+          git reset --hard "$DEPLOY_SHA"
           composer install --no-dev --optimize-autoloader --no-interaction
           php artisan migrate --force --no-interaction
           php artisan optimize
