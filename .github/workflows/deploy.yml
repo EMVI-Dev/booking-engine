@@ -37,45 +37,81 @@ jobs:
           npm ci
           npm run build
 
+      - name: Prepare SSH
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${LIGHTSAIL_HOST:-}" ]; then
+            echo "LIGHTSAIL_HOST secret is empty."
+            exit 1
+          fi
+          if [ -z "${LIGHTSAIL_SSH_KEY:-}" ]; then
+            echo "LIGHTSAIL_SSH_KEY secret is empty."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$LIGHTSAIL_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null; then
+            echo "LIGHTSAIL_SSH_KEY is not a usable private key."
+            echo "Paste the private key (BEGIN OPENSSH PRIVATE KEY), not the .pub file."
+            exit 1
+          fi
+          echo "Private key parsed. Fetching host keys for ${LIGHTSAIL_HOST}"
+          ssh-keyscan -H "$LIGHTSAIL_HOST" >> ~/.ssh/known_hosts
+
       - name: Pull code and refresh Laravel
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.LIGHTSAIL_HOST }}
-          username: ${{ secrets.LIGHTSAIL_USER }}
-          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          script: |
-            set -euo pipefail
-            cd /var/www/travelengine
-            echo "connected $(hostname) as $(whoami)"
-            git fetch origin
-            git reset --hard "${{ github.sha }}"
-            composer install --no-dev --optimize-autoloader --no-interaction
-            php artisan migrate --force --no-interaction
-            php artisan optimize
-            php artisan storage:link --no-interaction || true
-            sudo chown -R ubuntu:www-data storage bootstrap/cache
-            sudo chmod -R ug+rwx storage bootstrap/cache
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${LIGHTSAIL_USER:-}" ]; then
+            echo "LIGHTSAIL_USER secret is empty."
+            exit 1
+          fi
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}" \
+            bash -s -- "$DEPLOY_SHA" <<'REMOTE'
+          set -euo pipefail
+          sha="$1"
+          cd /var/www/travelengine
+          echo "connected $(hostname) as $(whoami)"
+          git fetch origin
+          git reset --hard "$sha"
+          composer install --no-dev --optimize-autoloader --no-interaction
+          php artisan migrate --force --no-interaction
+          php artisan optimize
+          php artisan storage:link --no-interaction || true
+          sudo chown -R ubuntu:www-data storage bootstrap/cache
+          sudo chmod -R ug+rwx storage bootstrap/cache
+          REMOTE
 
       - name: Upload Vite build
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.LIGHTSAIL_HOST }}
-          username: ${{ secrets.LIGHTSAIL_USER }}
-          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          source: public/build
-          target: /var/www/travelengine/public
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -r \
+            public/build "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}:/var/www/travelengine/public/"
 
       - name: Restart queue workers
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.LIGHTSAIL_HOST }}
-          username: ${{ secrets.LIGHTSAIL_USER }}
-          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          script: |
-            set -euo pipefail
-            sudo chown -R ubuntu:www-data /var/www/travelengine/public/build
-            sudo supervisorctl restart travelengine-worker:* travelengine-scheduler
-            sudo supervisorctl status
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}" bash <<'REMOTE'
+          set -euo pipefail
+          sudo chown -R ubuntu:www-data /var/www/travelengine/public/build
+          sudo supervisorctl restart travelengine-worker:* travelengine-scheduler
+          sudo supervisorctl status
+          REMOTE
 
       - name: Notify Slack
         if: always()
