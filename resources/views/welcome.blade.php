@@ -20,8 +20,8 @@
         <span class="inline-flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-[#FFEF4D]"></span>
             <span class="font-bold text-[#FFEF4D]">{{ __('Zero Platform Commission') }}</span>
-            <span class="text-zinc-600">•</span>
-            <span>{{ __('Keep 100% of your listed ticket prices with direct bank payouts.') }}</span>
+            <span class="text-zinc-600 hidden sm:inline">•</span>
+            <span class="hidden sm:inline">{{ __('Keep 100% of your listed ticket prices with direct bank payouts.') }}</span>
         </span>
     </div>
 
@@ -139,8 +139,24 @@
                     </div>
                 </div>
 
+                <!-- Mobile: one snapshot of what you get (desktop keeps the full demo) -->
+                <div class="md:hidden text-left rounded-2xl border border-zinc-800 bg-[#131316] p-4 space-y-3">
+                    <p class="text-[10px] font-mono text-[#FFEF4D] truncate">yourname.travelengine.online</p>
+                    <div class="space-y-1">
+                        <p class="text-sm font-bold text-white">{{ __('Your own tour website') }}</p>
+                        <p class="text-xs text-zinc-400 leading-relaxed">
+                            {{ __('Guests pick a date, pay with QRIS or bank transfer, and get a WhatsApp ticket. You keep 100% of the listed price.') }}
+                        </p>
+                    </div>
+                    <a href="{{ url('/nusapenida-excursions') }}" target="_blank"
+                        class="inline-flex items-center gap-1.5 text-xs font-bold text-[#FFEF4D] cursor-pointer">
+                        <span>{{ __('Open a live example') }}</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+
                 <!-- Interactive Multi-View Product Showcase -->
-                <div class="pt-4 max-w-5xl mx-auto text-left"
+                <div class="pt-4 max-w-5xl mx-auto text-left hidden md:block"
                     x-data="{
                         activeTab: 'storefront',
                         selectedTour: 'nusa',
@@ -467,31 +483,31 @@
             </div>
         </section>
 
-        <!-- Stats Bar -->
+        <!-- Product facts (no invented volume numbers) -->
         <section class="border-y border-zinc-800 bg-[#0d0d10] py-8 sm:py-10">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
                 <div>
-                    <span class="text-2xl sm:text-3xl font-black text-white font-mono block">Rp 15M+</span>
-                    <span class="text-xs text-zinc-400 mt-0.5 block">{{ __('Processed for Operators') }}</span>
+                    <span class="text-2xl sm:text-3xl font-black text-white font-mono block">0%</span>
+                    <span class="text-xs text-zinc-400 mt-0.5 block">{{ __('Taken from your ticket') }}</span>
                 </div>
                 <div>
-                    <span class="text-2xl sm:text-3xl font-black text-[#FFEF4D] font-mono block">0%</span>
-                    <span class="text-xs text-zinc-400 mt-0.5 block">{{ __('Platform Commission') }}</span>
+                    <span class="text-2xl sm:text-3xl font-black text-[#FFEF4D] font-mono block">100%</span>
+                    <span class="text-xs text-zinc-400 mt-0.5 block">{{ __('You keep of the listed price') }}</span>
                 </div>
                 <div>
-                    <span class="text-2xl sm:text-3xl font-black text-white font-mono block">50,000+</span>
-                    <span class="text-xs text-zinc-400 mt-0.5 block">{{ __('Happy Travelers Served') }}</span>
+                    <span class="text-2xl sm:text-3xl font-black text-white font-mono block">5%</span>
+                    <span class="text-xs text-zinc-400 mt-0.5 block">{{ __('Guest fee at checkout') }}</span>
                 </div>
                 <div>
-                    <span class="text-2xl sm:text-3xl font-black text-[#FFEF4D] font-mono block">5 Mins</span>
-                    <span class="text-xs text-zinc-400 mt-0.5 block">{{ __('Average Setup Time') }}</span>
+                    <span class="text-2xl sm:text-3xl font-black text-[#FFEF4D] font-mono block">{{ __('Free') }}</span>
+                    <span class="text-xs text-zinc-400 mt-0.5 block">{{ __('Starter plan, cancel anytime') }}</span>
                 </div>
             </div>
         </section>
 
         <!-- The 3 Core Pillars Section (How It Works) -->
-        <section id="how-it-works" class="py-16 sm:py-20 scroll-mt-12">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <section id="how-it-works" class="py-12 sm:py-20 scroll-mt-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-12">
                 <div class="text-center space-y-3 max-w-2xl mx-auto">
                     <span class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D] block">{{ __('Simple 3-Step Setup') }}</span>
                     <h2 class="text-2xl sm:text-4xl font-black text-white tracking-tight">
@@ -549,8 +565,8 @@
         </section>
 
         <!-- Asymmetric Bento Box Features Grid -->
-        <section id="features" class="py-16 sm:py-20 border-t border-zinc-800 bg-[#0d0d10] scroll-mt-16">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <section id="features" class="py-12 sm:py-20 border-t border-zinc-800 bg-[#0d0d10] scroll-mt-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-12">
                 <div class="text-center space-y-3 max-w-2xl mx-auto">
                     <span class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D] block">{{ __('Practical Operator Tools') }}</span>
                     <h2 class="text-2xl sm:text-4xl font-black text-white tracking-tight">
@@ -561,8 +577,48 @@
                     </p>
                 </div>
 
-                <!-- Bento Grid Layout -->
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <!-- Mobile: short feature list (no mockups) -->
+                <ul class="md:hidden divide-y divide-zinc-800 rounded-2xl border border-zinc-800 bg-[#131316] overflow-hidden">
+                    <li class="flex items-start gap-3 p-4">
+                        <div class="w-9 h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center shrink-0">
+                            <i class="fa-brands fa-whatsapp text-sm"></i>
+                        </div>
+                        <div class="min-w-0 space-y-0.5">
+                            <h3 class="text-sm font-bold text-white">{{ __('WhatsApp pay links') }}</h3>
+                            <p class="text-xs text-zinc-400 leading-relaxed">{{ __('Send a checkout link in chat. Guest pays, you get confirmed.') }}</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3 p-4">
+                        <div class="w-9 h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-ticket text-sm"></i>
+                        </div>
+                        <div class="min-w-0 space-y-0.5">
+                            <h3 class="text-sm font-bold text-white">{{ __('E-tickets on WhatsApp') }}</h3>
+                            <p class="text-xs text-zinc-400 leading-relaxed">{{ __('Auto voucher, QR pass, and meeting pin on their phone.') }}</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3 p-4">
+                        <div class="w-9 h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-clipboard-list text-sm"></i>
+                        </div>
+                        <div class="min-w-0 space-y-0.5">
+                            <h3 class="text-sm font-bold text-white">{{ __('Daily guest lists') }}</h3>
+                            <p class="text-xs text-zinc-400 leading-relaxed">{{ __('Pickup lists for drivers, guides, and boat captains.') }}</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3 p-4">
+                        <div class="w-9 h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-building-columns text-sm"></i>
+                        </div>
+                        <div class="min-w-0 space-y-0.5">
+                            <h3 class="text-sm font-bold text-white">{{ __('Payouts, 0% cut') }}</h3>
+                            <p class="text-xs text-zinc-400 leading-relaxed">{{ __('Keep 100% of the ticket. Money goes to your Indonesian bank.') }}</p>
+                        </div>
+                    </li>
+                </ul>
+
+                <!-- Desktop: full bento with mockups -->
+                <div class="hidden md:grid grid-cols-1 md:grid-cols-12 gap-6">
 
                     <!-- Bento 1: WhatsApp Payment Link (Spans 8 cols) -->
                     <div class="md:col-span-8 rounded-2xl bg-[#131316] border border-zinc-800 p-6 sm:p-8 flex flex-col justify-between space-y-6">
@@ -696,8 +752,8 @@
         </section>
 
         <!-- Pricing & Subscription Plans Section -->
-        <section id="pricing" class="py-16 sm:py-20 scroll-mt-16" x-data="{ billing_interval: 'monthly' }">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <section id="pricing" class="py-12 sm:py-20 scroll-mt-16" x-data="{ billing_interval: 'monthly' }">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-10">
 
                 <!-- Section Header & Billing Interval Toggle -->
                 <div class="text-center space-y-3 max-w-2xl mx-auto">
@@ -725,8 +781,54 @@
                     </div>
                 </div>
 
-                <!-- Centered 3-Column Pricing Cards Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch max-w-5xl mx-auto">
+                <!-- Mobile: one-line plan summaries -->
+                <div class="md:hidden space-y-3">
+                    @foreach ($plans as $plan)
+                        @php
+                            $priceMonthly = (float) $plan->price_monthly;
+                            $priceYearly = (float) $plan->price_yearly;
+                            $mobileHighlights = match ($plan->slug) {
+                                'starter' => [__('Tour website + 24/7 booking'), $plan->listingLimitLabel().' · '.$plan->teamSeatLabel()],
+                                'growth' => [__('WhatsApp links, tickets, guest lists'), $plan->listingLimitLabel().' · '.$plan->teamSeatLabel()],
+                                'agency' => [__('Your domain + white-label site'), $plan->listingLimitLabel()],
+                                default => [$plan->listingLimitLabel(), $plan->teamSeatLabel()],
+                            };
+                        @endphp
+                        <div class="rounded-2xl bg-[#131316] border {{ $plan->is_popular ? 'border-[#FFEF4D]' : 'border-zinc-800' }} p-4 space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0 space-y-0.5">
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-black text-base text-white tracking-tight">{{ $plan->name }}</h3>
+                                        @if ($plan->is_popular)
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-[#FFEF4D] text-[#090d16]">{{ __('Popular') }}</span>
+                                        @endif
+                                    </div>
+                                    <p class="text-lg font-black text-white tracking-tight"
+                                        x-text="billing_interval === 'yearly' ? '{{ $plan->isFree() ? __('Free') : 'Rp '.number_format($priceYearly, 0, ',', '.').' / year' }}' : '{{ $plan->isFree() ? __('Free') : 'Rp '.number_format($priceMonthly, 0, ',', '.').' / month' }}'">
+                                        {{ $plan->isFree() ? __('Free') : 'Rp '.number_format($priceMonthly, 0, ',', '.').' / month' }}
+                                    </p>
+                                </div>
+                                <a href="{{ route('register') }}"
+                                    class="shrink-0 h-9 px-3 rounded-lg {{ $plan->is_popular ? 'bg-[#FFEF4D] text-[#090d16] font-black' : 'bg-zinc-800 text-zinc-100 border border-zinc-700 font-bold' }} text-xs flex items-center cursor-pointer"
+                                    wire:navigate>
+                                    {{ $plan->isFree() ? __('Start free') : __('Choose') }}
+                                </a>
+                            </div>
+                            <ul class="space-y-1 text-xs text-zinc-400">
+                                @foreach ($mobileHighlights as $highlight)
+                                    <li class="flex items-start gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400 text-[10px] mt-0.5 shrink-0"></i>
+                                        <span>{{ $highlight }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endforeach
+                    <p class="text-center text-[11px] text-zinc-500">{{ __('You keep 100% of the ticket. Guest pays a 5% online fee.') }}</p>
+                </div>
+
+                <!-- Desktop: full pricing cards -->
+                <div class="hidden md:grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch max-w-5xl mx-auto">
                     @foreach ($plans as $plan)
                         @php
                             $priceMonthly = (float) $plan->price_monthly;
@@ -851,8 +953,8 @@
                     @endforeach
                 </div>
 
-                <!-- Feature Comparison Table Accordion (Closed by default) -->
-                <div x-data="{ showComparison: false }" class="max-w-6xl mx-auto space-y-4 pt-2">
+                <!-- Feature Comparison Table Accordion (desktop; closed by default) -->
+                <div x-data="{ showComparison: false }" class="hidden md:block max-w-6xl mx-auto space-y-4 pt-2">
                     <!-- Accordion Trigger Button -->
                     <div class="text-center">
                         <button type="button" @click="showComparison = !showComparison"
@@ -1011,7 +1113,7 @@
                 </div>
 
                 <!-- Honest Pricing Note -->
-                <div class="p-5 rounded-2xl bg-[#131316] border border-zinc-800 max-w-2xl mx-auto text-center space-y-1.5">
+                <div class="hidden md:block p-5 rounded-2xl bg-[#131316] border border-zinc-800 max-w-2xl mx-auto text-center space-y-1.5">
                     <div class="inline-flex items-center gap-2 text-xs font-bold text-[#FFEF4D]">
                         <i class="fa-solid fa-shield-halved"></i>
                         <span>{{ __('Zero Commission Guarantee') }}</span>
