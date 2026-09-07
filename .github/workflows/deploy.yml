@@ -91,10 +91,8 @@ jobs:
           echo "connected $(hostname) as $(whoami)"
           echo "deploying ${DEPLOY_SHA}"
           echo "origin=$(git remote get-url origin)"
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-          git remote set-url origin git@github.com:EMVI-Dev/booking-engine.git
+          git remote set-url origin https://github.com/EMVI-Dev/booking-engine.git
+          echo "origin now $(git remote get-url origin)"
           git fetch origin
           git reset --hard "$DEPLOY_SHA"
           composer install --no-dev --optimize-autoloader --no-interaction
