@@ -1298,6 +1298,7 @@
             <div class="flex items-center gap-6">
                 <a href="{{ route('legal.terms') }}" class="hover:text-zinc-300 transition">{{ __('Terms') }}</a>
                 <a href="{{ route('legal.privacy') }}" class="hover:text-zinc-300 transition">{{ __('Privacy') }}</a>
+                <a href="mailto:{{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}" class="hover:text-zinc-300 transition">{{ __('Support') }}</a>
                 <a href="{{ route('login') }}" class="hover:text-zinc-300 transition" wire:navigate>{{ __('Operator Login') }}</a>
                 <a href="{{ route('register') }}" class="hover:text-zinc-300 transition" wire:navigate>{{ $registrationOpen ? __('Operator Register') : __('Coming soon') }}</a>
             </div>

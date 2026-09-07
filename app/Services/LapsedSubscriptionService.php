@@ -10,6 +10,10 @@ use App\Models\Plan;
 
 class LapsedSubscriptionService
 {
+    public function __construct(
+        protected OperatorActivitySlackNotifier $slack,
+    ) {}
+
     /**
      * After 3 extra days unpaid, move a paid operator back to the free plan.
      */
@@ -26,6 +30,7 @@ class LapsedSubscriptionService
         }
 
         $starter = Plan::getDefaultPlan();
+        $fromPlanName = $plan->name;
 
         $operator->update([
             'plan_id' => $starter->id,
@@ -52,6 +57,12 @@ class LapsedSubscriptionService
                 'status' => DomainStatus::Pending,
                 'ssl_issued_at' => null,
             ]);
+
+        $this->slack->subscriptionLapsed(
+            $operator->fresh() ?? $operator,
+            $fromPlanName,
+            $starter->name,
+        );
 
         return true;
     }

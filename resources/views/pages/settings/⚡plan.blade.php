@@ -3,6 +3,7 @@
 use App\Concerns\ResolvesCurrentOperator;
 use App\Models\Operator;
 use App\Models\Plan;
+use App\Services\OperatorActivitySlackNotifier;
 use App\Services\SubscriptionProrationService;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
@@ -154,6 +155,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
         $operator->update(['subscription_auto_renew' => $this->target_auto_renew_state]);
         $this->auto_renew = $this->target_auto_renew_state;
+        app(OperatorActivitySlackNotifier::class)->autoRenewChanged($operator->fresh() ?? $operator, $this->target_auto_renew_state);
 
         session()->flash('success', $this->target_auto_renew_state ? __('Recurring auto-renewal enabled. Your subscription will renew automatically at the end of each billing cycle.') : __('Auto-renewal turned off. Your subscription will lapse at the end of the current term unless manually renewed.'));
 
@@ -457,8 +459,14 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 <p class="text-xs text-slate-500 dark:text-slate-400">
                     {{ $currentPlan->tagline ?: __('Standard tour operator plan.') }}
                 </p>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    {{ __('Plan or billing questions:') }}
+                    <a href="mailto:{{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}" class="font-semibold text-slate-800 dark:text-slate-200 hover:underline">
+                        {{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}
+                    </a>
+                </p>
                 @if ($currentPlan->hasFeature('priority_support'))
-                    <p class="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    <p class="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                         {{ __('You get faster help from us on this plan.') }}
                     </p>
                 @endif

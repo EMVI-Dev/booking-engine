@@ -9,6 +9,8 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Reservation;
 use App\Services\DomainResolverService;
+use App\Services\OperatorActivitySlackNotifier;
+use App\Services\SubscriptionProrationService;
 use App\Services\WalletService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -18,9 +20,16 @@ use Livewire\Component;
 new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class extends Component {
     public Operator $operator;
 
+    public string $selected_plan_id = '';
+
+    public string $complimentary_term = 'forever';
+
+    public bool $confirming_plan_change = false;
+
     public function mount(Operator $operator): void
     {
         $this->operator = $operator->load(['users', 'packages', 'products', 'plan']);
+        $this->selected_plan_id = (string) ($this->operator->plan_id ?: $this->operator->getPlan()->id);
     }
 
     /**
@@ -43,25 +52,76 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
             default => OperatorStatus::Pending,
         };
 
+        $fromStatus = $this->operator->status->label();
         $this->operator->update(['status' => $operatorStatus]);
         app(DomainResolverService::class)->clearOperatorDomainCache($this->operator);
         Cache::flush();
         $this->operator->refresh();
+        app(OperatorActivitySlackNotifier::class)->statusChanged($this->operator, $fromStatus, $operatorStatus->label());
         $this->dispatch('operator-status-updated', ['name' => $this->operator->name, 'status' => $operatorStatus->label()]);
     }
 
     /**
-     * Assign / update operator subscription plan tier.
+     * Ask before granting a complimentary plan change.
      */
-    public function assignPlan(?string $planId): void
+    public function updatedSelectedPlanId(string $value): void
     {
-        $this->operator->update([
-            'plan_id' => $planId ?: null,
-            'subscribed_at' => $planId ? now() : null,
-        ]);
+        if ($value === '' || $value === (string) $this->operator->plan_id) {
+            $this->confirming_plan_change = false;
+
+            return;
+        }
+
+        $this->complimentary_term = 'forever';
+        $this->confirming_plan_change = true;
+        $this->dispatch('open-modal', 'confirm-complimentary-plan');
+    }
+
+    /**
+     * Close the complimentary plan modal without changing the operator.
+     */
+    public function cancelPlanChange(): void
+    {
+        $this->selected_plan_id = (string) ($this->operator->plan_id ?: $this->operator->getPlan()->id);
+        $this->confirming_plan_change = false;
+        $this->dispatch('close-modal', 'confirm-complimentary-plan');
+    }
+
+    /**
+     * Apply the selected plan at no charge.
+     */
+    public function confirmComplimentaryPlan(): void
+    {
+        if (! $this->confirming_plan_change) {
+            return;
+        }
+
+        $this->assignPlan($this->selected_plan_id, $this->resolvedComplimentaryDays());
+        $this->confirming_plan_change = false;
+        $this->dispatch('close-modal', 'confirm-complimentary-plan');
+    }
+
+    /**
+     * Assign a plan at no charge. Null $days means no end date.
+     */
+    public function assignPlan(?string $planId, ?int $days = null): void
+    {
+        if (! $planId) {
+            return;
+        }
+
+        $plan = Plan::query()->whereKey($planId)->where('is_active', true)->first();
+
+        if (! $plan) {
+            return;
+        }
+
+        app(SubscriptionProrationService::class)->grantComplimentaryPlan($this->operator, $plan, $days);
         app(DomainResolverService::class)->clearOperatorDomainCache($this->operator);
         Cache::flush();
         $this->operator->refresh();
+        $this->operator->unsetRelation('plan');
+        $this->selected_plan_id = (string) $this->operator->plan_id;
         $this->dispatch('operator-status-updated', ['name' => $this->operator->name, 'status' => 'Plan Updated']);
     }
 
@@ -161,6 +221,72 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     public function allPlans()
     {
         return Plan::where('is_active', true)->orderBy('sort_order')->get();
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    #[Computed]
+    public function planSelectOptions(): array
+    {
+        return $this->allPlans
+            ->map(function (Plan $plan): array {
+                $price = $plan->isFree()
+                    ? __('Free')
+                    : __('Complimentary').' · Rp '.number_format((float) $plan->price_monthly, 0, ',', '.').'/'.__('mo');
+
+                return [
+                    'value' => (string) $plan->id,
+                    'label' => $plan->name.' — '.$price,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    #[Computed]
+    public function pendingComplimentaryPlan(): ?Plan
+    {
+        if ($this->selected_plan_id === '') {
+            return null;
+        }
+
+        return $this->allPlans->firstWhere('id', $this->selected_plan_id);
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    public function complimentaryTermOptions(): array
+    {
+        return [
+            ['value' => 'forever', 'label' => __('No end date')],
+            ['value' => '30', 'label' => __('30 days')],
+            ['value' => '90', 'label' => __('90 days')],
+            ['value' => '365', 'label' => __('1 year')],
+        ];
+    }
+
+    public function resolvedComplimentaryDays(): ?int
+    {
+        if ($this->complimentary_term === 'forever') {
+            return null;
+        }
+
+        $days = (int) $this->complimentary_term;
+
+        return $days > 0 ? $days : null;
+    }
+
+    public function complimentaryTermLabel(): string
+    {
+        foreach ($this->complimentaryTermOptions() as $option) {
+            if ($option['value'] === $this->complimentary_term) {
+                return $option['label'];
+            }
+        }
+
+        return __('No end date');
     }
 
     #[Computed]
@@ -339,11 +465,13 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                             <span class="font-black text-sm text-slate-900 dark:text-white">
                                 {{ $operator->plan?->name ?? __('Free Tier') }}
                             </span>
-                            @if ($operator->subscribed_at)
-                                <span class="text-[11px] font-medium text-slate-400">
+                            <span class="text-[11px] font-medium text-slate-400">
+                                @if ($operator->plan_expires_at)
+                                    {{ __('Until') }} {{ $operator->plan_expires_at->format('M d, Y') }}
+                                @elseif ($operator->subscribed_at)
                                     {{ __('Since') }} {{ $operator->subscribed_at->format('M d, Y') }}
-                                </span>
-                            @endif
+                                @endif
+                            </span>
                         </div>
                     </div>
 
@@ -351,15 +479,13 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                         <x-label for="plan_switch" :value="__('Change plan')" class="text-xs" />
                         <x-select
                             id="plan_switch"
-                            wire:change="assignPlan($event.target.value)"
+                            wire:model.live="selected_plan_id"
+                            :options="$this->planSelectOptions"
                             class="w-full text-xs font-semibold"
-                        >
-                            @foreach ($this->allPlans as $p)
-                                <option value="{{ $p->id }}" {{ $operator->plan_id === $p->id ? 'selected' : '' }}>
-                                    {{ $p->name }} (Rp {{ number_format((float) $p->price_monthly, 0, ',', '.') }}/mo &bull; {{ $p->commission_rate * 100 }}% take rate)
-                                </option>
-                            @endforeach
-                        </x-select>
+                        />
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            {{ __('Admin changes are complimentary. No invoice is collected.') }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -734,4 +860,80 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
             </div>
         </div>
     </div>
+
+    <x-modal name="confirm-complimentary-plan" :show="$confirming_plan_change" maxWidth="md">
+        <div class="p-6 space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 flex items-center justify-center mx-auto text-lg">
+                <i class="fa-solid fa-gift"></i>
+            </div>
+
+            <div class="space-y-1.5 text-center">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    {{ __('Confirm plan change') }}
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    {{ __('Review the complimentary grant before it applies.') }}
+                </p>
+            </div>
+
+            <dl class="rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50 dark:bg-[#141821] divide-y divide-slate-200/80 dark:divide-[#1e2433] text-left text-xs">
+                <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                    <dt class="font-semibold text-slate-500 dark:text-slate-400">{{ __('Operator') }}</dt>
+                    <dd class="font-bold text-slate-900 dark:text-white text-right">{{ $operator->name }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                    <dt class="font-semibold text-slate-500 dark:text-slate-400">{{ __('From') }}</dt>
+                    <dd class="font-bold text-slate-900 dark:text-white text-right">{{ $operator->getPlan()->name }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                    <dt class="font-semibold text-slate-500 dark:text-slate-400">{{ __('To') }}</dt>
+                    <dd class="font-bold text-slate-900 dark:text-white text-right">{{ $this->pendingComplimentaryPlan?->name ?? __('this plan') }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                    <dt class="font-semibold text-slate-500 dark:text-slate-400">{{ __('Charge') }}</dt>
+                    <dd class="font-bold text-emerald-700 dark:text-emerald-300 text-right">{{ __('Rp 0 — complimentary') }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                    <dt class="font-semibold text-slate-500 dark:text-slate-400">{{ __('Term') }}</dt>
+                    <dd class="font-bold text-slate-900 dark:text-white text-right">
+                        {{ $this->pendingComplimentaryPlan?->isFree() ? __('No end date') : $this->complimentaryTermLabel() }}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                    <dt class="font-semibold text-slate-500 dark:text-slate-400">{{ __('Auto-renew') }}</dt>
+                    <dd class="font-bold text-slate-900 dark:text-white text-right">{{ __('Off') }}</dd>
+                </div>
+            </dl>
+
+            @if ($this->pendingComplimentaryPlan && ! $this->pendingComplimentaryPlan->isFree())
+                <div class="space-y-1.5">
+                    <x-label for="complimentary_term" :value="__('How long?')" class="text-xs" />
+                    <x-select
+                        id="complimentary_term"
+                        wire:model.live="complimentary_term"
+                        :options="$this->complimentaryTermOptions()"
+                    />
+                </div>
+            @endif
+
+            <div class="flex items-center justify-center gap-3 pt-1">
+                <x-button
+                    type="button"
+                    variant="secondary"
+                    wire:click="cancelPlanChange"
+                    class="font-semibold text-xs"
+                >
+                    {{ __('Cancel') }}
+                </x-button>
+                <x-button
+                    type="button"
+                    variant="primary"
+                    wire:click="confirmComplimentaryPlan"
+                    class="font-semibold text-xs shadow-xs"
+                >
+                    {{ __('Grant plan') }}
+                </x-button>
+            </div>
+        </div>
+    </x-modal>
 </div>

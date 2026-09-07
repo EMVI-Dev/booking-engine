@@ -71,7 +71,7 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 
 ### 4. Commercial & Subscription Model (3 Tiers)
 
-Public names are **Starter**, **Growth**, and **Agency** (same as the slugs). **Enterprise is not in V1** — do not seed or show it (see `v2.md`).
+Public names are **Starter**, **Growth**, and **Agency** (same as the slugs). **Enterprise is not in V1** — do not seed or show it (see [`v2.md`](v2.md)).
 
 Guest service fee is **5% on every plan**, capped at **Rp 250.000**. Operator gets 100% of the listed price. Subscription buys features. It does not waive checkout fees or move settlement onto the operator's merchant account. No BYO gateway.
 
@@ -113,7 +113,7 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
     - `GuestDepartureReminderMail`: Day-before trip reminder.
     - `GuestReviewRequestMail`: Post-trip review request (Growth and Agency).
 - **Operator notification (`OperatorNewBookingNotificationMail`)**:
-    - Instant email alert on paid booking capture. Agency uses the operator as the From name. (`AgentNewBookingNotificationMail` is a deprecated alias.)
+    - Instant email alert on paid booking capture. Agency uses the operator as the From name.
 - **1-Click WhatsApp Dispatch Center**:
     - Pre-formatted messages for Payment Hold Recovery, E-Voucher Delivery, 24-Hour Departure Reminders, and Meeting Point Pins.
 
@@ -127,7 +127,7 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
 - Multi-currency / multi-language translation engine.
 - Tiered partial refund cancellation policies (single cutoff window only).
 - Bring-your-own payment gateway / private merchant account.
-- Enterprise plan and the V2 slices in `v2.md` (embeddable booking calendar, QR guest check-in, multiple departures per day, optional day-of guest details, ground-staff login).
+- Enterprise plan and the V2 slices in [`v2.md`](v2.md) (embeddable booking calendar, QR guest check-in, multiple departures per day, optional day-of guest details, ground-staff login).
 
 ---
 

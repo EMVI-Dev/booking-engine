@@ -15,6 +15,10 @@ use Illuminate\Support\Str;
 
 class OperatorOnboardingService
 {
+    public function __construct(
+        protected OperatorActivitySlackNotifier $slack,
+    ) {}
+
     /**
      * Register a new Operator along with its owner User account and default subdomain.
      *
@@ -36,7 +40,7 @@ class OperatorOnboardingService
      */
     public function registerOperator(array $data): array
     {
-        return DB::transaction(function () use ($data) {
+        $result = DB::transaction(function () use ($data) {
             // 1. Create Owner User
             $user = User::create([
                 'name' => $data['name'],
@@ -105,6 +109,10 @@ class OperatorOnboardingService
                 'domain' => $domain,
             ];
         });
+
+        $this->slack->operatorRegistered($result['operator'], $result['user']);
+
+        return $result;
     }
 
     /**

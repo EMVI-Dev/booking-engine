@@ -1,6 +1,7 @@
 <?php
 
 use App\Mail\SubscriptionRenewalReminderMail;
+use App\Services\OperatorActivitySlackNotifier;
 use App\Models\Operator;
 use App\Models\Plan;
 use Carbon\Carbon;
@@ -224,6 +225,12 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
             'plan_expires_at' => $newExpires,
         ]);
 
+        app(OperatorActivitySlackNotifier::class)->subscriptionExtended(
+            $operator->fresh() ?? $operator,
+            $days,
+            $newExpires->format('d M Y'),
+        );
+
         session()->flash(
             'success',
             __('Subscription extended by :days days for :name (New expiry: :date).', [
@@ -245,9 +252,12 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
             return;
         }
 
+        $enabled = ! (bool) $operator->subscription_auto_renew;
         $operator->update([
-            'subscription_auto_renew' => !(bool) $operator->subscription_auto_renew,
+            'subscription_auto_renew' => $enabled,
         ]);
+
+        app(OperatorActivitySlackNotifier::class)->autoRenewChanged($operator->fresh() ?? $operator, $enabled);
 
         session()->flash('success', __('Auto-renew updated for :name.', ['name' => $operator->name]));
     }

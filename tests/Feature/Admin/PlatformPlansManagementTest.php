@@ -4,6 +4,7 @@ use App\Enums\OperatorStatus;
 use App\Mail\SubscriptionRenewalReminderMail;
 use App\Models\Operator;
 use App\Models\Plan;
+use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
@@ -84,8 +85,68 @@ test('admin can assign subscription plan to an operator from operator details pa
 
     $operator->refresh();
     expect($operator->plan_id)->toBe($agencyPlan->id)
+        ->and($operator->plan_expires_at)->toBeNull()
+        ->and($operator->subscription_auto_renew)->toBeFalse()
         ->and($operator->getEffectiveCommissionRate())->toBe(0.0000)
         ->and($operator->hasFeature('custom_domain'))->toBeTrue();
+
+    $invoice = SubscriptionPayment::query()->where('operator_id', $operator->id)->first();
+
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->gateway)->toBe('admin_complimentary')
+        ->and((float) $invoice->net_amount_paid)->toBe(0.0);
+});
+
+test('admin can grant a complimentary plan for a fixed term after confirming', function () {
+    $operator = Operator::factory()->create([
+        'name' => 'Sanur Boat',
+        'status' => OperatorStatus::Approved,
+        'plan_id' => Plan::where('slug', 'starter')->value('id'),
+    ]);
+
+    $growthPlan = Plan::where('slug', 'growth')->first();
+
+    Livewire::actingAs($this->admin)
+        ->test('pages::admin.operators.show', ['operator' => $operator])
+        ->assertSee('Admin changes are complimentary')
+        ->set('selected_plan_id', $growthPlan->id)
+        ->assertSet('confirming_plan_change', true)
+        ->assertSee('Confirm plan change')
+        ->assertSee('Sanur Boat')
+        ->assertSee('Starter')
+        ->assertSee('Growth')
+        ->assertSee('Rp 0 — complimentary')
+        ->assertSee('Auto-renew')
+        ->set('complimentary_term', '90')
+        ->call('confirmComplimentaryPlan')
+        ->assertSet('confirming_plan_change', false);
+
+    $operator->refresh();
+
+    expect($operator->plan_id)->toBe($growthPlan->id)
+        ->and($operator->plan_expires_at?->toDateString())->toBe(now()->addDays(90)->toDateString())
+        ->and($operator->subscription_auto_renew)->toBeFalse();
+});
+
+test('cancelling a complimentary plan change leaves the operator on their current plan', function () {
+    $starter = Plan::where('slug', 'starter')->first();
+    $operator = Operator::factory()->create([
+        'name' => 'Ubud Walks',
+        'status' => OperatorStatus::Approved,
+        'plan_id' => $starter->id,
+    ]);
+
+    $agencyPlan = Plan::where('slug', 'agency')->first();
+
+    Livewire::actingAs($this->admin)
+        ->test('pages::admin.operators.show', ['operator' => $operator])
+        ->set('selected_plan_id', $agencyPlan->id)
+        ->assertSet('confirming_plan_change', true)
+        ->call('cancelPlanChange')
+        ->assertSet('confirming_plan_change', false)
+        ->assertSet('selected_plan_id', $starter->id);
+
+    expect($operator->fresh()->plan_id)->toBe($starter->id);
 });
 
 test('admin can view renewals tab and send renewal reminder email', function () {

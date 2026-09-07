@@ -24,6 +24,8 @@ test('admin dashboard uses ebony palette and shared nav chrome', function () {
         ->assertSee('op-metric')
         ->assertSee('op-metric-featured')
         ->assertSee(__('Admin'))
+        ->assertSee(config('app.name', 'TravelEngine'))
+        ->assertSee('by EMVI Technologies')
         ->assertSee(__('Dashboard'))
         ->assertSee(__('Operators'))
         ->assertSee(__('Operator Portal'))

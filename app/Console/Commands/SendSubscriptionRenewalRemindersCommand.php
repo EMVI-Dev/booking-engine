@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\OperatorStatus;
 use App\Mail\SubscriptionRenewalReminderMail;
 use App\Models\Operator;
+use App\Services\OperatorActivitySlackNotifier;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
@@ -80,6 +81,8 @@ class SendSubscriptionRenewalRemindersCommand extends Command
                 Mail::to($recipientEmail)->send(
                     new SubscriptionRenewalReminderMail($operator, $plan, $matchedDays)
                 );
+
+                app(OperatorActivitySlackNotifier::class)->renewalReminderSent($operator, $matchedDays);
 
                 $sentCount++;
                 $this->info("Sent {$matchedDays}-day renewal reminder to {$operator->name} ({$recipientEmail})");

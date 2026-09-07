@@ -41,6 +41,7 @@
                 ])
                 ->count()
             : 0;
+        $operatorSupportEmail = \App\Models\PlatformSetting::current()->getOperatorSupportEmail();
         $availableBalance = $currentOperator ? $currentOperator->getAvailableBalance() : 0;
         $operatorPlan = $currentOperator?->getPlan();
         $walletBadge = $availableBalance > 0
@@ -667,12 +668,19 @@
                         &copy; {{ date('Y') }}
                         <strong class="font-semibold text-op-ink">{{ $currentOperator->name ?? config('app.name', 'TravelEngine') }}</strong>
                     </span>
-                    <a href="https://{{ $platformDomain }}" target="_blank"
-                        class="inline-flex items-center gap-1.5 font-semibold text-op-ink hover:underline"
-                        title="{{ __('Tour Operator & Direct Booking Engine Platform') }}">
-                        <i class="fa-solid fa-compass text-xs text-brand-500"></i>
-                        {{ config('app.name', 'TravelEngine') }}
-                    </a>
+                    <div class="flex items-center gap-4">
+                        <a href="mailto:{{ $operatorSupportEmail }}"
+                            class="inline-flex items-center gap-1.5 font-semibold text-op-ink hover:underline">
+                            <i class="fa-solid fa-life-ring text-xs text-brand-500"></i>
+                            {{ __('Support') }}
+                        </a>
+                        <a href="https://{{ $platformDomain }}" target="_blank"
+                            class="inline-flex items-center gap-1.5 font-semibold text-op-ink hover:underline"
+                            title="{{ __('Tour Operator & Direct Booking Engine Platform') }}">
+                            <i class="fa-solid fa-compass text-xs text-brand-500"></i>
+                            {{ config('app.name', 'TravelEngine') }}
+                        </a>
+                    </div>
                 </div>
             </footer>
         </div>

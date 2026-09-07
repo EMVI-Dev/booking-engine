@@ -178,7 +178,10 @@
 
         <footer class="mt-auto border-t border-op-line px-4 py-3 text-xs text-op-subtle sm:px-6 lg:px-8">
             <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 sm:flex-row">
-                <span class="font-semibold text-op-ink">EMVI</span>
+                <span class="font-semibold text-op-ink">
+                    {{ config('app.name', 'TravelEngine') }}
+                    <span class="font-normal text-op-subtle">{{ __('by EMVI Technologies') }}</span>
+                </span>
                 <span>&copy; {{ date('Y') }}</span>
             </div>
         </footer>

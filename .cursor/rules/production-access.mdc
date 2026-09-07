@@ -1,0 +1,10 @@
+---
+description: Ask before any production / Lightsail SSH or change
+alwaysApply: true
+---
+
+# Production access
+
+Ask the user and wait for a yes before any SSH, deploy, or change on production (Lightsail `18.141.202.28`, user `ubuntu`).
+
+Do not dump `.env`, mail passwords, DOKU keys, or `APP_KEY` values. Say only whether a secret is set.

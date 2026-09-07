@@ -43,7 +43,7 @@ class PlatformSetting extends Model
                 'currency_code' => 'IDR',
                 'currency_symbol' => 'Rp',
                 'platform_name' => config('app.name', 'Emvi Booking Platform'),
-                'support_email' => 'no-reply@travelengine.online',
+                'support_email' => 'support@travelengine.online',
                 'doku' => [
                     'mode' => config('doku.default_mode', 'sandbox'),
                     'sandbox' => [
@@ -128,7 +128,21 @@ class PlatformSetting extends Model
 
     public function getSupportEmail(): string
     {
-        return (string) ($this->settings['support_email'] ?? 'no-reply@travelengine.online');
+        return $this->getOperatorSupportEmail();
+    }
+
+    /**
+     * Inbox operators write to. no-reply is never used as a support address.
+     */
+    public function getOperatorSupportEmail(): string
+    {
+        $configured = trim((string) ($this->settings['support_email'] ?? ''));
+
+        if ($configured !== '' && ! str_starts_with(strtolower($configured), 'no-reply@')) {
+            return $configured;
+        }
+
+        return 'support@travelengine.online';
     }
 
     /**

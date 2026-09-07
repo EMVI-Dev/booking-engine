@@ -1,8 +1,8 @@
 # TravelEngine stack
 
-TravelEngine is a Laravel booking app for tour operators. Guests book on the operator’s own site. Operators and platform admin use the main domain.
+TravelEngine is a Laravel booking app for tour operators, built by EMVI Technologies. Guests book on the operator’s own site. Operators and platform admin use the main domain.
 
-Product rules live in `scope_and_features.md`. This file is how the software is built and hosted.
+Product rules live in [`scope_and_features.md`](scope_and_features.md). This file is how the software is built and hosted.
 
 ## What it is
 
@@ -104,5 +104,5 @@ Primary keys are ULIDs. Guest reservation URLs use `public_token`, never the row
 - No Flux UI
 - No operator BYO payment gateway
 - No Redis/Horizon required for V1
-- Enterprise plan is not in the product (`v2.md` only)
+- Enterprise plan is not in the product ([`v2.md`](v2.md) only)
 - Spatie Permission / Media Library are not installed

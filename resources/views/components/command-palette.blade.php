@@ -42,7 +42,8 @@
                 { title: '{{ __('Billing Details & Invoices') }}', cat: '{{ __('Account & Billing') }}', icon: 'fa-solid fa-file-invoice-dollar text-[#FFEF4D]', url: '{{ route('settings.billing') }}' },
                 { title: '{{ __('Profile & Account Details') }}', cat: '{{ __('Account & Settings') }}', icon: 'fa-solid fa-user-gear text-slate-400', url: '{{ route('profile.edit') }}' },
                 { title: '{{ __('Security & Passkeys') }}', cat: '{{ __('Account & Settings') }}', icon: 'fa-solid fa-shield-halved text-slate-400', url: '{{ route('security.edit') }}' },
-                { title: '{{ __('Appearance & Theme Mode') }}', cat: '{{ __('Account & Settings') }}', icon: 'fa-solid fa-circle-half-stroke text-slate-400', url: '{{ route('appearance.edit') }}' }
+                { title: '{{ __('Appearance & Theme Mode') }}', cat: '{{ __('Account & Settings') }}', icon: 'fa-solid fa-circle-half-stroke text-slate-400', url: '{{ route('appearance.edit') }}' },
+                { title: '{{ __('Write support') }}', cat: '{{ __('Account & Settings') }}', icon: 'fa-solid fa-life-ring text-slate-400', url: 'mailto:{{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}', external: true }
             ],
             get filteredItems() {
                 if (!this.search.trim()) return this.items;

@@ -133,15 +133,24 @@ test('platform admin can update global platform settings', function () {
         ->and($settings->getBookingHoldMinutes())->toBe(45);
 });
 
-test('platform admin can turn on platform maintenance from settings', function () {
+test('platform admin must confirm before turning on platform maintenance', function () {
     config(['fortify.registration_enabled' => true]);
 
     $this->actingAs($this->adminUser);
 
     Livewire::test('pages::admin.platform')
         ->assertSet('platform_maintenance', false)
-        ->set('platform_maintenance', true)
-        ->assertSet('platform_maintenance', true);
+        ->call('requestMaintenanceToggle')
+        ->assertSet('confirming_maintenance', true)
+        ->assertSet('pending_maintenance', true)
+        ->assertSet('platform_maintenance', false)
+        ->assertDispatched('open-modal', 'confirm-platform-maintenance')
+        ->assertSee('Turn on platform maintenance?')
+        ->assertSee('Pause bookings')
+        ->call('confirmMaintenanceToggle')
+        ->assertSet('platform_maintenance', true)
+        ->assertSet('confirming_maintenance', false)
+        ->assertDispatched('close-modal', 'confirm-platform-maintenance');
 
     expect(PlatformSetting::current()->fresh()->isPlatformMaintenance())->toBeTrue();
 
@@ -157,15 +166,36 @@ test('platform admin can turn on platform maintenance from settings', function (
         ->assertSee('Sign In to Operator Portal');
 });
 
-test('platform admin can turn off platform maintenance from settings', function () {
+test('cancelling platform maintenance confirmation leaves bookings open', function () {
+    $this->actingAs($this->adminUser);
+
+    Livewire::test('pages::admin.platform')
+        ->call('requestMaintenanceToggle')
+        ->assertSet('confirming_maintenance', true)
+        ->assertSet('pending_maintenance', true)
+        ->call('cancelMaintenanceToggle')
+        ->assertSet('platform_maintenance', false)
+        ->assertSet('confirming_maintenance', false)
+        ->assertDispatched('close-modal', 'confirm-platform-maintenance');
+
+    expect(PlatformSetting::current()->fresh()->isPlatformMaintenance())->toBeFalse();
+});
+
+test('platform admin must confirm before turning off platform maintenance', function () {
     PlatformSetting::current()->setPlatformMaintenance(true);
 
     $this->actingAs($this->adminUser);
 
     Livewire::test('pages::admin.platform')
         ->assertSet('platform_maintenance', true)
-        ->set('platform_maintenance', false)
-        ->assertSet('platform_maintenance', false);
+        ->call('requestMaintenanceToggle')
+        ->assertSet('confirming_maintenance', true)
+        ->assertSet('pending_maintenance', false)
+        ->assertSee('Turn off platform maintenance?')
+        ->assertSee('Resume bookings')
+        ->call('confirmMaintenanceToggle')
+        ->assertSet('platform_maintenance', false)
+        ->assertSet('confirming_maintenance', false);
 
     expect(PlatformSetting::current()->fresh()->isPlatformMaintenance())->toBeFalse();
 
@@ -174,6 +204,18 @@ test('platform admin can turn off platform maintenance from settings', function 
     $this->get(route('register'))
         ->assertOk()
         ->assertSee('Create account');
+});
+
+test('saving platform settings does not change maintenance without confirmation', function () {
+    $this->actingAs($this->adminUser);
+
+    Livewire::test('pages::admin.platform')
+        ->set('platform_maintenance', true)
+        ->call('updatePlatformSettings')
+        ->assertHasNoErrors()
+        ->assertSet('platform_maintenance', true);
+
+    expect(PlatformSetting::current()->fresh()->isPlatformMaintenance())->toBeFalse();
 });
 
 test('platform admin can access payment gateways settings page', function () {

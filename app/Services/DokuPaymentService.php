@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
-use App\Mail\AgentNewBookingNotificationMail;
 use App\Mail\GuestBookingConfirmedMail;
+use App\Mail\OperatorNewBookingNotificationMail;
 use App\Models\Payment;
 use App\Models\PayoutRequest;
 use App\Models\PlatformSetting;
@@ -371,10 +371,32 @@ class DokuPaymentService
                 ->orWhere('gateway_ref', $invoiceNumber)
                 ->first();
 
-            if ($subscriptionPayment && (strtoupper($transactionStatus) === 'SUCCESS' || strtoupper($transactionStatus) === 'PAID' || strtoupper($transactionStatus) === '00')) {
-                app(SubscriptionProrationService::class)->completePendingPayment($subscriptionPayment, $invoiceNumber, 'doku');
+            if ($subscriptionPayment) {
+                $normalizedSubscriptionStatus = strtoupper($transactionStatus);
 
-                return true;
+                if (in_array($normalizedSubscriptionStatus, ['SUCCESS', 'PAID', '00'], true)) {
+                    app(SubscriptionProrationService::class)->completePendingPayment($subscriptionPayment, $invoiceNumber, 'doku');
+
+                    return true;
+                }
+
+                if ($subscriptionPayment->status === 'pending' && in_array($normalizedSubscriptionStatus, ['FAILED', 'EXPIRED', 'CANCELLED', 'DENIED'], true)) {
+                    $subscriptionPayment->update([
+                        'status' => 'failed',
+                        'gateway_ref' => $invoiceNumber,
+                    ]);
+
+                    $operator = $subscriptionPayment->operator;
+
+                    if ($operator) {
+                        app(OperatorActivitySlackNotifier::class)->subscriptionPaymentFailed(
+                            $operator,
+                            $subscriptionPayment->fresh() ?? $subscriptionPayment,
+                        );
+                    }
+
+                    return true;
+                }
             }
 
             return false;
@@ -446,7 +468,7 @@ class DokuPaymentService
                 if (! empty($agentEmail)) {
                     try {
                         Mail::to($agentEmail)
-                            ->send(new AgentNewBookingNotificationMail($reservation));
+                            ->send(new OperatorNewBookingNotificationMail($reservation));
                     } catch (\Throwable $e) {
                         report($e);
                     }

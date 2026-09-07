@@ -3,6 +3,7 @@
 use App\Concerns\ResolvesCurrentOperator;
 use App\Enums\OperatorUserRole;
 use App\Models\User;
+use App\Services\OperatorActivitySlackNotifier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -93,6 +94,12 @@ new #[Title('Your team')] class extends Component {
         ]);
 
         Password::sendResetLink(['email' => $user->email]);
+
+        app(OperatorActivitySlackNotifier::class)->teammateInvited(
+            $operator,
+            $user,
+            OperatorUserRole::from($validated['invite_role'])->label(),
+        );
 
         $this->reset('invite_name', 'invite_email');
         $this->invite_role = OperatorUserRole::Reservation->value;

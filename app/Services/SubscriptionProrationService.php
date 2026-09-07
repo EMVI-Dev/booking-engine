@@ -11,6 +11,10 @@ use Illuminate\Support\Str;
 
 class SubscriptionProrationService
 {
+    public function __construct(
+        protected OperatorActivitySlackNotifier $slack,
+    ) {}
+
     /**
      * Calculate proration details for switching from current plan to target plan.
      *
@@ -213,6 +217,7 @@ class SubscriptionProrationService
 
         $operator = $payment->operator;
         $targetPlan = $payment->plan;
+        $fromPlanName = $payment->previousPlan?->name ?? $operator->getPlan()->name;
         $interval = $payment->billing_interval;
         $autoRenew = (bool) ($payment->breakdown['auto_renew'] ?? true);
 
@@ -231,6 +236,12 @@ class SubscriptionProrationService
 
         $operator->unsetRelation('plan');
         $operator->unsetRelation('pendingPlan');
+
+        $this->slack->subscriptionPaid(
+            $operator->fresh() ?? $operator,
+            $payment->fresh() ?? $payment,
+            $fromPlanName,
+        );
     }
 
     /**
@@ -291,6 +302,12 @@ class SubscriptionProrationService
         $operator->unsetRelation('plan');
         $operator->unsetRelation('pendingPlan');
 
+        $this->slack->subscriptionPaid(
+            $operator->fresh() ?? $operator,
+            $payment->fresh() ?? $payment,
+            $proration['current_plan']->name,
+        );
+
         return $payment;
     }
 
@@ -301,12 +318,21 @@ class SubscriptionProrationService
     {
         $actionAt = $operator->plan_expires_at ? Carbon::parse($operator->plan_expires_at) : now()->addMonth();
 
+        $fromPlanName = $operator->getPlan()->name;
+
         $operator->update([
             'pending_plan_id' => $targetPlan->id,
             'pending_plan_action_at' => $actionAt,
         ]);
 
         $operator->unsetRelation('pendingPlan');
+
+        $this->slack->planChanged(
+            $operator->fresh() ?? $operator,
+            $fromPlanName,
+            $targetPlan->name,
+            'scheduled_downgrade',
+        );
     }
 
     /**
@@ -360,6 +386,81 @@ class SubscriptionProrationService
         $operator->unsetRelation('plan');
         $operator->unsetRelation('pendingPlan');
 
+        $this->slack->subscriptionPaid(
+            $operator->fresh() ?? $operator,
+            $payment->fresh() ?? $payment,
+            $proration['current_plan']->name,
+        );
+
+        return $payment;
+    }
+
+    /**
+     * Give an operator a plan at no charge. Null $days means no end date.
+     */
+    public function grantComplimentaryPlan(Operator $operator, Plan $targetPlan, ?int $days = null): SubscriptionPayment
+    {
+        $proration = $this->calculateSwitch($operator, $targetPlan, 'monthly', true);
+        $previousPlanId = $operator->plan_id;
+        $fromPlanName = $proration['current_plan']->name;
+
+        $type = 'subscription_new';
+
+        if ($previousPlanId) {
+            $type = $proration['is_downgrade'] ? 'subscription_downgrade' : 'subscription_upgrade';
+        }
+
+        $expiresAt = null;
+
+        if (! $targetPlan->isFree() && $days !== null && $days > 0) {
+            $expiresAt = now()->addDays($days);
+        }
+
+        $invoiceNumber = 'SUB-COMP-'.strtoupper(Str::random(6)).'-'.time();
+
+        /** @var SubscriptionPayment $payment */
+        $payment = SubscriptionPayment::create([
+            'operator_id' => $operator->id,
+            'plan_id' => $targetPlan->id,
+            'previous_plan_id' => $previousPlanId,
+            'invoice_number' => $invoiceNumber,
+            'type' => $type,
+            'billing_interval' => 'monthly',
+            'gross_amount' => 0,
+            'prorated_credit' => 0,
+            'net_amount_paid' => 0,
+            'status' => 'completed',
+            'gateway' => 'admin_complimentary',
+            'gateway_ref' => $invoiceNumber,
+            'breakdown' => [
+                'mode' => 'complimentary',
+                'days' => $days,
+                'current_plan_name' => $fromPlanName,
+                'target_plan_name' => $targetPlan->name,
+            ],
+            'paid_at' => now(),
+        ]);
+
+        $operator->update([
+            'plan_id' => $targetPlan->id,
+            'subscription_interval' => 'monthly',
+            'subscription_auto_renew' => false,
+            'subscribed_at' => now(),
+            'plan_expires_at' => $expiresAt,
+            'pending_plan_id' => null,
+            'pending_plan_action_at' => null,
+        ]);
+
+        $operator->unsetRelation('plan');
+        $operator->unsetRelation('pendingPlan');
+
+        $this->slack->planChanged(
+            $operator->fresh() ?? $operator,
+            $fromPlanName,
+            $targetPlan->name,
+            'complimentary',
+        );
+
         return $payment;
     }
 
@@ -368,7 +469,17 @@ class SubscriptionProrationService
      */
     public function cancelScheduledDowngrade(Operator $operator): void
     {
+        $fromPlanName = $operator->pendingPlan?->name ?? 'pending';
+        $currentPlanName = $operator->getPlan()->name;
+
         $operator->cancelPendingPlanChange();
+
+        $this->slack->planChanged(
+            $operator->fresh() ?? $operator,
+            $fromPlanName,
+            $currentPlanName,
+            'downgrade_cancelled',
+        );
     }
 
     /**

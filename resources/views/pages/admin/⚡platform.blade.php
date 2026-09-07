@@ -11,7 +11,7 @@ use Livewire\Component;
 new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
     // Global Platform Parameters
     public string $platform_name = 'TravelEngine';
-    public string $support_email = 'no-reply@travelengine.online';
+    public string $support_email = 'support@travelengine.online';
     public float $commission_percentage = 0.0; // 0% operator commission
     public float $guest_service_fee_percentage = 5.0; // 5% guest service fee
     public int $booking_hold_minutes = 30;
@@ -19,6 +19,10 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
     public string $currency_symbol = 'Rp';
 
     public bool $platform_maintenance = false;
+
+    public bool $confirming_maintenance = false;
+
+    public bool $pending_maintenance = false;
 
     public int $approved_operators = 0;
     public int $total_operators = 0;
@@ -39,7 +43,10 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
         $settings = $platform->settings ?? [];
 
         $this->platform_name = (string) ($settings['platform_name'] ?? 'TravelEngine');
-        $this->support_email = (string) ($settings['support_email'] ?? 'no-reply@travelengine.online');
+        $storedSupportEmail = (string) ($settings['support_email'] ?? 'support@travelengine.online');
+        $this->support_email = str_starts_with(strtolower($storedSupportEmail), 'no-reply@')
+            ? 'support@travelengine.online'
+            : $storedSupportEmail;
         $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.0) * 100);
         $this->guest_service_fee_percentage = (float) (($settings['guest_service_fee_rate'] ?? 0.05) * 100);
         $this->booking_hold_minutes = (int) ($settings['booking_hold_minutes'] ?? 30);
@@ -78,7 +85,6 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
         $settings['booking_hold_minutes'] = $validated['booking_hold_minutes'];
         $settings['currency_code'] = strtoupper($validated['currency_code']);
         $settings['currency_symbol'] = $validated['currency_symbol'];
-        $settings['platform_maintenance'] = $this->platform_maintenance;
 
         $platform->update(['settings' => $settings]);
 
@@ -87,12 +93,37 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
     }
 
     /**
-     * Pause or resume operator sign-up and storefront checkout immediately.
+     * Ask before pausing or resuming storefront checkout.
      */
-    public function updatedPlatformMaintenance(bool $value): void
+    public function requestMaintenanceToggle(): void
     {
-        PlatformSetting::current()->setPlatformMaintenance($value);
-        $this->platform_maintenance = $value;
+        $this->pending_maintenance = ! $this->platform_maintenance;
+        $this->confirming_maintenance = true;
+        $this->dispatch('open-modal', 'confirm-platform-maintenance');
+    }
+
+    /**
+     * Close the maintenance confirmation without changing state.
+     */
+    public function cancelMaintenanceToggle(): void
+    {
+        $this->confirming_maintenance = false;
+        $this->dispatch('close-modal', 'confirm-platform-maintenance');
+    }
+
+    /**
+     * Apply the confirmed maintenance state immediately.
+     */
+    public function confirmMaintenanceToggle(): void
+    {
+        if (! $this->confirming_maintenance) {
+            return;
+        }
+
+        $this->platform_maintenance = $this->pending_maintenance;
+        PlatformSetting::current()->setPlatformMaintenance($this->platform_maintenance);
+        $this->confirming_maintenance = false;
+        $this->dispatch('close-modal', 'confirm-platform-maintenance');
         $this->dispatch('platform-maintenance-toggled');
     }
 
@@ -137,13 +168,23 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
                     </p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer shrink-0 self-start sm:self-center">
-                <input type="checkbox" wire:model.live="platform_maintenance" class="sr-only peer" />
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-zinc-600 peer-checked:bg-amber-500"></div>
+            <button
+                type="button"
+                wire:click="requestMaintenanceToggle"
+                class="relative inline-flex items-center cursor-pointer shrink-0 self-start sm:self-center"
+            >
+                <span class="sr-only">{{ __('Change platform maintenance') }}</span>
+                <span
+                    class="w-11 h-6 rounded-full transition-colors {{ $platform_maintenance ? 'bg-amber-500' : 'bg-slate-200 dark:bg-zinc-700' }}"
+                >
+                    <span
+                        class="absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-slate-300 dark:border-zinc-600 transition-transform {{ $platform_maintenance ? 'translate-x-5' : '' }}"
+                    ></span>
+                </span>
                 <span class="ml-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
                     {{ $platform_maintenance ? __('On') : __('Off') }}
                 </span>
-            </label>
+            </button>
         </div>
     </div>
 
@@ -212,7 +253,10 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
 
                 <!-- Support Email -->
                 <div>
-                    <x-label for="support_email" :value="__('Support email')" required />
+                    <x-label for="support_email" :value="__('Operator support email')" required />
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 mb-1.5">
+                        {{ __('Operators write here for billing, plans, and account help.') }}
+                    </p>
                     <x-input id="support_email" wire:model="support_email" type="email" :error="$errors->has('support_email')" />
                     <x-input-error :messages="$errors->get('support_email')" />
                 </div>
@@ -297,4 +341,44 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
             </div>
         </div>
     </form>
+
+    <x-modal name="confirm-platform-maintenance" :show="$confirming_maintenance" maxWidth="md">
+        <div class="p-6 space-y-4 text-center">
+            <div class="w-12 h-12 rounded-2xl {{ $pending_maintenance ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300' }} flex items-center justify-center mx-auto text-lg">
+                <i class="fa-solid {{ $pending_maintenance ? 'fa-pause' : 'fa-play' }}"></i>
+            </div>
+
+            <div class="space-y-1.5">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    {{ $pending_maintenance ? __('Turn on platform maintenance?') : __('Turn off platform maintenance?') }}
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    @if ($pending_maintenance)
+                        {{ __('Guests on every storefront will not be able to book, pay, or cancel. Operator sign-up will close. Catalogs, operator log in, and admin stay up. This is not Laravel down.') }}
+                    @else
+                        {{ __('Storefronts will take bookings and payments again. Operator sign-up still follows the registration flag.') }}
+                    @endif
+                </p>
+            </div>
+
+            <div class="flex items-center justify-center gap-3 pt-3">
+                <x-button
+                    type="button"
+                    variant="secondary"
+                    wire:click="cancelMaintenanceToggle"
+                    class="font-semibold text-xs"
+                >
+                    {{ __('Cancel') }}
+                </x-button>
+                <x-button
+                    type="button"
+                    variant="{{ $pending_maintenance ? 'danger' : 'primary' }}"
+                    wire:click="confirmMaintenanceToggle"
+                    class="font-semibold text-xs shadow-xs"
+                >
+                    {{ $pending_maintenance ? __('Pause bookings') : __('Resume bookings') }}
+                </x-button>
+            </div>
+        </div>
+    </x-modal>
 </div>
