@@ -90,7 +90,7 @@
         </form>
 
         <div class="text-sm text-center text-zinc-600 dark:text-zinc-400">
-            @if (\App\Models\PlatformSetting::current()->isOperatorPortalOpen())
+            @if (\App\Models\PlatformSetting::current()->operatorRegistrationAllowed())
                 <span>{{ __('New tour operator or guide?') }}</span>
                 <a href="{{ route('register') }}"
                     class="font-semibold text-[#8a7808] underline hover:text-[#6b5d06] dark:text-[#FFEF4D] dark:hover:text-[#fae639]"

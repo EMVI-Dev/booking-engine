@@ -22,8 +22,8 @@ return [
     | Operator registration
     |--------------------------------------------------------------------------
     |
-    | Default for operator log in and sign-up until an admin saves the
-    | toggle on Settings. Platform admin at /admin still works either way.
+    | Default for operator log in and sign-up. Admin Settings maintenance
+    | also closes sign-up (and all storefront checkout). /admin still works.
     |
     */
 

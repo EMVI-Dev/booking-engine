@@ -110,6 +110,8 @@ new class extends Component {
      */
     public function applyCoupon(): void
     {
+        \App\Models\PlatformSetting::current()->assertStorefrontTransactionsAllowed();
+
         $cleanCode = strtoupper(trim($this->couponCode));
 
         if (empty($cleanCode)) {
@@ -232,6 +234,8 @@ new class extends Component {
      */
     public function submitBooking(DokuPaymentService $paymentService): void
     {
+        \App\Models\PlatformSetting::current()->assertStorefrontTransactionsAllowed();
+
         $minDate = now()->startOfDay()->addHours($this->bookable->advance_booking_hours ?? 0);
 
         $this->validate([
@@ -326,6 +330,12 @@ new class extends Component {
         </div>
     </div>
 
+    @if (\App\Models\PlatformSetting::current()->isPlatformMaintenance())
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-5 text-center dark:border-amber-900/60 dark:bg-amber-950/40">
+            <p class="text-sm font-bold text-amber-900 dark:text-amber-200">{{ __('Bookings are paused') }}</p>
+            <p class="mt-1 text-xs text-amber-800/80 dark:text-amber-300/80">{{ __('You can still browse this trip. Booking and payment will open again shortly.') }}</p>
+        </div>
+    @else
     <!-- Booking Form -->
     <form wire:submit="submitBooking" class="space-y-4">
         <!-- Date Selection -->
@@ -563,4 +573,5 @@ new class extends Component {
             {{ __('Instant Payment via QRIS, Virtual Account & Cards') }}
         </p>
     </form>
+    @endif
 </div>

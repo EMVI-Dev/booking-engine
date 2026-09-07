@@ -26,7 +26,7 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
-        abort_unless(PlatformSetting::current()->isOperatorPortalOpen(), 403);
+        abort_unless(PlatformSetting::current()->operatorRegistrationAllowed(), 403);
 
         $businessName = $input['operator_name'] ?? $input['agency_name'] ?? '';
 

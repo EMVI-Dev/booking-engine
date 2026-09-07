@@ -108,7 +108,7 @@ test('platform admin can access platform settings page', function () {
         ->get(route('admin.platform.edit'))
         ->assertOk()
         ->assertSee('Settings')
-        ->assertSee('Operator log in and sign-up')
+        ->assertSee('Platform maintenance')
         ->assertSee('Name, fees, and currency');
 });
 
@@ -133,43 +133,41 @@ test('platform admin can update global platform settings', function () {
         ->and($settings->getBookingHoldMinutes())->toBe(45);
 });
 
-test('platform admin can close operator log in and sign-up from settings', function () {
+test('platform admin can turn on platform maintenance from settings', function () {
     config(['fortify.registration_enabled' => true]);
 
     $this->actingAs($this->adminUser);
 
     Livewire::test('pages::admin.platform')
-        ->assertSet('operator_portal_open', true)
-        ->set('operator_portal_open', false)
-        ->assertSet('operator_portal_open', false);
+        ->assertSet('platform_maintenance', false)
+        ->set('platform_maintenance', true)
+        ->assertSet('platform_maintenance', true);
 
-    expect(PlatformSetting::current()->fresh()->isOperatorPortalOpen())->toBeFalse();
+    expect(PlatformSetting::current()->fresh()->isPlatformMaintenance())->toBeTrue();
 
     auth()->logout();
 
     $this->get(route('register'))
         ->assertOk()
-        ->assertSee('We are preparing the operator portal')
+        ->assertSee('Operator sign-up is paused')
         ->assertDontSee('Create account');
 
     $this->get(route('login'))
         ->assertOk()
-        ->assertSee('Coming soon')
-        ->assertDontSee('Sign In to Operator Portal');
+        ->assertSee('Sign In to Operator Portal');
 });
 
-test('platform admin can reopen operator log in and sign-up from settings', function () {
-    config(['fortify.registration_enabled' => false]);
-    PlatformSetting::current()->setOperatorPortalOpen(false);
+test('platform admin can turn off platform maintenance from settings', function () {
+    PlatformSetting::current()->setPlatformMaintenance(true);
 
     $this->actingAs($this->adminUser);
 
     Livewire::test('pages::admin.platform')
-        ->assertSet('operator_portal_open', false)
-        ->set('operator_portal_open', true)
-        ->assertSet('operator_portal_open', true);
+        ->assertSet('platform_maintenance', true)
+        ->set('platform_maintenance', false)
+        ->assertSet('platform_maintenance', false);
 
-    expect(PlatformSetting::current()->fresh()->isOperatorPortalOpen())->toBeTrue();
+    expect(PlatformSetting::current()->fresh()->isPlatformMaintenance())->toBeFalse();
 
     auth()->logout();
 

@@ -16,7 +16,7 @@ class EnsureOperatorPortalOpen
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (PlatformSetting::current()->isOperatorPortalOpen()) {
+        if (PlatformSetting::current()->operatorLoginAllowed()) {
             return $next($request);
         }
 

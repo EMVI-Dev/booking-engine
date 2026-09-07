@@ -8,7 +8,7 @@
 
 <body class="min-h-screen bg-[#09090b] text-zinc-100 antialiased selection:bg-[#FFEF4D] selection:text-[#090d16] font-sans">
     @php
-        $registrationOpen = \App\Models\PlatformSetting::current()->isOperatorPortalOpen();
+        $registrationOpen = \App\Models\PlatformSetting::current()->operatorRegistrationAllowed();
         $plans = \App\Models\Plan::where('is_active', true)->orderBy('sort_order')->get();
         if ($plans->isEmpty()) {
             \App\Models\Plan::seedDefaultPlans();

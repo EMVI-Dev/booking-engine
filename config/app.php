@@ -118,6 +118,13 @@ return [
     |
     */
 
+    /*
+    | Not Laravel's artisan down. When true, operator sign-up and storefront
+    | bookings/payments are paused. Catalog pages and admin stay up. Flip
+    | this from Admin → Settings, or set PLATFORM_MAINTENANCE in .env.
+    */
+    'platform_maintenance' => filter_var(env('PLATFORM_MAINTENANCE', false), FILTER_VALIDATE_BOOLEAN),
+
     'maintenance' => [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),

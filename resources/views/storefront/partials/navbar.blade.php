@@ -10,6 +10,12 @@
     $productsCount = $agent ? $agent->products()->where('status', \App\Enums\ListingStatus::Published)->where('sellable_standalone', true)->count() : 0;
 @endphp
 
+@if (\App\Models\PlatformSetting::current()->isPlatformMaintenance())
+    <div class="bg-amber-500 text-[#090d16] text-center text-xs sm:text-sm font-bold px-4 py-2">
+        {{ __('Bookings and payments are paused for a short maintenance window. You can still browse.') }}
+    </div>
+@endif
+
 <!-- Sticky Header Navigation -->
 <header
     x-data="{ mobileMenuOpen: false }"

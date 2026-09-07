@@ -30,6 +30,8 @@ The same Laravel app answers on three kinds of hostname:
 
 `REGISTRATION_ENABLED=false` keeps the marketing site up but closes operator log in and sign-up (coming-soon page). `/admin/login` still works. Tests force this flag on.
 
+Platform maintenance (Admin → Settings, or `PLATFORM_MAINTENANCE`) is not Laravel `down`. Catalog and admin stay up. Operator sign-up and every storefront booking/payment pause. Existing operators can still log in.
+
 ## Request path (production)
 
 ```

@@ -47,7 +47,7 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureViews(): void
     {
         Fortify::loginView(fn () => view(
-            PlatformSetting::current()->isOperatorPortalOpen()
+            PlatformSetting::current()->operatorLoginAllowed()
                 ? 'pages::auth.login'
                 : 'pages::auth.operator-closed'
         ));
@@ -55,7 +55,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::twoFactorChallengeView(fn () => view('pages::auth.two-factor-challenge'));
         Fortify::confirmPasswordView(fn () => view('pages::auth.confirm-password'));
         Fortify::registerView(fn () => view(
-            PlatformSetting::current()->isOperatorPortalOpen()
+            PlatformSetting::current()->operatorRegistrationAllowed()
                 ? 'pages::auth.register'
                 : 'pages::auth.operator-closed'
         ));

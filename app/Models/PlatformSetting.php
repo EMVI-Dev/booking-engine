@@ -132,27 +132,57 @@ class PlatformSetting extends Model
     }
 
     /**
-     * Whether operators may log in and register.
+     * Platform commerce pause (not Laravel artisan down).
      *
      * Admin Settings can override this. Until that toggle is saved, the
-     * REGISTRATION_ENABLED env value (config fortify.registration_enabled) is used.
+     * PLATFORM_MAINTENANCE env value is used.
      */
-    public function isOperatorPortalOpen(): bool
+    public function isPlatformMaintenance(): bool
     {
         $settings = $this->settings ?? [];
 
-        if (array_key_exists('operator_portal_open', $settings)) {
-            return filter_var($settings['operator_portal_open'], FILTER_VALIDATE_BOOLEAN);
+        if (array_key_exists('platform_maintenance', $settings)) {
+            return filter_var($settings['platform_maintenance'], FILTER_VALIDATE_BOOLEAN);
         }
 
+        return (bool) config('app.platform_maintenance');
+    }
+
+    public function setPlatformMaintenance(bool $on): void
+    {
+        $settings = $this->settings ?? [];
+        $settings['platform_maintenance'] = $on;
+        $this->update(['settings' => $settings]);
+    }
+
+    /**
+     * Existing operators may still sign in during maintenance.
+     * REGISTRATION_ENABLED=false keeps the ads-mode coming-soon login page.
+     */
+    public function operatorLoginAllowed(): bool
+    {
         return (bool) config('fortify.registration_enabled');
     }
 
-    public function setOperatorPortalOpen(bool $open): void
+    /**
+     * New operator accounts are blocked during maintenance and when registration is closed.
+     */
+    public function operatorRegistrationAllowed(): bool
     {
-        $settings = $this->settings ?? [];
-        $settings['operator_portal_open'] = $open;
-        $this->update(['settings' => $settings]);
+        return ! $this->isPlatformMaintenance() && (bool) config('fortify.registration_enabled');
+    }
+
+    /**
+     * Guest bookings, checkout, and cancellations on every storefront.
+     */
+    public function storefrontTransactionsAllowed(): bool
+    {
+        return ! $this->isPlatformMaintenance();
+    }
+
+    public function assertStorefrontTransactionsAllowed(): void
+    {
+        abort_unless($this->storefrontTransactionsAllowed(), 403);
     }
 
     public function getDokuSandboxClientId(): string

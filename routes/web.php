@@ -5,6 +5,7 @@ use App\Http\Controllers\CaddyAskController;
 use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\StorefrontController;
+use App\Http\Middleware\EnsureStorefrontTransactionsAllowed;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -19,14 +20,16 @@ Route::get('/robots.txt', [StorefrontController::class, 'robots'])->name('storef
 Route::get('/sitemap.xml', [StorefrontController::class, 'sitemap'])->name('storefront.sitemap');
 Route::get('/llms.txt', [StorefrontController::class, 'llmsTxt'])->name('storefront.llms');
 Route::get('/llms-full.txt', [StorefrontController::class, 'llmsFullTxt'])->name('storefront.llms.full');
-Route::get('/checkout/simulate', [StorefrontController::class, 'simulatePayment'])->name('storefront.payment.simulate');
-Route::post('/checkout/simulate/confirm', [StorefrontController::class, 'confirmSimulatedPayment'])->name('storefront.payment.simulate.confirm');
+Route::middleware(EnsureStorefrontTransactionsAllowed::class)->group(function () {
+    Route::get('/checkout/simulate', [StorefrontController::class, 'simulatePayment'])->name('storefront.payment.simulate');
+    Route::post('/checkout/simulate/confirm', [StorefrontController::class, 'confirmSimulatedPayment'])->name('storefront.payment.simulate.confirm');
+    Route::get('/reservations/{reservation}/pay', [StorefrontController::class, 'payReservation'])->name('storefront.reservation.pay');
+    Route::post('/reservations/{reservation}/cancel', [StorefrontController::class, 'cancelReservation'])
+        ->middleware('throttle:10,1')
+        ->name('storefront.reservation.cancel');
+});
 Route::get('/reservations/{reservation}/receipt', [StorefrontController::class, 'showReceipt'])->name('storefront.reservation.receipt');
 Route::get('/reservations/{reservation}/e-ticket', [StorefrontController::class, 'showTicket'])->name('storefront.reservation.ticket');
-Route::get('/reservations/{reservation}/pay', [StorefrontController::class, 'payReservation'])->name('storefront.reservation.pay');
-Route::post('/reservations/{reservation}/cancel', [StorefrontController::class, 'cancelReservation'])
-    ->middleware('throttle:10,1')
-    ->name('storefront.reservation.cancel');
 Route::get('/find-booking', [StorefrontController::class, 'findBooking'])->name('storefront.find-booking');
 Route::post('/find-booking', [StorefrontController::class, 'lookupBooking'])
     ->middleware('throttle:10,1')
