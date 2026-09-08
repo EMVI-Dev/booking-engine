@@ -1,6 +1,7 @@
 @php
     $agent = $reservation->agent;
-    $brandColor = $agent->brand_color ?? '#4f46e5';
+    $brandColor = $agent->brand_color ?? '#FFEF4D';
+    $brandForeground = $agent->brand_foreground_color ?? '#101730';
     $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
     $payment = $reservation->latestPayment;
     $bookableTitle = $reservation->bookable?->name ?? ($reservation->bookable?->title ?? 'Direct Booking');
@@ -22,17 +23,14 @@
         <tr>
             <td align="center">
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
-                    <!-- Brand Top Header -->
-                    <tr>
-                        <td style="background-color: {{ $brandColor }}; padding: 32px 24px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                                {{ $agent->name ?? config('app.name') }}
-                            </h1>
-                            <p style="margin: 6px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.85); font-weight: 500;">
-                                {{ __('Reservation Placed • 30-Minute Hold') }}
-                            </p>
-                        </td>
-                    </tr>
+                    <x-email.brand-header
+                        :background="$brandColor"
+                        :foreground="$brandForeground"
+                        :logo-url="$agent->logo_url"
+                        :logo-alt="$agent->name ?? config('app.name')"
+                        :title="$agent->name ?? config('app.name')"
+                        :subtitle="__('Reservation Placed • 30-Minute Hold')"
+                    />
 
                     <!-- Hold Notice Hero -->
                     <tr>

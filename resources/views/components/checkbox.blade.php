@@ -11,15 +11,15 @@
     $id = $id ?? ($name ?? 'checkbox-' . \Illuminate\Support\Str::random(8));
 @endphp
 
-<div class="flex items-start gap-3 select-none group">
-    <div class="flex items-center h-5 shrink-0">
+<div class="flex items-start gap-3 select-none group py-2.5">
+    <div class="flex items-center h-6 shrink-0">
         <input
             id="{{ $id }}"
             type="checkbox"
             {{ $name ? 'name='.$name : '' }}
             {{ $checked ? 'checked' : '' }}
             {{ $attributes->merge([
-                'class' => 'h-4 w-4 rounded-md border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-brand-600 dark:text-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:ring-offset-0 dark:focus:ring-offset-zinc-900 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ' . ($error ? 'border-rose-500 dark:border-rose-500 focus:ring-rose-500/20' : '')
+                'class' => 'h-5 w-5 rounded-md border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-brand-600 dark:text-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:ring-offset-0 dark:focus:ring-offset-zinc-900 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ' . ($error ? 'border-rose-500 dark:border-rose-500 focus:ring-rose-500/20' : '')
             ]) }}
         />
     </div>

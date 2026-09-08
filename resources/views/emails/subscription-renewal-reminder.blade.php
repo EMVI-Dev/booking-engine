@@ -1,3 +1,7 @@
+@php
+    $platformColor = '#FFEF4D';
+    $platformInk = '#101730';
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,21 +14,14 @@
         <tr>
             <td align="center">
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
-                    <!-- Top Header -->
-                    <tr>
-                        <td style="background-color: #1e1b4b; padding: 28px 24px; text-align: center;">
-                            <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: rgba(147, 51, 234, 0.2); color: #d8b4fe; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                                {{ config('app.name', 'TravelEngine') }} {{ __('Subscription') }}
-                            </span>
-                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                                @if ($daysRemaining <= 0)
-                                    {{ __('Subscription Expired') }}
-                                @else
-                                    {{ __('Upcoming Plan Renewal') }}
-                                @endif
-                            </h1>
-                        </td>
-                    </tr>
+                    <x-email.brand-header
+                        :background="$platformColor"
+                        :foreground="$platformInk"
+                        :logo-url="url('/favicon.png')"
+                        :logo-alt="config('app.name')"
+                        :eyebrow="config('app.name', 'TravelEngine').' '.__('Subscription')"
+                        :title="$daysRemaining <= 0 ? __('Subscription Expired') : __('Upcoming Plan Renewal')"
+                    />
 
                     <!-- Body -->
                     <tr>
@@ -44,7 +41,7 @@
                             <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px;">
                                 <tr>
                                     <td style="padding: 6px 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">{{ __('Current Plan') }}</td>
-                                    <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 800; color: #7e22ce;">{{ $plan->name }}</td>
+                                    <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 800; color: {{ $platformInk }};">{{ $plan->name }}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 6px 0; font-size: 12px; color: #64748b;">{{ __('Take Rate') }}</td>
@@ -68,7 +65,7 @@
 
                             <!-- CTA Button -->
                             <div style="margin-top: 24px; text-align: center;">
-                                <a href="{{ route('settings.plan') }}" style="display: inline-block; padding: 14px 28px; background-color: #7e22ce; color: #ffffff; text-decoration: none; border-radius: 14px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(126, 34, 206, 0.3);">
+                                <a href="{{ route('settings.plan') }}" style="display: inline-block; padding: 14px 28px; background-color: {{ $platformColor }}; color: {{ $platformInk }}; text-decoration: none; border-radius: 14px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(16, 23, 48, 0.12);">
                                     {{ __('Manage & Renew Subscription') }} &rarr;
                                 </a>
                             </div>

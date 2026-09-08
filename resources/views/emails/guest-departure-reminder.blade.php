@@ -1,6 +1,7 @@
 @php
     $agent = $reservation->agent;
-    $brandColor = $agent->brand_color ?? '#4f46e5';
+    $brandColor = $agent->brand_color ?? '#FFEF4D';
+    $brandForeground = $agent->brand_foreground_color ?? '#101730';
     $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
     $bookableTitle = $reservation->bookable?->name ?? ($reservation->bookable?->title ?? __('Tour Experience'));
     $receiptUrl = route('storefront.reservation.receipt', $reservation);
@@ -20,22 +21,19 @@
         <tr>
             <td align="center">
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
-                    <!-- Brand Top Header -->
-                    <tr>
-                        <td style="background-color: {{ $brandColor }}; padding: 32px 24px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                                {{ $agent->name ?? config('app.name') }}
-                            </h1>
-                            <p style="margin: 6px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.85); font-weight: 500;">
-                                {{ __('Upcoming Trip Reminder') }}
-                            </p>
-                        </td>
-                    </tr>
+                    <x-email.brand-header
+                        :background="$brandColor"
+                        :foreground="$brandForeground"
+                        :logo-url="$agent->logo_url"
+                        :logo-alt="$agent->name ?? config('app.name')"
+                        :title="$agent->name ?? config('app.name')"
+                        :subtitle="__('Upcoming Trip Reminder')"
+                    />
 
                     <!-- Reminder Hero -->
                     <tr>
                         <td style="padding: 32px 28px 20px 28px; text-align: center;">
-                            <div style="display: inline-block; width: 56px; height: 56px; line-height: 56px; border-radius: 18px; background-color: #e0e7ff; color: #4338ca; font-size: 13px; font-weight: 800; margin-bottom: 16px;">
+                            <div style="display: inline-block; width: 56px; height: 56px; line-height: 56px; border-radius: 18px; background-color: #fef9c3; color: #101730; font-size: 13px; font-weight: 800; margin-bottom: 16px;">
                                 24h
                             </div>
                             <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">
@@ -55,7 +53,7 @@
                                     <td style="padding: 6px 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">
                                         {{ __('Booking Reference') }}
                                     </td>
-                                    <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 800; color: #4f46e5; font-family: monospace;">
+                                        <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 800; color: {{ $brandForeground }}; font-family: monospace;">
                                         #{{ $code }}
                                     </td>
                                 </tr>
@@ -97,7 +95,7 @@
                     <!-- Action Buttons -->
                     <tr>
                         <td style="padding: 0 28px 28px 28px; text-align: center;">
-                            <a href="{{ $receiptUrl }}" style="display: block; width: 100%; box-sizing: border-box; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 14px 20px; border-radius: 14px; margin-bottom: 10px;">
+                            <a href="{{ $receiptUrl }}" style="display: block; width: 100%; box-sizing: border-box; background-color: {{ $brandColor }}; color: {{ $brandForeground }}; text-decoration: none; font-weight: 700; font-size: 14px; padding: 14px 20px; border-radius: 14px; margin-bottom: 10px;">
                                 {{ __('View E-Voucher & Live Status') }} &rarr;
                             </a>
 

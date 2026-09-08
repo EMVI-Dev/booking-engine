@@ -503,47 +503,43 @@ new class extends Component {
 
     <!-- Month Navigation & Controls Toolbar -->
     <div
-        class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-4 sm:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs">
-        <div class="flex flex-wrap items-center gap-3.5">
-            <div class="flex items-center gap-2.5">
-                <span
-                    class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 font-black flex items-center justify-center text-base shadow-xs">
-                    <i class="fa-solid fa-calendar-days"></i>
-                </span>
-                <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    {{ \Illuminate\Support\Carbon::createFromDate($year, $month, 1)->format('F Y') }}
-                </h2>
-            </div>
-
-            <!-- Month Quick Nav Buttons -->
-            <div class="flex items-center gap-1 dark:bg-zinc-800 p-1 rounded-2xl dark:border-zinc-700/60">
-                <button type="button" wire:click="prevMonth"
-                    class="h-8 w-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-700 shadow-2xs transition cursor-pointer"
-                    title="{{ __('Previous Month') }}">
-                    <i class="fa-solid fa-chevron-left text-xs"></i>
-                </button>
-                <button type="button" wire:click="currentMonth"
-                    class="px-3 h-8 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-zinc-700 transition cursor-pointer shadow-2xs flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                    <span>{{ __('Today') }}</span>
-                </button>
-                <button type="button" wire:click="nextMonth"
-                    class="h-8 w-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-700 shadow-2xs transition cursor-pointer"
-                    title="{{ __('Next Month') }}">
-                    <i class="fa-solid fa-chevron-right text-xs"></i>
-                </button>
-            </div>
+        class="grid grid-cols-1 gap-3 p-4 sm:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs lg:flex lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <div class="flex min-w-0 items-center gap-2.5">
+            <span
+                class="w-10 h-10 shrink-0 rounded-2xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 font-black flex items-center justify-center text-base shadow-xs">
+                <i class="fa-solid fa-calendar-days"></i>
+            </span>
+            <h2 class="min-w-0 truncate text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {{ \Illuminate\Support\Carbon::createFromDate($year, $month, 1)->format('F Y') }}
+            </h2>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2.5 self-stretch lg:self-auto justify-between lg:justify-end">
-            <!-- Experience Filter Dropdown -->
-            <div class="min-w-[180px] sm:min-w-[220px]">
-                <x-select wire:model.live="filterExperience" :options="$this->experienceFilterOptions" class="text-xs h-9 font-semibold" />
+        <!-- Month Quick Nav Buttons -->
+        <div class="grid w-full grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-2xl border border-slate-200/80 dark:border-zinc-700/60 lg:w-auto lg:flex">
+            <button type="button" wire:click="prevMonth"
+                class="h-11 w-full lg:h-8 lg:w-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-700 shadow-2xs transition cursor-pointer"
+                title="{{ __('Previous Month') }}">
+                <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <button type="button" wire:click="currentMonth"
+                class="h-11 w-full lg:h-8 lg:w-auto px-3 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-zinc-700 transition cursor-pointer shadow-2xs flex items-center justify-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                <span>{{ __('Today') }}</span>
+            </button>
+            <button type="button" wire:click="nextMonth"
+                class="h-11 w-full lg:h-8 lg:w-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-700 shadow-2xs transition cursor-pointer"
+                title="{{ __('Next Month') }}">
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+        </div>
+
+        <div class="grid w-full grid-cols-1 gap-2.5 lg:w-auto lg:grid-cols-[minmax(220px,280px)_auto] lg:items-center">
+            <div class="w-full min-w-0">
+                <x-select wire:model.live="filterExperience" :options="$this->experienceFilterOptions" class="h-11 w-full text-xs font-semibold lg:h-9" />
             </div>
 
-            <!-- Block Dates Button -->
             <button type="button" wire:click="openBlockModal"
-                class="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-extrabold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer shrink-0">
+                class="h-11 w-full px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-extrabold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer lg:h-9 lg:w-auto">
                 <i class="fa-solid fa-ban text-rose-400 dark:text-rose-600"></i>
                 <span>{{ __('Block Dates') }}</span>
             </button>
@@ -575,7 +571,7 @@ new class extends Component {
                             $isSelected = $selectedDate === $cell['date'];
                         @endphp
                         <div wire:click="selectDate('{{ $cell['date'] }}')"
-                            class="min-h-[100px] sm:min-h-[120px] p-2.5 sm:p-3 transition-colors duration-150 cursor-pointer relative flex flex-col justify-between group
+                            class="min-h-[4.5rem] md:min-h-[100px] lg:min-h-[120px] p-1.5 md:p-2.5 sm:p-3 transition-colors duration-150 cursor-pointer relative flex flex-col justify-between group
                                 {{ !$cell['isCurrentMonth'] ? 'bg-slate-50/70 dark:bg-zinc-950/50 text-slate-400 dark:text-zinc-600 hover:bg-slate-100/60 dark:hover:bg-zinc-900/60' : 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/60' }}
                                 {{ $cell['hasBlock'] ? '!bg-rose-50 dark:!bg-rose-950/40' : '' }}
                                 {{ $cell['isToday'] ? '!bg-indigo-50/90 dark:!bg-indigo-950/50' : '' }}
@@ -607,7 +603,7 @@ new class extends Component {
 
                                 @if ($cell['hasBlock'])
                                     <span
-                                        class="px-1.5 py-0.5 rounded-md bg-rose-200/70 text-rose-800 dark:bg-rose-900/80 dark:text-rose-200 text-[10px] font-extrabold flex items-center gap-1 shrink-0"
+                                        class="hidden md:flex px-1.5 py-0.5 rounded-md bg-rose-200/70 text-rose-800 dark:bg-rose-900/80 dark:text-rose-200 text-[10px] font-extrabold items-center gap-1 shrink-0"
                                         title="{{ implode('; ', $cell['blockLabels']) }} — {{ $cell['blockReason'] ?? __('Blocked Date') }}">
                                         <i class="fa-solid fa-ban text-[9px]"></i>
                                         @if ($cell['blocksCount'] > 1)
@@ -620,8 +616,12 @@ new class extends Component {
                             <!-- Day Content / Booking & Blackout Pills -->
                             <div class="space-y-1 my-1">
                                 @if ($cell['reservationsCount'] > 0)
+                                    <div class="md:hidden flex items-center justify-center gap-0.5">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                        <span class="text-[9px] font-bold text-indigo-800 dark:text-indigo-200">{{ $cell['reservationsCount'] }}</span>
+                                    </div>
                                     <div
-                                        class="px-2 py-1 rounded-lg bg-indigo-100 text-indigo-900 dark:bg-indigo-900/60 dark:text-indigo-200 font-bold text-[10px] sm:text-[11px] truncate flex items-center justify-between gap-1">
+                                        class="hidden md:flex px-2 py-1 rounded-lg bg-indigo-100 text-indigo-900 dark:bg-indigo-900/60 dark:text-indigo-200 font-bold text-[10px] sm:text-[11px] truncate items-center justify-between gap-1">
                                         <span class="truncate flex items-center gap-1.5">
                                             <i
                                                 class="fa-solid fa-calendar-check text-[10px] text-indigo-600 dark:text-indigo-400"></i>
@@ -636,7 +636,10 @@ new class extends Component {
                                 @endif
 
                                 @if ($cell['hasBlock'])
-                                    <div class="px-2 py-1 rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-900/70 dark:text-rose-200 text-[10px] font-extrabold truncate flex items-center gap-1.5"
+                                    <div class="md:hidden flex items-center justify-center">
+                                        <i class="fa-solid fa-ban text-[8px] text-rose-600 dark:text-rose-400"></i>
+                                    </div>
+                                    <div class="hidden md:flex px-2 py-1 rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-900/70 dark:text-rose-200 text-[10px] font-extrabold truncate items-center gap-1.5"
                                         title="{{ implode('; ', $cell['blockLabels']) }}">
                                         <i
                                             class="fa-solid fa-ban text-[8px] text-rose-600 dark:text-rose-400 shrink-0"></i>

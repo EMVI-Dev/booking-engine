@@ -170,16 +170,6 @@
                         {{ __('Single Activities (:count)', ['count' => $standaloneProducts->count()]) }}
                     </button>
                 @endif
-
-                @if ($reviews->isNotEmpty())
-                    <button type="button" @click="activeTab = 'reviews'"
-                        class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                        :class="activeTab === 'reviews' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
-                            'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
-                        <i class="fa-solid fa-star mr-1.5 text-[11px] text-amber-400"></i>
-                        {{ __('Guest Reviews (:count)', ['count' => $reviews->count()]) }}
-                    </button>
-                @endif
             </div>
 
             <!-- Fast Link to Full Catalog -->
@@ -464,59 +454,7 @@
             </section>
         @endif
 
-        <!-- Verified Guest Reviews Section -->
-        @if ($reviews->isNotEmpty())
-            <section x-show="activeTab === 'all' || activeTab === 'reviews'"
-                class="space-y-5 pt-6 border-t border-slate-200/80 dark:border-zinc-800">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2
-                            class="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
-                            <i class="fa-solid fa-star text-amber-400 text-xl"></i>
-                            {{ __('Verified Guest Reviews') }}
-                        </h2>
-                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            {{ __('Authentic feedback from guests who completed reservations with :agent.', ['agent' => $agent->name]) }}
-                        </p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    @foreach ($reviews as $rev)
-                        <div
-                            class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3.5 flex flex-col justify-between">
-                            <div class="space-y-2.5">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-1 text-amber-400 text-xs">
-                                        @for ($i = 1; $i <= 5; $i++)
-                                            <i
-                                                class="fa-solid fa-star {{ $i <= $rev->rating ? 'text-amber-400' : 'text-slate-200 dark:text-zinc-700' }}"></i>
-                                        @endfor
-                                    </div>
-                                    <span
-                                        class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                        <i class="fa-solid fa-circle-check text-[10px]"></i>
-                                        {{ __('Verified Guest') }}
-                                    </span>
-                                </div>
-                                <p
-                                    class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">
-                                    &ldquo;{{ $rev->comment }}&rdquo;
-                                </p>
-                            </div>
-
-                            <div
-                                class="pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-400">
-                                <span class="font-bold text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
-                                    {{ $rev->bookable->name ?? ($rev->bookable->title ?? 'Tour Experience') }}
-                                </span>
-                                <span>{{ $rev->created_at?->format('M Y') ?? 'Recent' }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </section>
-        @endif
+        @include('storefront.partials.google-reviews', ['agent' => $agent])
 
         <!-- About the Operator (bio) Section -->
         @if ($agent->bio)
@@ -557,7 +495,7 @@
                         @php
                             $socialLinks = $agent->settings['social_links'] ?? [];
                         @endphp
-                        @if (collect($socialLinks)->filter()->isNotEmpty() || $agent->contact_whatsapp)
+                        @if (! empty($socialLinks['instagram']) || ! empty($socialLinks['facebook']) || $agent->contact_whatsapp)
                             <div class="flex flex-wrap items-center gap-3 pt-2">
                                 @if ($agent->contact_whatsapp)
                                     <a href="https://wa.me/{{ preg_replace('/\D/', '', $agent->contact_whatsapp) }}"
@@ -581,14 +519,6 @@
                                         class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
                                         <i class="fa-brands fa-facebook text-sm"></i>
                                         <span>{{ __('Facebook') }}</span>
-                                    </a>
-                                @endif
-                                @if (!empty($socialLinks['website']))
-                                    <a href="{{ $socialLinks['website'] }}" target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:underline">
-                                        <i class="fa-solid fa-globe text-sm"></i>
-                                        <span>{{ __('Website') }}</span>
                                     </a>
                                 @endif
                             </div>

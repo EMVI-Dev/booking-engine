@@ -232,6 +232,39 @@ test('editing a package persists changes to its activity composition', function 
         ->and((int) $package->products->first()->pivot->quantity_required)->toBe(3);
 });
 
+test('a large activity catalog is searched instead of listed on package edit', function () {
+    Product::factory()->count(9)->create(['operator_id' => $this->operator->id]);
+    $hidden = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Zebra Night Dive Unique',
+    ]);
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    $component = Livewire::test('pages::packages.edit', ['package' => $package])
+        ->assertSee('Search activities to add')
+        ->assertSee('10 more activities in your catalog')
+        ->assertDontSee('Zebra Night Dive Unique');
+
+    $component->set('bundleSearch', 'Zebra Night')
+        ->assertSee('Zebra Night Dive Unique')
+        ->call('toggleProductSelection', $hidden->id)
+        ->assertSet('bundleSearch', '')
+        ->assertSee('In this package (1)');
+});
+
+test('a small activity catalog still lists activities on package create', function () {
+    $activity = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Guided Reef Snorkel',
+    ]);
+
+    Livewire::test('pages::packages.create')
+        ->assertSee('Guided Reef Snorkel')
+        ->assertDontSee('more activities in your catalog')
+        ->call('toggleProductSelection', $activity->id)
+        ->assertSee('In this package (1)');
+});
+
 test('operator can delete product from inside edit page and index modal', function () {
     Storage::fake(MediaStore::diskName());
 

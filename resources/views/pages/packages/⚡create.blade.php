@@ -1,9 +1,8 @@
 <?php
 
 use App\Enums\ListingStatus;
-use App\Models\Operator;
 use App\Models\Package;
-use App\Models\Product;
+use App\Concerns\ManagesPackageProductBundle;
 use App\Concerns\ResolvesCurrentOperator;
 use App\Concerns\UsesMediaStore;
 use Illuminate\Support\Str;
@@ -16,6 +15,7 @@ new #[Title('Create Tour Package')] class extends Component {
     use WithFileUploads;
     use ResolvesCurrentOperator;
     use UsesMediaStore;
+    use ManagesPackageProductBundle;
 
     public string $title = '';
     public string $category = 'Day Tour';
@@ -59,7 +59,8 @@ new #[Title('Create Tour Package')] class extends Component {
 
         return $this->currentOperator->products()
             ->where('status', ListingStatus::Published)
-            ->get();
+            ->orderBy('name')
+            ->get(['id', 'name', 'category', 'capacity_per_day']);
     }
 
     #[Computed]
@@ -84,28 +85,6 @@ new #[Title('Create Tour Package')] class extends Component {
         if (! $this->isProfileComplete) {
             session()->flash('warning', __('Please complete your business profile and payout settings before creating tour packages.'));
         }
-    }
-
-    public function toggleProductSelection(string $productId): void
-    {
-        if (isset($this->selectedProducts[$productId])) {
-            unset($this->selectedProducts[$productId]);
-        } else {
-            $this->selectedProducts[$productId] = 1;
-        }
-    }
-
-    public function seedInclusionsFromProducts(): void
-    {
-        if (empty($this->selectedProducts)) {
-            return;
-        }
-
-        $productNames = Product::whereIn('id', array_keys($this->selectedProducts))->pluck('name')->toArray();
-        $existing = array_filter(array_map('trim', explode(',', $this->inclusions)));
-        $combined = array_unique(array_merge($existing, $productNames));
-
-        $this->inclusions = implode(', ', $combined);
     }
 
     public function updatedCoverPhoto(): void
@@ -219,13 +198,7 @@ new #[Title('Create Tour Package')] class extends Component {
 }; ?>
 
 <div class="space-y-6 w-full">
-    <!-- Desktop Notice on Mobile -->
-    <x-desktop-only-notice
-        :title="__('Tour Package Creation Best Managed on Desktop')"
-        :description="__('Uploading multiple photo galleries, building itinerary timelines, and configuring custom inclusion pricing are designed for computer or laptop screens.')"
-    />
-
-    <div class="hidden lg:block space-y-6">
+    <div class="space-y-6">
         @if ($this->currentOperator && ! $this->currentOperator->canAddPackage())
         <div class="py-6">
             <x-feature-gate
@@ -259,7 +232,7 @@ new #[Title('Create Tour Package')] class extends Component {
                 </p>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="hidden sm:flex flex-wrap items-center gap-2">
                 <x-button :href="route('packages.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
                     {{ __('Cancel') }}
                 </x-button>
@@ -385,53 +358,18 @@ new #[Title('Create Tour Package')] class extends Component {
             </div>
 
             <p class="text-xs text-slate-500 dark:text-slate-400">
-                {{ __('Select which inventory items (e.g., activity slots, guide hire, admission passes) are reserved whenever this package is booked. Capacity will be automatically synchronized.') }}
+                {{ __('Add the activities this package uses. Search if you have a long catalog — only selected items stay on the list.') }}
             </p>
 
-            @if ($this->availableProducts->isNotEmpty())
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                    @foreach ($this->availableProducts as $prod)
-                        @php
-                            $isSelected = isset($selectedProducts[$prod->id]);
-                        @endphp
-                        <div
-                            class="p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 {{ $isSelected ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/30 ring-1 ring-sky-500/20' : 'border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:border-slate-300' }}"
-                        >
-                            <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
-                                <input
-                                    type="checkbox"
-                                    wire:click="toggleProductSelection('{{ $prod->id }}')"
-                                    @checked($isSelected)
-                                    class="rounded-lg text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800"
-                                />
-                                <div class="min-w-0">
-                                    <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ $prod->name }}</p>
-                                    <p class="text-[10px] text-slate-400">
-                                        {{ $prod->category ?? 'Item' }} &bull; Max {{ $prod->capacity_per_day }}/day
-                                    </p>
-                                </div>
-                            </label>
-
-                            @if ($isSelected)
-                                <div class="flex items-center gap-1.5 shrink-0 bg-white dark:bg-zinc-900 px-2 py-1 rounded-xl border border-slate-200 dark:border-zinc-700">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase">{{ __('Qty:') }}</span>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="1000"
-                                        wire:model="selectedProducts.{{ $prod->id }}"
-                                        class="w-12 h-6 text-xs text-center font-bold rounded-md border-0 bg-slate-50 dark:bg-zinc-800 focus:ring-1 focus:ring-sky-500"
-                                    />
-                                </div>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="p-6 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400">
-                    {{ __('No published activity/inventory items found. You can still save this package and link items later.') }}
-                </div>
-            @endif
+            <x-package-bundle-picker
+                :has-catalog="$this->availableProducts->isNotEmpty()"
+                :selected="$this->bundledProducts"
+                :catalog="$this->bundleCatalog"
+                :remaining-count="$this->bundleRemainingCount"
+                :requires-search="$this->bundleRequiresSearch"
+                :search="$bundleSearch"
+                :empty-copy="__('No published activity/inventory items found. You can still save this package and link items later.')"
+            />
         </div>
 
         <!-- Card 3: Cover & Gallery Image Management -->
@@ -454,14 +392,14 @@ new #[Title('Create Tour Package')] class extends Component {
                     </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <div class="relative w-40 h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 overflow-hidden flex items-center justify-center shrink-0">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                    <div class="relative w-full aspect-video sm:w-40 sm:h-24 sm:aspect-auto rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 overflow-hidden flex items-center justify-center shrink-0">
                         @if ($coverPhoto)
                             <img src="{{ $coverPhoto->temporaryUrl() }}" alt="Cover preview" class="w-full h-full object-cover" />
                             <button
                                 type="button"
                                 wire:click="removeTempCoverPhoto"
-                                class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm hover:bg-rose-700 transition"
+                                class="absolute top-1.5 right-1.5 h-9 w-9 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm hover:bg-rose-700 transition"
                             >
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
@@ -474,7 +412,7 @@ new #[Title('Create Tour Package')] class extends Component {
                     </div>
 
                     <div class="space-y-2 flex-1">
-                        <label class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
+                        <label class="h-11 sm:h-9 px-3.5 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
                             <i class="fa-solid fa-upload text-indigo-500"></i>
                             <span>{{ __('Upload Cover Photo') }}</span>
                             <input type="file" wire:model="coverPhoto" accept="image/png,image/jpeg,image/webp" class="hidden" />
@@ -489,13 +427,13 @@ new #[Title('Create Tour Package')] class extends Component {
 
             <!-- Gallery Images Multi-Upload -->
             <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-3">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h4 class="text-xs font-bold text-slate-900 dark:text-white">{{ __('Gallery Photos') }}</h4>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ __('Upload multiple high-resolution photos showcasing itinerary highlights.') }}</p>
                     </div>
 
-                    <label class="h-8 px-3 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
+                    <label class="h-11 sm:h-10 px-4 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
                         <i class="fa-solid fa-plus text-indigo-500 text-[11px]"></i>
                         <span>{{ __('Add Photos') }}</span>
                         <input type="file" wire:model="galleryFiles" accept="image/png,image/jpeg,image/webp" multiple class="hidden" />
@@ -509,14 +447,14 @@ new #[Title('Create Tour Package')] class extends Component {
 
                 <!-- Gallery Preview Grid -->
                 @if (! empty($galleryFiles))
-                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-2">
                         @foreach ($galleryFiles as $idx => $file)
                             <div class="relative group aspect-video rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 overflow-hidden shadow-xs">
                                 <img src="{{ $file->temporaryUrl() }}" alt="Gallery preview {{ $idx }}" class="w-full h-full object-cover" />
                                 <button
                                     type="button"
                                     wire:click="removeTempGalleryFile({{ $idx }})"
-                                    class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] opacity-90 group-hover:opacity-100 transition shadow-sm hover:bg-rose-700"
+                                    class="absolute top-1.5 right-1.5 h-9 w-9 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] opacity-90 group-hover:opacity-100 transition shadow-sm hover:bg-rose-700"
                                     title="{{ __('Remove photo') }}"
                                 >
                                     <i class="fa-solid fa-xmark"></i>
@@ -597,7 +535,7 @@ new #[Title('Create Tour Package')] class extends Component {
         </div>
 
         <!-- Actions Bar -->
-        <div class="flex items-center justify-end gap-3 pt-2">
+        <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
             <x-button :href="route('packages.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
                 {{ __('Cancel') }}
             </x-button>

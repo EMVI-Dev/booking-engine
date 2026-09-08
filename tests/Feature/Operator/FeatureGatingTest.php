@@ -111,12 +111,20 @@ test('starter plan gates tracking pixels and automated review requests while gro
         ->and($this->growthPlan->hasFeature('tracking_pixels'))->toBeTrue()
         ->and($this->growthPlan->hasFeature('automated_review_requests'))->toBeTrue()
         ->and($this->agencyPlan->hasFeature('tracking_pixels'))->toBeTrue()
-        ->and($this->agencyPlan->hasFeature('automated_review_requests'))->toBeTrue();
+        ->and($this->agencyPlan->hasFeature('automated_review_requests'))->toBeTrue()
+        ->and($this->starterPlan->hasFeature('google_reviews'))->toBeFalse()
+        ->and($this->growthPlan->hasFeature('google_reviews'))->toBeFalse()
+        ->and($this->agencyPlan->hasFeature('google_reviews'))->toBeTrue();
 
     // Starter operator sees upgrade banner on brand settings
     $response = $this->actingAs($this->user)->get(route('brand.edit'));
     $response->assertOk()
         ->assertSee('Requires Growth or Agency');
+
+    $this->actingAs($this->user)->get(route('review-settings.edit'))
+        ->assertOk()
+        ->assertSee('Review Platform')
+        ->assertSee('Review Platform (e.g. Google/Tripadvisor)');
 
     // Upgrade to growth
     $this->operator->update(['plan_id' => $this->growthPlan->id]);
@@ -155,6 +163,17 @@ test('growth plan operator may mount the calendar components its plan includes',
     Livewire::actingAs($this->user)->test('calendar.resource-timeline')->assertOk();
     Livewire::actingAs($this->user)->test('calendar.daily-manifest')->assertOk();
     Livewire::actingAs($this->user)->test('calendar.capacity-heatmap')->assertForbidden();
+});
+
+test('starter plan operator can save a review page URL', function () {
+    Livewire::actingAs($this->user)
+        ->test('pages::settings.reviews')
+        ->set('review_url', 'https://g.page/r/starter-review')
+        ->call('updateReviewSettings')
+        ->assertHasNoErrors()
+        ->assertSee('Review Platform (e.g. Google/Tripadvisor)');
+
+    expect($this->operator->fresh()->getReviewUrl())->toBe('https://g.page/r/starter-review');
 });
 
 test('starter plan operator cannot save tracking pixels through brand settings', function () {
@@ -256,7 +275,8 @@ test('starter plan does not build a whatsapp send link when creating a booking',
         ->call('generateBookingLink')
         ->assertHasNoErrors()
         ->assertSet('generatedWhatsAppUrl', null)
-        ->assertDontSee('Send Payment Link on WhatsApp');
+        ->assertDontSee('Send Payment Link on WhatsApp')
+        ->assertDontSee('Open WhatsApp to paste');
 });
 
 test('pro plan builds a whatsapp send link and shows ready-made guest messages', function () {

@@ -486,9 +486,15 @@
         border: 1px solid var(--op-line);
         background-color: var(--op-inset);
         padding: 0 0.875rem;
-        font-size: 0.8125rem;
+        font-size: 1rem;
         color: var(--op-ink);
         outline: none;
+    }
+
+    @media (min-width: 640px) {
+        .op-input {
+            font-size: 0.8125rem;
+        }
     }
 
     .op-input::placeholder {
@@ -687,6 +693,26 @@
 .op-mobile-nav[aria-current="page"] {
     color: var(--op-brand);
     font-weight: 600;
+}
+
+/* Phone and tablet share the bottom menu. Desktop sidebar from lg on a fine pointer. */
+.op-desk-chrome {
+    display: none !important;
+}
+
+@media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
+    .op-touch-nav {
+        display: none !important;
+    }
+
+    .op-desk-chrome {
+        display: flex !important;
+        margin-bottom: 0;
+    }
+
+    .op-desk-pad {
+        padding-bottom: 1.5rem;
+    }
 }
 
 .op-sidebar {

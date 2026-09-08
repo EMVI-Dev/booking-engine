@@ -228,7 +228,7 @@
                 </div>
 
                 <div class="pt-2">
-                    <x-button type="button" variant="primary" class="w-full" @click="continueToBusiness()">
+                    <x-button type="button" variant="primary" class="w-full" size="lg" @click="continueToBusiness()">
                         {{ __('Continue') }}
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </x-button>
@@ -318,14 +318,15 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3 pt-2">
-                    <x-button type="button" variant="outline" class="w-1/3" @click="goToStep(1)">
+                <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+                    <x-button type="button" variant="outline" class="w-full sm:w-1/3" @click="goToStep(1)">
                         {{ __('Back') }}
                     </x-button>
                     <x-button
                         type="submit"
                         variant="primary"
-                        class="w-2/3 font-semibold shadow-sm"
+                        size="lg"
+                        class="w-full sm:w-2/3 font-semibold shadow-sm"
                         x-bind:disabled="!agreedTerms || submitting"
                         x-bind:class="(!agreedTerms || submitting) ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'"
                         data-test="register-user-button"

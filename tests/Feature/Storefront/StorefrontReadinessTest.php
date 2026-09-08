@@ -94,5 +94,6 @@ test('the operator dashboard tells them the page is closed until setup is finish
         ->assertSee('Closed to guests until setup is finished.')
         ->assertSee('Bio & WhatsApp')
         ->assertSee('Payout bank account')
-        ->assertSee('Billing email');
+        ->assertSee('Billing email')
+        ->assertSee('Review Platform');
 });

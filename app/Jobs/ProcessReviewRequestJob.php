@@ -45,6 +45,10 @@ class ProcessReviewRequestJob implements ShouldQueue
             return;
         }
 
+        if (trim($this->reviewUrl) === '') {
+            return;
+        }
+
         // Avoid duplicate sending
         if ($this->reservation->review_request_sent_at !== null) {
             return;

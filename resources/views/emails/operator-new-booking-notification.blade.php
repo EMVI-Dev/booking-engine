@@ -1,10 +1,11 @@
 @php
     $operator = $reservation->operator;
-    $brandColor = $operator->brand_color ?? '#4f46e5';
     $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
     $payment = $reservation->latestPayment;
     $bookableTitle = $reservation->bookable?->name ?? ($reservation->bookable?->title ?? 'Direct Booking');
     $reservationUrl = route('reservations.index');
+    $platformColor = '#FFEF4D';
+    $platformInk = '#101730';
 
     $waService = app(\App\Services\WhatsAppDispatchService::class);
     $waGuestUrl = $reservation->guest_contact
@@ -26,17 +27,14 @@
         <tr>
             <td align="center">
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
-                    <!-- Top Header -->
-                    <tr>
-                        <td style="background-color: #1e1b4b; padding: 28px 24px; text-align: center;">
-                            <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: rgba(99, 102, 241, 0.2); color: #a5b4fc; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                                {{ __('Operator Notification') }}
-                            </span>
-                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                                {{ __('New Booking Received!') }}
-                            </h1>
-                        </td>
-                    </tr>
+                    <x-email.brand-header
+                        :background="$platformColor"
+                        :foreground="$platformInk"
+                        :logo-url="url('/favicon.png')"
+                        :logo-alt="config('app.name')"
+                        :eyebrow="__('Operator Notification')"
+                        :title="__('New Booking Received!')"
+                    />
 
                     <!-- Booking Summary Hero -->
                     <tr>
@@ -49,7 +47,7 @@
                             <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px;">
                                 <tr>
                                     <td style="padding: 6px 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">{{ __('Booking Code') }}</td>
-                                    <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 800; color: #4f46e5; font-family: monospace;">#{{ $code }}</td>
+                                    <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 800; color: {{ $platformInk }}; font-family: monospace;">#{{ $code }}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 6px 0; font-size: 12px; color: #64748b;">{{ __('Lead Guest') }}</td>
@@ -71,7 +69,7 @@
                                 </tr>
                                 <tr>
                                     <td style="padding: 6px 0; font-size: 12px; color: #64748b;">{{ __('Trip Date') }}</td>
-                                    <td align="right" style="padding: 6px 0; font-size: 12px; font-weight: 800; color: #4f46e5;">{{ $reservation->requested_date->format('l, M d, Y') }}</td>
+                                    <td align="right" style="padding: 6px 0; font-size: 12px; font-weight: 800; color: {{ $platformInk }};">{{ $reservation->requested_date->format('l, M d, Y') }}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 6px 0; font-size: 12px; color: #64748b;">{{ __('Party Size') }}</td>
@@ -118,7 +116,7 @@
                                 @endif
                                 <tr>
                                     <td>
-                                        <a href="{{ $reservationUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 14px; font-size: 12px; font-weight: 700; text-align: center;">
+                                        <a href="{{ $reservationUrl }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: {{ $platformColor }}; color: {{ $platformInk }}; text-decoration: none; padding: 12px 20px; border-radius: 14px; font-size: 12px; font-weight: 700; text-align: center;">
                                             {{ __('Open in Operator Portal') }}
                                         </a>
                                     </td>

@@ -846,12 +846,6 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-600 dark:text-slate-400">{{ __('Guest Reviews Display:') }}</span>
-                        <span
-                            class="font-bold text-slate-900 dark:text-white">{{ $storeSettings['show_reviews'] ?? true ? __('Enabled') : __('Hidden') }}</span>
-                    </div>
-
-                    <div class="flex items-center justify-between">
                         <span class="text-slate-600 dark:text-slate-400">{{ __('How guests pay:') }}</span>
                         <span
                             class="font-bold text-slate-900 dark:text-white">{{ __('Through EMVI') }}</span>

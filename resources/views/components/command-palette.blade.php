@@ -32,7 +32,6 @@
                 { title: '{{ __('Calendar & Departures') }}', cat: '{{ __('Overview & Schedule') }}', icon: 'fa-solid fa-calendar-days text-[#FFEF4D]', url: '{{ route('calendar.index') }}' },
                 { title: '{{ __('Wallet & Payout Settlements') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-wallet text-[#FFEF4D]', url: '{{ route('wallet.index') }}' },
                 { title: '{{ __('Guest CRM Directory') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-address-book text-[#FFEF4D]', url: '{{ route('guests.index') }}' },
-                { title: '{{ __('Guest Reviews & Feedback') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-star text-[#FFEF4D]', url: '{{ route('reviews.index') }}' },
                 { title: '{{ __('Single Activities') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-compass text-[#FFEF4D]', url: '{{ route('products.index') }}' },
                 { title: '{{ __('Tours & Package Listings') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-cubes text-[#FFEF4D]', url: '{{ route('packages.index') }}' },
                 { title: '{{ __('Coupons & Promo Codes') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-ticket text-[#FFEF4D]', url: '{{ route('coupons.index') }}' },

@@ -108,3 +108,76 @@ it('skips sending automated review requests for operators on starter plan withou
     Mail::assertNothingSent();
     expect($reservation->fresh()->review_request_sent_at)->toBeNull();
 });
+
+it('sends agency review mail to the connected listing even when a manual review link is set', function () {
+    Mail::fake();
+    Plan::seedDefaultPlans();
+
+    $operator = Operator::factory()->create([
+        'plan_id' => Plan::where('slug', 'agency')->value('id'),
+        'settings' => [
+            'marketing' => [
+                'review_url' => 'https://g.page/r/manual-link',
+            ],
+            'google_place' => [
+                'place_id' => 'ChIJsunrise1234567890',
+                'name' => 'Sunrise Reef Tours',
+                'write_review_url' => 'https://search.google.com/local/writereview?placeid=ChIJsunrise1234567890',
+                'fetched_at' => now()->toIso8601String(),
+                'reviews' => [],
+            ],
+        ],
+    ]);
+
+    $package = Package::factory()->create(['operator_id' => $operator->id]);
+
+    Reservation::factory()->create([
+        'operator_id' => $operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'status' => ReservationStatus::Confirmed,
+        'requested_date' => now()->subDays(1)->toDateString(),
+        'guest_email' => 'agency-guest@example.com',
+        'review_request_sent_at' => null,
+    ]);
+
+    $this->artisan('trips:send-review-requests')->assertSuccessful();
+
+    Mail::assertSent(GuestReviewRequestMail::class, function ($mail) {
+        return $mail->hasTo('agency-guest@example.com')
+            && $mail->reviewUrl === 'https://search.google.com/local/writereview?placeid=ChIJsunrise1234567890'
+            && str_contains($mail->render(), 'Please leave a review for Sunrise Reef Tours.');
+    });
+});
+
+it('does not send a review request when the operator has no review page URL', function () {
+    Mail::fake();
+    Plan::seedDefaultPlans();
+
+    $operator = Operator::factory()->create([
+        'plan_id' => Plan::where('slug', 'growth')->value('id'),
+        'settings' => [
+            'marketing' => [
+                'review_url' => '',
+            ],
+        ],
+    ]);
+
+    $package = Package::factory()->create(['operator_id' => $operator->id]);
+
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'status' => ReservationStatus::Confirmed,
+        'requested_date' => now()->subDays(1)->toDateString(),
+        'guest_email' => 'traveler@example.com',
+        'review_request_sent_at' => null,
+    ]);
+
+    $this->artisan('trips:send-review-requests')
+        ->assertSuccessful();
+
+    Mail::assertNothingSent();
+    expect($reservation->fresh()->review_request_sent_at)->toBeNull();
+});

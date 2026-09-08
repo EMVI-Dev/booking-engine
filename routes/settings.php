@@ -7,6 +7,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::livewire('settings/brand', 'pages::settings.brand')->name('brand.edit');
     Route::livewire('settings/storefront', 'pages::settings.storefront')->name('storefront-settings.edit');
+    Route::livewire('settings/reviews', 'pages::settings.reviews')->name('review-settings.edit');
     Route::livewire('settings/payments', 'pages::settings.payments')->name('payments.edit');
     Route::livewire('settings/team', 'pages::settings.team')->name('settings.team');
     Route::livewire('settings/plan', 'pages::settings.plan')->name('settings.plan');

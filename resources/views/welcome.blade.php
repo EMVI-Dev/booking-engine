@@ -25,6 +25,7 @@
             ['key' => 'daily_manifest_export', 'label' => __('Printable daily guest lists')],
             ['key' => 'guest_crm', 'label' => __('Guest contact list')],
             ['key' => 'automated_review_requests', 'label' => __('Ask for a review after the trip')],
+            ['key' => 'google_reviews', 'label' => __('Google reviews on your booking page')],
             ['key' => 'custom_domain', 'label' => __('Your own website address (yourbrand.com)')],
             ['key' => 'remove_branding', 'label' => __('Guests see only your name, not ours')],
             ['key' => 'ai_discovery', 'label' => __('Show up when people ask ChatGPT about tours')],

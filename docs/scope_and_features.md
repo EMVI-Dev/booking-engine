@@ -1,4 +1,4 @@
-# Booking Engine Platform — V1 Spec (Rev. 23)
+# Booking Engine Platform — V1 Spec (Rev. 24)
 
 ## Vision & Audience
 
@@ -40,6 +40,7 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - **Print-Perfect Daily Manifest**: High-contrast A4 printable run-sheet with check-in pen tick-boxes (`[ ] Check`), passenger details, notes, and a 3-part ground crew sign-off block (Tour Guide, Driver/Vehicle ID, Dispatch Officer).
 - **Streamlined Navigation & Sidebar**:
     - Clean hierarchy: *Dashboard, Reservations, Calendar, Tour Packages, Single Activities, Coupons & Discounts, Storefront Settings, Subscription & Billing*.
+    - Storefront Settings tabs are **Brand & Identity**, **Storefront & Policies**, and **Reviews**. Reviews is not a sidebar item and not a desk page.
 - **Native Mobile Navigation Bar & Mobile Card Lists (`md:hidden`)**:
     - Sticky glassmorphism mobile bottom navigation bar (`lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16`) for 1-thumb operations.
     - All data tables convert into responsive mobile cards on smartphone screens (`< 768px`).
@@ -60,6 +61,13 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - One-click Google site verification tag injection in storefront `<head>`.
 - **WhatsApp Floating Widget**:
     - Bottom-right floating chat with customizable pre-filled inquiry messages.
+- **Reviews (`/settings/reviews`)**:
+    - Its own Storefront tab. Not on Brand. No in-app guest review form, reviews table, or `/reviews` desk.
+    - Starter and Growth: one **Review Platform** link (Google, Tripadvisor, or any URL). Required before post-trip review mail sends. No Google listing connect, no slider.
+    - Agency (`google_reviews`): choose one path when nothing is connected.
+        - **Connect a Google listing** — paste a Maps link or search the business name, confirm in a modal, one listing only. Up to 5 public Google reviews show on the booking page. Review emails use that listing's write-a-review URL and name the listing. Disconnect also confirms in a modal. Do not copy the listing into the Review Platform URL.
+        - **Use a review link** — same manual Review Platform field as other plans. No slider. Review emails use that URL.
+    - A connected listing hides the choice and the manual field. After disconnect, Agency can choose again. If a manual URL was already saved, it stays and is used only when no listing is connected.
 - **Agency White-Label (hide-name)**:
     - Agency (`remove_branding`) hides the platform name on every guest-facing channel. Starter and Growth still credit the platform.
     - Storefront: tab titles, `og:site_name`, generator meta, home JSON-LD platform block, and footer “Powered by”.
@@ -80,7 +88,7 @@ Guest service fee is **5% on every plan**, capped at **Rp 250.000**. Operator ge
 - **Growth** (`growth` — Rp 299.000 / mo | Rp 2.990.000 / yr):
     - Freelance with more tools, or a small group selling together. Up to 25 trips and activities, unlimited people on your team. Unlocks **Google Calendar 1-Click & Live iCal Feed Sync**, **Guest Directory CRM & Lifetime Spend Analytics**, **Meta Pixel & GA4 ROAS tracking**, **1-Click WhatsApp Dispatch Center**, and **automated review requests**.
 - **Agency** (`agency` — Rp 799.000 / mo | Rp 7.990.000 / yr):
-    - Small to mid travel agency. Unlimited listings, **custom domain**, **full white-label**, **capacity heatmap**, **AI Search Discovery (`/llms.txt`)**, and priority support. Checkout, escrow, and payouts stay on the EMVI DOKU wallet.
+    - Small to mid travel agency. Unlimited listings, **custom domain**, **full white-label**, **capacity heatmap**, **AI Search Discovery (`/llms.txt`)**, **Google reviews on the booking page** (one connected listing, or a review link if they have none), and priority support. Checkout, escrow, and payouts stay on the EMVI DOKU wallet.
 - **Operator Plan & Billing Portal (`/settings/plan`)**:
     - Unified subscription management with interactive tier switcher, proration calculations, auto-renew controls, and invoice receipts.
 - **Platform Coupon Intelligence & Auto-Broadcast System**:
@@ -111,7 +119,7 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
     - `GuestBookingCreatedMail`: Hold confirmation with countdown and payment link.
     - `GuestBookingConfirmedMail`: Verified payment receipt with digital e-ticket voucher.
     - `GuestDepartureReminderMail`: Day-before trip reminder.
-    - `GuestReviewRequestMail`: Post-trip review request (Growth and Agency).
+    - `GuestReviewRequestMail`: Post-trip review request (Growth and Agency). Agency with a connected Google listing uses that listing. Every other case uses the Review Platform URL from the Reviews tab. CTA stays "Leave a review".
 - **Operator notification (`OperatorNewBookingNotificationMail`)**:
     - Instant email alert on paid booking capture. Agency uses the operator as the From name.
 - **1-Click WhatsApp Dispatch Center**:
@@ -124,6 +132,7 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
 - Multi-day vehicle / property / equipment rental date ranges (check-in $\rightarrow$ check-out).
 - Cross-agent search/discovery marketplace.
 - In-app live chat (WhatsApp widget as primary direct communication).
+- In-app guest reviews desk, verified-reviews block, or guest review form. Public Google reviews on the shop come only from a connected Agency listing.
 - Multi-currency / multi-language translation engine.
 - Tiered partial refund cancellation policies (single cutoff window only).
 - Bring-your-own payment gateway / private merchant account.

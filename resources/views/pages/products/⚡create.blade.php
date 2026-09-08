@@ -170,12 +170,7 @@ new #[Title('Create Activity Item')] class extends Component {
 }; ?>
 
 <div class="space-y-6 w-full">
-    <!-- Desktop Notice on Mobile -->
-    <x-desktop-only-notice :title="__('Activity & Inventory Setup Best Managed on Desktop')" :description="__(
-        'Setting daily inventory capacity, equipment photos, and fine-tuning pricing rules are best managed on a computer or laptop screen.',
-    )" />
-
-    <div class="hidden lg:block space-y-6">
+    <div class="space-y-6">
         @if ($this->currentOperator && !$this->currentOperator->canAddProduct())
             <div class="py-6">
                 <x-feature-gate :title="__('Listing Limit Reached (:limit Listings)', [
@@ -208,7 +203,7 @@ new #[Title('Create Activity Item')] class extends Component {
                     </p>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="hidden sm:flex flex-wrap items-center gap-2">
                     <x-button :href="route('products.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
                         {{ __('Cancel') }}
                     </x-button>
@@ -306,7 +301,7 @@ new #[Title('Create Activity Item')] class extends Component {
                     <!-- Standalone Direct Sale Setting -->
                     <div
                         class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700 space-y-3">
-                        <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                                 <h4 class="text-xs font-bold text-slate-900 dark:text-white">
                                     {{ __('Sell as Standalone Activity / Service on Storefront') }}
@@ -363,14 +358,14 @@ new #[Title('Create Activity Item')] class extends Component {
                             </div>
                         </div>
 
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                             <div
-                                class="relative w-36 h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 overflow-hidden flex items-center justify-center shrink-0">
+                                class="relative w-full aspect-video sm:w-40 sm:h-24 sm:aspect-auto rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 overflow-hidden flex items-center justify-center shrink-0">
                                 @if ($coverPhoto)
                                     <img src="{{ $coverPhoto->temporaryUrl() }}" alt="Cover preview"
                                         class="w-full h-full object-cover" />
                                     <button type="button" wire:click="removeTempCoverPhoto"
-                                        class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm hover:bg-rose-700 transition">
+                                        class="absolute top-1.5 right-1.5 h-9 w-9 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm hover:bg-rose-700 transition">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 @else
@@ -383,7 +378,7 @@ new #[Title('Create Activity Item')] class extends Component {
 
                             <div class="space-y-2 flex-1">
                                 <label
-                                    class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
+                                    class="h-11 sm:h-9 px-3.5 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
                                     <i class="fa-solid fa-upload text-indigo-500"></i>
                                     <span>{{ __('Upload Cover Photo') }}</span>
                                     <input type="file" wire:model="coverPhoto"
@@ -400,7 +395,7 @@ new #[Title('Create Activity Item')] class extends Component {
 
                     <!-- Gallery Images Multi-Upload -->
                     <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-3">
-                        <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h4 class="text-xs font-bold text-slate-900 dark:text-white">
                                     {{ __('Gallery Photos') }}</h4>
@@ -409,7 +404,7 @@ new #[Title('Create Activity Item')] class extends Component {
                             </div>
 
                             <label
-                                class="h-8 px-3 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
+                                class="h-11 sm:h-10 px-4 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer">
                                 <i class="fa-solid fa-plus text-indigo-500 text-[11px]"></i>
                                 <span>{{ __('Add Photos') }}</span>
                                 <input type="file" wire:model="galleryFiles"
@@ -425,7 +420,7 @@ new #[Title('Create Activity Item')] class extends Component {
 
                         <!-- Gallery Preview Grid -->
                         @if (!empty($galleryFiles))
-                            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-2">
                                 @foreach ($galleryFiles as $idx => $file)
                                     <div
                                         class="relative group aspect-video rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 overflow-hidden shadow-xs">
@@ -434,7 +429,7 @@ new #[Title('Create Activity Item')] class extends Component {
                                             class="w-full h-full object-cover" />
                                         <button type="button"
                                             wire:click="removeTempGalleryFile({{ $idx }})"
-                                            class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] opacity-90 group-hover:opacity-100 transition shadow-sm hover:bg-rose-700"
+                                            class="absolute top-1.5 right-1.5 h-9 w-9 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] opacity-90 group-hover:opacity-100 transition shadow-sm hover:bg-rose-700"
                                             title="{{ __('Remove photo') }}">
                                             <i class="fa-solid fa-xmark"></i>
                                         </button>
@@ -519,7 +514,7 @@ new #[Title('Create Activity Item')] class extends Component {
                 </div>
 
                 <!-- Actions Bar -->
-                <div class="flex items-center justify-end gap-3 pt-2">
+                <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
                     <x-button :href="route('products.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
                         {{ __('Cancel') }}
                     </x-button>

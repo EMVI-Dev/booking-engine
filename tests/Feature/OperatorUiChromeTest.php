@@ -74,6 +74,7 @@ test('operator settings tabs use the shared filter tab component', function () {
         ->assertSee('op-tab')
         ->assertSee(__('Brand & Identity'))
         ->assertSee(__('Storefront & Policies'))
+        ->assertSee(__('Reviews'))
         ->assertDontSee(__('Your team'));
 
     $this->get(route('settings.plan'))

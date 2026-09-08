@@ -46,6 +46,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     public ?string $generatedWhatsAppUrl = null;
     public ?string $generatedReservationCode = null;
     public bool $linkCreatedSuccessfully = false;
+    public bool $createShowExtras = false;
 
     public function mount(): void
     {
@@ -61,24 +62,71 @@ new #[Title('Bookings & Reservations')] class extends Component {
     }
 
 
+    /**
+     * @return array{title: ?string, unit: float, pax: int, subtotal: float, fee: float, total: float, remaining: ?int}
+     */
     #[Computed]
-    public function estimatedTotal(): float
+    public function createQuote(): array
     {
-        if (!$this->currentOperator || empty($this->createBookableId)) {
-            return 0.0;
-        }
+        $pax = max(1, $this->createPaxCount);
+        $empty = [
+            'title' => null,
+            'unit' => 0.0,
+            'pax' => $pax,
+            'subtotal' => 0.0,
+            'fee' => 0.0,
+            'total' => 0.0,
+            'remaining' => null,
+        ];
 
-        $bookable = $this->createBookableType === 'package' ? $this->currentOperator->packages()->find($this->createBookableId) : $this->currentOperator->products()->find($this->createBookableId);
+        $bookable = $this->resolveCreateBookable();
 
-        if (!$bookable) {
-            return 0.0;
+        if (! $bookable) {
+            return $empty;
         }
 
         $unitPrice = (float) $bookable->price;
-        $subtotal = $unitPrice * max(1, $this->createPaxCount);
+        $subtotal = $unitPrice * $pax;
         $serviceFee = \App\Models\PlatformSetting::current()->calculateGuestServiceFee($subtotal, $this->currentOperator);
+        $remaining = null;
 
-        return $subtotal + $serviceFee;
+        if ($this->createRequestedDate !== '') {
+            $remaining = app(\App\Services\CapacityService::class)->remainingCapacity($bookable, $this->createRequestedDate);
+        }
+
+        return [
+            'title' => $bookable instanceof \App\Models\Package ? $bookable->title : $bookable->name,
+            'unit' => $unitPrice,
+            'pax' => $pax,
+            'subtotal' => $subtotal,
+            'fee' => $serviceFee,
+            'total' => $subtotal + $serviceFee,
+            'remaining' => $remaining,
+        ];
+    }
+
+    #[Computed]
+    public function estimatedTotal(): float
+    {
+        return (float) $this->createQuote['total'];
+    }
+
+    /**
+     * @return Collection<int, \App\Models\Guest>
+     */
+    #[Computed]
+    public function recentGuests(): Collection
+    {
+        if (! $this->currentOperator) {
+            return new Collection;
+        }
+
+        return $this->currentOperator->guests()
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->orderByDesc('updated_at')
+            ->limit(6)
+            ->get();
     }
 
     /**
@@ -110,18 +158,18 @@ new #[Title('Bookings & Reservations')] class extends Component {
         foreach ($this->availablePackages as $pkg) {
             $options[] = [
                 'value' => "package:{$pkg->id}",
-                'label' => "{$pkg->title} — Rp ".number_format((float) $pkg->price, 0, ',', '.').'/pax',
+                'label' => $pkg->title,
                 'icon' => 'fa-solid fa-cubes',
-                'hint' => __('Package'),
+                'hint' => __('Package').' · Rp '.number_format((float) $pkg->price, 0, ',', '.').'/pax',
             ];
         }
 
         foreach ($this->availableProducts as $prod) {
             $options[] = [
                 'value' => "product:{$prod->id}",
-                'label' => "{$prod->name} — Rp ".number_format((float) $prod->price, 0, ',', '.').'/pax',
+                'label' => $prod->name,
                 'icon' => 'fa-solid fa-compass',
-                'hint' => __('Activity'),
+                'hint' => __('Activity').' · Rp '.number_format((float) $prod->price, 0, ',', '.').'/pax',
             ];
         }
 
@@ -134,7 +182,53 @@ new #[Title('Bookings & Reservations')] class extends Component {
             [$type, $id] = explode(':', $value, 2);
             $this->createBookableType = $type;
             $this->createBookableId = $id;
+            session(['operator.create_link.experience' => $value]);
         }
+    }
+
+    public function incrementCreatePax(): void
+    {
+        $this->createPaxCount = min($this->createPaxMax(), $this->createPaxCount + 1);
+    }
+
+    public function decrementCreatePax(): void
+    {
+        $this->createPaxCount = max(1, $this->createPaxCount - 1);
+    }
+
+    public function setCreateDatePreset(string $preset): void
+    {
+        $date = match ($preset) {
+            'today' => now(),
+            'tomorrow' => now()->addDay(),
+            'soon' => now()->addDays(3),
+            default => null,
+        };
+
+        if ($date === null) {
+            return;
+        }
+
+        $this->createRequestedDate = $date->toDateString();
+    }
+
+    public function fillGuestFromCrm(string $guestId): void
+    {
+        $guest = $this->currentOperator?->guests()->find($guestId);
+
+        if (! $guest) {
+            return;
+        }
+
+        $this->createGuestName = (string) $guest->name;
+        $this->createGuestContact = (string) ($guest->phone ?? '');
+        $this->createGuestEmail = (string) ($guest->email ?? '');
+        $this->createShowExtras = filled($this->createGuestEmail);
+    }
+
+    public function toggleCreateExtras(): void
+    {
+        $this->createShowExtras = ! $this->createShowExtras;
     }
 
     /**
@@ -153,11 +247,16 @@ new #[Title('Bookings & Reservations')] class extends Component {
         $this->createGuestContact = '';
         $this->createGuestEmail = '';
         $this->createNotes = '';
+        $this->createShowExtras = false;
 
         $options = $this->experienceOptions;
-        if (!empty($options)) {
-            $this->createExperienceSelection = (string) $options[0]['value'];
-            [$this->createBookableType, $this->createBookableId] = explode(':', $options[0]['value'], 2);
+        $last = (string) session('operator.create_link.experience', '');
+        $match = collect($options)->firstWhere('value', $last);
+        $chosen = is_array($match) ? (string) $match['value'] : (string) ($options[0]['value'] ?? '');
+
+        if ($chosen !== '' && str_contains((string) $chosen, ':')) {
+            $this->createExperienceSelection = (string) $chosen;
+            [$this->createBookableType, $this->createBookableId] = explode(':', (string) $chosen, 2);
         } else {
             $this->createExperienceSelection = '';
             $this->createBookableType = 'package';
@@ -172,6 +271,36 @@ new #[Title('Bookings & Reservations')] class extends Component {
     {
         $this->showCreateLinkModal = false;
         $this->linkCreatedSuccessfully = false;
+    }
+
+    /**
+     * @return \App\Models\Package|\App\Models\Product|null
+     */
+    protected function resolveCreateBookable(): \App\Models\Package|\App\Models\Product|null
+    {
+        if (! $this->currentOperator || empty($this->createBookableId)) {
+            return null;
+        }
+
+        return $this->createBookableType === 'package'
+            ? $this->currentOperator->packages()->find($this->createBookableId)
+            : $this->currentOperator->products()->find($this->createBookableId);
+    }
+
+    protected function createPaxMax(): int
+    {
+        $bookable = $this->resolveCreateBookable();
+        $remaining = null;
+
+        if ($bookable && $this->createRequestedDate !== '') {
+            $remaining = app(\App\Services\CapacityService::class)->remainingCapacity($bookable, $this->createRequestedDate);
+        }
+
+        if (is_int($remaining)) {
+            return max(1, min(50, $remaining));
+        }
+
+        return 50;
     }
 
     #[Computed]
@@ -200,6 +329,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
      */
     public function generateBookingLink(\App\Services\DokuPaymentService $paymentService, \App\Services\WhatsAppDispatchService $waService): void
     {
+        if (!$this->currentOperator) {
+            return;
+        }
+
+        $this->currentOperator->assertCheckoutAllowed();
+
         if ($this->createExperienceSelection && str_contains($this->createExperienceSelection, ':')) {
             [$type, $id] = explode(':', $this->createExperienceSelection, 2);
             $this->createBookableType = $type;
@@ -216,12 +351,6 @@ new #[Title('Bookings & Reservations')] class extends Component {
             'createGuestEmail' => ['nullable', 'email', 'max:255'],
             'createNotes' => ['nullable', 'string', 'max:1000'],
         ]);
-
-        if (!$this->currentOperator) {
-            return;
-        }
-
-        $this->currentOperator->assertCheckoutAllowed();
 
         /** @var \App\Models\Package|\App\Models\Product|null $bookable */
         $bookable = $this->createBookableType === 'package' ? $this->currentOperator->packages()->find($this->createBookableId) : $this->currentOperator->products()->find($this->createBookableId);
@@ -294,6 +423,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
         $this->linkCreatedSuccessfully = true;
         $this->actionSuccess = true;
         $this->actionMessage = __('Booking link created successfully.');
+        session(['operator.create_link.experience' => $this->createExperienceSelection]);
         $this->dispatch('reservation-updated');
     }
 
@@ -566,10 +696,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
             <span class="hidden text-xs font-semibold text-op-subtle sm:inline">
                 {{ __('Showing :count reservations', ['count' => $this->reservations->total()]) }}
             </span>
-            <x-button type="button" wire:click="openCreateLinkModal">
-                <i class="fa-solid fa-link text-xs"></i>
-                <span>{{ __('Create Booking Link') }}</span>
-            </x-button>
+            <div class="hidden lg:block">
+                <x-button type="button" wire:click="openCreateLinkModal">
+                    <i class="fa-solid fa-link text-xs"></i>
+                    <span>{{ __('Create Booking Link') }}</span>
+                </x-button>
+            </div>
         </x-slot:actions>
     </x-page-header>
 
@@ -711,7 +843,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 </a>
                             @endif
                         </div>
-                        <button type="button" wire:click="viewReservation('{{ $res->id }}')" class="px-3 py-1 rounded-xl bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-semibold text-xs">
+                        <button type="button" wire:click="viewDetails('{{ $res->id }}')" class="h-9 px-3 rounded-xl bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-semibold text-xs">
                             {{ __('Details') }}
                         </button>
                     </div>
@@ -1064,9 +1196,9 @@ new #[Title('Bookings & Reservations')] class extends Component {
                     );
             @endphp
             <div
-                class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
+                class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
                 <div @click.away="$wire.closeDetails()"
-                    class="w-full max-w-2xl rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col my-8 animate-scale-up">
+                    class="w-full max-w-2xl rounded-t-3xl sm:rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col my-0 sm:my-8 animate-scale-up max-h-[92vh]">
                     <!-- Modal Header -->
                     <div
                         class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40 rounded-t-3xl">
@@ -1396,90 +1528,82 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
     <!-- Create Booking & Payment Link Modal (Mobile-First Bottom Sheet & Desktop Dialog) -->
     @if ($showCreateLinkModal)
+        @php
+            $dateToday = now()->toDateString();
+            $dateTomorrow = now()->addDay()->toDateString();
+            $dateSoon = now()->addDays(3)->toDateString();
+        @endphp
         @teleport('body')
             <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/75 backdrop-blur-xs overflow-y-auto"
                 wire:keydown.escape="closeCreateLinkModal">
-                <div class="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden"
-                    @click.outside="$wire.closeCreateLinkModal()">
+                <div class="relative flex w-full max-w-xl max-h-[92vh] sm:max-h-[88vh] flex-col overflow-hidden rounded-t-3xl border border-op-line bg-op-surface shadow-2xl sm:rounded-3xl"
+                    @click.outside="if (!$event.target.closest('[data-date-picker-popover]')) $wire.closeCreateLinkModal()">
 
-                    <!-- Mobile Drag Handle Bar -->
-                    <div class="w-12 h-1 rounded-full bg-slate-300 dark:bg-zinc-700 mx-auto my-2.5 sm:hidden shrink-0">
-                    </div>
+                    <div class="mx-auto my-2.5 h-1 w-12 shrink-0 rounded-full bg-op-line sm:hidden"></div>
 
-                    <!-- Modal Header -->
-                    <div
-                        class="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-3 bg-slate-50/70 dark:bg-zinc-800/50 shrink-0">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center text-sm sm:text-base shadow-xs shrink-0">
-                                <i class="fa-solid fa-link"></i>
+                    <div class="flex shrink-0 items-center justify-between gap-3 border-b border-op-line bg-op-muted/70 px-5 py-4 sm:px-6">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-400 text-brand-foreground">
+                                <i class="fa-solid fa-link text-sm"></i>
                             </div>
                             <div class="min-w-0">
-                                <h3 class="font-extrabold text-base text-slate-900 dark:text-white leading-tight truncate">
-                                    {{ __('Create Booking & Payment Link') }}
+                                <h3 class="truncate text-base font-bold leading-tight text-op-ink">
+                                    {{ $linkCreatedSuccessfully ? __('Link ready') : __('Create a pay link') }}
                                 </h3>
-                                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                                    {{ __('Lock 30-min hold & share direct checkout link') }}
+                                <p class="truncate text-xs text-op-subtle">
+                                    {{ $linkCreatedSuccessfully ? __('Copy it, then paste in chat.') : __('Trip, guests, name and WhatsApp — then copy the link.') }}
                                 </p>
                             </div>
                         </div>
 
                         <button type="button" wire:click="closeCreateLinkModal"
-                            class="h-8 w-8 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition flex items-center justify-center cursor-pointer shrink-0">
+                            class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-op-subtle hover:bg-op-muted hover:text-op-ink">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
 
                     @if ($linkCreatedSuccessfully)
-                        <!-- Link Created Success Screen -->
-                        <div class="p-5 sm:p-7 overflow-y-auto space-y-5 flex-1">
-                            <div
-                                class="p-4 sm:p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-center space-y-1.5">
-                                <div
-                                    class="w-11 h-11 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg mx-auto shadow-xs animate-bounce">
-                                    <i class="fa-solid fa-check"></i>
-                                </div>
-                                <h4 class="font-extrabold text-base text-emerald-900 dark:text-emerald-200">
-                                    {{ __('Booking & Payment Link Generated!') }}
-                                </h4>
-                                <p class="text-xs text-emerald-700 dark:text-emerald-300 font-mono font-bold">
-                                    #{{ $generatedReservationCode }} &bull; {{ __('30-Minute Hold Active') }}
+                        <div class="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6"
+                            x-data="{ copied: false }"
+                            x-init="$nextTick(() => $refs.payLink?.select())">
+                            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center dark:border-emerald-800 dark:bg-emerald-950/40">
+                                <p class="text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                                    {{ __('Hold is on for 30 minutes') }}
+                                </p>
+                                <p class="mt-0.5 font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                    #{{ $generatedReservationCode }}
+                                    @if ($this->createQuote['title'])
+                                        · {{ $this->createQuote['title'] }}
+                                    @endif
                                 </p>
                             </div>
 
-                            <!-- Direct Link Copy Input -->
-                            <div class="space-y-1.5" x-data="{ copied: false }">
-                                <label
-                                    class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Guest Payment Link') }}</label>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-op-subtle">{{ __('Pay link') }}</label>
                                 <div class="flex items-center gap-2">
-                                    <input type="text" readonly value="{{ $generatedPaymentUrl }}"
-                                        class="flex-1 h-11 px-3.5 rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 text-xs font-mono text-slate-900 dark:text-white select-all truncate" />
+                                    <input x-ref="payLink" type="text" readonly value="{{ $generatedPaymentUrl }}"
+                                        class="op-input min-w-0 flex-1 font-mono text-xs" />
                                     <button type="button"
-                                        @click="navigator.clipboard.writeText('{{ $generatedPaymentUrl }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                                        class="h-11 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs">
-                                        <i class="fa-solid"
-                                            :class="copied ? 'fa-check text-emerald-400 dark:text-emerald-600' : 'fa-copy'"></i>
-                                        <span x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy') }}'"></span>
+                                        @click="navigator.clipboard.writeText($refs.payLink.value); copied = true; setTimeout(() => copied = false, 2000)"
+                                        class="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-brand-400 px-4 text-xs font-semibold text-brand-foreground hover:bg-brand-500">
+                                        <i class="fa-solid" :class="copied ? 'fa-check' : 'fa-copy'"></i>
+                                        <span x-text="copied ? '{{ __('Copied') }}' : '{{ __('Copy') }}'"></span>
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- WhatsApp Dispatch Button -->
                             @if ($generatedWhatsAppUrl)
-                                <div>
-                                    <a href="{{ $generatedWhatsAppUrl }}" target="_blank" rel="noopener"
-                                        class="w-full h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
-                                        <i class="fa-brands fa-whatsapp text-lg"></i>
-                                        <span>{{ __('Send Payment Link on WhatsApp') }}</span>
-                                    </a>
-                                </div>
+                                <a href="{{ $generatedWhatsAppUrl }}" target="_blank" rel="noopener"
+                                    class="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-op-line bg-op-muted text-sm font-semibold text-op-ink hover:bg-op-line">
+                                    <i class="fa-brands fa-whatsapp text-base text-emerald-600"></i>
+                                    <span>{{ __('Open WhatsApp to paste') }}</span>
+                                </a>
                             @endif
 
-                            <div
-                                class="pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-3">
+                            <div class="flex items-center justify-between gap-3 border-t border-op-line pt-3">
                                 <button type="button" wire:click="openCreateLinkModal"
-                                    class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
-                                    {{ __('+ Create Another Link') }}
+                                    class="cursor-pointer text-xs font-semibold text-op-ink hover:underline">
+                                    {{ __('Make another') }}
                                 </button>
                                 <x-button size="sm" variant="secondary" wire:click="closeCreateLinkModal">
                                     {{ __('Done') }}
@@ -1487,102 +1611,165 @@ new #[Title('Bookings & Reservations')] class extends Component {
                             </div>
                         </div>
                     @else
-                        <!-- Form View -->
-                        <form wire:submit="generateBookingLink" class="flex flex-col flex-1 overflow-hidden">
-                            <div class="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain">
-                                <!-- Experience Selection -->
-                                <div>
-                                    <x-label for="createExperienceSelection" :value="__('Select Tour Experience')" required />
-                                    <x-select id="createExperienceSelection" wire:model.live="createExperienceSelection"
-                                        :options="$this->experienceOptions" :placeholder="__('Select tour package or activity...')" :error="$errors->has('createBookableId')" />
-                                    <x-input-error :messages="$errors->get('createBookableId')" />
-                                </div>
-
-                                <!-- Date & Pax Grid -->
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <x-label for="createRequestedDate" :value="__('Trip Date')" required />
-                                        <x-date-picker id="createRequestedDate" wire:model.live="createRequestedDate"
-                                            min="{{ now()->format('Y-m-d') }}" :blackout-dates="$this->createBookableBlackoutDates" :placeholder="__('Select date...')" :error="$errors->has('createRequestedDate')" />
-                                        <x-input-error :messages="$errors->get('createRequestedDate')" />
+                        <form wire:submit="generateBookingLink" class="flex flex-1 flex-col overflow-hidden">
+                            <div class="flex-1 space-y-4 overflow-y-auto overscroll-contain p-5 sm:p-6">
+                                @if ($this->currentOperator?->isDemo())
+                                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100">
+                                        <p class="font-semibold">{{ __('Sample shop') }}</p>
+                                        <p class="mt-1 text-xs text-amber-800 dark:text-amber-200/80">
+                                            {{ __('Pay links stay off here so visitors are never charged. This is not platform maintenance.') }}
+                                        </p>
                                     </div>
+                                @else
+                                    <x-input-error :messages="$errors->get('checkout')" />
+                                @endif
 
-                                    <div>
-                                        <x-label for="createPaxCount" :value="__('Guests (Pax)')" required />
-                                        <x-input id="createPaxCount" wire:model.live="createPaxCount" type="number"
-                                            min="1" max="50" :error="$errors->has('createPaxCount')" />
-                                        <x-input-error :messages="$errors->get('createPaxCount')" />
-                                    </div>
-                                </div>
-
-                                <!-- Guest Details -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <x-label for="createGuestName" :value="__('Guest Full Name')" required />
-                                        <x-input id="createGuestName" wire:model="createGuestName" type="text"
-                                            placeholder="e.g. Budi Santoso" :error="$errors->has('createGuestName')" />
-                                        <x-input-error :messages="$errors->get('createGuestName')" />
-                                    </div>
-
-                                    <div>
-                                        <x-label for="createGuestContact" :value="__('WhatsApp / Phone Number')" required />
-                                        <x-input id="createGuestContact" wire:model="createGuestContact" type="tel"
-                                            placeholder="e.g. 081234567890" :error="$errors->has('createGuestContact')" />
-                                        <x-input-error :messages="$errors->get('createGuestContact')" />
-                                    </div>
-                                </div>
-
-                                <!-- Optional Email & Notes -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <x-label for="createGuestEmail" :value="__('Guest Email (Optional)')" />
-                                        <x-input id="createGuestEmail" wire:model="createGuestEmail" type="email"
-                                            placeholder="guest@example.com" :error="$errors->has('createGuestEmail')" />
-                                        <x-input-error :messages="$errors->get('createGuestEmail')" />
-                                    </div>
-
-                                    <div>
-                                        <x-label for="createNotes" :value="__('Notes / Pick-up Details')" />
-                                        <x-input id="createNotes" wire:model="createNotes" type="text"
-                                            placeholder="e.g. Hotel pickup at 07:30" :error="$errors->has('createNotes')" />
-                                        <x-input-error :messages="$errors->get('createNotes')" />
-                                    </div>
-                                </div>
-
-                                <!-- Real-Time Price Estimate Pill -->
-                                @if ($this->estimatedTotal > 0)
-                                    <div
-                                        class="p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs">
-                                        <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                            <i class="fa-solid fa-calculator text-indigo-500"></i>
-                                            <span class="font-medium">{{ __('Total Booking Amount') }}</span>
+                                @if ($this->experienceOptions === [])
+                                    <div class="rounded-2xl border border-op-line bg-op-muted p-4 text-sm text-op-ink">
+                                        <p class="font-semibold">{{ __('Publish a trip first') }}</p>
+                                        <p class="mt-1 text-xs text-op-subtle">{{ __('This link needs a published package or activity.') }}</p>
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            <x-button size="xs" :href="route('products.create')" wire:navigate>{{ __('Add activity') }}</x-button>
+                                            <x-button size="xs" variant="secondary" :href="route('packages.create')" wire:navigate>{{ __('Add package') }}</x-button>
                                         </div>
-                                        <span class="font-black text-sm text-indigo-600 dark:text-indigo-400">
-                                            Rp {{ number_format($this->estimatedTotal, 0, ',', '.') }}
-                                        </span>
+                                    </div>
+                                @else
+                                    <div>
+                                        <x-label for="createExperienceSelection" :value="__('Trip')" required />
+                                        <x-select id="createExperienceSelection" wire:model.live="createExperienceSelection"
+                                            :options="$this->experienceOptions" :placeholder="__('Package or activity...')" :error="$errors->has('createBookableId')" />
+                                        <x-input-error :messages="$errors->get('createBookableId')" />
+                                    </div>
+                                @endif
+
+                                <div class="space-y-3">
+                                    <div class="flex h-8 w-full overflow-hidden rounded-xl border border-op-line p-0.5">
+                                        <button type="button" wire:click="setCreateDatePreset('today')"
+                                            @class(['min-w-0 flex-1 rounded-lg text-[11px] font-semibold cursor-pointer', $createRequestedDate === $dateToday ? 'bg-brand-400 text-brand-foreground' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
+                                            {{ __('Today') }}
+                                        </button>
+                                        <button type="button" wire:click="setCreateDatePreset('tomorrow')"
+                                            @class(['min-w-0 flex-1 rounded-lg text-[11px] font-semibold cursor-pointer', $createRequestedDate === $dateTomorrow ? 'bg-brand-400 text-brand-foreground' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
+                                            {{ __('Tomorrow') }}
+                                        </button>
+                                        <button type="button" wire:click="setCreateDatePreset('soon')"
+                                            @class(['min-w-0 flex-1 rounded-lg text-[11px] font-semibold cursor-pointer', $createRequestedDate === $dateSoon ? 'bg-brand-400 text-brand-foreground' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
+                                            {{ __('In 3 days') }}
+                                        </button>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_8.75rem]">
+                                        <div>
+                                            <x-label for="createRequestedDate" :value="__('Date')" required />
+                                            <x-date-picker id="createRequestedDate" class="h-10 py-0 leading-5" wire:model.live="createRequestedDate"
+                                                min="{{ now()->format('Y-m-d') }}" :blackout-dates="$this->createBookableBlackoutDates" :placeholder="__('Select date...')" :error="$errors->has('createRequestedDate')" />
+                                            <x-input-error :messages="$errors->get('createRequestedDate')" />
+                                        </div>
+                                        <div>
+                                            <x-label for="createPaxCount" :value="__('Guests')" required />
+                                            <div class="flex h-10 items-center overflow-hidden rounded-xl border border-op-line bg-op-inset shadow-xs">
+                                                <button type="button" wire:click="decrementCreatePax"
+                                                    class="flex h-10 w-9 shrink-0 cursor-pointer items-center justify-center text-op-ink hover:bg-op-muted disabled:cursor-not-allowed disabled:opacity-40"
+                                                    @disabled($createPaxCount <= 1)>
+                                                    <i class="fa-solid fa-minus text-xs"></i>
+                                                </button>
+                                                <input id="createPaxCount" wire:model.live="createPaxCount" type="number"
+                                                    min="1" max="50"
+                                                    class="h-10 min-w-0 flex-1 border-0 bg-transparent text-center text-sm font-semibold text-op-ink focus:ring-0" />
+                                                <button type="button" wire:click="incrementCreatePax"
+                                                    class="flex h-10 w-9 shrink-0 cursor-pointer items-center justify-center text-op-ink hover:bg-op-muted">
+                                                    <i class="fa-solid fa-plus text-xs"></i>
+                                                </button>
+                                            </div>
+                                            <x-input-error :messages="$errors->get('createPaxCount')" />
+                                            @if (is_int($this->createQuote['remaining']))
+                                                <p class="mt-1 truncate text-[11px] text-op-subtle">
+                                                    {{ trans_choice(':count spot left|:count spots left', $this->createQuote['remaining'], ['count' => $this->createQuote['remaining']]) }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3">
+                                    @if ($this->recentGuests->isNotEmpty())
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <span class="text-[11px] font-semibold text-op-subtle">{{ __('Recent') }}</span>
+                                            @foreach ($this->recentGuests as $recentGuest)
+                                                <button type="button" wire:click="fillGuestFromCrm('{{ $recentGuest->id }}')"
+                                                    class="h-7 cursor-pointer rounded-full border border-op-line bg-op-muted px-2.5 text-[11px] font-semibold text-op-ink hover:border-brand-400">
+                                                    {{ $recentGuest->name }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
+                                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div>
+                                            <x-label for="createGuestName" :value="__('Name')" required />
+                                            <x-input id="createGuestName" wire:model="createGuestName" type="text"
+                                                placeholder="{{ __('Guest name') }}" autofocus :error="$errors->has('createGuestName')" />
+                                            <x-input-error :messages="$errors->get('createGuestName')" />
+                                        </div>
+                                        <div>
+                                            <x-label for="createGuestContact" :value="__('WhatsApp')" required />
+                                            <x-input id="createGuestContact" wire:model="createGuestContact" type="tel"
+                                                placeholder="081234567890" :error="$errors->has('createGuestContact')" />
+                                            <x-input-error :messages="$errors->get('createGuestContact')" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" wire:click="toggleCreateExtras"
+                                    class="cursor-pointer text-xs font-semibold text-op-subtle hover:text-op-ink">
+                                    <i class="fa-solid {{ $createShowExtras ? 'fa-chevron-up' : 'fa-chevron-down' }} mr-1 text-[10px]"></i>
+                                    {{ $createShowExtras ? __('Hide email & notes') : __('Add email or pickup notes') }}
+                                </button>
+
+                                @if ($createShowExtras)
+                                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div>
+                                            <x-label for="createGuestEmail" :value="__('Email')" />
+                                            <x-input id="createGuestEmail" wire:model="createGuestEmail" type="email"
+                                                placeholder="guest@email.com" :error="$errors->has('createGuestEmail')" />
+                                            <x-input-error :messages="$errors->get('createGuestEmail')" />
+                                        </div>
+                                        <div>
+                                            <x-label for="createNotes" :value="__('Pickup notes')" />
+                                            <x-input id="createNotes" wire:model="createNotes" type="text"
+                                                placeholder="{{ __('Hotel, 07:30') }}" :error="$errors->has('createNotes')" />
+                                            <x-input-error :messages="$errors->get('createNotes')" />
+                                        </div>
                                     </div>
                                 @endif
                             </div>
 
-                            <!-- Modal Submit Footer -->
-                            <div
-                                class="px-5 py-4 pb-6 sm:pb-4 sm:px-6 border-t border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-3 shrink-0">
-                                <button type="button" wire:click="closeCreateLinkModal"
-                                    class="h-11 px-5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs sm:text-sm font-bold transition cursor-pointer">
-                                    <i class="fa-solid fa-xmark text-sm"></i>
-                                    <span class="font-bold">
-                                        {{ __('Cancel') }}
-                                    </span>
-                                </button>
+                            <div class="flex shrink-0 items-center justify-between gap-3 border-t border-op-line bg-op-surface px-5 py-3 pb-6 sm:px-6 sm:pb-4">
+                                <div class="min-w-0">
+                                    @if ($this->createQuote['total'] > 0)
+                                        <p class="text-sm font-bold text-op-ink">
+                                            Rp {{ number_format($this->createQuote['total'], 0, ',', '.') }}
+                                        </p>
+                                        <p class="truncate text-[11px] text-op-subtle">
+                                            {{ $this->createQuote['pax'] }} × Rp {{ number_format($this->createQuote['unit'], 0, ',', '.') }}
+                                            @if ($this->createQuote['fee'] > 0)
+                                                + {{ __('fee') }}
+                                            @endif
+                                        </p>
+                                    @else
+                                        <p class="text-xs text-op-subtle">{{ __('Pick a trip to see the total') }}</p>
+                                    @endif
+                                </div>
 
-                                <button type="submit"
-                                    class="h-11 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-500/25 transition flex items-center justify-center gap-2 cursor-pointer shrink-0">
-                                    <i class="fa-solid fa-link text-xs" wire:loading.remove
-                                        wire:target="generateBookingLink"></i>
-                                    <i class="fa-solid fa-circle-notch fa-spin text-xs" wire:loading
-                                        wire:target="generateBookingLink"></i>
-                                    <span>{{ __('Generate Payment Link') }}</span>
-                                </button>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    <x-button type="button" size="sm" variant="ghost" wire:click="closeCreateLinkModal">
+                                        {{ __('Cancel') }}
+                                    </x-button>
+                                    <x-button type="submit" size="sm" :disabled="$this->experienceOptions === [] || $this->currentOperator?->isDemo()">
+                                        <span wire:loading.remove wire:target="generateBookingLink">{{ __('Create link') }}</span>
+                                        <span wire:loading wire:target="generateBookingLink">{{ __('Creating…') }}</span>
+                                    </x-button>
+                                </div>
                             </div>
                         </form>
                     @endif

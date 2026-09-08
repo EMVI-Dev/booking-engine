@@ -67,6 +67,7 @@
         $hasBank = $operator && $operator->hasPayoutBankAccount();
         $hasBillingEmail = $operator && filled($operator->billing_email);
         $hasNotificationEmail = $operator && filled($operator->booking_notification_email);
+        $hasReviewUrl = $operator && $operator->hasReviewUrl();
         $hasProducts = $productsCount > 0;
         $hasPackages = $packagesCount > 0;
         $storefrontIsPublic = $operator?->isStorefrontPublic() ?? false;
@@ -77,6 +78,7 @@
             ['done' => $hasBank, 'label' => __('Payout bank account'), 'url' => route('payments.edit')],
             ['done' => $hasBillingEmail, 'label' => __('Billing email'), 'url' => route('brand.edit')],
             ['done' => $hasNotificationEmail, 'label' => __('Booking notification email'), 'url' => route('brand.edit')],
+            ['done' => $hasReviewUrl, 'label' => $operator?->hasFeature('google_reviews') ? __('Reviews') : __('Review Platform'), 'url' => route('review-settings.edit')],
         ];
         $completedSteps = collect($requiredSetup)->where('done', true)->count();
         $progressPercent = ($completedSteps / count($requiredSetup)) * 100;
@@ -101,11 +103,11 @@
                             : __('Guests cannot open your page yet. Finish the setup list, then share your link.') }}
                     </p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <x-button :href="$storefrontUrl" target="_blank" size="sm">
+                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <x-button :href="$storefrontUrl" target="_blank" size="sm" class="w-full sm:w-auto">
                         {{ __('Open your page') }}
                     </x-button>
-                    <x-button :href="route('packages.create')" variant="secondary" size="sm" wire:navigate>
+                    <x-button :href="route('packages.create')" variant="secondary" size="sm" wire:navigate class="w-full sm:w-auto">
                         {{ __('Add a trip') }}
                     </x-button>
                 </div>
@@ -154,7 +156,7 @@
             </x-page-header>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <x-metric-card
                 :label="__('Direct Revenue')"
                 :value="'Rp '.number_format($totalRevenue, 0, ',', '.')"
@@ -357,12 +359,12 @@
                         </div>
                         <div class="space-y-2 text-xs">
                             @foreach ($requiredSetup as $step)
-                                <a href="{{ $step['url'] }}" class="flex cursor-pointer items-center justify-between hover:text-op-ink" wire:navigate>
+                                <a href="{{ $step['url'] }}" class="flex cursor-pointer items-center justify-between rounded-lg py-2.5 hover:text-op-ink" wire:navigate>
                                     <span @class(['text-op-subtle line-through' => $step['done'], 'font-semibold text-op-ink' => ! $step['done']])>{{ $step['label'] }}</span>
                                     <i @class(['fa-solid', 'fa-check text-emerald-500' => $step['done'], 'fa-circle text-op-line' => ! $step['done']])></i>
                                 </a>
                             @endforeach
-                            <a href="{{ route('packages.create') }}" class="flex cursor-pointer items-center justify-between hover:text-op-ink" wire:navigate>
+                            <a href="{{ route('packages.create') }}" class="flex cursor-pointer items-center justify-between rounded-lg py-2.5 hover:text-op-ink" wire:navigate>
                                 <span @class(['text-op-subtle line-through' => $hasProducts && $hasPackages, 'font-semibold text-op-ink' => ! ($hasProducts && $hasPackages)])>{{ __('Add a trip') }}</span>
                                 <i @class(['fa-solid', 'fa-check text-emerald-500' => $hasProducts && $hasPackages, 'fa-circle text-op-line' => ! ($hasProducts && $hasPackages)])></i>
                             </a>

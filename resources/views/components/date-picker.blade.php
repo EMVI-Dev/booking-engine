@@ -160,26 +160,63 @@
         }
     },
     placement: 'bottom',
+    popoverTop: 0,
+    popoverLeft: 0,
+    positionPopover() {
+        const trigger = this.$refs.trigger;
+        const popover = this.$refs.popover;
+        if (!trigger) {
+            return;
+        }
+
+        const rect = trigger.getBoundingClientRect();
+        const popoverHeight = popover?.offsetHeight || 340;
+        const popoverWidth = popover?.offsetWidth || 320;
+        const gap = 6;
+        const spaceBelow = window.innerHeight - rect.bottom - gap;
+        this.placement = (spaceBelow < popoverHeight && rect.top > popoverHeight + gap) ? 'top' : 'bottom';
+
+        let top = this.placement === 'top' ? rect.top - popoverHeight - gap : rect.bottom + gap;
+        let left = rect.left;
+
+        if (left + popoverWidth > window.innerWidth - 8) {
+            left = Math.max(8, window.innerWidth - popoverWidth - 8);
+        }
+
+        if (left < 8) {
+            left = 8;
+        }
+
+        if (top < 8) {
+            top = 8;
+        }
+
+        const maxTop = window.innerHeight - popoverHeight - 8;
+        if (maxTop > 8 && top > maxTop) {
+            top = maxTop;
+        }
+
+        this.popoverTop = top;
+        this.popoverLeft = left;
+    },
     togglePicker() {
         if ({{ $disabled ? 'true' : 'false' }}) return;
         this.open = !this.open;
         if (this.open) {
             this.$nextTick(() => {
-                const rect = this.$el.getBoundingClientRect();
-                const popoverHeight = 340;
-                const spaceBelow = window.innerHeight - rect.bottom;
-                if (spaceBelow < popoverHeight && rect.top > popoverHeight) {
-                    this.placement = 'top';
-                } else {
-                    this.placement = 'bottom';
-                }
+                this.positionPopover();
+                requestAnimationFrame(() => this.positionPopover());
             });
         }
     }
-}" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false"
+}"
+    x-on:click.outside="if (!$refs.popover || !$refs.popover.contains($event.target)) open = false"
+    x-on:keydown.escape.window="open = false"
+    x-on:scroll.window.capture="if (open) positionPopover()"
+    x-on:resize.window="if (open) positionPopover()"
     class="relative w-full">
     <!-- Display Button Trigger -->
-    <button type="button" x-on:click="togglePicker()"
+    <button type="button" x-ref="trigger" x-on:click="togglePicker()"
         {{ $disabled ? 'disabled' : '' }}
         {{ $attributes->except(['wire:model', 'min', 'max', 'presets', 'blackoutDates'])->merge(['class' => $classes . ' px-3.5 flex items-center justify-between gap-2.5 text-left cursor-pointer select-none']) }}
         :class="{ 'ring-2 ring-indigo-500/20 border-indigo-500 dark:border-indigo-400': open }">
@@ -193,15 +230,16 @@
             :class="{ 'rotate-180': open }"></i>
     </button>
 
-    <!-- Interactive Calendar Popover -->
-    <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150"
+    <template x-teleport="body">
+    <div x-ref="popover" x-show="open" x-cloak data-date-picker-popover
+        x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0 translate-y-1 scale-98"
         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
         x-transition:leave-end="opacity-0 translate-y-1 scale-98"
-        :class="placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'"
-        class="absolute left-0 z-[110] w-72 sm:w-80 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-4 space-y-3 animate-fade-in"
+        class="fixed z-[80] w-72 sm:w-80 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-4 space-y-3"
+        :style="`top: ${popoverTop}px; left: ${popoverLeft}px;`"
         style="display: none;">
         <!-- Calendar Header (Month / Year Navigation) -->
         <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
@@ -281,4 +319,5 @@
             </div>
         </template>
     </div>
+    </template>
 </div>

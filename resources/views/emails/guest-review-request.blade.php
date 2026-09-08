@@ -1,6 +1,7 @@
 @php
     $agent = $reservation->agent;
-    $brandColor = $agent->brand_color ?? '#4f46e5';
+    $brandColor = $agent->brand_color ?? '#FFEF4D';
+    $brandForeground = $agent->brand_foreground_color ?? '#101730';
     $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
     $bookableTitle = $reservation->bookable?->name ?? ($reservation->bookable?->title ?? 'Tour Experience');
     $tripDate = \Illuminate\Support\Carbon::parse($reservation->requested_date)->translatedFormat('d F Y');
@@ -17,17 +18,14 @@
         <tr>
             <td align="center">
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
-                    <!-- Brand Top Header -->
-                    <tr>
-                        <td style="background-color: {{ $brandColor }}; padding: 32px 24px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                                {{ $agent->name ?? config('app.name') }}
-                            </h1>
-                            <p style="margin: 6px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.85); font-weight: 500;">
-                                {{ __('We hope you loved your adventure!') }}
-                            </p>
-                        </td>
-                    </tr>
+                    <x-email.brand-header
+                        :background="$brandColor"
+                        :foreground="$brandForeground"
+                        :logo-url="$agent->logo_url"
+                        :logo-alt="$agent->name ?? config('app.name')"
+                        :title="$agent->name ?? config('app.name')"
+                        :subtitle="__('We hope you loved your adventure!')"
+                    />
 
                     <!-- Review Hero -->
                     <tr>
@@ -42,7 +40,11 @@
                                 {{ __('We hope you had an unforgettable experience on your :tour on :date.', ['tour' => $bookableTitle, 'date' => $tripDate]) }}
                             </p>
                             <p style="margin: 10px 0 0 0; font-size: 13px; color: #64748b;">
-                                {{ __('Your feedback helps other travelers find amazing local adventures and means the world to our team & guides.') }}
+                                @if ($agent->reviewInvitationListingName())
+                                    {{ __('Please leave a review for :listing.', ['listing' => $agent->reviewInvitationListingName()]) }}
+                                @else
+                                    {{ __('Your feedback helps other travelers find amazing local adventures and means the world to our team & guides.') }}
+                                @endif
                             </p>
                         </td>
                     </tr>
@@ -50,8 +52,8 @@
                     <!-- Review CTA Button -->
                     <tr>
                         <td style="padding: 10px 28px 32px 28px; text-align: center;">
-                            <a href="{{ $reviewUrl }}" target="_blank" style="display: inline-block; background-color: {{ $brandColor }}; color: #ffffff; font-size: 15px; font-weight: 800; text-decoration: none; padding: 14px 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.25);">
-                                {{ __('Leave a Review on Google / TripAdvisor') }}
+                            <a href="{{ $reviewUrl }}" target="_blank" style="display: inline-block; background-color: {{ $brandColor }}; color: {{ $brandForeground }}; font-size: 15px; font-weight: 800; text-decoration: none; padding: 14px 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.12);">
+                                {{ __('Leave a review') }}
                             </a>
                         </td>
                     </tr>

@@ -51,7 +51,7 @@ class SendPostTripReviewRequestsCommand extends Command
                 continue;
             }
 
-            $reviewUrl = $agent->getReviewUrl();
+            $reviewUrl = $agent->reviewInvitationUrl();
 
             // Only send if the operator has configured a review link
             if (! $reviewUrl) {

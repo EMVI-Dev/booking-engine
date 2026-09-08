@@ -9,6 +9,7 @@ use App\Enums\PayoutStatus;
 use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use App\Services\DomainResolverService;
+use App\Services\GooglePlacesService;
 use App\Services\MediaStore;
 use Database\Factories\OperatorFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -193,14 +194,6 @@ class Operator extends Model
         return $this->hasMany(AvailabilityBlock::class);
     }
 
-    /**
-     * @return HasMany<Review, $this>
-     */
-    public function reviews(): HasMany
-    {
-        return $this->hasMany(Review::class);
-    }
-
     public function isApproved(): bool
     {
         return $this->status === OperatorStatus::Approved;
@@ -231,7 +224,7 @@ class Operator extends Model
         }
 
         throw ValidationException::withMessages([
-            'checkout' => __('Checkout is disabled on the demo storefront. Look around — nothing here charges a card.'),
+            'checkout' => __('Checkout is off on the sample shop so nothing is charged.'),
         ]);
     }
 
@@ -877,7 +870,7 @@ class Operator extends Model
     }
 
     /**
-     * Get Google Maps / TripAdvisor / External Review URL.
+     * External review platform URL (Google, Tripadvisor, or any other link).
      */
     public function getReviewUrl(): ?string
     {
@@ -885,5 +878,102 @@ class Operator extends Model
         $url = trim((string) ($marketing['review_url'] ?? ''));
 
         return $url !== '' ? $url : null;
+    }
+
+    /**
+     * Whether a post-trip review invitation URL is on file.
+     */
+    public function hasReviewUrl(): bool
+    {
+        return $this->reviewInvitationUrl() !== null;
+    }
+
+    /**
+     * Where post-trip review mail should send the guest.
+     * Agency uses the connected Google listing when one is connected. Otherwise the Review Platform URL.
+     */
+    public function reviewInvitationUrl(): ?string
+    {
+        if ($this->hasFeature('google_reviews')) {
+            $listingUrl = $this->googleListingReviewUrl();
+            if ($listingUrl !== null) {
+                return $listingUrl;
+            }
+        }
+
+        return $this->getReviewUrl();
+    }
+
+    /**
+     * Listing name used in Agency review mail. Null unless that plan has a connected listing.
+     */
+    public function reviewInvitationListingName(): ?string
+    {
+        if (! $this->hasFeature('google_reviews') || $this->googleListingReviewUrl() === null) {
+            return null;
+        }
+
+        $name = trim((string) ($this->settings['google_place']['name'] ?? ''));
+
+        return $name !== '' ? $name : null;
+    }
+
+    public function googleListingReviewUrl(): ?string
+    {
+        $place = $this->settings['google_place'] ?? null;
+        if (! is_array($place)) {
+            return null;
+        }
+
+        $url = trim((string) ($place['write_review_url'] ?? ''));
+
+        return $url !== '' ? $url : null;
+    }
+
+    /**
+     * Cached public Google listing used for the storefront review slider.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function googlePlace(): ?array
+    {
+        $place = $this->settings['google_place'] ?? null;
+        if (! is_array($place) || blank($place['place_id'] ?? null)) {
+            return null;
+        }
+
+        $fetchedAt = $place['fetched_at'] ?? null;
+        if (! is_string($fetchedAt) || $fetchedAt === '') {
+            return null;
+        }
+
+        if (now()->diffInDays(Carbon::parse($fetchedAt), true) > GooglePlacesService::CACHE_DAYS) {
+            return null;
+        }
+
+        return $place;
+    }
+
+    public function googlePlaceId(): ?string
+    {
+        $placeId = trim((string) ($this->settings['google_place']['place_id'] ?? ''));
+
+        return $placeId !== '' ? $placeId : null;
+    }
+
+    /**
+     * Google reviews ready to show on the shop. Never in-app guest ratings.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function googleReviews(): array
+    {
+        if (! $this->hasFeature('google_reviews')) {
+            return [];
+        }
+
+        $reviews = $this->googlePlace()['reviews'] ?? [];
+
+        return is_array($reviews) ? array_values($reviews) : [];
     }
 }

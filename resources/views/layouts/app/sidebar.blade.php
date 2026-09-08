@@ -92,7 +92,7 @@
     <div class="flex-1 flex min-h-0 w-full">
         <!-- Sticky Desktop Sidebar (Purely Desktop) -->
         <aside
-            class="op-sidebar hidden w-72 min-h-0 shrink-0 select-none flex-col border-r border-op-line bg-op-sidebar lg:sticky lg:top-0 lg:flex print:hidden">
+            class="op-sidebar op-desk-chrome hidden w-72 min-h-0 shrink-0 select-none flex-col border-r border-op-line bg-op-sidebar sticky top-0 print:hidden">
             <div class="flex h-16 shrink-0 items-center px-4 border-b border-op-line">
                 <a href="{{ route('dashboard') }}" class="group flex min-w-0 items-center gap-3 text-sm font-semibold"
                     wire:navigate>
@@ -164,10 +164,6 @@
                     <x-nav-link :href="route('coupons.index')" icon="fa-ticket" :active="request()->routeIs('coupons.*')" :badge="$couponsCount" :title="__('Coupons & Discounts')">
                         {{ __('Coupons') }}
                     </x-nav-link>
-
-                    <x-nav-link :href="route('reviews.index')" icon="fa-star" :active="request()->routeIs('reviews.*')" :title="__('Guest Reviews')">
-                        {{ __('Reviews') }}
-                    </x-nav-link>
                 </x-nav-section>
 
                 <x-nav-section :title="__('Business & Settings')">
@@ -186,7 +182,7 @@
                         </x-nav-link>
                     @endif
 
-                    <x-nav-link :href="route('brand.edit')" icon="fa-sliders" :active="request()->routeIs('brand.edit', 'storefront-settings.edit')" :title="__('Storefront Settings')">
+                    <x-nav-link :href="route('brand.edit')" icon="fa-sliders" :active="request()->routeIs('brand.edit', 'storefront-settings.edit', 'review-settings.edit')" :title="__('Storefront Settings')">
                         {{ __('Storefront') }}
                     </x-nav-link>
 
@@ -251,7 +247,7 @@
         <div class="flex-1 flex flex-col min-w-0 min-h-screen">
             <!-- Mobile Top Header (Fixed 56px) -->
             <header
-                class="h-14 px-4 sm:px-6 flex items-center justify-between border-b border-stone-200 dark:border-zinc-800 lg:hidden bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md sticky top-0 z-30 select-none print:hidden">
+                class="op-touch-nav min-h-14 px-4 sm:px-6 flex items-center justify-between border-b border-stone-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md sticky top-0 z-30 select-none print:hidden pt-[env(safe-area-inset-top)]">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 min-w-0" wire:navigate>
                     @if ($currentOperator?->logo_url)
                         <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}"
@@ -297,7 +293,7 @@
 
             <!-- Desktop Top Header Bar (Exact 64px matching Desktop Sidebar Brand Header) -->
             <header
-                class="hidden lg:flex h-16 items-center justify-between px-6 lg:px-8 border-b border-stone-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md sticky top-0 z-30 select-none print:hidden">
+                class="op-desk-chrome hidden h-16 items-center justify-between px-6 2xl:px-8 border-b border-stone-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md sticky top-0 z-30 select-none print:hidden">
                 <!-- Left: Storefront URL with 1-Click Launch & Copy -->
                 <div class="flex items-center gap-3 min-w-0" x-data="{ copied: false }">
                     <div
@@ -356,7 +352,7 @@
             <main
                 id="main-content"
                 tabindex="-1"
-                class="flex-1 w-full px-4 py-5 sm:px-6 lg:px-8 lg:py-6 pb-24 lg:pb-6 print:m-0 print:w-full print:max-w-none print:p-0">
+                class="op-desk-pad flex-1 w-full px-4 py-5 sm:px-6 lg:px-8 lg:py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] print:m-0 print:w-full print:max-w-none print:p-0">
                 <div class="mx-auto w-full max-w-7xl space-y-6 print:max-w-none print:space-y-0">
                     @php
                         $platformAnnouncements = \App\Models\PlatformAnnouncement::forOperator($currentOperator)->get();
@@ -427,7 +423,7 @@
             </main>
 
             <!-- Mobile Menu Modal Drawer -->
-            <div x-show="mobileMenuOpen" x-cloak class="relative z-50 lg:hidden" role="dialog" aria-modal="true">
+            <div x-show="mobileMenuOpen" x-cloak class="op-touch-nav relative z-50" role="dialog" aria-modal="true">
                 <!-- Dim Backdrop -->
                 <div x-show="mobileMenuOpen" x-cloak x-transition:enter="transition ease-out duration-200"
                     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
@@ -436,7 +432,7 @@
                     class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"></div>
 
                 <!-- Bottom Sheet Content -->
-                <div class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 max-h-[85vh] overflow-y-auto">
+                <div class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 max-h-[85vh] overflow-y-auto pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                     <div x-show="mobileMenuOpen" x-cloak
                         x-transition:enter="transition ease-out duration-250 transform"
                         x-transition:enter-start="translate-y-full opacity-0"
@@ -553,17 +549,6 @@
                                     class="text-[10px] text-slate-400 block">{{ __('Balance & settlements') }}</span>
                             </a>
 
-                            <!-- Guest Reviews -->
-                            <a href="{{ route('reviews.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
-                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
-                                <span
-                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs inline-block">
-                                    <i class="fa-solid fa-star"></i>
-                                </span>
-                                <span
-                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest Reviews') }}</span>
-                                <span class="text-[10px] text-slate-400 block">{{ __('Ratings & feedback') }}</span>
-                            </a>
                         </div>
 
                         <!-- Guest CRM Directory -->
@@ -697,7 +682,7 @@
 
             <!-- Operator Dashboard Sticky Footer (Exact 64px matching Sidebar Footer) -->
             <footer
-                class="sticky bottom-0 z-30 mb-16 mt-auto hidden h-11 items-center border-t border-op-line bg-op-sidebar/90 px-6 select-none backdrop-blur-md lg:mb-0 lg:flex print:hidden">
+                class="op-desk-chrome sticky bottom-0 z-30 mb-16 mt-auto hidden h-11 items-center border-t border-op-line bg-op-sidebar/90 px-6 select-none backdrop-blur-md print:hidden">
                 <div class="mx-auto flex w-full max-w-7xl items-center justify-between text-xs text-op-subtle">
                     <span>
                         &copy; {{ date('Y') }}
@@ -720,9 +705,10 @@
             </footer>
         </div>
 
-        <!-- Mobile Sticky Bottom Navigation Bar (lg:hidden) -->
+        <!-- Phone and tablet bottom navigation. Desktop sidebar only on a wide pointer. -->
         <nav
-            class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-stone-200 dark:border-zinc-800 h-16 flex items-center justify-around px-2 select-none print:hidden">
+            x-show="!mobileMenuOpen"
+            class="op-touch-nav fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-stone-200 dark:border-zinc-800 min-h-16 h-auto flex items-center justify-around px-2 select-none print:hidden pb-[env(safe-area-inset-bottom)]">
             <x-mobile-nav-item :href="route('dashboard')" icon="fa-gauge-high" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-mobile-nav-item>

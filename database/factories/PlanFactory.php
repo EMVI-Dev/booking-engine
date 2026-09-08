@@ -95,6 +95,7 @@ class PlanFactory extends Factory
                 'whatsapp_dispatch' => true,
                 'tracking_pixels' => true,
                 'automated_review_requests' => true,
+                'google_reviews' => true,
                 'custom_domain' => true,
                 'priority_support' => true,
                 'ai_discovery' => true,

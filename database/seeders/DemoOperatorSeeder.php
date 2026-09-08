@@ -19,7 +19,6 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\Reservation;
-use App\Models\Review;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\DomainResolverService;
@@ -124,7 +123,7 @@ class DemoOperatorSeeder extends Seeder
             'bank_account_ref' => 'BCA - 0000000000 (Demo Tours)',
             'logo_path' => null,
             'banner_path' => null,
-            'terms_and_conditions' => "1. This is a demo storefront. Guests cannot pay.\n2. The catalog, bookings, and reviews reset every day.\n3. Nothing here moves real money.",
+            'terms_and_conditions' => "1. This is a demo storefront. Guests cannot pay.\n2. The catalog and bookings reset every day.\n3. Nothing here moves real money.",
             'settings' => [
                 'brand_color' => '#0f766e',
                 'whatsapp_prefilled_message' => 'Hi Demo Tours, I am looking around the TravelEngine demo.',
@@ -135,12 +134,11 @@ class DemoOperatorSeeder extends Seeder
                     'end_time' => '18:00',
                     'days' => ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
                 ],
-                'social_links' => [
-                    'website' => 'https://travelengine.online',
+                'marketing' => [
+                    'review_url' => 'https://travelengine.online',
                 ],
                 'storefront' => [
                     'allow_standalone_products' => true,
-                    'show_reviews' => true,
                     'show_inclusions_preview' => true,
                     'booking_confirmation_mode' => 'automatic',
                     'hero_headline' => 'See how a tour operator looks on TravelEngine',
@@ -397,24 +395,6 @@ class DemoOperatorSeeder extends Seeder
             'status' => WalletTransactionStatus::Cleared,
             'available_at' => now(),
             'description' => 'Demo booking #'.$secondReservation->code,
-        ]);
-
-        Review::query()->create([
-            'operator_id' => $operator->id,
-            'reservation_id' => $firstReservation->id,
-            'bookable_type' => 'package',
-            'bookable_id' => $snorkelSafari->id,
-            'rating' => 5,
-            'comment' => 'Clear sample review for the snorkel day. The boat was on time and the guide was easy to follow.',
-        ]);
-
-        Review::query()->create([
-            'operator_id' => $operator->id,
-            'reservation_id' => $secondReservation->id,
-            'bookable_type' => 'package',
-            'bookable_id' => $cliffDay->id,
-            'rating' => 5,
-            'comment' => 'Clear sample review for the cliff day. Easy pickup and enough time at each stop.',
         ]);
     }
 
@@ -722,8 +702,10 @@ class DemoOperatorSeeder extends Seeder
             return (string) ob_get_clean();
         }
 
-        return (string) base64_decode(''
-            .'/9j/4AAQSkZJRgABAQAAAQABAAD/2wAAAAD/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==',
-            true);
+        return (string) base64_decode(
+            ''
+                .'/9j/4AAQSkZJRgABAQAAAQABAAD/2wAAAAD/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==',
+            true
+        );
     }
 }

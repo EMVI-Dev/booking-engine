@@ -6,5 +6,8 @@
         <x-filter-tab :href="route('storefront-settings.edit')" icon="fa-store" :active="request()->routeIs('storefront-settings.edit')">
             {{ __('Storefront & Policies') }}
         </x-filter-tab>
+        <x-filter-tab :href="route('review-settings.edit')" icon="fa-star" :active="request()->routeIs('review-settings.edit')">
+            {{ __('Reviews') }}
+        </x-filter-tab>
     </x-filter-tabs>
 </div>

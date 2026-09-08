@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Contracts\Bookable;
 use App\Enums\ListingStatus;
 use App\Models\Traits\HasCancellationPolicy;
-use App\Models\Traits\HasRating;
 use App\Services\MediaStore;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -51,7 +50,7 @@ class Product extends Model implements Bookable
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
 
-    use HasRating, HasUlids;
+    use HasUlids;
 
     protected $fillable = [
         'operator_id',

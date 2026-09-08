@@ -39,6 +39,7 @@ test('new operators see a welcome banner and clickable setup steps', function ()
         ->assertSee('Guests cannot open your page yet')
         ->assertSee('Add a trip')
         ->assertSee('Payout bank account')
+        ->assertSee('Review Platform')
         ->assertSee(route('packages.create', absolute: false))
         ->assertSee(route('payments.edit', absolute: false));
 });

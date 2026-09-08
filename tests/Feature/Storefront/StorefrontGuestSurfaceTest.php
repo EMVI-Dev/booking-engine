@@ -106,6 +106,25 @@ test('guest catalog pages show only this operator published listings', function 
         ->assertDontSee('Crew-Only Transfer');
 });
 
+test('storefront does not advertise an external official website', function () {
+    $this->operator->update([
+        'bio' => 'Guided reef walks from the harbor.',
+        'settings' => array_merge($this->operator->settings ?? [], [
+            'social_links' => [
+                'website' => 'https://some-other-site.example',
+                'instagram' => 'https://instagram.com/whitebox-reef',
+            ],
+        ]),
+    ]);
+
+    $this->get($this->host.'/', $this->headers)
+        ->assertOk()
+        ->assertSee('Instagram')
+        ->assertSee('https://instagram.com/whitebox-reef', false)
+        ->assertDontSee('https://some-other-site.example')
+        ->assertDontSee('Official Website Link');
+});
+
 test('unpublished or foreign listings are not reachable by slug', function () {
     $draft = Package::factory()->create([
         'operator_id' => $this->operator->id,

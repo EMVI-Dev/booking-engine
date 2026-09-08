@@ -48,6 +48,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
         'whatsapp_dispatch' => false,
         'tracking_pixels' => false,
         'automated_review_requests' => false,
+        'google_reviews' => false,
         'custom_domain' => false,
         'byo_gateway' => false,
         'priority_support' => false,
@@ -1059,6 +1060,12 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
                                     class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
                                     <x-checkbox id="feat_whatsapp" wire:model="features.whatsapp_dispatch"
                                         :label="__('1-Click WhatsApp')" :description="__('Instant dispatch to guests & drivers')" />
+                                </div>
+
+                                <div
+                                    class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
+                                    <x-checkbox id="feat_google_reviews" wire:model="features.google_reviews"
+                                        :label="__('Google reviews slider')" :description="__('Connect one Google listing, or use a review link if they have none')" />
                                 </div>
 
                                 <div

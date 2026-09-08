@@ -18,7 +18,6 @@ beforeEach(function () {
         'settings' => [
             'storefront' => [
                 'allow_standalone_products' => true,
-                'show_reviews' => true,
                 'show_inclusions_preview' => true,
                 'hero_headline' => 'Original Headline',
                 'hero_tagline' => 'Original Tagline',
@@ -36,7 +35,6 @@ test('storefront settings page is displayed', function () {
 test('storefront settings can be updated', function () {
     Livewire::test('pages::settings.storefront')
         ->set('allow_standalone_products', false)
-        ->set('show_reviews', true)
         ->set('show_inclusions_preview', false)
         ->set('hero_headline', 'Exclusive Island Journeys')
         ->set('hero_tagline', 'Direct private bookings with expert crew')
@@ -48,7 +46,6 @@ test('storefront settings can be updated', function () {
 
     expect($this->operator->terms_and_conditions)->toBe('Updated cancellation policy: 48h free cancellation.')
         ->and($this->operator->settings['storefront']['allow_standalone_products'])->toBeFalse()
-        ->and($this->operator->settings['storefront']['show_reviews'])->toBeTrue()
         ->and($this->operator->settings['storefront']['show_inclusions_preview'])->toBeFalse()
         ->and($this->operator->settings['storefront']['hero_headline'])->toBe('Exclusive Island Journeys')
         ->and($this->operator->settings['storefront']['hero_tagline'])->toBe('Direct private bookings with expert crew');

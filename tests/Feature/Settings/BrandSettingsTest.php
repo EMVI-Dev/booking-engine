@@ -27,7 +27,16 @@ beforeEach(function () {
 });
 
 test('brand settings page is displayed', function () {
-    $this->get(route('brand.edit'))->assertOk();
+    config(['services.google.places_key' => 'test-places-key']);
+
+    $this->get(route('brand.edit'))
+        ->assertOk()
+        ->assertSee('Social Media Links')
+        ->assertDontSee('Official Website Link')
+        ->assertDontSee('Website & Social Media Links')
+        ->assertDontSee('Find listing')
+        ->assertDontSee('Review Platform (e.g. Google/Tripadvisor)')
+        ->assertSee('Reviews');
 });
 
 test('brand settings can be updated with logo and social media links', function () {
@@ -41,7 +50,6 @@ test('brand settings can be updated with logo and social media links', function 
         ->set('contact_whatsapp', '+628987654321')
         ->set('brand_color', '#0ea5e9')
         ->set('logo', $file)
-        ->set('website_url', 'https://sunriseexcursions.com')
         ->set('instagram_url', 'https://instagram.com/sunriseexcursions')
         ->set('facebook_url', 'https://facebook.com/sunriseexcursions')
         ->set('tiktok_url', 'https://tiktok.com/@sunriseexcursions')
@@ -71,13 +79,31 @@ test('brand settings can be updated with logo and social media links', function 
         ->and($this->operator->settings['whatsapp_schedule']['start_time'])->toBe('08:00')
         ->and($this->operator->settings['whatsapp_schedule']['end_time'])->toBe('18:00')
         ->and($this->operator->settings['whatsapp_schedule']['days'])->toBe(['mon', 'tue', 'wed', 'thu', 'fri'])
-        ->and($this->operator->settings['social_links']['website'])->toBe('https://sunriseexcursions.com')
+        ->and($this->operator->settings['social_links'])->not->toHaveKey('website')
         ->and($this->operator->settings['social_links']['instagram'])->toBe('https://instagram.com/sunriseexcursions')
         ->and($this->operator->settings['social_links']['tiktok'])->toBe('https://tiktok.com/@sunriseexcursions');
 
     expect($this->operator->getWhatsAppScheduleSummary())->toContain('08:00 - 18:00 (WITA');
 
     Storage::disk(MediaStore::diskName())->assertExists($this->operator->logo_path);
+});
+
+test('saving brand settings drops a leftover official website link', function () {
+    $this->operator->update([
+        'settings' => array_merge($this->operator->settings ?? [], [
+            'social_links' => [
+                'website' => 'https://old-site.example',
+                'instagram' => 'https://instagram.com/original',
+            ],
+        ]),
+    ]);
+
+    Livewire::test('pages::settings.brand')
+        ->call('updateBrandSettings')
+        ->assertHasNoErrors();
+
+    expect($this->operator->fresh()->settings['social_links'])->not->toHaveKey('website')
+        ->and($this->operator->fresh()->settings['social_links']['instagram'])->toBe('https://instagram.com/original');
 });
 
 test('brand settings validation enforces required fields and valid hex color', function () {

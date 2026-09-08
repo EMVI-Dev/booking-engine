@@ -34,8 +34,7 @@ new #[Title('Brand Settings')] class extends Component {
     /** @var array<int, string> */
     public array $whatsapp_days = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
-    // Social Media & Web Links
-    public string $website_url = '';
+    // Social Media Links
     public string $instagram_url = '';
     public string $facebook_url = '';
     public string $tiktok_url = '';
@@ -44,12 +43,11 @@ new #[Title('Brand Settings')] class extends Component {
     // Custom Domain (Agency and above)
     public string $custom_domain = '';
 
-    // Marketing, Tracking Pixels & Review Links
+    // Marketing & Tracking Pixels
     public string $google_analytics_id = '';
     public string $meta_pixel_id = '';
     public string $google_tag_manager_id = '';
     public string $google_site_verification = '';
-    public string $review_url = '';
 
     // Notification Channels
     public string $booking_notification_email = '';
@@ -86,7 +84,6 @@ new #[Title('Brand Settings')] class extends Component {
             $this->whatsapp_days = (array) ($waSchedule['days'] ?? ['mon', 'tue', 'wed', 'thu', 'fri']);
 
             $social = $settings['social_links'] ?? [];
-            $this->website_url = (string) ($social['website'] ?? '');
             $this->instagram_url = (string) ($social['instagram'] ?? '');
             $this->facebook_url = (string) ($social['facebook'] ?? '');
             $this->tiktok_url = (string) ($social['tiktok'] ?? '');
@@ -97,9 +94,6 @@ new #[Title('Brand Settings')] class extends Component {
             $this->meta_pixel_id = (string) ($tracking['meta_pixel_id'] ?? '');
             $this->google_tag_manager_id = (string) ($tracking['google_tag_manager_id'] ?? '');
             $this->google_site_verification = (string) ($tracking['google_site_verification'] ?? '');
-
-            $marketing = $settings['marketing'] ?? [];
-            $this->review_url = (string) ($marketing['review_url'] ?? '');
 
             $customDomain = $operator->domains()->where('type', \App\Enums\DomainType::Custom)->first();
             $this->custom_domain = $customDomain ? (string) $customDomain->domain : '';
@@ -168,7 +162,6 @@ new #[Title('Brand Settings')] class extends Component {
             'whatsapp_days' => ['array'],
             'brand_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/'],
             'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg,gif', 'max:10240'],
-            'website_url' => ['nullable', 'url', 'max:255'],
             'instagram_url' => ['nullable', 'string', 'max:255'],
             'facebook_url' => ['nullable', 'string', 'max:255'],
             'tiktok_url' => ['nullable', 'string', 'max:255'],
@@ -177,7 +170,6 @@ new #[Title('Brand Settings')] class extends Component {
             'meta_pixel_id' => ['nullable', 'string', 'max:50'],
             'google_tag_manager_id' => ['nullable', 'string', 'max:50'],
             'google_site_verification' => ['nullable', 'string', 'max:255'],
-            'review_url' => ['nullable', 'url', 'max:500'],
             'booking_notification_email' => ['required', 'email', 'max:255'],
             'billing_email' => ['required', 'email', 'max:255'],
             'custom_domain' => ['nullable', 'string', 'max:255'],
@@ -225,7 +217,6 @@ new #[Title('Brand Settings')] class extends Component {
                 'days' => $this->whatsapp_days,
             ];
             $settings['social_links'] = [
-                'website' => $validated['website_url'] ?? null,
                 'instagram' => $validated['instagram_url'] ?? null,
                 'facebook' => $validated['facebook_url'] ?? null,
                 'tiktok' => $validated['tiktok_url'] ?? null,
@@ -241,10 +232,6 @@ new #[Title('Brand Settings')] class extends Component {
                     'google_site_verification' => $validated['google_site_verification'] ?? null,
                 ];
             }
-            $settings['marketing'] = [
-                'review_url' => $validated['review_url'] ?? null,
-            ];
-
             $operator->update([
                 'name' => $validated['agency_name'],
                 'bio' => $validated['bio'] ?? null,
@@ -289,11 +276,7 @@ new #[Title('Brand Settings')] class extends Component {
             }
             session()->flash('success', __('The address :domain is connected. The padlock appears by itself in a few minutes.', ['domain' => $cleanDomain]));
         } else {
-            $targets = implode(' / ', array_values(array_filter([
-                $targetHost,
-                ...$domains->expectedPlatformIpv4(),
-                ...$domains->expectedPlatformIpv6(),
-            ])));
+            $targets = implode(' / ', array_values(array_filter([$targetHost, ...$domains->expectedPlatformIpv4(), ...$domains->expectedPlatformIpv6()])));
 
             session()->flash('error', __('We cannot see :domain pointing to :target yet. Use a CNAME for a smaller name, or an A setting on yourname.com. Changes at your domain shop can take a little while. Try again in 15 minutes.', ['domain' => $cleanDomain, 'target' => $targets]));
         }
@@ -301,12 +284,7 @@ new #[Title('Brand Settings')] class extends Component {
 }; ?>
 
 <div class="space-y-6 w-full">
-    <!-- Desktop Notice on Mobile -->
-    <x-desktop-only-notice :title="__('Brand Settings Best Managed on Desktop')" :description="__(
-        'Detailed logo uploads, operating schedule fine-tuning, and tracking pixels are optimized for desktop management.',
-    )" />
-
-    <div class="hidden lg:block space-y-6">
+    <div class="space-y-6">
         <!-- Unified Settings Navigation -->
         <x-settings-nav />
 
@@ -342,11 +320,11 @@ new #[Title('Brand Settings')] class extends Component {
                     </h3>
                 </div>
 
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-2">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6 pt-2">
                     <!-- Logo Preview -->
-                    <div class="relative group">
+                    <div class="relative group w-full sm:w-24">
                         <div
-                            class="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-[#1e2433] bg-slate-50 dark:bg-[#141821] flex items-center justify-center overflow-hidden shadow-xs">
+                            class="w-full h-36 sm:w-24 sm:h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-[#1e2433] bg-slate-50 dark:bg-[#141821] flex items-center justify-center overflow-hidden shadow-xs">
                             @if ($logo)
                                 <img src="{{ $logo->temporaryUrl() }}" alt="Logo preview"
                                     class="w-full h-full object-cover" />
@@ -363,7 +341,7 @@ new #[Title('Brand Settings')] class extends Component {
 
                         @if ($logo || $existing_logo_path)
                             <button type="button" wire:click="removeLogo"
-                                class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center text-xs shadow-md transition cursor-pointer"
+                                class="absolute -top-2 -right-2 h-9 w-9 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center text-xs shadow-md transition cursor-pointer"
                                 title="{{ __('Remove Logo') }}">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
@@ -372,9 +350,9 @@ new #[Title('Brand Settings')] class extends Component {
 
                     <!-- Upload Input & Guidance -->
                     <div class="space-y-2 flex-1">
-                        <div class="flex items-center gap-3">
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                             <label
-                                class="h-10 px-4 inline-flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 text-xs font-bold transition border border-slate-200 dark:border-[#1e2433] cursor-pointer">
+                                class="h-11 sm:h-10 px-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 text-xs font-bold transition border border-slate-200 dark:border-[#1e2433] cursor-pointer">
                                 <i class="fa-solid fa-upload text-slate-600 dark:text-[#FFEF4D]"></i>
                                 <span>{{ __('Upload New Logo') }}</span>
                                 <input type="file" wire:model="logo"
@@ -738,7 +716,7 @@ new #[Title('Brand Settings')] class extends Component {
 
                 <div x-show="showAdvanced" x-collapse
                     class="space-y-6 p-4 sm:p-6 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
-                    <!-- Card: Website & Social Media Links -->
+                    <!-- Card: Social Media Links -->
                     <div
                         class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
                         <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
@@ -747,26 +725,15 @@ new #[Title('Brand Settings')] class extends Component {
                                 <i class="fa-solid fa-share-nodes"></i>
                             </span>
                             <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                                {{ __('Website & Social Media Links') }}
+                                {{ __('Social Media Links') }}
                             </h3>
                         </div>
 
                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                            {{ __('Connect your official online presence and social media profiles to boost trust with prospective guests.') }}
+                            {{ __('Add Instagram, Facebook, TikTok, and YouTube so guests can find you.') }}
                         </p>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <x-label for="website_url" :value="__('Official Website Link')" />
-                                <div class="relative">
-                                    <i
-                                        class="fa-solid fa-globe absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                                    <x-input id="website_url" wire:model="website_url" type="url"
-                                        placeholder="https://www.yourdomain.com" class="pl-9" :error="$errors->has('website_url')" />
-                                </div>
-                                <x-input-error :messages="$errors->get('website_url')" />
-                            </div>
-
                             <div>
                                 <x-label for="instagram_url" :value="__('Instagram Profile / URL')" />
                                 <div class="relative">
@@ -885,8 +852,8 @@ new #[Title('Brand Settings')] class extends Component {
                                     <i
                                         class="fa-solid fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                     <x-input id="custom_domain" wire:model="custom_domain" type="text"
-                                        placeholder="yourname.com" class="pl-9 font-mono text-xs"
-                                        :disabled="!$hasCustomDomain" :error="$errors->has('custom_domain')" />
+                                        placeholder="yourname.com" class="pl-9 font-mono text-xs" :disabled="!$hasCustomDomain"
+                                        :error="$errors->has('custom_domain')" />
                                 </div>
                                 <p class="text-[11px] text-slate-500 mt-1">
                                     {{ __('Type yourname.com if this is your only website, or tours.yourname.com if you already have a site.') }}
@@ -905,13 +872,7 @@ new #[Title('Brand Settings')] class extends Component {
                                     ->where('type', \App\Enums\DomainType::Custom)
                                     ->first();
                                 $typedHost = strtolower(
-                                    trim(
-                                        (string) preg_replace(
-                                            '#^https?://#',
-                                            '',
-                                            rtrim($this->custom_domain, '/'),
-                                        ),
-                                    ),
+                                    trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/'))),
                                 );
                                 $typedParts = $typedHost !== '' ? explode('.', $typedHost) : [];
                                 $cnameName = count($typedParts) > 2 ? $typedParts[0] : 'tours';
@@ -920,7 +881,7 @@ new #[Title('Brand Settings')] class extends Component {
                             <div
                                 class="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-[#10141d] text-slate-900 dark:text-slate-100 space-y-4 border border-slate-200 dark:border-[#1e2433] shadow-xs">
                                 <div
-                                    class="flex items-center justify-between border-b border-slate-200 dark:border-[#1e2433] pb-3">
+                                    class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between border-b border-slate-200 dark:border-[#1e2433] pb-3">
                                     <div class="flex items-center gap-2">
                                         <span
                                             class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
@@ -931,7 +892,8 @@ new #[Title('Brand Settings')] class extends Component {
                                                 class="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider">
                                                 {{ __('How to connect your own address') }}</h4>
                                             <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                                                {{ __('Pick one path below. Root names use a number. Smaller names use our website name.') }}</p>
+                                                {{ __('Pick one path below. Root names use a number. Smaller names use our website name.') }}
+                                            </p>
                                         </div>
                                     </div>
 
@@ -952,8 +914,83 @@ new #[Title('Brand Settings')] class extends Component {
                                     @endif
                                 </div>
 
-                                <!-- DNS Record Spec Table -->
-                                <div class="overflow-x-auto">
+                                <!-- DNS Record Spec -->
+                                <div class="space-y-3 md:hidden">
+                                    <div
+                                        class="rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#141821] p-3 space-y-2">
+                                        <div
+                                            class="flex items-center justify-between gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                            <span>{{ __('CNAME') }}</span>
+                                            <span
+                                                class="font-mono text-slate-900 dark:text-amber-300">{{ $cnameName }}</span>
+                                        </div>
+                                        <p
+                                            class="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 select-all break-all">
+                                            {{ $targetHost }}</p>
+                                        <button type="button" x-data="{ copied: false }"
+                                            x-on:click="navigator.clipboard.writeText(@js($targetHost)); copied = true; setTimeout(() => copied = false, 2000)"
+                                            class="h-9 w-full rounded-xl bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-xs transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center justify-center gap-1.5">
+                                            <i class="fa-solid"
+                                                :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
+                                            <span
+                                                x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
+                                        </button>
+                                    </div>
+                                    @forelse ($apexIpv4 as $ipv4)
+                                        <div
+                                            class="rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#141821] p-3 space-y-2">
+                                            <div
+                                                class="flex items-center justify-between gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                                <span>{{ __('A') }}</span>
+                                                <span
+                                                    class="font-mono text-slate-900 dark:text-amber-300">{{ '@' }}</span>
+                                            </div>
+                                            <p
+                                                class="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 select-all break-all">
+                                                {{ $ipv4 }}</p>
+                                            <button type="button" x-data="{ copied: false }"
+                                                x-on:click="navigator.clipboard.writeText(@js($ipv4)); copied = true; setTimeout(() => copied = false, 2000)"
+                                                class="h-9 w-full rounded-xl bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-xs transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center justify-center gap-1.5">
+                                                <i class="fa-solid"
+                                                    :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
+                                                <span
+                                                    x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
+                                            </button>
+                                        </div>
+                                    @empty
+                                        <div
+                                            class="rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#141821] p-3 space-y-1">
+                                            <p
+                                                class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                                {{ __('A') }} · {{ '@' }}</p>
+                                            <p class="text-xs text-slate-500 italic">
+                                                {{ __('We’ll show this number once the live server is ready.') }}</p>
+                                        </div>
+                                    @endforelse
+                                    @foreach ($apexIpv6 as $ipv6)
+                                        <div
+                                            class="rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#141821] p-3 space-y-2">
+                                            <div
+                                                class="flex items-center justify-between gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                                <span>{{ __('AAAA') }}</span>
+                                                <span
+                                                    class="font-mono text-slate-900 dark:text-amber-300">{{ '@' }}</span>
+                                            </div>
+                                            <p
+                                                class="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 select-all break-all">
+                                                {{ $ipv6 }}</p>
+                                            <button type="button" x-data="{ copied: false }"
+                                                x-on:click="navigator.clipboard.writeText(@js($ipv6)); copied = true; setTimeout(() => copied = false, 2000)"
+                                                class="h-9 w-full rounded-xl bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-xs transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center justify-center gap-1.5">
+                                                <i class="fa-solid"
+                                                    :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
+                                                <span
+                                                    x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="hidden md:block overflow-x-auto">
                                     <table class="w-full text-left text-xs font-mono border-collapse">
                                         <thead>
                                             <tr
@@ -1010,7 +1047,8 @@ new #[Title('Brand Settings')] class extends Component {
                                                             x-on:click="navigator.clipboard.writeText(@js($ipv4)); copied = true; setTimeout(() => copied = false, 2000)"
                                                             class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-[10px] transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center gap-1">
                                                             <i class="fa-solid"
-                                                                :class="copied ? 'fa-check text-emerald-600 dark:text-emerald-400' :
+                                                                :class="copied ?
+                                                                    'fa-check text-emerald-600 dark:text-emerald-400' :
                                                                     'fa-copy text-slate-400'"></i>
                                                             <span
                                                                 x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
@@ -1053,7 +1091,8 @@ new #[Title('Brand Settings')] class extends Component {
                                                             x-on:click="navigator.clipboard.writeText(@js($ipv6)); copied = true; setTimeout(() => copied = false, 2000)"
                                                             class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-[10px] transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center gap-1">
                                                             <i class="fa-solid"
-                                                                :class="copied ? 'fa-check text-emerald-600 dark:text-emerald-400' :
+                                                                :class="copied ?
+                                                                    'fa-check text-emerald-600 dark:text-emerald-400' :
                                                                     'fa-copy text-slate-400'"></i>
                                                             <span
                                                                 x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
@@ -1074,7 +1113,8 @@ new #[Title('Brand Settings')] class extends Component {
                                         class="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-400 leading-relaxed font-sans">
                                         <li>{{ __('Sign in where you bought the website name (GoDaddy, Niagahoster, Rumahweb, or similar).') }}
                                         </li>
-                                        <li>{{ __('Open the page for website-name settings. It is often called DNS or Domain.') }}</li>
+                                        <li>{{ __('Open the page for website-name settings. It is often called DNS or Domain.') }}
+                                        </li>
                                         <li>
                                             {{ __('If this is your only website (yourname.com): add an A setting on @ and point it at the number above. Some shops call this ALIAS or ANAME — that is fine if it ends up at the same number.') }}
                                         </li>
@@ -1090,13 +1130,13 @@ new #[Title('Brand Settings')] class extends Component {
 
                                 <!-- Verification Action Button -->
                                 <div
-                                    class="pt-2 flex items-center justify-between gap-3 border-t border-slate-200 dark:border-[#1e2433]">
+                                    class="pt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-200 dark:border-[#1e2433]">
                                     <span class="text-[10px] text-slate-500 dark:text-slate-400 font-sans">
                                         <i class="fa-solid fa-circle-info text-[#8a7808] dark:text-[#FFEF4D] mr-1"></i>
                                         {{ __('The change can take a few minutes. If it is not ready, try again in 15 minutes.') }}
                                     </span>
                                     <button type="button" wire:click="verifyCustomDomainDns"
-                                        class="px-4 py-2 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-sans font-black text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0">
+                                        class="h-10 w-full sm:w-auto px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-sans font-black text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
                                         <i class="fa-solid fa-rotate text-[10px]" wire:loading.class="animate-spin"
                                             wire:target="verifyCustomDomainDns"></i>
                                         <span>{{ __('Check connection') }}</span>
@@ -1106,7 +1146,7 @@ new #[Title('Brand Settings')] class extends Component {
                         </div>
                     </div>
 
-                    <!-- Card: Marketing, Tracking Pixels & Review Links -->
+                    <!-- Card: Marketing Tracking Pixels -->
                     @php
                         $hasTracking = $this->currentOperator?->hasFeature('tracking_pixels') ?? false;
                     @endphp
@@ -1121,7 +1161,7 @@ new #[Title('Brand Settings')] class extends Component {
                                 </span>
                                 <h3
                                     class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                                    {{ __('Marketing, Tracking Pixels & Review Links') }}
+                                    {{ __('Marketing Tracking Pixels') }}
                                 </h3>
                             </div>
                             @if ($hasTracking)
@@ -1139,7 +1179,7 @@ new #[Title('Brand Settings')] class extends Component {
                         </div>
 
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            {{ __('Connect your marketing pixels to measure conversions on Facebook / Instagram Ads and automatically invite guests to review your business after their trip.') }}
+                            {{ __('Connect your marketing pixels to measure conversions on Facebook / Instagram Ads.') }}
                         </p>
 
                         @if (!$hasTracking)
@@ -1195,7 +1235,8 @@ new #[Title('Brand Settings')] class extends Component {
                                         :disabled="!$hasTracking" :error="$errors->has('google_analytics_id')" />
                                 </div>
                                 <p class="text-[11px] text-slate-500 mt-1">
-                                    {{ __('Tracks visitor traffic and purchase conversions on your storefront.') }}</p>
+                                    {{ __('Tracks visitor traffic and purchase conversions on your storefront.') }}
+                                </p>
                                 <x-input-error :messages="$errors->get('google_analytics_id')" />
                             </div>
 
@@ -1229,30 +1270,15 @@ new #[Title('Brand Settings')] class extends Component {
                                 </p>
                                 <x-input-error :messages="$errors->get('google_site_verification')" />
                             </div>
-
-                            <!-- Google Maps / TripAdvisor Review URL -->
-                            <div>
-                                <x-label for="review_url" :value="__('Google Maps or TripAdvisor Review URL')" />
-                                <div class="relative">
-                                    <i
-                                        class="fa-solid fa-star absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400 text-xs"></i>
-                                    <x-input id="review_url" wire:model="review_url" type="url"
-                                        placeholder="https://g.page/r/your-business/review" class="pl-9"
-                                        :disabled="!$hasTracking" :error="$errors->has('review_url')" />
-                                </div>
-                                <p class="text-[11px] text-slate-500 mt-1">
-                                    {{ __('Used in automated post-trip review invitation emails sent 12 hours after departure.') }}
-                                </p>
-                                <x-input-error :messages="$errors->get('review_url')" />
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Submit Button & Success Toast -->
-            <div class="flex items-center gap-4 pt-2">
-                <x-button variant="primary" type="submit" data-test="update-brand-button" class="shadow-sm">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
+                <x-button variant="primary" type="submit" data-test="update-brand-button"
+                    class="w-full sm:w-auto shadow-sm">
                     <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
                     {{ __('Save Brand Settings') }}
                 </x-button>
@@ -1271,4 +1297,5 @@ new #[Title('Brand Settings')] class extends Component {
             </div>
         </form>
     </div>
+
 </div>

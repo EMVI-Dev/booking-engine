@@ -9,7 +9,6 @@ new #[Title('Storefront Settings')] class extends Component {
     use ResolvesCurrentOperator;
     // Storefront Sales & Inventory Rules
     public bool $allow_standalone_products = true;
-    public bool $show_reviews = true;
     public bool $show_inclusions_preview = true;
     public string $booking_confirmation_mode = 'automatic'; // 'automatic' (instant) or 'manual' (operator review)
 
@@ -36,7 +35,6 @@ new #[Title('Storefront Settings')] class extends Component {
             $storefrontSettings = $settings['storefront'] ?? [];
 
             $this->allow_standalone_products = (bool) ($storefrontSettings['allow_standalone_products'] ?? true);
-            $this->show_reviews = (bool) ($storefrontSettings['show_reviews'] ?? true);
             $this->show_inclusions_preview = (bool) ($storefrontSettings['show_inclusions_preview'] ?? true);
             $this->booking_confirmation_mode = (string) ($storefrontSettings['booking_confirmation_mode'] ?? 'automatic');
             $this->hero_headline = (string) ($storefrontSettings['hero_headline'] ?? '');
@@ -51,7 +49,6 @@ new #[Title('Storefront Settings')] class extends Component {
     {
         $validated = $this->validate([
             'allow_standalone_products' => ['boolean'],
-            'show_reviews' => ['boolean'],
             'show_inclusions_preview' => ['boolean'],
             'booking_confirmation_mode' => ['required', 'in:automatic,manual'],
             'hero_headline' => ['nullable', 'string', 'max:255'],
@@ -65,7 +62,6 @@ new #[Title('Storefront Settings')] class extends Component {
             $settings = $operator->settings ?? [];
             $settings['storefront'] = [
                 'allow_standalone_products' => $this->allow_standalone_products,
-                'show_reviews' => $this->show_reviews,
                 'show_inclusions_preview' => $this->show_inclusions_preview,
                 'booking_confirmation_mode' => $this->booking_confirmation_mode,
                 'hero_headline' => $validated['hero_headline'] ?? null,
@@ -84,12 +80,7 @@ new #[Title('Storefront Settings')] class extends Component {
 }; ?>
 
 <div class="space-y-6 w-full">
-    <!-- Desktop Notice on Mobile -->
-    <x-desktop-only-notice :title="__('Storefront Policies Best Managed on Desktop')" :description="__(
-        'Configuring cancellation rules, selling permissions, and comprehensive terms & conditions is best performed on desktop.',
-    )" />
-
-    <div class="hidden lg:block space-y-6">
+    <div class="space-y-6">
         <!-- Unified Settings Navigation -->
         <x-settings-nav />
 
@@ -133,14 +124,6 @@ new #[Title('Storefront Settings')] class extends Component {
                             :label="__('Allow Standalone Product & Service Sales')" :description="__(
                                 'When enabled, products and services flagged as \'Sell Standalone\' (e.g. day passes, single sessions, guide hire) can be booked directly by guests outside of packages.',
                             )" />
-                    </div>
-
-                    <!-- Toggle: Show Reviews Section -->
-                    <div
-                        class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
-                        <x-checkbox id="show_reviews" wire:model="show_reviews" :label="__('Display Verified Guest Reviews on Storefront')" :description="__(
-                            'Showcase authentic guest ratings, comments, and experience feedback on your public landing page.',
-                        )" />
                     </div>
 
                     <!-- Toggle: Show Inclusions Preview -->
@@ -288,8 +271,8 @@ new #[Title('Storefront Settings')] class extends Component {
             </div>
 
             <!-- Submit Button & Success Toast -->
-            <div class="flex items-center gap-4 pt-2">
-                <x-button variant="primary" type="submit" data-test="update-storefront-button" class="shadow-sm">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
+                <x-button variant="primary" type="submit" data-test="update-storefront-button" class="w-full sm:w-auto shadow-sm">
                     <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
                     {{ __('Save Storefront Settings') }}
                 </x-button>

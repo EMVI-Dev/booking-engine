@@ -207,14 +207,6 @@ class Reservation extends Model
         return $this->hasMany(WalletTransaction::class);
     }
 
-    /**
-     * @return HasOne<Review, $this>
-     */
-    public function review(): HasOne
-    {
-        return $this->hasOne(Review::class);
-    }
-
     public function isPendingPayment(): bool
     {
         return $this->status === ReservationStatus::PaymentPending;

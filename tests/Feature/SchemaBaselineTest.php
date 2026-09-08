@@ -24,7 +24,7 @@ test('hot query paths have covering indexes', function () {
         ->and(Schema::hasIndex('products', ['operator_id', 'status']))->toBeTrue()
         ->and(Schema::hasIndex('products', ['operator_id', 'status', 'sellable_standalone']))->toBeTrue()
         ->and(Schema::hasIndex('packages', ['operator_id', 'status', 'created_at']))->toBeTrue()
-        ->and(Schema::hasIndex('reviews', ['operator_id', 'created_at']))->toBeTrue()
+        ->and(Schema::hasTable('reviews'))->toBeFalse()
         ->and(Schema::hasIndex('payments', ['status', 'created_at']))->toBeTrue()
         ->and(Schema::hasIndex('subscription_payments', ['gateway_ref']))->toBeTrue()
         ->and(Schema::hasIndex('wallet_transactions', ['operator_id', 'created_at']))->toBeTrue()

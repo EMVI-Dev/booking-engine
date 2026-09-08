@@ -124,18 +124,11 @@ class StorefrontController extends Controller
             ->latest()
             ->get();
 
-        $reviews = $agent->reviews()
-            ->with('bookable')
-            ->latest()
-            ->take(6)
-            ->get();
-
         return view('storefront.index', [
             'agent' => $agent,
             'packages' => $packages,
             'products' => $standaloneProducts,
             'standaloneProducts' => $standaloneProducts,
-            'reviews' => $reviews,
         ]);
     }
 
