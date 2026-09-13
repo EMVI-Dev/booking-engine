@@ -199,6 +199,15 @@ class StorefrontController extends Controller
             return $statusResponse;
         }
 
+        $hasPublishedProducts = $agent->products()
+            ->where('status', ListingStatus::Published)
+            ->where('sellable_standalone', true)
+            ->exists();
+
+        if (! $hasPublishedProducts) {
+            return redirect()->route('home');
+        }
+
         $search = (string) $request->query('search', '');
         $category = (string) $request->query('category', '');
 
@@ -583,6 +592,7 @@ class StorefrontController extends Controller
         $content .= "Disallow: /admin/\n";
         $content .= "Disallow: /dashboard/\n";
         $content .= "Disallow: /checkout/\n";
+        $content .= "Disallow: /reservations/\n";
         $content .= "Disallow: /api/\n";
         $content .= "Disallow: /livewire/\n\n";
 
@@ -632,22 +642,29 @@ class StorefrontController extends Controller
         }
 
         if ($agent && $agent->isStorefrontPublic()) {
-            // Packages Catalog
-            $xml .= "  <url>\n    <loc>{$baseUrl}/tours</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n";
-            // Standalone Products Catalog
-            $xml .= "  <url>\n    <loc>{$baseUrl}/services</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n";
+            $packages = $agent->packages()->where('status', ListingStatus::Published)->get();
+            $products = $agent->products()->where('status', ListingStatus::Published)->where('sellable_standalone', true)->get();
+
+            // Packages Catalog (only if operator has published packages)
+            if ($packages->isNotEmpty()) {
+                $xml .= "  <url>\n    <loc>{$baseUrl}/tours</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n";
+            }
+
+            // Standalone Products Catalog (only if operator has published standalone products)
+            if ($products->isNotEmpty()) {
+                $xml .= "  <url>\n    <loc>{$baseUrl}/services</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n";
+            }
+
             // Terms
             $xml .= "  <url>\n    <loc>{$baseUrl}/terms</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n";
 
             // Individual Packages
-            $packages = $agent->packages()->where('status', ListingStatus::Published)->get();
             foreach ($packages as $pkg) {
                 $lastmod = $pkg->updated_at?->toIso8601String() ?? now()->toIso8601String();
                 $xml .= "  <url>\n    <loc>{$baseUrl}/packages/{$pkg->slug}</loc>\n    <lastmod>{$lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n";
             }
 
             // Individual Standalone Products
-            $products = $agent->products()->where('status', ListingStatus::Published)->where('sellable_standalone', true)->get();
             foreach ($products as $prod) {
                 $lastmod = $prod->updated_at?->toIso8601String() ?? now()->toIso8601String();
                 $xml .= "  <url>\n    <loc>{$baseUrl}/products/{$prod->slug}</loc>\n    <lastmod>{$lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n";

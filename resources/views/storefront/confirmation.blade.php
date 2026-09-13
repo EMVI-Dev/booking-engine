@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ __('Booking Confirmation') }} - {{ $agent->name }}</title>
+    <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" href="{{ $agent->logo_url }}" />
     <link rel="apple-touch-icon" href="{{ $agent->logo_url }}" />
     @include('storefront.partials.brand-theme')
@@ -25,7 +26,7 @@
         'conversionTransactionId' => $reservationCode,
     ])
 </head>
-<body class="min-h-screen sf-canvas text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-brand-600 selection:text-brand-foreground antialiased">
+<body class="min-h-screen sf-canvas dark:bg-ebony text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-brand-600 selection:text-brand-foreground antialiased">
     @php
         $waService = app(\App\Services\WhatsAppDispatchService::class);
         $cleanPhone = $waService->normalizePhoneNumber($agent->contact_whatsapp);

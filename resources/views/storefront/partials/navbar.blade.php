@@ -142,18 +142,6 @@
                 </a>
             @endif
 
-            <!-- Optional Mobile Booking Action Button (for package/product view) -->
-            @if ($bookAction ?? false)
-                <button
-                    type="button"
-                    @click="mobileBookingOpen = true"
-                    class="lg:hidden h-9 px-3.5 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-bold text-xs shadow-xs transition cursor-pointer"
-                >
-                    <i class="fa-solid fa-calendar-check text-[11px]"></i>
-                    <span>{{ __('Book Now') }}</span>
-                </button>
-            @endif
-
             <!-- Mobile Hamburger Toggle Button -->
             <button
                 type="button"

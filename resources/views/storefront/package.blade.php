@@ -39,10 +39,10 @@
 
 <body x-data="{ mobileBookingOpen: false, mobileMenuOpen: false }"
     class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
-    @include('storefront.partials.navbar', ['bookAction' => true])
+    @include('storefront.partials.navbar')
 
     <!-- Main Package Content -->
-    <main class="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-16 lg:pb-12 space-y-6">
+    <main class="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-12 space-y-6">
         <nav class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-semibold">
             <a href="{{ route('home') }}" class="hover:text-brand-800 dark:hover:text-brand-400">{{ __('Home') }}</a>
             <span>&rsaquo;</span>
@@ -316,7 +316,7 @@
 
     <!-- Sticky Mobile Bottom Booking Bar (Airbnb/Klook UX) -->
     <div
-        class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800 p-3 sm:p-4 shadow-xl select-none flex items-center justify-between gap-3">
+        class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800 px-4 pt-3.5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-4 shadow-xl select-none flex items-center justify-between gap-3">
         <div class="min-w-0">
             <span
                 class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block leading-none">{{ __('Price per person') }}</span>

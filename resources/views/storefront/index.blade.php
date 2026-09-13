@@ -138,54 +138,97 @@
     </section>
 
     <!-- Category Filter Tabs Bar -->
-    <div
-        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sticky top-16 z-30 bg-slate-50/95 dark:bg-zinc-950/95 backdrop-blur-md pb-2">
-        <div class="flex items-center justify-between gap-3 overflow-x-auto pb-1 no-scrollbar">
-            <div class="flex items-center gap-2">
-                <button type="button" @click="activeTab = 'all'"
-                    class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                    :class="activeTab === 'all' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
-                        'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
-                    <i class="fa-solid fa-layer-group mr-1.5 text-[11px]"></i>
-                    {{ __('Top Featured (:count)', ['count' => min(5, $packages->count()) + min(5, $standaloneProducts->count())]) }}
-                </button>
-
-                @if ($packages->isNotEmpty())
-                    <button type="button" @click="activeTab = 'packages'"
+    @if ($packages->isNotEmpty() || $standaloneProducts->isNotEmpty())
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sticky top-16 z-30 bg-slate-50/95 dark:bg-zinc-950/95 backdrop-blur-md pb-2">
+            <div class="flex items-center justify-between gap-3 overflow-x-auto pb-1 no-scrollbar">
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="activeTab = 'all'"
                         class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                        :class="activeTab === 'packages' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
+                        :class="activeTab === 'all' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
                             'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
-                        <i class="fa-solid fa-cubes mr-1.5 text-[11px]"></i>
-                        {{ __('Packages (:count)', ['count' => $packages->count()]) }}
+                        <i class="fa-solid fa-layer-group mr-1.5 text-[11px]"></i>
+                        {{ __('Top Featured (:count)', ['count' => min(5, $packages->count()) + min(5, $standaloneProducts->count())]) }}
                     </button>
-                @endif
 
-                @if ($standaloneProducts->isNotEmpty())
-                    <button type="button" @click="activeTab = 'products'"
-                        class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                        :class="activeTab === 'products' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
-                            'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
-                        <i class="fa-solid fa-compass mr-1.5 text-[11px]"></i>
-                        {{ __('Single Activities (:count)', ['count' => $standaloneProducts->count()]) }}
-                    </button>
+                    @if ($packages->isNotEmpty())
+                        <button type="button" @click="activeTab = 'packages'"
+                            class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
+                            :class="activeTab === 'packages' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
+                                'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
+                            <i class="fa-solid fa-cubes mr-1.5 text-[11px]"></i>
+                            {{ __('Packages (:count)', ['count' => $packages->count()]) }}
+                        </button>
+                    @endif
+
+                    @if ($standaloneProducts->isNotEmpty())
+                        <button type="button" @click="activeTab = 'products'"
+                            class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
+                            :class="activeTab === 'products' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
+                                'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
+                            <i class="fa-solid fa-compass mr-1.5 text-[11px]"></i>
+                            {{ __('Single Activities (:count)', ['count' => $standaloneProducts->count()]) }}
+                        </button>
+                    @endif
+                </div>
+
+                <!-- Fast Link to Full Catalog -->
+                @if ($packages->count() > 3 || $standaloneProducts->count() > 3)
+                    <div class="hidden sm:flex items-center gap-2 shrink-0">
+                        <a href="{{ $packages->isNotEmpty() ? route('storefront.packages') : route('storefront.products') }}"
+                            class="text-xs font-bold text-brand-800 dark:text-brand-400 hover:underline flex items-center gap-1">
+                            <span>{{ __('Browse Full Catalog') }}</span>
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
                 @endif
             </div>
-
-            <!-- Fast Link to Full Catalog -->
-            @if ($packages->count() > 3 || $standaloneProducts->count() > 3)
-                <div class="hidden sm:flex items-center gap-2 shrink-0">
-                    <a href="{{ $packages->isNotEmpty() ? route('storefront.packages') : route('storefront.products') }}"
-                        class="text-xs font-bold text-brand-800 dark:text-brand-400 hover:underline flex items-center gap-1">
-                        <span>{{ __('Browse Full Catalog') }}</span>
-                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                    </a>
-                </div>
-            @endif
         </div>
-    </div>
+    @endif
 
     <!-- Main Listings Section -->
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-10 sm:space-y-12">
+        @if ($packages->isEmpty() && $standaloneProducts->isEmpty())
+            <div class="py-12 sm:py-16 text-center max-w-xl mx-auto">
+                <div class="p-8 sm:p-10 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
+                    <div class="w-16 h-16 rounded-2xl bg-brand-500/10 text-brand-700 dark:text-brand-400 mx-auto flex items-center justify-center text-2xl shadow-xs">
+                        <i class="fa-solid fa-compass"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                            {{ __('New experiences coming soon') }}
+                        </h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                            {{ __('We are currently updating our seasonal tours and activities. Please check back soon or contact :agent directly for inquiries and custom bookings.', ['agent' => $agent->name]) }}
+                        </p>
+                    </div>
+                    @if ($agent->contact_whatsapp)
+                        <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+                            <a href="https://wa.me/{{ preg_replace('/\D/', '', $agent->contact_whatsapp) }}?text={{ urlencode('Hello ' . $agent->name . ', I would like to inquire about upcoming tour availability.') }}"
+                                target="_blank" rel="noopener noreferrer"
+                                class="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition cursor-pointer">
+                                <i class="fa-brands fa-whatsapp text-sm"></i>
+                                <span>{{ __('Message on WhatsApp') }}</span>
+                            </a>
+                            <a href="{{ route('storefront.find-booking') }}"
+                                class="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm transition cursor-pointer">
+                                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                                <span>{{ __('Find Existing Booking') }}</span>
+                            </a>
+                        </div>
+                    @else
+                        <div class="pt-2 flex items-center justify-center">
+                            <a href="{{ route('storefront.find-booking') }}"
+                                class="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm transition cursor-pointer">
+                                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                                <span>{{ __('Find Existing Booking') }}</span>
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
         <!-- Packages Section (3 on mobile, 5 on desktop) -->
         @if ($packages->isNotEmpty())
             <section x-show="activeTab === 'all' || activeTab === 'packages'" class="space-y-5">
