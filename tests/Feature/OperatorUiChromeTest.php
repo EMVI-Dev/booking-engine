@@ -14,6 +14,18 @@ beforeEach(function () {
     $this->actingAs($user);
 });
 
+test('operator light chrome keeps platform admin readable on white menus', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $this->operator->users()->attach($admin->id, ['role' => 'owner']);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee(__('Platform Admin'))
+        ->assertSee('text-op-ink', false)
+        ->assertDontSee('font-bold text-[#FFEF4D]', false);
+});
+
 test('operator dashboard and bookings share dry chrome tokens', function () {
     $settings = PlatformSetting::current();
     $settings->update([

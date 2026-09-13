@@ -242,6 +242,43 @@ class Plan extends Model
     }
 
     /**
+     * Everyday labels for plan feature flags. Welcome, billing compare, and admin
+     * plan editors should use this list so names match the operator desk.
+     *
+     * @return list<array{key: string, label: string}>
+     */
+    public static function featureCatalog(): array
+    {
+        return [
+            ['key' => 'quick_booking_links', 'label' => __('Create Booking Link')],
+            ['key' => 'promotional_coupons', 'label' => __('Coupons')],
+            ['key' => 'google_calendar', 'label' => __('Calendar')],
+            ['key' => 'whatsapp_dispatch', 'label' => __('WhatsApp tickets and reminders')],
+            ['key' => 'daily_manifest_export', 'label' => __('Daily guest lists')],
+            ['key' => 'guest_crm', 'label' => __('Guest CRM')],
+            ['key' => 'automated_review_requests', 'label' => __('Ask for a review after the trip')],
+            ['key' => 'google_reviews', 'label' => __('Google reviews on your booking page')],
+            ['key' => 'custom_domain', 'label' => __('Your own website address (yourbrand.com)')],
+            ['key' => 'remove_branding', 'label' => __('Guests see only your name, not ours')],
+            ['key' => 'ai_discovery', 'label' => __('Show up when people ask ChatGPT about tours')],
+        ];
+    }
+
+    /**
+     * Label for a single feature key, or the raw key when unknown.
+     */
+    public static function featureLabel(string $featureKey): string
+    {
+        foreach (self::featureCatalog() as $feature) {
+            if ($feature['key'] === $featureKey) {
+                return $feature['label'];
+            }
+        }
+
+        return $featureKey;
+    }
+
+    /**
      * @param  array<string, bool>  $overrides
      * @return array<string, bool>
      */

@@ -24,6 +24,7 @@ new #[Title('Payout bank account')] class extends Component {
 
     public bool $saved = false;
 
+    public bool $highlightPayoutBank = false;
 
     /**
      * Mount the component.
@@ -47,6 +48,15 @@ new #[Title('Payout bank account')] class extends Component {
             $this->gateway_client_id = (string) ($gateway['client_id'] ?? '');
             $this->gateway_shared_key = (string) ($gateway['shared_key'] ?? '');
         }
+
+        $this->syncPayoutHighlight();
+    }
+
+    protected function syncPayoutHighlight(): void
+    {
+        $this->highlightPayoutBank = blank(trim($this->bank_account_name))
+            || blank(trim($this->bank_account_number))
+            || blank(trim($this->bank_provider));
     }
 
     /**
@@ -98,21 +108,29 @@ new #[Title('Payout bank account')] class extends Component {
                 'bank_account_ref' => $bankRef,
                 'settings' => $settings,
             ]);
+
+            $this->syncPayoutHighlight();
         }
 
         $this->saved = true;
-        $this->dispatch('payments-updated');
+
+        $lastFour = substr($validated['bank_account_number'], -4);
+
+        $this->dispatch('payment-settings-updated');
+        $this->dispatch('setup-progress-updated');
+        $this->dispatch(
+            'toast',
+            message: __('Payout bank saved. :bank account ending :last.', [
+                'bank' => $validated['bank_provider'],
+                'last' => $lastFour,
+            ]),
+            type: 'success',
+        );
     }
 }; ?>
 
-<div class="space-y-6 w-full">
-    <!-- Desktop Notice on Mobile -->
-    <x-desktop-only-notice
-        :title="__('Bank details are easier on a computer')"
-        :description="__('Type your payout bank account on a larger screen so the numbers are easy to check.')"
-    />
-
-    <div class="hidden lg:block space-y-6">
+<div class="w-full space-y-6">
+    <div class="space-y-6">
         <!-- Unified Billing Navigation -->
         <x-billing-nav />
 
@@ -134,77 +152,111 @@ new #[Title('Payout bank account')] class extends Component {
     </div>
 
     <!-- Main Settings Form -->
-    <form wire:submit="updatePaymentSettings" class="w-full space-y-6">
-        <!-- Card 1: Bank Payout Settlement Account -->
-        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
-                <span class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
-                    <i class="fa-solid fa-building-columns"></i>
+    <form
+        wire:submit="updatePaymentSettings"
+        class="w-full space-y-6"
+        x-data
+        x-init="
+            $nextTick(() => {
+                const hash = window.location.hash;
+                const target = hash
+                    ? document.querySelector(hash)
+                    : document.querySelector('[data-setup-needed]');
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            })
+        "
+    >
+        @if ($highlightPayoutBank)
+            <div
+                class="flex items-start gap-3 rounded-2xl border border-[#FFEF4D]/50 bg-[#FFEF4D]/15 px-4 py-3 dark:border-[#FFEF4D]/25 dark:bg-[#FFEF4D]/10"
+                role="status"
+            >
+                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E]" aria-hidden="true">
+                    <i class="fa-solid fa-list-check text-sm"></i>
                 </span>
-                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    {{ __('Where we send your money') }}
-                </h3>
-            </div>
-
-            <p class="text-xs text-slate-500 dark:text-slate-400">
-                {{ __('After the trip, we send the listed price to this Indonesian bank account. Money is held until then.') }}
-            </p>
-
-            <!-- Bank Details Grid with Searchable Select -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <!-- 1. Bank Provider -->
-                <div>
-                    <x-label for="bank_provider" :value="__('Bank')" required />
-                    <x-select
-                        id="bank_provider"
-                        wire:model="bank_provider"
-                        :searchable="true"
-                        :options="[
-                            'BCA' => 'BCA (Bank Central Asia)',
-                            'Mandiri' => 'Bank Mandiri',
-                            'BRI' => 'BRI (Bank Rakyat Indonesia)',
-                            'BNI' => 'BNI (Bank Negara Indonesia)',
-                            'BSI' => 'BSI (Bank Syariah Indonesia)',
-                            'CIMB Niaga' => 'CIMB Niaga',
-                            'Permata' => 'Bank Permata',
-                            'Danamon' => 'Bank Danamon',
-                            'Bank Jago' => 'Bank Jago',
-                            'SeaBank' => 'SeaBank',
-                            'Other' => 'Other Bank',
-                        ]"
-                        :error="$errors->has('bank_provider')"
-                    />
-                    <x-input-error :messages="$errors->get('bank_provider')" />
-                </div>
-
-                <!-- 2. Account Name -->
-                <div>
-                    <x-label for="bank_account_name" :value="__('Name on the account')" required />
-                    <x-input
-                        id="bank_account_name"
-                        wire:model="bank_account_name"
-                        type="text"
-                        placeholder="e.g. PT Bali Adventures / John Doe"
-                        :error="$errors->has('bank_account_name')"
-                    />
-                    <x-input-error :messages="$errors->get('bank_account_name')" />
-                </div>
-
-                <!-- 3. Account Number -->
-                <div>
-                    <x-label for="bank_account_number" :value="__('Account Number')" required />
-                    <x-input
-                        id="bank_account_number"
-                        wire:model="bank_account_number"
-                        type="text"
-                        placeholder="e.g. 1234567890"
-                        class="font-mono"
-                        :error="$errors->has('bank_account_number')"
-                    />
-                    <x-input-error :messages="$errors->get('bank_account_number')" />
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-op-ink">{{ __('Finish the highlighted fields') }}</p>
+                    <p class="mt-0.5 text-xs text-op-subtle">
+                        {{ __('Add your payout bank so we can send you money after each trip.') }}
+                    </p>
                 </div>
             </div>
-        </div>
+        @endif
+
+        <!-- Card 1: Bank Payout Settlement Account -->
+        <x-setup-needed :needed="$highlightPayoutBank" anchor="setup-payout-bank">
+            <div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                    <span class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </span>
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        {{ __('Where we send your money') }}
+                    </h3>
+                </div>
+
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    {{ __('After the trip, we send the listed price to this Indonesian bank account. Money is held until then.') }}
+                </p>
+
+                <!-- Bank Details Grid with Searchable Select -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- 1. Bank Provider -->
+                    <div>
+                        <x-label for="bank_provider" :value="__('Bank')" required />
+                        <x-select
+                            id="bank_provider"
+                            wire:model="bank_provider"
+                            :searchable="true"
+                            :options="[
+                                'BCA' => 'BCA (Bank Central Asia)',
+                                'Mandiri' => 'Bank Mandiri',
+                                'BRI' => 'BRI (Bank Rakyat Indonesia)',
+                                'BNI' => 'BNI (Bank Negara Indonesia)',
+                                'BSI' => 'BSI (Bank Syariah Indonesia)',
+                                'CIMB Niaga' => 'CIMB Niaga',
+                                'Permata' => 'Bank Permata',
+                                'Danamon' => 'Bank Danamon',
+                                'Bank Jago' => 'Bank Jago',
+                                'SeaBank' => 'SeaBank',
+                                'Other' => 'Other Bank',
+                            ]"
+                            :error="$errors->has('bank_provider')"
+                        />
+                        <x-input-error :messages="$errors->get('bank_provider')" />
+                    </div>
+
+                    <!-- 2. Account Name -->
+                    <div>
+                        <x-label for="bank_account_name" :value="__('Name on the account')" required />
+                        <x-input
+                            id="bank_account_name"
+                            wire:model.live.debounce.300ms="bank_account_name"
+                            type="text"
+                            placeholder="e.g. PT Bali Adventures / John Doe"
+                            :error="$errors->has('bank_account_name')"
+                        />
+                        <x-input-error :messages="$errors->get('bank_account_name')" />
+                    </div>
+
+                    <!-- 3. Account Number -->
+                    <div>
+                        <x-label for="bank_account_number" :value="__('Account Number')" required />
+                        <x-input
+                            id="bank_account_number"
+                            wire:model.live.debounce.300ms="bank_account_number"
+                            type="text"
+                            placeholder="e.g. 1234567890"
+                            class="font-mono"
+                            :error="$errors->has('bank_account_number')"
+                        />
+                        <x-input-error :messages="$errors->get('bank_account_number')" />
+                    </div>
+                </div>
+            </div>
+        </x-setup-needed>
 
         <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
             <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
@@ -229,21 +281,23 @@ new #[Title('Payout bank account')] class extends Component {
         </div>
 
         <!-- Submit Button & Success Toast -->
-        <div class="flex items-center gap-4 pt-2">
-            <x-button variant="primary" type="submit" data-test="update-payments-button" class="shadow-sm">
-                <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
-                {{ __('Save bank account') }}
+        <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
+            <x-button variant="primary" type="submit" data-test="update-payments-button" class="w-full shadow-sm sm:w-auto" wire:loading.attr="disabled" wire:target="updatePaymentSettings">
+                <i class="fa-solid fa-floppy-disk mr-1 text-xs" wire:loading.remove wire:target="updatePaymentSettings"></i>
+                <i class="fa-solid fa-spinner fa-spin mr-1 text-xs" wire:loading wire:target="updatePaymentSettings"></i>
+                <span wire:loading.remove wire:target="updatePaymentSettings">{{ __('Save bank account') }}</span>
+                <span wire:loading wire:target="updatePaymentSettings">{{ __('Saving…') }}</span>
             </x-button>
 
-            <div x-data="{ shown: false, timeout: null }"
-                 x-init="@this.on('payments-updated', () => { clearTimeout(timeout); shown = true; timeout = setTimeout(() => { shown = false }, 2500); })"
-                 x-show.transition.out.opacity.duration.1500ms="shown"
-                 x-transition:leave.opacity.duration.1500ms
-                 style="display: none;"
-                 class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                <i class="fa-solid fa-circle-check"></i>
-                {{ __('Bank account saved.') }}
-            </div>
+            @if ($saved)
+                <p class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400" role="status">
+                    <i class="fa-solid fa-circle-check"></i>
+                    {{ __('Payout bank saved. :bank account ending :last.', [
+                        'bank' => $bank_provider,
+                        'last' => substr($bank_account_number, -4),
+                    ]) }}
+                </p>
+            @endif
         </div>
     </form>
     </div>

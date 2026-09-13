@@ -630,7 +630,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('1-Click Direct Booking & Payment Links') }}</td>
+                        {{ \App\Models\Plan::featureLabel('quick_booking_links') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
@@ -639,7 +639,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('Guest Coupons & Promo Code Engine') }}</td>
+                        {{ \App\Models\Plan::featureLabel('promotional_coupons') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('promotional_coupons'))
@@ -665,7 +665,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('Daily Run-Sheet & Manifest Export') }}</td>
+                        {{ \App\Models\Plan::featureLabel('daily_manifest_export') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('daily_manifest_export'))
@@ -678,7 +678,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('Google Calendar 1-Click & Live iCal Feed') }}</td>
+                        {{ \App\Models\Plan::featureLabel('google_calendar') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('google_calendar'))
@@ -691,7 +691,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('1-Click WhatsApp Dispatch Center') }}</td>
+                        {{ \App\Models\Plan::featureLabel('whatsapp_dispatch') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('whatsapp_dispatch'))
@@ -721,7 +721,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('Custom Domain (`yourbrand.com`) + SSL') }}</td>
+                        {{ \App\Models\Plan::featureLabel('custom_domain') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('custom_domain'))
@@ -751,7 +751,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('Guest Directory CRM & Lifetime Spend') }}</td>
+                        {{ \App\Models\Plan::featureLabel('guest_crm') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('guest_crm'))
@@ -777,7 +777,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('12-Hour Automated Post-Trip Review Emails') }}</td>
+                        {{ \App\Models\Plan::featureLabel('automated_review_requests') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('automated_review_requests'))
@@ -804,7 +804,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                         <i class="fa-solid fa-wand-magic-sparkles text-purple-600 dark:text-purple-400"></i>
-                        <span>{{ __('AI Search & ChatGPT Catalog Discovery (`/llms.txt`)') }}</span>
+                        <span>{{ \App\Models\Plan::featureLabel('ai_discovery') }}</span>
                     </td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
@@ -821,7 +821,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {{ __('Hide our name on your booking page') }}</td>
+                        {{ \App\Models\Plan::featureLabel('remove_branding') }}</td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('remove_branding'))

@@ -4,6 +4,7 @@ paths:
   - resources/views/components/billing-nav.blade.php
   - resources/views/components/back-link.blade.php
   - resources/views/components/date-picker.blade.php
+  - resources/views/components/operator-setup-banner.blade.php
 ---
 
 # Components
@@ -25,3 +26,6 @@ Date picker calendar teleports to body with fixed position so overflow-hidden mo
 
 ## Storefront tabs include Reviews
 Storefront tabs are Brand, Policies, and Reviews. Reviews is review-settings.edit. Team stays its own sidebar page. Payout bank stays under Billing.
+
+## Setup banner has one primary next step
+livewire:operator-setup-banner shows a progress bar, done/total, one yellow Continue · {step} button, and quieter chips for other remaining steps only. With a single step left, headline becomes One step left and there is no chip list. Do not duplicate the next step as both a button and a chip. Dashboard does not render a second Setup or welcome card; post-register status is a short toast only. After Brand, Policies, or Payout saves, dispatch setup-progress-updated (and the existing *-updated events) so the banner refreshes immediately without a full page reload.

@@ -784,7 +784,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
                             </tr>
                             <tr>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                                    {{ __('Guest CRM Directory & LTV') }}</td>
+                                    {{ __('Guest CRM') }}</td>
                                 <td class="py-3 px-4 text-slate-400">{{ __('Gated') }}</td>
                                 <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Included') }}</td>
                                 <td class="py-3 px-4 text-emerald-600 font-bold">{{ __('Included') }}</td>
@@ -1052,8 +1052,8 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
 
                                 <div
                                     class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
-                                    <x-checkbox id="feat_crm" wire:model="features.guest_crm" :label="__('Guest Directory CRM')"
-                                        :description="__('Customer history and profiles')" />
+                                    <x-checkbox id="feat_crm" wire:model="features.guest_crm" :label="\App\Models\Plan::featureLabel('guest_crm')"
+                                        :description="__('Guest contacts, notes, and lifetime spend')" />
                                 </div>
 
                                 <div

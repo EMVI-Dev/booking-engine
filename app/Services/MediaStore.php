@@ -65,6 +65,29 @@ class MediaStore
     }
 
     /**
+     * Copy an existing media path into a directory under a new filename.
+     */
+    public function copy(string $path, string $directory): string
+    {
+        if (! filled($path) || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            throw new InvalidArgumentException('A stored media path is required to copy.');
+        }
+
+        if (! static::disk()->exists($path)) {
+            throw new RuntimeException('The source media file does not exist.');
+        }
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'webp';
+        $destination = trim($directory, '/').'/'.Str::ulid().'.'.$extension;
+
+        if (! static::disk()->copy($path, $destination)) {
+            throw new RuntimeException('Could not copy the media file.');
+        }
+
+        return $destination;
+    }
+
+    /**
      * Operator media prefix. The first put creates this folder on local disks and R2.
      */
     public function directoryFor(Operator|string $operator, string $within = ''): string

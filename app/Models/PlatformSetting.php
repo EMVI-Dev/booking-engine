@@ -199,11 +199,11 @@ class PlatformSetting extends Model
     }
 
     /**
-     * New operator accounts are blocked during maintenance and when registration is closed.
+     * New operator accounts are blocked only while platform maintenance is on.
      */
     public function operatorRegistrationAllowed(): bool
     {
-        return ! $this->isPlatformMaintenance() && (bool) config('fortify.registration_enabled');
+        return ! $this->isPlatformMaintenance();
     }
 
     /**

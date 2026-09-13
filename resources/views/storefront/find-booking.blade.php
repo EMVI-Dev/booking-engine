@@ -12,7 +12,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased">
+<body class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased">
     @include('storefront.partials.navbar')
 
     <main class="flex-1 w-full max-w-lg mx-auto px-4 py-10 sm:py-16">

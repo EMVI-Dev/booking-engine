@@ -42,9 +42,26 @@ test('registration posts an operator activity alert to slack', function () {
     ]);
 
     Http::assertSent(function (Request $request) use ($result): bool {
+        $body = (string) json_encode($request->data());
+        $blocks = $request['blocks'] ?? [];
+        $card = $blocks[0] ?? [];
+        $cardBody = (string) ($card['body']['text'] ?? '');
+
         return str_contains($request->url(), 'hooks.slack.com')
             && $request['text'] === 'New operator registered: '.$result['operator']->name
-            && str_contains((string) json_encode($request->data()), $result['user']->email);
+            && count($blocks) === 1
+            && ($card['type'] ?? null) === 'card'
+            && ($card['title']['text'] ?? null) === 'New operator registered'
+            && ($card['subtitle']['text'] ?? null) === 'Slug · '.$result['operator']->slug
+            && str_contains($cardBody, '*'.$result['operator']->name.'*')
+            && str_contains($cardBody, '```')
+            && str_contains($cardBody, "Owner : {$result['user']->name}")
+            && str_contains($cardBody, "Email : {$result['user']->email}")
+            && isset($card['subtext']['text'])
+            && ! str_contains($cardBody, 'Plan')
+            && ! str_contains($cardBody, 'Status')
+            && str_contains($body, 'Open Admin')
+            && str_contains($body, 'Open Storefront');
     });
 });
 

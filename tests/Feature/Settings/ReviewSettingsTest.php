@@ -74,9 +74,16 @@ test('reviews settings live on their own storefront tab', function () {
 
 test('an operator can save a review platform url from the reviews tab', function () {
     Livewire::test('pages::settings.reviews')
+        ->assertSee('Finish the highlighted fields')
+        ->assertSee('Needed for bookings')
+        ->assertSeeHtml('id="setup-reviews"')
+        ->assertSeeHtml('data-setup-needed="true"')
         ->set('review_url', 'https://g.page/r/sunrise-excursions')
         ->call('updateReviewSettings')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('setup-progress-updated')
+        ->assertDontSee('Finish the highlighted fields')
+        ->assertDontSeeHtml('data-setup-needed="true"');
 
     expect($this->operator->fresh()->getReviewUrl())->toBe('https://g.page/r/sunrise-excursions');
 });

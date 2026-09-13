@@ -13,7 +13,7 @@
 
     @include('storefront.partials.brand-theme')
 </head>
-<body class="flex h-full flex-col justify-between bg-slate-50 font-sans text-slate-800 antialiased dark:bg-zinc-950 dark:text-zinc-200">
+<body class="flex h-full flex-col justify-between sf-canvas font-sans text-slate-800 antialiased dark:text-zinc-200">
     <header class="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
         <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:h-20 sm:px-6">
             <div class="flex items-center gap-3">
@@ -56,7 +56,7 @@
                 @if (auth()->user()?->canOperate($agent, 'manageSettings'))
                     <a
                         href="{{ route('dashboard') }}"
-                        class="inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#FFEF4D] px-4 text-xs font-bold text-[#12181E] transition hover:bg-[#fae639]"
+                        class="inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-brand-600 px-4 text-xs font-bold text-brand-foreground transition hover:bg-brand-700"
                     >
                         {{ __('Finish setup') }}
                     </a>

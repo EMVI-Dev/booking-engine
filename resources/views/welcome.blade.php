@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark scroll-smooth">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark md:scroll-smooth">
 
 <head>
     @include('partials.head')
     @livewireStyles
 </head>
 
-<body class="min-h-screen bg-[#09090b] text-zinc-100 antialiased selection:bg-[#FFEF4D] selection:text-[#090d16] font-sans">
+<body class="min-h-screen bg-[#09090b] font-sans text-zinc-100 antialiased selection:bg-[#FFEF4D] selection:text-[#090d16]">
     @php
-        $registrationOpen = \App\Models\PlatformSetting::current()->operatorRegistrationAllowed();
+        $registrationOpen = ! \App\Models\PlatformSetting::current()->isPlatformMaintenance();
         $plans = \App\Models\Plan::where('is_active', true)->orderBy('sort_order')->get();
         if ($plans->isEmpty()) {
             \App\Models\Plan::seedDefaultPlans();
@@ -17,23 +17,11 @@
         $platformDomain = app(\App\Services\DomainResolverService::class)->getPlatformDomain();
         $demoStorefrontUrl = request()->getScheme().'://'.config('demo.slug', 'demo').'.'.$platformDomain;
         $demoOperatorLoginUrl = $demoStorefrontUrl.'/login';
-        $planFeatureRows = [
-            ['key' => 'quick_booking_links', 'label' => __('Pay links you can copy and share')],
-            ['key' => 'promotional_coupons', 'label' => __('Coupons for guests')],
-            ['key' => 'google_calendar', 'label' => __('Trips on Google & phone calendar')],
-            ['key' => 'whatsapp_dispatch', 'label' => __('WhatsApp tickets and reminders')],
-            ['key' => 'daily_manifest_export', 'label' => __('Printable daily guest lists')],
-            ['key' => 'guest_crm', 'label' => __('Guest contact list')],
-            ['key' => 'automated_review_requests', 'label' => __('Ask for a review after the trip')],
-            ['key' => 'google_reviews', 'label' => __('Google reviews on your booking page')],
-            ['key' => 'custom_domain', 'label' => __('Your own website address (yourbrand.com)')],
-            ['key' => 'remove_branding', 'label' => __('Guests see only your name, not ours')],
-            ['key' => 'ai_discovery', 'label' => __('Show up when people ask ChatGPT about tours')],
-        ];
+        $planFeatureRows = \App\Models\Plan::featureCatalog();
     @endphp
 
     <!-- Top Announcement Bar (Solid & Crisp) -->
-    <div class="border-b border-zinc-800 bg-[#131316] py-2 px-4 text-center text-xs text-zinc-300">
+    <div class="hidden border-b border-zinc-800 bg-[#131316] py-2 px-4 text-center text-xs text-zinc-300 sm:block">
         <span class="inline-flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-[#FFEF4D]"></span>
             <span class="font-bold text-[#FFEF4D]">{{ __('You keep 100% of the ticket') }}</span>
@@ -43,21 +31,16 @@
     </div>
 
     <!-- Header Navigation Bar -->
-    <header class="border-b border-zinc-800 sticky top-0 z-50 bg-[#09090b]/95 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-4">
+    <header class="z-50 shrink-0 border-b border-zinc-800 bg-[#09090b]/95 backdrop-blur-md sticky top-0" x-data="{ menuOpen: false }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-3">
             <!-- Platform Brand Logo -->
-            <a href="{{ route('home') }}" class="flex items-center gap-2.5 select-none shrink-0">
+            <a href="{{ route('home') }}" class="flex items-center gap-2.5 select-none shrink-0 min-w-0">
                 <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-sm sm:text-base font-black shrink-0 shadow-xs">
                     <i class="fa-solid fa-compass"></i>
                 </div>
-                <div class="flex items-center gap-1.5">
-                    <span class="font-black text-base sm:text-lg tracking-tight text-white leading-none">
-                        {{ config('app.name', 'TravelEngine') }}
-                    </span>
-                    <span class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-md bg-[#FFEF4D]/15 text-[#FFEF4D] font-black uppercase tracking-wider border border-[#FFEF4D]/30 hidden xs:inline-block">
-                        Booking
-                    </span>
-                </div>
+                <span class="font-black text-base sm:text-lg tracking-tight text-white leading-none truncate">
+                    {{ config('app.name', 'TravelEngine') }}
+                </span>
             </a>
 
             <!-- Desktop Nav Links -->
@@ -69,52 +52,55 @@
             </nav>
 
             <!-- Auth / Action Buttons -->
-            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div class="flex items-center gap-2 shrink-0">
                 @auth
                     <a href="{{ route('dashboard') }}"
-                        class="h-8 sm:h-9 px-3.5 sm:px-4 rounded-lg bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        class="h-9 px-3.5 sm:px-4 rounded-lg bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                         wire:navigate>
                         <i class="fa-solid fa-gauge text-[11px]"></i>
                         <span>{{ __('Dashboard') }}</span>
                     </a>
                 @else
                     <a href="{{ route('login') }}"
-                        class="px-2.5 sm:px-3 py-1.5 text-white hover:text-[#FFEF4D] text-xs font-semibold transition"
+                        class="hidden sm:inline px-3 py-1.5 text-white hover:text-[#FFEF4D] text-xs font-semibold transition"
                         wire:navigate>
                         {{ __('Operator log in') }}
                     </a>
                     <a href="{{ route('register') }}"
-                        class="h-8 sm:h-9 px-3.5 sm:px-4 rounded-lg bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        class="hidden h-9 cursor-pointer items-center rounded-lg bg-[#FFEF4D] px-3.5 text-xs font-black text-[#090d16] shadow-xs transition hover:bg-[#fae639] md:flex"
                         wire:navigate>
-                        <span>{{ $registrationOpen ? __('Start Free') : __('Coming soon') }}</span>
-                        <i class="fa-solid fa-arrow-right text-[10px] hidden sm:inline"></i>
+                        {{ $registrationOpen ? __('Start Free') : __('Coming soon') }}
                     </a>
                 @endauth
+                <button type="button" class="md:hidden h-9 w-9 inline-flex items-center justify-center rounded-lg border border-zinc-800 text-zinc-200"
+                    x-on:click="menuOpen = !menuOpen" :aria-expanded="menuOpen" aria-label="{{ __('Menu') }}">
+                    <i class="fa-solid text-sm" :class="menuOpen ? 'fa-xmark' : 'fa-bars'"></i>
+                </button>
             </div>
         </div>
+
+        <nav x-show="menuOpen" x-cloak class="md:hidden border-t border-zinc-800 bg-[#09090b] px-4 py-3 space-y-1">
+            <a href="#how-it-works" class="block rounded-xl px-3 py-3 text-sm font-semibold text-zinc-200" x-on:click="menuOpen = false">{{ __('How It Works') }}</a>
+            <a href="#features" class="block rounded-xl px-3 py-3 text-sm font-semibold text-zinc-200" x-on:click="menuOpen = false">{{ __('Features') }}</a>
+            <a href="#pricing" class="block rounded-xl px-3 py-3 text-sm font-semibold text-zinc-200" x-on:click="menuOpen = false">{{ __('Pricing & Plans') }}</a>
+            <a href="#faq" class="block rounded-xl px-3 py-3 text-sm font-semibold text-zinc-200" x-on:click="menuOpen = false">{{ __('FAQ') }}</a>
+        </nav>
     </header>
 
-    <main>
+    <main class="max-md:pb-28">
         <!-- Hero Section -->
-        <section class="pt-12 pb-14 sm:pt-20 sm:pb-20">
-            <div class="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6 sm:space-y-8">
-                <!-- Eyebrow Pill Tag -->
-                <div class="inline-flex max-w-full items-start sm:items-center gap-2 px-3.5 py-1.5 rounded-full border border-zinc-800 bg-[#131316] text-xs font-bold text-[#FFEF4D] text-left sm:text-center">
-                    <span class="w-1.5 h-1.5 mt-1.5 sm:mt-0 rounded-full bg-[#FFEF4D] shrink-0"></span>
-                    <span class="text-pretty leading-snug">{{ __('For guides and tour shops — no website person needed') }}</span>
-                </div>
-
-                <!-- Main Catchy Title -->
-                <h1 class="text-2xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-snug sm:leading-tight">
-                    {{ __('The simple way to sell your tours online.') }}<br>
-                    <span class="text-[#FFEF4D]">
-                        {{ __('Guests book themselves. You keep the listed price.') }}
+        <section class="md:py-20">
+            <div class="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-5xl flex-col justify-center gap-8 px-4 py-8 text-center sm:px-6 md:block md:min-h-0 md:space-y-8 md:py-0">
+                <div class="space-y-5 md:space-y-8">
+                <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight text-balance">
+                    {{ __('Guests book themselves.') }}
+                    <span class="mt-2 block text-[#FFEF4D]">
+                        {{ __('You keep the listed price.') }}
                     </span>
                 </h1>
 
-                <!-- Value Proposition Copy -->
-                <p class="text-base sm:text-lg text-zinc-400 max-w-3xl mx-auto font-normal leading-relaxed px-1">
-                    {{ __('Add your trips, share one link, and let guests pick a date and pay. Copy a pay link into chat, print tomorrow’s guest list for the driver — and keep 100% of the ticket price.') }}
+                <p class="text-base sm:text-lg text-zinc-400 max-w-md mx-auto font-normal leading-relaxed">
+                    {{ __('Share one link. They pick a date and pay.') }}
                 </p>
 
                 <!-- CTA Buttons -->
@@ -123,7 +109,7 @@
                         class="w-full sm:w-auto h-11 sm:h-12 px-6 sm:px-8 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                         wire:navigate>
                         @if ($registrationOpen)
-                            <span>{{ __('Create Your Free Tour Website') }}</span>
+                            <span>{{ __('Start free') }}</span>
                         @else
                             <span class="sm:hidden">{{ __('Coming soon') }}</span>
                             <span class="hidden sm:inline">{{ __('Coming soon — we are preparing operator sign-up') }}</span>
@@ -132,39 +118,59 @@
                     </a>
                 </div>
 
-                <!-- Feature Badges Bar -->
-                <div class="pt-6 sm:pt-8 grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm font-semibold text-zinc-400 border-t border-zinc-800 mt-6 sm:mt-10">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-globe text-[#FFEF4D] text-sm"></i>
-                        <span>{{ __('Your own tour shop') }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-check text-[#FFEF4D] text-sm"></i>
-                        <span>{{ __('24/7 Online Booking') }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-qrcode text-emerald-400 text-sm"></i>
-                        <span>{{ __('QRIS & Bank Transfers') }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fa-brands fa-whatsapp text-emerald-400 text-sm"></i>
-                        <span>{{ __('Tickets on WhatsApp') }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 col-span-2 sm:col-span-1 justify-center sm:justify-start">
-                        <i class="fa-solid fa-sack-dollar text-[#FFEF4D] text-sm"></i>
-                        <span>{{ __('You keep 100%') }}</span>
-                    </div>
+                <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-zinc-400 md:hidden">
+                    <span>{{ __('No credit card required') }}</span>
+                    <span class="text-zinc-700">·</span>
+                    <span>{{ __('Ready in under 5 minutes') }}</span>
                 </div>
 
-                <!-- Mobile: one snapshot of what you get (desktop keeps the full demo) -->
-                <div class="md:hidden text-left rounded-2xl border border-zinc-800 bg-[#131316] p-4 space-y-3">
-                    <p class="text-xs font-mono text-[#FFEF4D] truncate">yourname.travelengine.online</p>
-                    <div class="space-y-1">
-                        <p class="text-base font-bold text-white">{{ __('Your own tour website') }}</p>
-                        <p class="text-base text-zinc-400 leading-relaxed">
-                            {{ __('Guests pick a date, pay with QRIS or bank transfer, and get a WhatsApp ticket. You keep 100% of the listed price.') }}
-                        </p>
+                <!-- Feature Badges Bar -->
+                <div class="hidden pt-4 sm:pt-6 md:flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm font-semibold text-zinc-300">
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 px-3 py-1.5">
+                        <i class="fa-solid fa-globe text-[#FFEF4D] text-[11px]"></i>
+                        {{ __('Your shop') }}
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 px-3 py-1.5">
+                        <i class="fa-solid fa-qrcode text-emerald-400 text-[11px]"></i>
+                        {{ __('QRIS') }}
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 px-3 py-1.5">
+                        <i class="fa-brands fa-whatsapp text-emerald-400 text-[11px]"></i>
+                        {{ __('WhatsApp tickets') }}
+                    </span>
+                </div>
+
+                </div>
+
+                <div class="md:hidden" data-mobile-hero>
+                    <div class="overflow-hidden rounded-2xl border border-zinc-800 bg-[#131316]">
+                        <div class="space-y-1 border-b border-zinc-800 px-4 py-3 text-center">
+                            <p class="text-xs font-bold uppercase tracking-wider text-zinc-500">{{ __('The deal') }}</p>
+                            <p class="font-mono text-xs text-[#FFEF4D]">yourname.travelengine.online</p>
+                        </div>
+                        <ul>
+                            <li class="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3.5">
+                                <span class="text-sm font-medium text-zinc-300">{{ __('Nothing taken from your ticket') }}</span>
+                                <span class="font-mono text-lg font-black text-white">0%</span>
+                            </li>
+                            <li class="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3.5">
+                                <span class="text-sm font-medium text-zinc-300">{{ __('You keep the listed price') }}</span>
+                                <span class="font-mono text-lg font-black text-[#FFEF4D]">100%</span>
+                            </li>
+                            <li class="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3.5">
+                                <span class="text-sm font-medium text-zinc-300">{{ __('Platform fee at checkout') }}</span>
+                                <span class="font-mono text-lg font-black text-white">5%</span>
+                            </li>
+                            <li class="flex items-center justify-between gap-3 px-4 py-3.5">
+                                <span class="text-sm font-medium text-zinc-300">{{ __('Starter plan, cancel anytime') }}</span>
+                                <span class="font-mono text-lg font-black text-[#FFEF4D]">{{ __('Free') }}</span>
+                            </li>
+                        </ul>
                     </div>
+                    <a href="#how-it-works" class="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-zinc-500">
+                        <span>{{ __('Three steps') }}</span>
+                        <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                    </a>
                 </div>
 
                 <!-- Interactive Multi-View Product Showcase -->
@@ -499,135 +505,160 @@
         </section>
 
         <!-- Product facts (no invented volume numbers) -->
-        <section class="border-y border-zinc-800 bg-[#0d0d10] py-8 sm:py-10">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-8 text-center">
-                <div class="px-2">
-                    <span class="text-xl sm:text-3xl font-black text-white font-mono block">0%</span>
-                    <span class="text-xs text-zinc-400 mt-1.5 block text-pretty leading-snug">{{ __('Nothing taken from your ticket') }}</span>
-                </div>
-                <div class="px-2">
-                    <span class="text-xl sm:text-3xl font-black text-[#FFEF4D] font-mono block">100%</span>
-                    <span class="text-xs text-zinc-400 mt-1.5 block text-pretty leading-snug">{{ __('You keep the listed price') }}</span>
-                </div>
-                <div class="px-2">
-                    <span class="text-xl sm:text-3xl font-black text-white font-mono block">5%</span>
-                    <span class="text-xs text-zinc-400 mt-1.5 block text-pretty leading-snug">{{ __('Platform fee at checkout') }}</span>
-                </div>
-                <div class="px-2">
-                    <span class="text-xl sm:text-3xl font-black text-[#FFEF4D] font-mono block">{{ __('Free') }}</span>
-                    <span class="text-xs text-zinc-400 mt-1.5 block text-pretty leading-snug">{{ __('Starter plan, cancel anytime') }}</span>
+        <section class="hidden border-y border-zinc-800 bg-[#0d0d10] px-6 py-10 md:block">
+            <div class="mx-auto w-full max-w-6xl">
+                <div class="grid grid-cols-2 gap-x-4 gap-y-8 text-center md:grid-cols-4">
+                    <div class="px-2">
+                        <span class="block font-mono text-xl font-black text-white sm:text-3xl">0%</span>
+                        <span class="mt-1.5 block text-pretty text-xs leading-snug text-zinc-400">{{ __('Nothing taken from your ticket') }}</span>
+                    </div>
+                    <div class="px-2">
+                        <span class="block font-mono text-xl font-black text-[#FFEF4D] sm:text-3xl">100%</span>
+                        <span class="mt-1.5 block text-pretty text-xs leading-snug text-zinc-400">{{ __('You keep the listed price') }}</span>
+                    </div>
+                    <div class="px-2">
+                        <span class="block font-mono text-xl font-black text-white sm:text-3xl">5%</span>
+                        <span class="mt-1.5 block text-pretty text-xs leading-snug text-zinc-400">{{ __('Platform fee at checkout') }}</span>
+                    </div>
+                    <div class="px-2">
+                        <span class="block font-mono text-xl font-black text-[#FFEF4D] sm:text-3xl">{{ __('Free') }}</span>
+                        <span class="mt-1.5 block text-pretty text-xs leading-snug text-zinc-400">{{ __('Starter plan, cancel anytime') }}</span>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- The 3 Core Pillars Section (How It Works) -->
-        <section id="how-it-works" class="py-12 sm:py-20 scroll-mt-12">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-12">
-                <div class="text-center space-y-3 max-w-2xl mx-auto">
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D] block">{{ __('Simple 3-Step Setup') }}</span>
-                    <h2 class="text-xl sm:text-4xl font-black text-white tracking-tight">
-                        Everything you need in 3 simple steps
+        <section id="how-it-works" class="scroll-mt-16 border-t border-zinc-800 py-10 md:py-20">
+            <div class="mx-auto w-full max-w-7xl space-y-6 px-4 sm:space-y-12 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-md space-y-2 text-center">
+                    <p class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D]">{{ __('How It Works') }}</p>
+                    <h2 class="text-2xl font-black tracking-tight text-white sm:text-4xl">
+                        {{ __('Three steps') }}
                     </h2>
-                    <p class="text-base text-zinc-400 leading-relaxed">
-                        You don't need a designer or a website person. Add your trips, share the link, and run the tour.
-                    </p>
+                    <p class="text-sm leading-snug text-zinc-400">{{ __('Your shop. They book. You get paid.') }}</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Pillar 1 -->
-                    <div class="p-6 sm:p-7 rounded-2xl bg-[#131316] border border-zinc-800 hover:border-[#FFEF4D]/50 transition duration-200 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div class="w-10 h-10 rounded-xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-lg font-black shadow-xs">
-                                <i class="fa-solid fa-store"></i>
-                            </div>
-                            <span class="text-xs font-bold text-zinc-500 font-mono">01</span>
+                <ol class="md:hidden">
+                    <li class="relative flex gap-4 pb-6">
+                        <div class="flex flex-col items-center">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FFEF4D] text-sm font-black text-[#090d16]">1</span>
+                            <span class="mt-2 w-px flex-1 bg-zinc-800"></span>
                         </div>
-                        <h3 class="text-base sm:text-lg font-bold text-white">{{ __('1. Your Own Tour Website') }}</h3>
-                        <p class="text-base text-zinc-400 leading-relaxed">
-                            Get a booking page with your logo, photos, and prices. Put the link in your Instagram bio, TikTok, or WhatsApp status.
-                        </p>
+                        <div class="min-w-0 pb-1">
+                            <h3 class="text-base font-bold text-white">{{ __('Your shop') }}</h3>
+                            <p class="text-sm leading-snug text-zinc-400">{{ __('Your trips, your prices, one link.') }}</p>
+                        </div>
+                    </li>
+                    <li class="relative flex gap-4 pb-6">
+                        <div class="flex flex-col items-center">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FFEF4D] text-sm font-black text-[#090d16]">2</span>
+                            <span class="mt-2 w-px flex-1 bg-zinc-800"></span>
+                        </div>
+                        <div class="min-w-0 pb-1">
+                            <h3 class="text-base font-bold text-white">{{ __('They book') }}</h3>
+                            <p class="text-sm leading-snug text-zinc-400">{{ __('They pick a date and pay. You stop chasing seats in chat.') }}</p>
+                        </div>
+                    </li>
+                    <li class="relative flex gap-4">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FFEF4D] text-sm font-black text-[#090d16]">3</span>
+                        <div class="min-w-0">
+                            <h3 class="text-base font-bold text-white">{{ __('You get paid') }}</h3>
+                            <p class="text-sm leading-snug text-zinc-400">{{ __('You keep 100%. It goes to your bank.') }}</p>
+                        </div>
+                    </li>
+                </ol>
+
+                <div class="hidden grid-cols-1 gap-6 md:grid md:grid-cols-3">
+                    <div class="space-y-4 rounded-2xl border border-zinc-800 bg-[#131316] p-7">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-lg font-black text-[#090d16]">
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">{{ __('Your shop') }}</h3>
+                            <p class="text-base leading-relaxed text-zinc-400">
+                                {{ __('Your trips, your prices, one link.') }}
+                            </p>
+                        </div>
                     </div>
 
-                    <!-- Pillar 2 -->
-                    <div class="p-6 sm:p-7 rounded-2xl bg-[#131316] border border-zinc-800 hover:border-[#FFEF4D]/50 transition duration-200 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div class="w-10 h-10 rounded-xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-lg font-black shadow-xs">
-                                <i class="fa-solid fa-calendar-days"></i>
-                            </div>
-                            <span class="text-xs font-bold text-zinc-500 font-mono">02</span>
+                    <div class="space-y-4 rounded-2xl border border-zinc-800 bg-[#131316] p-7">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-lg font-black text-[#090d16]">
+                            <i class="fa-solid fa-calendar-days"></i>
                         </div>
-                        <h3 class="text-base sm:text-lg font-bold text-white">{{ __('2. Accept Bookings Anytime') }}</h3>
-                        <p class="text-base text-zinc-400 leading-relaxed">
-                            Guests pick a date and how many people, then pay. You stop chasing “is this seat still free?” in chat.
-                        </p>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">{{ __('They book') }}</h3>
+                            <p class="text-base leading-relaxed text-zinc-400">
+                                {{ __('They pick a date and pay. You stop chasing seats in chat.') }}
+                            </p>
+                        </div>
                     </div>
 
-                    <!-- Pillar 3 -->
-                    <div class="p-6 sm:p-7 rounded-2xl bg-[#131316] border border-zinc-800 hover:border-[#FFEF4D]/50 transition duration-200 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div class="w-10 h-10 rounded-xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-lg font-black shadow-xs">
-                                <i class="fa-solid fa-wallet"></i>
-                            </div>
-                            <span class="text-xs font-bold text-zinc-500 font-mono">03</span>
+                    <div class="space-y-4 rounded-2xl border border-zinc-800 bg-[#131316] p-7">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-lg font-black text-[#090d16]">
+                            <i class="fa-solid fa-wallet"></i>
                         </div>
-                        <h3 class="text-base sm:text-lg font-bold text-white">{{ __('3. Fast Payouts to Your Bank') }}</h3>
-                        <p class="text-base text-zinc-400 leading-relaxed">
-                            Guests pay with QRIS, BCA, Mandiri, BRI, BNI, or a card. After the payment settles, the money goes to your Indonesian bank. You keep 100% of the listed price.
-                        </p>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">{{ __('You get paid') }}</h3>
+                            <p class="text-base leading-relaxed text-zinc-400">
+                                {{ __('You keep 100%. It goes to your bank.') }}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- Asymmetric Bento Box Features Grid -->
-        <section id="features" class="py-12 sm:py-20 border-t border-zinc-800 bg-[#0d0d10] scroll-mt-16">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-12">
-                <div class="text-center space-y-3 max-w-2xl mx-auto">
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D] block">{{ __('Practical Operator Tools') }}</span>
-                    <h2 class="text-xl sm:text-4xl font-black text-white tracking-tight">
-                        Built for your daily tour business
+        <section id="features" class="scroll-mt-16 border-t border-zinc-800 bg-[#0d0d10] py-10 md:py-20">
+            <div class="mx-auto w-full max-w-7xl space-y-6 px-4 sm:space-y-12 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-md space-y-2 text-center md:max-w-2xl md:space-y-3">
+                    <p class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D]">{{ __('Practical Operator Tools') }}</p>
+                    <h2 class="text-2xl font-black tracking-tight text-white sm:text-4xl">
+                        {{ __('What you get') }}
                     </h2>
-                    <p class="text-base text-zinc-400 leading-relaxed">
+                    <p class="text-sm leading-snug text-zinc-400 md:hidden">{{ __('Copy a link. They pay. The rest is already done.') }}</p>
+                    <p class="hidden text-base leading-relaxed text-zinc-400 sm:block">
                         Spend less time answering repetitive questions and more time growing your tours.
                     </p>
                 </div>
 
                 <!-- Mobile: short feature list (no mockups) -->
                 <ul class="md:hidden divide-y divide-zinc-800 rounded-2xl border border-zinc-800 bg-[#131316] overflow-hidden">
-                    <li class="flex items-start gap-3 p-4">
+                    <li class="flex items-start gap-3 p-3.5">
                         <div class="w-9 h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center shrink-0">
                             <i class="fa-brands fa-whatsapp text-sm"></i>
                         </div>
                         <div class="min-w-0 space-y-0.5">
                             <h3 class="text-base font-bold text-white">{{ __('Pay links for chat') }}</h3>
-                            <p class="text-base text-zinc-400 leading-relaxed">{{ __('Copy a checkout link into chat. Guest pays, you get confirmed.') }}</p>
+                            <p class="text-sm leading-snug text-zinc-400">{{ __('Copy a checkout link into chat. Guest pays, you get confirmed.') }}</p>
                         </div>
                     </li>
-                    <li class="flex items-start gap-3 p-4">
+                    <li class="flex items-start gap-3 p-3.5">
                         <div class="w-9 h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center shrink-0">
                             <i class="fa-solid fa-ticket text-sm"></i>
                         </div>
                         <div class="min-w-0 space-y-0.5">
                             <h3 class="text-base font-bold text-white">{{ __('E-tickets on WhatsApp') }}</h3>
-                            <p class="text-base text-zinc-400 leading-relaxed">{{ __('Auto voucher, QR pass, and meeting pin on their phone.') }}</p>
+                            <p class="text-sm leading-snug text-zinc-400">{{ __('Auto voucher, QR pass, and meeting pin on their phone.') }}</p>
                         </div>
                     </li>
-                    <li class="flex items-start gap-3 p-4">
+                    <li class="flex items-start gap-3 p-3.5">
                         <div class="w-9 h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center shrink-0">
                             <i class="fa-solid fa-clipboard-list text-sm"></i>
                         </div>
                         <div class="min-w-0 space-y-0.5">
                             <h3 class="text-base font-bold text-white">{{ __('Daily guest lists') }}</h3>
-                            <p class="text-base text-zinc-400 leading-relaxed">{{ __('Pickup lists for drivers, guides, and boat captains.') }}</p>
+                            <p class="text-sm leading-snug text-zinc-400">{{ __('Pickup lists for drivers, guides, and boat captains.') }}</p>
                         </div>
                     </li>
-                    <li class="flex items-start gap-3 p-4">
+                    <li class="flex items-start gap-3 p-3.5">
                         <div class="w-9 h-9 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center shrink-0">
                             <i class="fa-solid fa-building-columns text-sm"></i>
                         </div>
                         <div class="min-w-0 space-y-0.5">
                             <h3 class="text-base font-bold text-white">{{ __('Payouts, 0% cut') }}</h3>
-                            <p class="text-base text-zinc-400 leading-relaxed">{{ __('Keep 100% of the ticket. Money goes to your Indonesian bank.') }}</p>
+                            <p class="text-sm leading-snug text-zinc-400">{{ __('Keep 100% of the ticket. Money goes to your Indonesian bank.') }}</p>
                         </div>
                     </li>
                 </ul>
@@ -767,29 +798,29 @@
         </section>
 
         <!-- Pricing & Subscription Plans Section -->
-        <section id="pricing" class="py-12 sm:py-20 scroll-mt-16" x-data="{ billing_interval: 'monthly' }">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-10">
+        <section id="pricing" class="scroll-mt-16 py-10 md:py-20" x-data="{ billing_interval: 'monthly' }">
+            <div class="mx-auto w-full max-w-7xl space-y-6 px-4 sm:space-y-10 sm:px-6 lg:px-8">
 
                 <!-- Section Header & Billing Interval Toggle -->
-                <div class="text-center space-y-3 max-w-2xl mx-auto">
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D] block">{{ __('Simple, Honest Pricing') }}</span>
-                    <h2 class="text-xl sm:text-4xl font-black text-white tracking-tight">
-                        Start free. Keep 100% of your tour price.
+                <div class="mx-auto max-w-md space-y-3 text-center">
+                    <p class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D]">{{ __('Pricing & Plans') }}</p>
+                    <h2 class="text-2xl font-black tracking-tight text-white sm:text-4xl">
+                        {{ __('Keep 100% of the ticket.') }}
                     </h2>
-                    <p class="text-base text-zinc-400 leading-relaxed">
-                        No hidden cuts, no monthly surprises. Start for free and upgrade only when your business expands.
+                    <p class="text-sm leading-relaxed text-zinc-400 sm:text-base">
+                        {{ __('Free to start. Upgrade when you need more.') }}
                     </p>
 
                     <!-- Toggle -->
-                    <div class="inline-flex p-1 rounded-xl bg-[#131316] border border-zinc-800 self-center mt-3">
+                    <div class="mt-1 flex w-full rounded-xl border border-zinc-800 bg-[#131316] p-1 md:inline-flex md:w-auto">
                         <button type="button" x-on:click="billing_interval = 'monthly'"
                             :class="billing_interval === 'monthly' ? 'bg-[#FFEF4D] text-[#090d16] font-black' : 'text-zinc-400 hover:text-white'"
-                            class="px-3.5 sm:px-4 py-1.5 rounded-lg text-sm font-bold transition-all cursor-pointer">
+                            class="flex-1 cursor-pointer rounded-lg px-3.5 py-2 text-sm font-bold transition-all sm:px-4 sm:py-1.5 md:flex-none">
                             {{ __('Monthly') }}
                         </button>
                         <button type="button" x-on:click="billing_interval = 'yearly'"
                             :class="billing_interval === 'yearly' ? 'bg-[#FFEF4D] text-[#090d16] font-black' : 'text-zinc-400 hover:text-white'"
-                            class="px-3.5 sm:px-4 py-1.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5">
+                            class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-bold transition-all sm:px-4 sm:py-1.5 md:flex-none">
                             <span>{{ __('Yearly') }}</span>
                             <span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-[#FFEF4D]/20 text-[#FFEF4D]">{{ __('Save 17%') }}</span>
                         </button>
@@ -797,7 +828,7 @@
                 </div>
 
                 <!-- Mobile: one-line plan summaries -->
-                <div class="md:hidden space-y-3">
+                <div class="md:hidden space-y-2">
                     @foreach ($plans as $plan)
                         @php
                             $priceMonthly = (float) $plan->price_monthly;
@@ -809,7 +840,7 @@
                                 default => [$plan->listingLimitLabel(), $plan->teamSeatLabel()],
                             };
                         @endphp
-                        <div class="rounded-2xl bg-[#131316] border {{ $plan->is_popular ? 'border-[#FFEF4D]' : 'border-zinc-800' }} p-4 space-y-3">
+                        <div class="space-y-2 rounded-2xl border bg-[#131316] p-4 {{ $plan->is_popular ? 'border-[#FFEF4D]' : 'border-zinc-800' }}">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0 space-y-0.5">
                                     <div class="flex items-center gap-2">
@@ -824,7 +855,7 @@
                                     </p>
                                 </div>
                                 <a href="{{ route('register') }}"
-                                    class="shrink-0 h-9 px-3 rounded-lg {{ $plan->is_popular ? 'bg-[#FFEF4D] text-[#090d16] font-black' : 'bg-zinc-800 text-zinc-100 border border-zinc-700 font-bold' }} text-sm flex items-center cursor-pointer"
+                                    class="flex h-10 shrink-0 cursor-pointer items-center rounded-lg px-3.5 text-sm {{ $plan->is_popular ? 'bg-[#FFEF4D] font-black text-[#090d16]' : 'border border-zinc-700 bg-zinc-800 font-bold text-zinc-100' }}"
                                     wire:navigate>
                                     {{ $registrationOpen ? ($plan->isFree() ? __('Start free') : __('Choose')) : __('Coming soon') }}
                                 </a>
@@ -839,7 +870,7 @@
                             </ul>
                         </div>
                     @endforeach
-                    <p class="text-center text-xs text-zinc-500">{{ __('You keep 100% of the listed price. A 5% platform fee is added at checkout.') }}</p>
+                    <p class="px-2 text-center text-xs leading-relaxed text-zinc-500">{{ __('You keep 100% of the listed price. A 5% platform fee is added at checkout.') }}</p>
                 </div>
 
                 <!-- Desktop: full pricing cards -->
@@ -1093,24 +1124,25 @@
         </section>
 
         <!-- Frequently Asked Questions (FAQ) Section -->
-        <section id="faq" class="py-16 sm:py-20 border-t border-zinc-800 bg-[#0d0d10] scroll-mt-16" x-data="{ activeAccordion: null }">
-            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-                <div class="text-center space-y-3">
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D] block">{{ __('Common Questions') }}</span>
-                    <h2 class="text-xl sm:text-4xl font-black text-white tracking-tight">
-                        Everything you need to know
+        <section id="faq" class="scroll-mt-16 border-t border-zinc-800 bg-[#0d0d10] py-10 md:py-20" x-data="{ activeAccordion: null }">
+            <div class="mx-auto max-w-3xl space-y-6 px-4 sm:space-y-10 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-md space-y-2 text-center">
+                    <p class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D]">{{ __('FAQ') }}</p>
+                    <h2 class="text-2xl font-black tracking-tight text-white sm:text-4xl">
+                        {{ __('Questions') }}
                     </h2>
-                    <p class="text-base text-zinc-400 leading-relaxed">
+                    <p class="text-sm leading-snug text-zinc-400 md:hidden">{{ __('Payouts, the platform fee, and your shop.') }}</p>
+                    <p class="hidden text-base leading-relaxed text-zinc-400 sm:block">
                         {{ __('Have questions about payouts, the platform fee, or setting up your shop? Here are quick answers.') }}
                     </p>
                 </div>
 
-                <div class="space-y-3">
+                <div class="overflow-hidden rounded-2xl border border-zinc-800 bg-[#131316] md:space-y-3 md:overflow-visible md:rounded-none md:border-0 md:bg-transparent">
                     <!-- FAQ Item 1 -->
-                    <div class="rounded-xl bg-[#131316] border border-zinc-800 overflow-hidden transition-colors">
+                    <div class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">
                         <button type="button" @click="activeAccordion = activeAccordion === 1 ? null : 1"
-                            class="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer">
-                            <span class="font-bold text-base text-white">
+                            class="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left sm:gap-4 sm:p-5">
+                            <span class="text-sm font-bold text-white sm:text-base">
                                 {{ __('How do I receive payouts from my tour bookings?') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
@@ -1124,10 +1156,10 @@
                     </div>
 
                     <!-- FAQ Item 2 -->
-                    <div class="rounded-xl bg-[#131316] border border-zinc-800 overflow-hidden transition-colors">
+                    <div class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">
                         <button type="button" @click="activeAccordion = activeAccordion === 2 ? null : 2"
-                            class="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer">
-                            <span class="font-bold text-base text-white">
+                            class="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left sm:gap-4 sm:p-5">
+                            <span class="text-sm font-bold text-white sm:text-base">
                                 {{ __('Do I need a designer or a website person?') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
@@ -1141,10 +1173,10 @@
                     </div>
 
                     <!-- FAQ Item 3 -->
-                    <div class="rounded-xl bg-[#131316] border border-zinc-800 overflow-hidden transition-colors">
+                    <div class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">
                         <button type="button" @click="activeAccordion = activeAccordion === 3 ? null : 3"
-                            class="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer">
-                            <span class="font-bold text-base text-white">
+                            class="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left sm:gap-4 sm:p-5">
+                            <span class="text-sm font-bold text-white sm:text-base">
                                 {{ __('How does “you keep 100%” work?') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
@@ -1158,10 +1190,10 @@
                     </div>
 
                     <!-- FAQ Item 4 -->
-                    <div class="rounded-xl bg-[#131316] border border-zinc-800 overflow-hidden transition-colors">
+                    <div class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">
                         <button type="button" @click="activeAccordion = activeAccordion === 4 ? null : 4"
-                            class="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer">
-                            <span class="font-bold text-base text-white">
+                            class="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left sm:gap-4 sm:p-5">
+                            <span class="text-sm font-bold text-white sm:text-base">
                                 {{ __('What is the platform fee?') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
@@ -1175,10 +1207,10 @@
                     </div>
 
                     <!-- FAQ Item 5 -->
-                    <div class="rounded-xl bg-[#131316] border border-zinc-800 overflow-hidden transition-colors">
+                    <div class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">
                         <button type="button" @click="activeAccordion = activeAccordion === 5 ? null : 5"
-                            class="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer">
-                            <span class="font-bold text-base text-white">
+                            class="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left sm:gap-4 sm:p-5">
+                            <span class="text-sm font-bold text-white sm:text-base">
                                 {{ __('Can guests open mybrand.com instead of a long link?') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
@@ -1192,10 +1224,10 @@
                     </div>
 
                     <!-- FAQ Item 6 -->
-                    <div class="rounded-xl bg-[#131316] border border-zinc-800 overflow-hidden transition-colors">
+                    <div class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">
                         <button type="button" @click="activeAccordion = activeAccordion === 6 ? null : 6"
-                            class="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer">
-                            <span class="font-bold text-base text-white">
+                            class="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left sm:gap-4 sm:p-5">
+                            <span class="text-sm font-bold text-white sm:text-base">
                                 {{ __('Can I change plans or cancel anytime?') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
@@ -1209,10 +1241,10 @@
                     </div>
 
                     <!-- FAQ Item 7 -->
-                    <div class="rounded-xl bg-[#131316] border border-zinc-800 overflow-hidden transition-colors">
+                    <div class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">
                         <button type="button" @click="activeAccordion = activeAccordion === 7 ? null : 7"
-                            class="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer">
-                            <span class="font-bold text-base text-white">
+                            class="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left sm:gap-4 sm:p-5">
+                            <span class="text-sm font-bold text-white sm:text-base">
                                 {{ __('Can my tour guides and staff have their own accounts?') }}
                             </span>
                             <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
@@ -1229,29 +1261,29 @@
         </section>
 
         <!-- Bottom Call to Action Section -->
-        <section class="py-16 sm:py-20 border-t border-zinc-800 bg-[#0d0d10]">
-            <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-5">
-                <h2 class="text-xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-snug sm:leading-tight">
-                    Ready to start taking direct tour bookings?
+        <section class="border-t border-zinc-800 bg-[#0d0d10] py-10 md:py-20" data-mobile-end>
+            <div class="mx-auto w-full max-w-4xl space-y-5 px-4 text-center sm:px-6">
+                <h2 class="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+                    {{ __('Your shop. Your price.') }}
                 </h2>
-                <p class="text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">
+                <p class="text-base text-zinc-400 max-w-md mx-auto leading-relaxed">
                     @if ($registrationOpen)
-                        Set up your tour packages, add your bank details, and start accepting online bookings in under 10 minutes.
+                        {{ __('Start free. Keep the ticket.') }}
                     @else
-                        {{ __('We are getting operator sign-up ready. Look around — accounts open soon.') }}
+                        {{ __('Sign-up opens soon.') }}
                     @endif
                 </p>
-                <div class="pt-2">
+                <div class="pt-1">
                     <a href="{{ route('register') }}"
-                        class="h-11 sm:h-12 px-8 sm:px-9 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm sm:text-base transition inline-flex items-center gap-2 cursor-pointer shadow-sm"
+                        class="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#FFEF4D] text-sm font-black text-[#090d16] shadow-sm transition hover:bg-[#fae639] sm:h-12 sm:w-auto sm:px-9 sm:text-base"
                         wire:navigate>
-                        <span>{{ $registrationOpen ? __('Create Your Tour Website Now') : __('Coming soon') }}</span>
+                        <span>{{ $registrationOpen ? __('Start free') : __('Coming soon') }}</span>
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </a>
                 </div>
 
                 <!-- Trust Reassurance Checklist -->
-                <div class="pt-2 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm text-zinc-400">
+                <div class="flex flex-col items-center gap-2 pt-1 text-sm text-zinc-400 md:flex-row md:flex-wrap md:justify-center md:gap-6">
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('No credit card required') }}</span>
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('Free Starter plan forever') }}</span>
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400 text-xs"></i> {{ __('Ready in under 5 minutes') }}</span>
@@ -1260,8 +1292,8 @@
         </section>
 
         <!-- Sample shop — after the product story, for people who want to try later -->
-        <section class="py-12 sm:py-16 border-t border-zinc-800">
-            <div class="max-w-2xl mx-auto px-4 sm:px-6 text-center space-y-4">
+        <section class="border-t border-zinc-800 py-8 md:py-16">
+            <div class="mx-auto w-full max-w-2xl space-y-4 px-4 text-center sm:px-6">
                 <p class="text-xs font-bold uppercase tracking-wider text-[#FFEF4D]">{{ __('When you’re ready') }}</p>
                 <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">
                     {{ __('Want to try a sample shop?') }}
@@ -1285,9 +1317,8 @@
         </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-zinc-800 bg-[#09090b] py-8 sm:py-10 text-xs text-zinc-500">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-center sm:text-left">
+    <footer class="border-t border-zinc-800 bg-[#09090b] py-8 text-xs text-zinc-500 sm:py-10">
+        <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-4 text-center sm:flex-row sm:gap-6 sm:px-6 sm:text-left lg:px-8">
             <!-- Platform Logo -->
             <a href="{{ route('home') }}" class="flex items-center gap-2.5 select-none group">
                 <div class="w-8 h-8 rounded-lg bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-sm font-black shrink-0 shadow-xs">
@@ -1303,7 +1334,7 @@
                 </div>
             </a>
 
-            <div class="flex items-center gap-6">
+            <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
                 <a href="{{ route('legal.terms') }}" class="hover:text-zinc-300 transition">{{ __('Terms') }}</a>
                 <a href="{{ route('legal.privacy') }}" class="hover:text-zinc-300 transition">{{ __('Privacy') }}</a>
                 <a href="mailto:{{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}" class="hover:text-zinc-300 transition">{{ __('Support') }}</a>
@@ -1316,6 +1347,36 @@
             </p>
         </div>
     </footer>
+
+    <div
+        class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-[#09090b]/95 px-4 pt-3 backdrop-blur-md md:hidden"
+        style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom))"
+        x-data="{ show: false }"
+        x-init="
+            const hero = document.querySelector('[data-mobile-hero]');
+            const end = document.querySelector('[data-mobile-end]');
+            const update = () => {
+                const heroBox = hero?.getBoundingClientRect();
+                const endBox = end?.getBoundingClientRect();
+                const heroGone = heroBox ? heroBox.bottom < 56 : true;
+                const endHere = endBox ? endBox.top < window.innerHeight * 0.8 : false;
+                show = heroGone && !endHere;
+            };
+            update();
+            window.addEventListener('scroll', update, { passive: true });
+        "
+        x-show="show"
+        x-cloak
+        x-transition.opacity.duration.200ms
+        :aria-hidden="(!show).toString()"
+    >
+        <a href="{{ route('register') }}"
+            class="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#FFEF4D] text-sm font-black text-[#090d16]"
+            wire:navigate>
+            <span>{{ $registrationOpen ? __('Start free') : __('Coming soon') }}</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+        </a>
+    </div>
     @livewireScripts
 </body>
 

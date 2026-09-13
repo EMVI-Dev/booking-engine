@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DokuWebhookController;
+use App\Http\Controllers\Auth\RegistrationHandoffController;
 use App\Http\Controllers\CaddyAskController;
 use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\LegalController;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Route;
 
 // Storefront & Platform Home
 Route::get('/', [StorefrontController::class, 'index'])->name('home');
+Route::get('/auth/registration-handoff', RegistrationHandoffController::class)
+    ->middleware(['signed:relative', 'throttle:10,1'])
+    ->name('auth.registration-handoff');
 Route::get('/tours', [StorefrontController::class, 'allPackages'])->name('storefront.packages');
 Route::get('/services', [StorefrontController::class, 'allProducts'])->name('storefront.products');
 Route::get('/terms', [StorefrontController::class, 'showTerms'])->name('storefront.terms');
@@ -62,6 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('reservations', 'pages::reservations.index')->name('reservations.index');
     Route::livewire('guests', 'pages::guests.index')->name('guests.index');
+    Route::livewire('guests/{guest}', 'pages::guests.show')->name('guests.show');
     Route::livewire('calendar', 'pages::calendar.index')->name('calendar.index');
     Route::livewire('wallet', 'pages::wallet.index')->name('wallet.index');
     Route::livewire('coupons', 'pages::coupons.index')->name('coupons.index');

@@ -226,8 +226,8 @@
                         @if (Auth::user()?->isAdmin())
                             <div class="border-t border-slate-100 dark:border-zinc-800 my-1"></div>
                             <x-dropdown-item :href="route('admin.platform.edit')" wire:navigate>
-                                <i class="fa-brands fa-searchengin mr-2 text-[#FFEF4D] text-sm"></i>
-                                <span class="font-bold text-[#FFEF4D]">{{ __('Platform Admin') }}</span>
+                                <i class="fa-brands fa-searchengin mr-2 text-brand-700 dark:text-brand-400 text-sm"></i>
+                                <span class="font-bold text-op-ink">{{ __('Platform Admin') }}</span>
                             </x-dropdown-item>
                         @endif
                         <div class="border-t border-slate-100 dark:border-zinc-800 my-1"></div>
@@ -418,6 +418,8 @@
                         </div>
                     @endif
 
+                    <livewire:operator-setup-banner />
+
                     {{ $slot }}
                 </div>
             </main>
@@ -551,7 +553,7 @@
 
                         </div>
 
-                        <!-- Guest CRM Directory -->
+                        <!-- Guest CRM -->
                         <a href="{{ route('guests.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                             class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
                             <div class="flex items-center gap-2.5">
@@ -561,9 +563,9 @@
                                 </span>
                                 <div>
                                     <span
-                                        class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest CRM Directory') }}</span>
+                                        class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest CRM') }}</span>
                                     <span
-                                        class="text-[10px] text-slate-400 block">{{ __('Customer profiles & lifetime spend') }}</span>
+                                        class="text-[10px] text-slate-400 block">{{ __('Contacts, notes, lifetime spend') }}</span>
                                 </div>
                             </div>
                             @if ($currentOperator && !$currentOperator->hasFeature('guest_crm'))
@@ -628,6 +630,23 @@
                                         class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Storefront Settings') }}</span>
                                         <span
                                             class="text-[10px] text-slate-400 block">{{ __('Branding, policies, guest page') }}</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                        </a>
+
+                        <a href="{{ route('payments.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                            class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                            <div class="flex items-center gap-2.5">
+                                <span
+                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                    <i class="fa-solid fa-building-columns"></i>
+                                </span>
+                                <div>
+                                    <span
+                                        class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Payout bank account') }}</span>
+                                    <span
+                                        class="text-[10px] text-slate-400 block">{{ __('Where we send your money') }}</span>
                                 </div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>

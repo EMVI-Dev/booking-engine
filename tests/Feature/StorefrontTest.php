@@ -20,8 +20,8 @@ test('root platform domain serves platform welcome page', function () {
 
     $response->assertOk()
         ->assertViewIs('welcome')
-        ->assertSee('The simple way to sell your tours online', false)
-        ->assertSee('Guests book themselves. You keep the listed price.')
+        ->assertSee('Guests book themselves.', false)
+        ->assertSee('You keep the listed price.')
         ->assertDontSee('No coding')
         ->assertDontSee('Operating System')
         ->assertSee('Privacy')
@@ -98,8 +98,227 @@ test('operator storefront provides dedicated all packages catalog page with sche
         ->assertViewIs('storefront.packages')
         ->assertSee('Manta Point Expedition')
         ->assertSee('All Tour Packages')
+        ->assertSee('View details')
+        ->assertDontSee('Book Now')
         ->assertSee('BreadcrumbList')
         ->assertSee('TouristTrip');
+});
+
+test('listing cards push view details while book now stays on the trip page', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Bali Blue Charters',
+        'slug' => 'bali-blue',
+        'status' => OperatorStatus::Approved,
+        'contact_whatsapp' => '081234567890',
+    ]);
+
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
+        'domain' => 'bali-blue.booking.test',
+        'type' => DomainType::Subdomain,
+        'status' => DomainStatus::Active,
+    ]);
+
+    $package = Package::factory()->create([
+        'operator_id' => $operator->id,
+        'title' => 'Nusa Penida Day Trip',
+        'slug' => 'nusa-penida-day-trip',
+        'status' => ListingStatus::Published,
+    ]);
+
+    Product::factory()->create([
+        'operator_id' => $operator->id,
+        'name' => 'Snorkel Gear Rental',
+        'slug' => 'snorkel-gear-rental',
+        'sellable_standalone' => true,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $headers = ['Host' => 'bali-blue.booking.test'];
+    $host = 'http://bali-blue.booking.test';
+
+    $this->get($host.'/', $headers)
+        ->assertOk()
+        ->assertSee('View details')
+        ->assertDontSee('Book Now')
+        ->assertSee('Chat WhatsApp');
+
+    $this->get($host.'/tours', $headers)
+        ->assertOk()
+        ->assertSee('View details')
+        ->assertDontSee('Book Now');
+
+    $this->get($host.'/services', $headers)
+        ->assertOk()
+        ->assertSee('View details')
+        ->assertDontSee('Book Now');
+
+    $this->get($host.'/packages/'.$package->slug, $headers)
+        ->assertOk()
+        ->assertSee('Book Now');
+});
+
+test('product detail shows inclusions and exclusions like packages', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Include Exclude Co',
+        'slug' => 'include-exclude',
+        'status' => OperatorStatus::Approved,
+        'terms_and_conditions' => 'Operator shop terms should stay hidden.',
+    ]);
+
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
+        'domain' => 'include-exclude.booking.test',
+        'type' => DomainType::Subdomain,
+        'status' => DomainStatus::Active,
+    ]);
+
+    $product = Product::factory()->create([
+        'operator_id' => $operator->id,
+        'name' => 'Reef Snorkel',
+        'slug' => 'reef-snorkel',
+        'category' => 'Snorkeling',
+        'location' => 'Nusa Penida',
+        'description' => "Clear water reefs.\nBring reef-safe sunscreen.",
+        'sellable_standalone' => true,
+        'free_cancellation_hours' => 36,
+        'advance_booking_hours' => 12,
+        'inclusions' => ['Mask and fins', 'Guide'],
+        'exclusions' => ['Hotel pickup', 'Meals'],
+        'cancellation_terms' => 'Listing-specific cancel window for reef snorkel.',
+        'terms_and_conditions' => 'Product terms fallback.',
+        'status' => ListingStatus::Published,
+    ]);
+
+    $this->get('http://include-exclude.booking.test/products/'.$product->slug, [
+        'Host' => 'include-exclude.booking.test',
+    ])
+        ->assertOk()
+        ->assertSee('Single Activities')
+        ->assertSee('Snorkeling')
+        ->assertSee('Nusa Penida')
+        ->assertSee('Activity Overview')
+        ->assertSee('Clear water reefs.')
+        ->assertSee('Cancellation')
+        ->assertSee('Free up to 36 hrs')
+        ->assertSee('Book ahead')
+        ->assertSee('At least 12 hrs')
+        ->assertSee('Copy link')
+        ->assertSee('Ask about this trip')
+        ->assertSee('What is Included')
+        ->assertSee('Mask and fins')
+        ->assertSee('Not Included')
+        ->assertSee('Hotel pickup')
+        ->assertSee('Meals')
+        ->assertSee('Booking & Cancellation Policy')
+        ->assertSee('Listing-specific cancel window for reef snorkel.')
+        ->assertDontSee('Operator shop terms should stay hidden.')
+        ->assertDontSee('Product terms fallback.');
+});
+
+test('package detail prefers listing cancellation terms over operator shop terms', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Policy Prefer Tours',
+        'slug' => 'policy-prefer',
+        'status' => OperatorStatus::Approved,
+        'terms_and_conditions' => 'Operator shop blanket terms.',
+        'contact_whatsapp' => '081234567890',
+    ]);
+
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
+        'domain' => 'policy-prefer.booking.test',
+        'type' => DomainType::Subdomain,
+        'status' => DomainStatus::Active,
+    ]);
+
+    $activity = Product::factory()->create([
+        'operator_id' => $operator->id,
+        'name' => 'Temple Walk',
+        'slug' => 'temple-walk',
+        'sellable_standalone' => true,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $package = Package::factory()->create([
+        'operator_id' => $operator->id,
+        'title' => 'Temple Day Trip',
+        'slug' => 'temple-day-trip',
+        'location' => 'Ubud',
+        'advance_booking_hours' => 24,
+        'cancellation_terms' => 'Package listing cancel policy wins.',
+        'terms_and_conditions' => 'Package terms fallback.',
+        'status' => ListingStatus::Published,
+    ]);
+
+    $package->products()->attach($activity->id, ['quantity_required' => 2]);
+
+    $this->get('http://policy-prefer.booking.test/packages/'.$package->slug, [
+        'Host' => 'policy-prefer.booking.test',
+    ])
+        ->assertOk()
+        ->assertSee('Tour Packages')
+        ->assertSee('Ubud')
+        ->assertSee('Book ahead')
+        ->assertSee('At least 24 hrs')
+        ->assertSee('Copy link')
+        ->assertSee('Ask about this trip')
+        ->assertSee('What\'s in this package')
+        ->assertSee('Temple Walk')
+        ->assertSee('×2')
+        ->assertSee('Booking & Cancellation Policy')
+        ->assertSee('Package listing cancel policy wins.')
+        ->assertDontSee('Operator shop blanket terms.')
+        ->assertDontSee('Package terms fallback.');
+});
+
+test('guest shop does not advertise daily capacity on listing or product pages', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Quiet Capacity Tours',
+        'slug' => 'quiet-capacity',
+        'status' => OperatorStatus::Approved,
+    ]);
+
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
+        'domain' => 'quiet-capacity.booking.test',
+        'type' => DomainType::Subdomain,
+        'status' => DomainStatus::Active,
+    ]);
+
+    $product = Product::factory()->create([
+        'operator_id' => $operator->id,
+        'name' => 'Sunrise Trekking',
+        'slug' => 'sunrise-trekking',
+        'sellable_standalone' => true,
+        'capacity_per_day' => 20,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $headers = ['Host' => 'quiet-capacity.booking.test'];
+    $host = 'http://quiet-capacity.booking.test';
+
+    $this->get($host.'/', $headers)
+        ->assertOk()
+        ->assertDontSee('20/day')
+        ->assertDontSee('daily capacity');
+
+    $this->get($host.'/services', $headers)
+        ->assertOk()
+        ->assertDontSee('20/day');
+
+    $this->get($host.'/products/'.$product->slug, $headers)
+        ->assertOk()
+        ->assertDontSee('20/day')
+        ->assertDontSee('daily capacity');
 });
 
 test('operator storefront provides dedicated all products catalog page with schema and filters', function () {
@@ -250,7 +469,12 @@ test('storefront reflects custom brand accent hex color in CSS variables and vie
     // Homepage
     $this->get('http://komodo.booking.test', ['Host' => 'komodo.booking.test'])
         ->assertOk()
-        ->assertSee('--brand-color: #0ea5e9', false);
+        ->assertSee('--brand-color: #0ea5e9', false)
+        ->assertSee('--color-brand-600: var(--brand-color)', false)
+        ->assertSee('--color-brand-800: color-mix', false)
+        ->assertSee('sf-canvas', false)
+        ->assertSee('text-brand-foreground', false)
+        ->assertDontSee('text-[#101730]', false);
 
     // Packages catalog
     $this->get('http://komodo.booking.test/tours', ['Host' => 'komodo.booking.test'])

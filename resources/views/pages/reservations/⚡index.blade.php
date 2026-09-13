@@ -13,12 +13,15 @@ use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 new #[Title('Bookings & Reservations')] class extends Component {
     use ResolvesCurrentOperator;
     use WithPagination;
+
+    #[Url]
     public string $search = '';
     public string $statusFilter = 'all';
     public string $dateFilter = 'all'; // all, upcoming, past, this_month

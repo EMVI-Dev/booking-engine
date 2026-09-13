@@ -34,7 +34,8 @@ class OperatorActivitySlackNotifier
             text: "New operator registered: {$operator->name}",
             title: 'New operator registered',
             fields: [
-                'Owner' => "{$owner->name} ({$owner->email})",
+                'Owner' => $owner->name,
+                'Email' => $owner->email,
             ],
         );
     }
@@ -83,7 +84,8 @@ class OperatorActivitySlackNotifier
             text: "Team member invited: {$user->email} → {$operator->name}",
             title: 'Team member invited',
             fields: [
-                'Teammate' => "{$user->name} ({$user->email})",
+                'Teammate' => $user->name,
+                'Email' => $user->email,
                 'Role' => $role,
             ],
         );
@@ -102,20 +104,25 @@ class OperatorActivitySlackNotifier
 
         $toPlan = $payment->plan?->name ?? $operator->getPlan()->name;
         $amount = $this->formatRupiah((float) $payment->net_amount_paid);
+        $gateway = trim((string) ($payment->gateway ?: ''));
+
+        $fields = [
+            'Amount' => $amount,
+            'Invoice' => (string) $payment->invoice_number,
+            'Type' => $this->subscriptionTypeLabel((string) $payment->type),
+            'From' => $fromPlan,
+            'To' => $toPlan,
+        ];
+
+        if ($gateway !== '') {
+            $fields['Gateway'] = $gateway;
+        }
 
         $this->send(
             operator: $operator,
             text: "{$title}: {$operator->name} {$amount} ({$fromPlan} → {$toPlan})",
             title: $title,
-            fields: [
-                'Amount' => $amount,
-                'Invoice' => (string) $payment->invoice_number,
-                'Type' => $this->subscriptionTypeLabel((string) $payment->type),
-                'Interval' => (string) ($payment->billing_interval ?: 'monthly'),
-                'Gateway' => (string) ($payment->gateway ?: '—'),
-                'From' => $fromPlan,
-                'To' => $toPlan,
-            ],
+            fields: $fields,
         );
     }
 
@@ -124,17 +131,23 @@ class OperatorActivitySlackNotifier
         $payment->loadMissing('plan');
         $amount = $this->formatRupiah((float) $payment->net_amount_paid);
         $planName = $payment->plan?->name ?? $operator->getPlan()->name;
+        $gateway = trim((string) ($payment->gateway ?: ''));
+
+        $fields = [
+            'Amount' => $amount,
+            'Invoice' => (string) $payment->invoice_number,
+            'Plan' => $planName,
+        ];
+
+        if ($gateway !== '') {
+            $fields['Gateway'] = $gateway;
+        }
 
         $this->send(
             operator: $operator,
             text: "Subscription payment failed: {$operator->name} {$amount} ({$planName})",
             title: 'Subscription payment failed',
-            fields: [
-                'Amount' => $amount,
-                'Invoice' => (string) $payment->invoice_number,
-                'Plan' => $planName,
-                'Gateway' => (string) ($payment->gateway ?: '—'),
-            ],
+            fields: $fields,
         );
     }
 
@@ -208,6 +221,155 @@ class OperatorActivitySlackNotifier
         return 'Rp '.number_format($amount, 0, ',', '.');
     }
 
+    protected function iconUrl(): ?string
+    {
+        $url = rtrim((string) config('app.url'), '/').'/favicon.png';
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        // Slack fetches the icon from the public internet; local Herd hosts 404 as a broken image.
+        if ($host === '' || $host === 'localhost' || $host === '127.0.0.1' || str_ends_with($host, '.test') || str_ends_with($host, '.emvi')) {
+            return null;
+        }
+
+        return $url;
+    }
+
+    /**
+     * @param  array<string, string>  $fields
+     * @return list<array{type: string, text: array{type: string, text: string, emoji: bool}, style?: string, url: string, action_id: string}>
+     */
+    protected function actionButtons(Operator $operator, ?string $adminUrl, string $storefrontUrl): array
+    {
+        $actions = [];
+
+        if ($adminUrl !== null) {
+            $actions[] = [
+                'type' => 'button',
+                'text' => [
+                    'type' => 'plain_text',
+                    'text' => 'Open Admin',
+                    'emoji' => false,
+                ],
+                'style' => 'primary',
+                'url' => $adminUrl,
+                'action_id' => 'open_admin_'.$operator->id,
+            ];
+        }
+
+        $actions[] = [
+            'type' => 'button',
+            'text' => [
+                'type' => 'plain_text',
+                'text' => 'Open Storefront',
+                'emoji' => false,
+            ],
+            'url' => $storefrontUrl,
+            'action_id' => 'open_storefront_'.$operator->id,
+        ];
+
+        return $actions;
+    }
+
+    /**
+     * Build card body: operator name, then a monospace box with padded label/value rows.
+     *
+     * @param  array<string, string>  $fields
+     */
+    protected function formatCardBody(string $operatorName, array $fields): string
+    {
+        $lines = ['*'.$operatorName.'*'];
+        $rows = [];
+
+        foreach ($fields as $label => $value) {
+            $display = trim((string) $value);
+            if ($display === '') {
+                continue;
+            }
+
+            $rows[(string) $label] = $display;
+        }
+
+        if ($rows === []) {
+            return $lines[0];
+        }
+
+        $labelWidth = max(array_map(strlen(...), array_keys($rows)));
+        $padded = [];
+
+        foreach ($rows as $label => $display) {
+            $padded[] = str_pad($label, $labelWidth).' : '.$display;
+        }
+
+        $lines[] = '';
+        $lines[] = '```';
+        $lines[] = implode("\n", $padded);
+        $lines[] = '```';
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @param  array<string, string>  $fields
+     * @return array{text: string, blocks: list<array<string, mixed>>}
+     */
+    public function buildPayload(Operator $operator, string $text, string $title, array $fields = []): array
+    {
+        $operator->loadMissing('plan');
+
+        $adminUrl = null;
+
+        try {
+            $adminUrl = route('admin.operators.show', $operator);
+        } catch (Throwable) {
+            // Route may be unavailable in some console contexts.
+        }
+
+        $storefrontUrl = $operator->getStorefrontUrl();
+
+        $card = [
+            'type' => 'card',
+            'title' => [
+                'type' => 'mrkdwn',
+                'text' => $title,
+                'verbatim' => false,
+            ],
+            'subtitle' => [
+                'type' => 'mrkdwn',
+                'text' => 'Slug · '.$operator->slug,
+                'verbatim' => false,
+            ],
+            'body' => [
+                'type' => 'mrkdwn',
+                'text' => $this->formatCardBody($operator->name, $fields),
+                'verbatim' => false,
+            ],
+            'subtext' => [
+                'type' => 'mrkdwn',
+                'text' => now()->timezone((string) config('app.timezone'))->format('M j, Y · H:i'),
+                'verbatim' => false,
+            ],
+            'actions' => $this->actionButtons($operator, $adminUrl, $storefrontUrl),
+        ];
+
+        $iconUrl = $this->iconUrl();
+
+        if ($iconUrl !== null) {
+            $card = [
+                'icon' => [
+                    'type' => 'image',
+                    'image_url' => $iconUrl,
+                    'alt_text' => (string) config('app.name', 'TravelEngine'),
+                ],
+                ...$card,
+            ];
+        }
+
+        return [
+            'text' => $text,
+            'blocks' => [$card],
+        ];
+    }
+
     /**
      * @param  array<string, string>  $fields
      */
@@ -219,61 +381,7 @@ class OperatorActivitySlackNotifier
             return;
         }
 
-        $operator->loadMissing('plan');
-
-        $payloadFields = [
-            'Business' => $operator->name,
-            'Slug' => $operator->slug,
-            'Plan' => $operator->getPlan()->name,
-            'Status' => $operator->status->label(),
-            ...$fields,
-        ];
-
-        $blockFields = [];
-
-        foreach ($payloadFields as $label => $value) {
-            $blockFields[] = [
-                'type' => 'mrkdwn',
-                'text' => '*'.$label."*\n".$value,
-            ];
-        }
-
-        $links = [];
-
-        try {
-            $links[] = '<'.route('admin.operators.show', $operator).'|Admin>';
-        } catch (Throwable) {
-            // Route may be unavailable in some console contexts.
-        }
-
-        $links[] = '<'.$operator->getStorefrontUrl().'|Storefront>';
-
-        $payload = [
-            'text' => $text,
-            'blocks' => [
-                [
-                    'type' => 'header',
-                    'text' => [
-                        'type' => 'plain_text',
-                        'text' => $title,
-                        'emoji' => true,
-                    ],
-                ],
-                [
-                    'type' => 'section',
-                    'fields' => $blockFields,
-                ],
-                [
-                    'type' => 'context',
-                    'elements' => [
-                        [
-                            'type' => 'mrkdwn',
-                            'text' => implode('  ·  ', $links),
-                        ],
-                    ],
-                ],
-            ],
-        ];
+        $payload = $this->buildPayload($operator, $text, $title, $fields);
 
         try {
             Http::timeout(5)

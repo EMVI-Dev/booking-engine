@@ -67,7 +67,11 @@ class Reservation extends Model
     {
         static::creating(function (Reservation $reservation): void {
             if (empty($reservation->code)) {
-                $reservation->code = static::generateUniqueCode();
+                $operator = ! empty($reservation->operator_id)
+                    ? Operator::query()->whereKey($reservation->operator_id)->first()
+                    : null;
+
+                $reservation->code = static::generateUniqueCode($operator?->reservationCodePrefix());
             }
 
             if (empty($reservation->public_token)) {
@@ -107,13 +111,29 @@ class Reservation extends Model
     /**
      * Generate unique, human-friendly reservation tracking code.
      */
-    public static function generateUniqueCode(): string
+    public static function generateUniqueCode(?string $prefix = null): string
     {
+        $normalizedPrefix = self::normalizeCodePrefix($prefix);
+
         do {
-            $code = 'RSV-'.strtoupper(Str::random(8));
+            $code = $normalizedPrefix.'-'.strtoupper(Str::random(8));
         } while (static::where('code', $code)->exists());
 
         return $code;
+    }
+
+    /**
+     * Keep prefixes short, uppercase, and URL-safe for guest-facing codes.
+     */
+    public static function normalizeCodePrefix(?string $prefix): string
+    {
+        $clean = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) $prefix));
+
+        if ($clean === '') {
+            return 'RSV';
+        }
+
+        return substr($clean, 0, 8);
     }
 
     /**

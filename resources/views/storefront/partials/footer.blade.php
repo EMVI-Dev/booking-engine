@@ -9,6 +9,17 @@
     $cleanPhone = !empty($agent->contact_whatsapp) ? $waService->normalizePhoneNumber($agent->contact_whatsapp) : null;
     $waMessage = 'Hello ' . ($agent->name ?? 'Tour Operator') . ', I have an inquiry regarding your tour packages.';
     $waUrl = $cleanPhone ? $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage) : null;
+
+    if ($agent) {
+        $agent->loadCount([
+            'packages as published_packages_count' => fn ($query) => $query->where('status', \App\Enums\ListingStatus::Published),
+            'products as standalone_products_count' => fn ($query) => $query
+                ->where('status', \App\Enums\ListingStatus::Published)
+                ->where('sellable_standalone', true),
+        ]);
+    }
+    $packagesCount = $agent?->published_packages_count ?? 0;
+    $productsCount = $agent?->standalone_products_count ?? 0;
 @endphp
 
 <footer
@@ -17,27 +28,31 @@
         <!-- Minimal Links Pill Row -->
         <div class="flex flex-wrap items-center justify-center gap-1.5 text-xs">
             <a href="{{ route('home') }}"
-                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-compass text-[11px] text-slate-400"></i>
                 <span>{{ __('Catalog') }}</span>
             </a>
-            <a href="{{ route('storefront.packages') }}"
-                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
-                <i class="fa-solid fa-cubes text-[11px] text-slate-400"></i>
-                <span>{{ __('Tour Packages') }}</span>
-            </a>
-            <a href="{{ route('storefront.products') }}"
-                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
-                <i class="fa-solid fa-compass text-[11px] text-slate-400"></i>
-                <span>{{ __('Single Activities') }}</span>
-            </a>
+            @if ($packagesCount > 0)
+                <a href="{{ route('storefront.packages') }}"
+                    class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-cubes text-[11px] text-slate-400"></i>
+                    <span>{{ __('Tour Packages') }}</span>
+                </a>
+            @endif
+            @if ($productsCount > 0)
+                <a href="{{ route('storefront.products') }}"
+                    class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-compass text-[11px] text-slate-400"></i>
+                    <span>{{ __('Single Activities') }}</span>
+                </a>
+            @endif
             <a href="{{ route('storefront.find-booking') }}"
-                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-ticket text-[11px] text-slate-400"></i>
                 <span>{{ __('Find Booking') }}</span>
             </a>
             <a href="{{ route('storefront.terms') }}"
-                class="px-3 py-1.5 rounded-xl hover:text-brand-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-shield-halved text-[11px] text-slate-400"></i>
                 <span>{{ __('Terms & Policies') }}</span>
             </a>
@@ -59,7 +74,7 @@
             <span>&bull;</span>
             <span>{{ __('Powered by') }}
                 <a href="https://{{ $platformDomain }}" target="_blank" rel="noopener"
-                    class="text-slate-900 dark:text-slate-300 font-bold hover:text-brand-600 dark:hover:text-brand-400 hover:underline inline-flex items-center gap-1">
+                    class="text-slate-900 dark:text-slate-300 font-bold hover:text-brand-800 dark:hover:text-brand-400 hover:underline inline-flex items-center gap-1">
                     <i class="fa-solid fa-compass brand-400 text-[10px]"></i>
                     {{ config('app.name', 'TravelEngine') }}
                 </a>

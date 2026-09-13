@@ -27,7 +27,7 @@
 </head>
 
 <body x-data="{ activeTab: 'all', mobileMenuOpen: false }"
-    class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
+    class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
     @include('storefront.partials.navbar')
 
     <!-- Hero Section (Responsive 2-Column Banner on Desktop) -->
@@ -45,10 +45,9 @@
                     : $agent->name;
                 $heroTagline = filled($storefrontSettings['hero_tagline'] ?? null)
                     ? $storefrontSettings['hero_tagline']
-                    : ($agent->bio ?:
-                    __(
-                        'Explore our curated packages and standalone activities. Book online with instant confirmation and transparent pricing.',
-                    ));
+                    : ($agent->bio ?: ($packages->isNotEmpty()
+                        ? __('Explore our curated packages and standalone activities. Book online with instant confirmation and transparent pricing.')
+                        : __('Explore our activities and book online with instant confirmation and transparent pricing.')));
             @endphp
             <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <!-- Left: Hero Headline & Description -->
@@ -175,8 +174,8 @@
             <!-- Fast Link to Full Catalog -->
             @if ($packages->count() > 3 || $standaloneProducts->count() > 3)
                 <div class="hidden sm:flex items-center gap-2 shrink-0">
-                    <a href="{{ route('storefront.packages') }}"
-                        class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                    <a href="{{ $packages->isNotEmpty() ? route('storefront.packages') : route('storefront.products') }}"
+                        class="text-xs font-bold text-brand-800 dark:text-brand-400 hover:underline flex items-center gap-1">
                         <span>{{ __('Browse Full Catalog') }}</span>
                         <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </a>
@@ -188,28 +187,28 @@
     <!-- Main Listings Section -->
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-10 sm:space-y-12">
         <!-- Packages Section (3 on mobile, 5 on desktop) -->
-        <section x-show="activeTab === 'all' || activeTab === 'packages'" class="space-y-5">
-            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-                <div>
-                    <h2
-                        class="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Curated Packages & Expeditions') }}
-                    </h2>
-                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        {{ __('Top-rated tour experiences ordered by most booked departures.') }}
-                    </p>
+        @if ($packages->isNotEmpty())
+            <section x-show="activeTab === 'all' || activeTab === 'packages'" class="space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                    <div>
+                        <h2
+                            class="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                            {{ __('Curated Packages & Expeditions') }}
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                            {{ __('Top-rated tour experiences ordered by most booked departures.') }}
+                        </p>
+                    </div>
+
+                    @if ($packages->count() > 3)
+                        <a href="{{ route('storefront.packages') }}"
+                            class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-800 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-400 transition shrink-0">
+                            <span>{{ __('See All :count Packages', ['count' => $packages->count()]) }}</span>
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </a>
+                    @endif
                 </div>
 
-                @if ($packages->count() > 3)
-                    <a href="{{ route('storefront.packages') }}"
-                        class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-500 transition shrink-0">
-                        <span>{{ __('See All :count Packages', ['count' => $packages->count()]) }}</span>
-                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                    </a>
-                @endif
-            </div>
-
-            @if ($packages->isNotEmpty())
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                     @foreach ($packages->take(6) as $index => $pkg)
                         <!-- Card: 3 items on mobile, 5 on desktop -->
@@ -250,7 +249,7 @@
                                 <div class="space-y-2">
                                     <div>
                                         <h3
-                                            class="font-black text-base sm:text-lg text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors leading-snug">
+                                            class="font-black text-base sm:text-lg text-slate-900 dark:text-white group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors leading-snug">
                                             <a href="{{ route('storefront.package', $pkg->slug) }}"
                                                 class="focus:outline-none">
                                                 {{ $pkg->title }}
@@ -259,7 +258,7 @@
                                         @if ($pkg->location)
                                             <p
                                                 class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mt-1">
-                                                <i class="fa-solid fa-location-dot text-brand-500 text-xs"></i>
+                                                <i class="fa-solid fa-location-dot text-brand-700 dark:text-brand-400 text-xs"></i>
                                                 {{ $pkg->location }}
                                             </p>
                                         @endif
@@ -310,8 +309,8 @@
                                     </div>
 
                                     <a href="{{ route('storefront.package', $pkg->slug) }}"
-                                        class="h-9 sm:h-10 px-4 sm:px-5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground text-xs font-bold shadow-xs hover:shadow-md transition text-center shrink-0 cursor-pointer">
-                                        <span>{{ __('Book Now') }}</span>
+                                        class="h-9 sm:h-10 px-4 sm:px-5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground text-xs font-bold shadow-xs hover:shadow-md transition text-center shrink-0 whitespace-nowrap cursor-pointer">
+                                        <span>{{ __('View details') }}</span>
                                         <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                     </a>
                                 </div>
@@ -325,24 +324,18 @@
                     <div class="text-center pt-2">
                         <a href="{{ route('storefront.packages') }}"
                             class="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-brand-400 dark:hover:border-brand-600 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-xs hover:shadow-md transition">
-                            <i class="fa-solid fa-cubes text-brand-500"></i>
+                            <i class="fa-solid fa-cubes text-brand-700 dark:text-brand-400"></i>
                             <span>{{ __('Explore All :count Packages', ['count' => $packages->count()]) }}</span>
                             <i class="fa-solid fa-arrow-right text-[10px] ml-1"></i>
                         </a>
                     </div>
                 @endif
-            @else
-                <div
-                    class="text-center py-12 px-4 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 space-y-2">
-                    <i class="fa-solid fa-cubes text-2xl text-slate-300 dark:text-slate-600"></i>
-                    <p class="text-xs text-slate-500">{{ __('No tour packages published yet.') }}</p>
-                </div>
-            @endif
-        </section>
+            </section>
+        @endif
 
         <!-- Activities & Standalone Products Section (3 on mobile, 5 on desktop) -->
         @if ($standaloneProducts->isNotEmpty())
-            <section x-show="activeTab === 'all' || activeTab === 'services'" class="space-y-5">
+            <section x-show="activeTab === 'all' || activeTab === 'products'" class="space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                     <div>
                         <h2
@@ -356,7 +349,7 @@
 
                     @if ($standaloneProducts->count() > 3)
                         <a href="{{ route('storefront.products') }}"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-500 transition shrink-0">
+                            class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-800 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-400 transition shrink-0">
                             <span>{{ __('See All :count Items', ['count' => $standaloneProducts->count()]) }}</span>
                             <i class="fa-solid fa-arrow-right text-[10px]"></i>
                         </a>
@@ -382,18 +375,11 @@
                                 @endif
 
                                 <!-- Floating Badges on Media -->
-                                <div
-                                    class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
+                                <div class="absolute top-2.5 left-2.5 pointer-events-none">
                                     <span
                                         class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/90 dark:bg-zinc-900/90 text-slate-700 dark:text-slate-300 backdrop-blur-md shadow-xs">
                                         {{ $prod->category ?? __('Service') }}
                                     </span>
-                                    @if ($prod->capacity_per_day)
-                                        <span
-                                            class="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/90 text-white backdrop-blur-md shadow-xs">
-                                            {{ $prod->capacity_per_day }}/day
-                                        </span>
-                                    @endif
                                 </div>
                             </div>
 
@@ -401,7 +387,7 @@
                             <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
                                 <div class="space-y-1.5">
                                     <h4
-                                        class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                        class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors">
                                         <a href="{{ route('storefront.product', $prod->slug) }}"
                                             class="focus:outline-none">
                                             {{ $prod->name }}
@@ -409,7 +395,7 @@
                                     </h4>
                                     @if ($prod->location)
                                         <p class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                                            <i class="fa-solid fa-location-dot text-brand-500 text-[10px]"></i>
+                                            <i class="fa-solid fa-location-dot text-brand-700 dark:text-brand-400 text-[10px]"></i>
                                             {{ $prod->location }}
                                         </p>
                                     @endif
@@ -421,7 +407,7 @@
                                 </div>
 
                                 <div
-                                    class="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-zinc-800">
+                                    class="flex flex-col gap-2.5 pt-2.5 border-t border-slate-100 dark:border-zinc-800">
                                     <div>
                                         <p class="text-[9px] uppercase font-bold text-slate-400">{{ __('Price') }}
                                         </p>
@@ -430,8 +416,8 @@
                                         </p>
                                     </div>
                                     <a href="{{ route('storefront.product', $prod->slug) }}"
-                                        class="h-8 px-3.5 inline-flex items-center gap-1 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-bold text-xs shadow-xs transition">
-                                        <span>{{ __('Book') }}</span>
+                                        class="h-9 w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-bold text-xs shadow-xs transition whitespace-nowrap">
+                                        <span>{{ __('View details') }}</span>
                                         <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                     </a>
                                 </div>
@@ -468,8 +454,8 @@
                             <img src="{{ $agent->logo_url }}" alt="{{ $agent->name }}"
                                 class="w-14 h-14 rounded-2xl object-contain border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1 shadow-xs" />
                         @else
-                            <div class="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-sm"
-                                style="background-color: {{ $agent->brand_color }};">
+                            <div class="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm"
+                                style="background-color: {{ $agent->brand_color }}; color: {{ $agent->brand_foreground_color }};">
                                 {{ strtoupper(substr($agent->name, 0, 1)) }}
                             </div>
                         @endif

@@ -46,6 +46,8 @@ function openGoogleReviewsShop(Operator $operator): void
         'bank_provider' => 'BCA',
         'bank_account_name' => $operator->name,
         'bank_account_number' => '1234567890',
+        'billing_email' => 'finance@'.$operator->slug.'.test',
+        'booking_notification_email' => 'bookings@'.$operator->slug.'.test',
     ]);
 }
 

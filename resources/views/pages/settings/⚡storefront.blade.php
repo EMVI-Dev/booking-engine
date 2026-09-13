@@ -21,6 +21,10 @@ new #[Title('Storefront Settings')] class extends Component {
 
     public bool $saved = false;
 
+    public bool $highlightTerms = false;
+
+    public bool $highlightHero = false;
+
     /**
      * Mount the component.
      */
@@ -40,6 +44,19 @@ new #[Title('Storefront Settings')] class extends Component {
             $this->hero_headline = (string) ($storefrontSettings['hero_headline'] ?? '');
             $this->hero_tagline = (string) ($storefrontSettings['hero_tagline'] ?? '');
         }
+
+        $this->syncSetupHighlights();
+    }
+
+    protected function syncSetupHighlights(): void
+    {
+        $this->highlightTerms = blank(trim($this->terms_and_conditions));
+        $this->syncHeroHighlight();
+    }
+
+    protected function syncHeroHighlight(): void
+    {
+        $this->highlightHero = blank(trim($this->hero_headline)) && blank(trim($this->hero_tagline));
     }
 
     /**
@@ -72,10 +89,14 @@ new #[Title('Storefront Settings')] class extends Component {
                 'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
                 'settings' => $settings,
             ]);
+
+            $this->syncSetupHighlights();
         }
 
         $this->saved = true;
         $this->dispatch('storefront-updated');
+        $this->dispatch('setup-progress-updated');
+        $this->dispatch('toast', message: __('Storefront settings saved.'), type: 'success');
     }
 }; ?>
 
@@ -216,35 +237,36 @@ new #[Title('Storefront Settings')] class extends Component {
             </div>
 
             <!-- Card 3: Hero Banner Content -->
-            <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
-                    <span class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 text-xs">
-                        <i class="fa-solid fa-bullhorn"></i>
-                    </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                        {{ __('Hero Banner Copy & Marketing Text') }}
-                    </h3>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <x-label for="hero_headline" :value="__('Custom Hero Headline (Optional)')" />
-                        <x-input id="hero_headline" wire:model="hero_headline" type="text"
-                            placeholder="e.g. Unforgettable Bali Expeditions" :error="$errors->has('hero_headline')" />
-                        <p class="text-[11px] text-slate-500 mt-1">
-                            {{ __('Leave blank to use your business name automatically.') }}</p>
-                        <x-input-error :messages="$errors->get('hero_headline')" />
+            <x-setup-needed :needed="$highlightHero" anchor="setup-hero">
+                <div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                    <div class="flex items-center gap-2.5 border-b border-slate-100 pb-2 dark:border-zinc-800">
+                        <span class="rounded-lg bg-sky-50 p-1.5 text-xs text-sky-600 dark:bg-sky-950/70 dark:text-sky-400">
+                            <i class="fa-solid fa-bullhorn"></i>
+                        </span>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            {{ __('Hero Banner Copy & Marketing Text') }}
+                        </h3>
                     </div>
 
-                    <div>
-                        <x-label for="hero_tagline" :value="__('Custom Hero Tagline (Optional)')" />
-                        <x-input id="hero_tagline" wire:model="hero_tagline" type="text"
-                            placeholder="e.g. Direct bookings & guaranteed private tours" :error="$errors->has('hero_tagline')" />
-                        <x-input-error :messages="$errors->get('hero_tagline')" />
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <x-label for="hero_headline" :value="__('Custom Hero Headline')" required />
+                            <x-input id="hero_headline" wire:model.live.debounce.300ms="hero_headline" type="text"
+                                placeholder="e.g. Unforgettable Bali Expeditions" :error="$errors->has('hero_headline')" />
+                            <p class="mt-1 text-[11px] text-slate-500">
+                                {{ __('Shown at the top of your booking page. Add a headline or tagline.') }}</p>
+                            <x-input-error :messages="$errors->get('hero_headline')" />
+                        </div>
+
+                        <div>
+                            <x-label for="hero_tagline" :value="__('Custom Hero Tagline')" />
+                            <x-input id="hero_tagline" wire:model.live.debounce.300ms="hero_tagline" type="text"
+                                placeholder="e.g. Direct bookings & guaranteed private tours" :error="$errors->has('hero_tagline')" />
+                            <x-input-error :messages="$errors->get('hero_tagline')" />
+                        </div>
                     </div>
                 </div>
-            </div>
+            </x-setup-needed>
 
             <!-- Card 3: Storefront Terms & Policies -->
             <div
@@ -259,22 +281,38 @@ new #[Title('Storefront Settings')] class extends Component {
                     </h3>
                 </div>
 
-                <div class="space-y-2">
-                    <x-label for="terms_and_conditions" :value="__('Official Guest Booking Terms (Displayed on dedicated /terms page)')" required />
-                    <x-textarea id="terms_and_conditions" wire:model="terms_and_conditions" rows="5"
-                        placeholder="Detail your standard policies: cancellation cutoff rules, health and physical requirements, weather rescheduling policies, and guest liability disclaimers..."
-                        :error="$errors->has('terms_and_conditions')" />
-                    <p class="text-[11px] text-slate-500">
-                        {{ __('These terms are frozen into the guest reservation snapshot upon booking.') }}</p>
-                    <x-input-error :messages="$errors->get('terms_and_conditions')" />
+                <div
+                    class="space-y-2"
+                    x-data
+                    x-init="
+                        $nextTick(() => {
+                            const hash = window.location.hash;
+                            const target = hash ? document.querySelector(hash) : null;
+                            if (target) {
+                                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        })
+                    "
+                >
+                    <x-setup-needed :needed="$highlightTerms" anchor="setup-terms" @class(['space-y-1', 'p-3 sm:p-3.5' => $highlightTerms])>
+                        <x-label for="terms_and_conditions" :value="__('Official Guest Booking Terms (Displayed on dedicated /terms page)')" required />
+                        <x-textarea id="terms_and_conditions" wire:model.live.debounce.300ms="terms_and_conditions" rows="5"
+                            placeholder="Detail your standard policies: cancellation cutoff rules, health and physical requirements, weather rescheduling policies, and guest liability disclaimers..."
+                            :error="$errors->has('terms_and_conditions')" />
+                        <p class="text-[11px] text-slate-500">
+                            {{ __('These terms are frozen into the guest reservation snapshot upon booking.') }}</p>
+                        <x-input-error :messages="$errors->get('terms_and_conditions')" />
+                    </x-setup-needed>
                 </div>
             </div>
 
             <!-- Submit Button & Success Toast -->
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
-                <x-button variant="primary" type="submit" data-test="update-storefront-button" class="w-full sm:w-auto shadow-sm">
-                    <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
-                    {{ __('Save Storefront Settings') }}
+                <x-button variant="primary" type="submit" data-test="update-storefront-button" class="w-full sm:w-auto shadow-sm" wire:loading.attr="disabled" wire:target="updateStorefrontSettings">
+                    <i class="fa-solid fa-floppy-disk mr-1 text-xs" wire:loading.remove wire:target="updateStorefrontSettings"></i>
+                    <i class="fa-solid fa-spinner fa-spin mr-1 text-xs" wire:loading wire:target="updateStorefrontSettings"></i>
+                    <span wire:loading.remove wire:target="updateStorefrontSettings">{{ __('Save Storefront Settings') }}</span>
+                    <span wire:loading wire:target="updateStorefrontSettings">{{ __('Saving…') }}</span>
                 </x-button>
 
                 <div x-data="{ shown: false, timeout: null }" x-init="@this.on('storefront-updated', () => {

@@ -324,10 +324,10 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                     <button
                         type="button"
                         @click="setTheme('light')"
-                        :class="theme === 'light' ? 'ring-2 ring-[#FFEF4D] bg-[#FFEF4D]/10 dark:bg-[#FFEF4D]/15 border-[#FFEF4D]' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
-                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-[#FFEF4D]"
+                        :class="theme === 'light' ? 'ring-2 ring-brand-400 bg-brand-50 border-brand-300' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
+                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-brand-300"
                     >
-                        <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center text-base">
+                        <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center text-base">
                             <i class="fa-solid fa-sun"></i>
                         </div>
                         <span class="text-slate-900 dark:text-white">{{ __('Light Theme') }}</span>
@@ -336,10 +336,10 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                     <button
                         type="button"
                         @click="setTheme('dark')"
-                        :class="theme === 'dark' ? 'ring-2 ring-[#FFEF4D] bg-[#FFEF4D]/10 dark:bg-[#FFEF4D]/15 border-[#FFEF4D]' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
-                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-[#FFEF4D]"
+                        :class="theme === 'dark' ? 'ring-2 ring-brand-400 bg-brand-50 dark:bg-brand-400/10 border-brand-300' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
+                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-brand-300"
                     >
-                        <div class="w-8 h-8 rounded-xl bg-[#FFEF4D]/15 text-[#FFEF4D] border border-[#FFEF4D]/30 flex items-center justify-center text-base">
+                        <div class="w-8 h-8 rounded-xl bg-brand-400/15 text-brand-700 dark:text-brand-400 border border-brand-400/30 flex items-center justify-center text-base">
                             <i class="fa-solid fa-moon"></i>
                         </div>
                         <span class="text-slate-900 dark:text-white">{{ __('Dark Theme') }}</span>
@@ -348,8 +348,8 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                     <button
                         type="button"
                         @click="setTheme('system')"
-                        :class="theme === 'system' ? 'ring-2 ring-[#FFEF4D] bg-[#FFEF4D]/10 dark:bg-[#FFEF4D]/15 border-[#FFEF4D]' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
-                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-[#FFEF4D]"
+                        :class="theme === 'system' ? 'ring-2 ring-brand-400 bg-brand-50 dark:bg-brand-400/10 border-brand-300' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
+                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-brand-300"
                     >
                         <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-500 dark:text-slate-400 flex items-center justify-center text-base">
                             <i class="fa-solid fa-desktop"></i>

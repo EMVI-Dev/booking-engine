@@ -86,6 +86,11 @@
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        color-scheme: light;
+    }
+
+    html.dark {
+        color-scheme: dark;
     }
 
     *,
@@ -677,6 +682,7 @@
 }
 
 .op-mobile-nav {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -691,8 +697,21 @@
 }
 
 .op-mobile-nav[aria-current="page"] {
-    color: var(--op-brand);
-    font-weight: 600;
+    color: var(--op-ink);
+    font-weight: 700;
+}
+
+/* Yellow marker — brand yellow is too light for text on a white phone bar. */
+.op-mobile-nav[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    bottom: 0.15rem;
+    left: 50%;
+    width: 1.125rem;
+    height: 2px;
+    border-radius: 999px;
+    background-color: var(--op-brand);
+    transform: translateX(-50%);
 }
 
 /* Phone and tablet share the bottom menu. Desktop sidebar from lg on a fine pointer. */

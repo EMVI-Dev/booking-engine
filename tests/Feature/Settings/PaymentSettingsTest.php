@@ -24,8 +24,29 @@ beforeEach(function () {
     $this->actingAs($this->user);
 });
 
-test('payment settings page is displayed', function () {
-    $this->get(route('payments.edit'))->assertOk();
+test('incomplete payout bank fields are highlighted for setup', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->incompleteSetup()->create([
+        'name' => 'Needs Bank Tours',
+        'contact_whatsapp' => '+628123456789',
+    ]);
+    $operator->users()->attach($user->id, ['role' => OperatorUserRole::Owner]);
+    $this->actingAs($user);
+
+    Livewire::test('pages::settings.payments')
+        ->assertSee('Needed for bookings')
+        ->assertSee('Finish the highlighted fields')
+        ->assertSeeHtml('data-setup-needed="true"')
+        ->assertSeeHtml('border-[#FFEF4D]')
+        ->set('bank_provider', 'BCA')
+        ->set('bank_account_name', 'Needs Bank Tours')
+        ->set('bank_account_number', '9876543210')
+        ->assertSeeHtml('data-setup-needed="true"')
+        ->call('updatePaymentSettings')
+        ->assertHasNoErrors()
+        ->assertDispatched('setup-progress-updated')
+        ->assertDontSeeHtml('data-setup-needed="true"')
+        ->assertDontSee('Finish the highlighted fields');
 });
 
 test('payment settings can be configured to use built-in platform Doku payment', function () {
@@ -35,7 +56,13 @@ test('payment settings can be configured to use built-in platform Doku payment',
         ->set('bank_account_number', '1234567890')
         ->set('payment_mode', 'platform')
         ->call('updatePaymentSettings')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('toast', message: __('Payout bank saved. :bank account ending :last.', [
+            'bank' => 'BCA',
+            'last' => '7890',
+        ]), type: 'success')
+        ->assertDispatched('setup-progress-updated')
+        ->assertDispatched('payment-settings-updated');
 
     $this->operator->refresh();
 

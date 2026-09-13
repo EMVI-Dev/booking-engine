@@ -25,7 +25,7 @@
         'conversionTransactionId' => $reservationCode,
     ])
 </head>
-<body class="min-h-screen bg-slate-50 dark:bg-ebony text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-brand-600 selection:text-brand-foreground antialiased">
+<body class="min-h-screen sf-canvas text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-brand-600 selection:text-brand-foreground antialiased">
     @php
         $waService = app(\App\Services\WhatsAppDispatchService::class);
         $cleanPhone = $waService->normalizePhoneNumber($agent->contact_whatsapp);

@@ -70,6 +70,8 @@ test('the public booking page opens after brand, terms, bank, and emails are fil
         'bank_provider' => 'BCA',
         'bank_account_name' => 'Ready Reef Tours',
         'bank_account_number' => '1234567890',
+        'billing_email' => 'finance@readyreef.test',
+        'booking_notification_email' => 'bookings@readyreef.test',
     ]);
 
     expect($operator->fresh()->isStorefrontPublic())->toBeTrue();
@@ -77,7 +79,9 @@ test('the public booking page opens after brand, terms, bank, and emails are fil
     $this->get('http://ready-reef.booking.test/', ['Host' => 'ready-reef.booking.test'])
         ->assertOk()
         ->assertViewIs('storefront.index')
-        ->assertSee('Ready Reef Tours');
+        ->assertSee('Ready Reef Tours')
+        ->assertSee('lg:hidden h-9 px-3.5 rounded-xl bg-emerald-600', false)
+        ->assertSee('hidden select-none lg:block', false);
 });
 
 test('the operator dashboard tells them the page is closed until setup is finished', function () {
@@ -92,8 +96,18 @@ test('the operator dashboard tells them the page is closed until setup is finish
         ->assertOk()
         ->assertSee('Page is closed')
         ->assertSee('Closed to guests until setup is finished.')
-        ->assertSee('Bio & WhatsApp')
+        ->assertSee('Finish setup to take bookings')
+        ->assertSee('Short bio')
+        ->assertDontSee('Bio & WhatsApp')
         ->assertSee('Payout bank account')
         ->assertSee('Billing email')
-        ->assertSee('Review Platform');
+        ->assertSee('Logo')
+        ->assertSee('Hero banner copy')
+        ->assertSee('Reviews');
+
+    $this->actingAs($user)
+        ->get(route('reservations.index'))
+        ->assertOk()
+        ->assertSee('Finish setup to take bookings')
+        ->assertSee('Payout bank account');
 });

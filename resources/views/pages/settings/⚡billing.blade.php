@@ -58,7 +58,11 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
             ]);
 
             $this->show_billing_info_modal = false;
-            session()->flash('success', __('Billing contact information updated successfully.'));
+            $this->dispatch(
+                'toast',
+                message: __('Billing contact saved.'),
+                type: 'success',
+            );
         }
     }
 
@@ -769,9 +773,13 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                         </button>
 
                         <button type="submit"
-                            class="px-5 py-2.5 rounded-xl bg-[#FFEF4D] hover:bg-[#FFEF4D]/90 text-[#090d16] font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-check text-xs"></i>
-                            <span>{{ __('Save Billing Info') }}</span>
+                            class="px-5 py-2.5 rounded-xl bg-[#FFEF4D] hover:bg-[#FFEF4D]/90 text-[#090d16] font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                            wire:loading.attr="disabled"
+                            wire:target="updateBillingInfo">
+                            <i class="fa-solid fa-check text-xs" wire:loading.remove wire:target="updateBillingInfo"></i>
+                            <i class="fa-solid fa-spinner fa-spin text-xs" wire:loading wire:target="updateBillingInfo"></i>
+                            <span wire:loading.remove wire:target="updateBillingInfo">{{ __('Save Billing Info') }}</span>
+                            <span wire:loading wire:target="updateBillingInfo">{{ __('Saving…') }}</span>
                         </button>
                     </div>
                 </form>

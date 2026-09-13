@@ -151,6 +151,214 @@ test('package creation is blocked if profile and terms are incomplete', function
     expect(Package::where('title', 'Island Excursion Package')->exists())->toBeFalse();
 });
 
+test('package create warns when price is not cheaper than linked activities separately', function () {
+    $activityA = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Snorkel Session',
+        'price' => 300000,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $activityB = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Temple Walk',
+        'price' => 200000,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $warningSnippet = 'Guests may prefer booking these activities one by one';
+    $dealSnippet = 'Smart price suggestion';
+
+    Livewire::test('pages::packages.create')
+        ->set('selectedProducts', [
+            $activityA->id => 1,
+            $activityB->id => 1,
+        ])
+        ->set('price', 499000)
+        ->assertSee($dealSnippet)
+        ->assertSee('Guest saves')
+        ->assertDontSee($warningSnippet)
+        ->set('price', 500000)
+        ->assertSee($warningSnippet)
+        ->assertSee('Price looks high')
+        ->assertSee('Rp 500.000')
+        ->set('price', 650000)
+        ->assertSee($warningSnippet)
+        ->assertSee('Rp 650.000')
+        ->set('title', 'Overpriced Combo')
+        ->set('category', 'Day Tour')
+        ->set('location', 'Bali')
+        ->set('status', 'published')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('packages.index'));
+
+    expect(Package::query()->where('title', 'Overpriced Combo')->exists())->toBeTrue();
+});
+
+test('package edit shows and clears the bundle price warning', function () {
+    $activity = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Reef Dive',
+        'price' => 400000,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $package = Package::factory()->create([
+        'operator_id' => $this->operator->id,
+        'title' => 'Dive Bundle',
+        'price' => 350000,
+    ]);
+    $package->products()->attach($activity->id, ['quantity_required' => 1]);
+
+    $warningSnippet = 'Guests may prefer booking these activities one by one';
+    $dealSnippet = 'Smart price suggestion';
+
+    Livewire::test('pages::packages.edit', ['package' => $package])
+        ->assertSee($dealSnippet)
+        ->assertDontSee($warningSnippet)
+        ->set('price', 400000)
+        ->assertSee($warningSnippet)
+        ->set('price', 399000)
+        ->assertSee($dealSnippet)
+        ->assertDontSee($warningSnippet);
+});
+
+test('package create suggests a 15 percent price inside a 10–20 percent band', function () {
+    $activityA = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Boat Transfer',
+        'price' => 600000,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $activityB = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Guide Hire',
+        'price' => 400000,
+        'status' => ListingStatus::Published,
+    ]);
+
+    // SeparateTotal = 1.000.000 → Low 800k (20%), Mid 850k (15%), High 900k (10%)
+    Livewire::test('pages::packages.create')
+        ->set('selectedProducts', [
+            $activityA->id => 1,
+            $activityB->id => 1,
+        ])
+        ->set('price', 1000000)
+        ->assertSee('Price looks high')
+        ->assertSee('Rp 800.000')
+        ->assertSee('Rp 900.000')
+        ->assertSee('Suggested: Rp 850.000')
+        ->assertDontSee('15%')
+        ->assertDontSee('10–20%')
+        ->call('applySuggestedBundlePrice')
+        ->assertSet('price', 850000.0)
+        ->assertSet('bundlePriceSuggestionDismissed', true)
+        ->assertDispatched('toast', message: __('Package price set to the suggested amount.'), type: 'success')
+        ->assertDontSee('Smart price suggestion')
+        ->assertDontSee('Price looks high');
+});
+
+test('suggested package price rounds down to the nearest Rp 10.000', function () {
+    $activity = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Odd Price Trek',
+        'price' => 733000,
+        'status' => ListingStatus::Published,
+    ]);
+
+    // 733000 × 0.85 = 623050 → floor 620000; ×0.80 → 580000; ×0.90 → 650000
+    Livewire::test('pages::packages.create')
+        ->set('selectedProducts', [$activity->id => 1])
+        ->assertSee('Rp 580.000')
+        ->assertSee('Rp 650.000')
+        ->assertSee('Suggested: Rp 620.000')
+        ->call('applySuggestedBundlePrice')
+        ->assertSet('price', 620000.0)
+        ->assertDontSee('Smart price suggestion');
+});
+
+test('package create can fill gallery from selected activity photos', function () {
+    Storage::fake(MediaStore::diskName());
+
+    $galleryA = [
+        'operators/'.$this->operator->id.'/products/gallery/a1.webp',
+        'operators/'.$this->operator->id.'/products/gallery/a2.webp',
+        'operators/'.$this->operator->id.'/products/gallery/a3.webp',
+    ];
+    $galleryB = [
+        'operators/'.$this->operator->id.'/products/gallery/b1.webp',
+    ];
+
+    foreach ([...$galleryA, ...$galleryB] as $path) {
+        Storage::disk(MediaStore::diskName())->put($path, 'fake-image');
+    }
+
+    $activityA = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Snorkel Run',
+        'gallery' => $galleryA,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $activityB = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Temple Stop',
+        'gallery' => $galleryB,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $component = Livewire::test('pages::packages.create')
+        ->set('selectedProducts', [
+            $activityA->id => 1,
+            $activityB->id => 1,
+        ])
+        ->call('fillGalleryFromActivities')
+        ->assertDispatched('toast', message: __('Added :count photos from selected activities.', ['count' => 3]), type: 'success');
+
+    expect($component->get('existingGallery'))->toHaveCount(3);
+
+    foreach ($component->get('existingGallery') as $path) {
+        expect($path)->toStartWith('operators/'.$this->operator->id.'/packages/gallery/')
+            ->and(Storage::disk(MediaStore::diskName())->exists($path))->toBeTrue();
+    }
+
+    $component
+        ->call('fillGalleryFromActivities')
+        ->assertDispatched('toast', message: __('Those activity photos are already in the gallery.'), type: 'info');
+
+    expect($component->get('existingGallery'))->toHaveCount(3);
+});
+
+test('package create can set cover from a selected activity cover', function () {
+    Storage::fake(MediaStore::diskName());
+
+    $coverPath = 'operators/'.$this->operator->id.'/products/covers/activity-cover.webp';
+    Storage::disk(MediaStore::diskName())->put($coverPath, 'fake-cover');
+
+    $activity = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Cover Source Activity',
+        'cover_photo' => $coverPath,
+        'status' => ListingStatus::Published,
+    ]);
+
+    $component = Livewire::test('pages::packages.create')
+        ->set('selectedProducts', [
+            $activity->id => 1,
+        ])
+        ->call('applyActivityCover', $activity->id)
+        ->assertDispatched('toast', message: __('Cover photo set from the activity.'), type: 'success')
+        ->assertDispatched('close-modal', 'choose-activity-cover');
+
+    $packageCover = $component->get('existingCoverPhoto');
+
+    expect($packageCover)->toStartWith('operators/'.$this->operator->id.'/packages/covers/')
+        ->and(Storage::disk(MediaStore::diskName())->exists($packageCover))->toBeTrue()
+        ->and($component->get('coverPhoto'))->toBeNull();
+});
+
 test('operator can create a package with product composition and cover image', function () {
     Storage::fake(MediaStore::diskName());
 

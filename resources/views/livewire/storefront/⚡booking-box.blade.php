@@ -453,7 +453,7 @@ new class extends Component {
                 <button
                     type="button"
                     @click="open = !open"
-                    class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1.5 cursor-pointer"
+                    class="text-xs font-bold text-brand-800 dark:text-brand-400 hover:underline flex items-center gap-1.5 cursor-pointer"
                 >
                     <i class="fa-solid fa-ticket text-[11px]"></i>
                     <span>{{ __('Have a promo code?') }}</span>
@@ -541,7 +541,7 @@ new class extends Component {
 
             <div class="flex items-center justify-between font-black text-sm text-slate-900 dark:text-white pt-2 border-t border-brand-200/60 dark:border-brand-900/60">
                 <span>{{ __('Total Amount') }}</span>
-                <span class="text-brand-600 dark:text-brand-400 text-base font-black">Rp {{ number_format($this->totalPrice, 0, ',', '.') }}</span>
+                <span class="text-brand-800 dark:text-brand-400 text-base font-black">Rp {{ number_format($this->totalPrice, 0, ',', '.') }}</span>
             </div>
         </div>
 

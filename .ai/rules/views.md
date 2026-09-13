@@ -2,6 +2,7 @@
 paths:
   - resources/views/welcome.blade.php
   - 'resources/views/**'
+  - resources/views/dashboard.blade.php
 ---
 
 # Views
@@ -29,3 +30,9 @@ Welcome plan cards and the compare table list only shipped operator features (Pl
 
 ## Pay links are copy-and-share, not WhatsApp API
 Do not claim a WhatsApp API. Pay links are copied and pasted by the operator. Say copy, share, or paste in chat — never send in WhatsApp. wa.me click-to-chat is fine to show as an example of where they paste.
+
+## Onboarding is sales setup, including reviews
+After registration, stay on the operator desk. A persistent setup banner stays visible while they browse until logo, bio, hero banner copy, guest terms, reviews, payout bank, billing email, booking notification email, and an activity are done. The activity step links to products.create (inventories live on activities, not packages). WhatsApp is collected at registration and is not a checklist item.
+
+## Toast after save; modal before undo
+Stay-on-page operator saves dispatch toast (named message, type success/error), not session flash. Irreversible actions keep open-modal (or wire:confirm) first, then toast after. Save buttons show Saving… via wire:loading. Do not ask Are you sure? on ordinary Save.

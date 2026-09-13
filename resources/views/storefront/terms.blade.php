@@ -25,7 +25,7 @@
         @include('storefront.partials.tracking-scripts', ['agent' => $agent])
         @livewireStyles
     </head>
-    <body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
+    <body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
         @include('storefront.partials.navbar')
 
         <!-- Main Content Area -->
@@ -33,14 +33,14 @@
             <!-- Breadcrumb & Header Hero -->
             <div class="space-y-3">
                 <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                    <a href="{{ route('home') }}" class="hover:text-brand-600">{{ __('Home') }}</a>
+                    <a href="{{ route('home') }}" class="hover:text-brand-800">{{ __('Home') }}</a>
                     <span>&rsaquo;</span>
                     <span class="text-slate-900 dark:text-white font-bold">{{ __('Terms & Policies') }}</span>
                 </nav>
 
                 <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
-                        <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 mb-1">
+                        <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-800 dark:text-brand-400 mb-1">
                             <i class="fa-solid fa-file-contract"></i>
                             <span>{{ __('Official Direct Booking Policies') }}</span>
                         </div>
@@ -62,7 +62,7 @@
                         @if ($agent->terms_and_conditions)
                             <div class="space-y-3">
                                 <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-                                    <i class="fa-solid fa-shield-halved text-brand-500"></i>
+                                    <i class="fa-solid fa-shield-halved text-brand-700 dark:text-brand-400"></i>
                                     {{ __('Provider Policies & Guest Guidelines') }}
                                 </h2>
                                 <div class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line bg-slate-50/50 dark:bg-zinc-800/30 p-5 sm:p-7 rounded-2xl border border-slate-100 dark:border-zinc-800">
@@ -104,7 +104,7 @@
                             @if ($agent->logo_path ?? $agent->logo)
                                 <img src="{{ $agent->logo_url }}" alt="{{ $agent->name }}" class="h-12 w-12 rounded-2xl object-cover border border-slate-200/80 dark:border-zinc-800 shadow-xs shrink-0 bg-white dark:bg-zinc-800" />
                             @else
-                                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 text-[#101730] font-black text-lg shadow-sm shrink-0">
+                                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 text-brand-foreground font-black text-lg shadow-sm shrink-0">
                                     {{ strtoupper(substr($agent->name, 0, 1)) }}
                                 </span>
                             @endif
@@ -140,7 +140,7 @@
                     <!-- Instant Protection Highlights -->
                     <div class="p-6 rounded-3xl bg-slate-50/80 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800 space-y-3 text-xs">
                         <h4 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                            <i class="fa-solid fa-shield-halved text-brand-600 dark:text-brand-400"></i>
+                            <i class="fa-solid fa-shield-halved text-brand-800 dark:text-brand-400"></i>
                             {{ __('Direct Booking Guarantee') }}
                         </h4>
                         <ul class="space-y-2 text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">

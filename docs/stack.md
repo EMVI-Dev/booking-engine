@@ -28,9 +28,7 @@ The same Laravel app answers on three kinds of hostname:
 
 `IdentifyOperatorDomain` looks at `Host` and binds the operator (or leaves platform mode). Admin routes are meant to run only on the platform host, not on slugs.
 
-`REGISTRATION_ENABLED=false` keeps the marketing site up but closes operator log in and sign-up (coming-soon page). `/admin/login` still works. Tests force this flag on.
-
-Platform maintenance (Admin → Settings, or `PLATFORM_MAINTENANCE`) is not Laravel `down`. Catalog and admin stay up. Operator sign-up and every storefront booking/payment pause. Existing operators can still log in.
+Operator sign-up and storefront booking follow platform maintenance only (Admin → Settings, or `PLATFORM_MAINTENANCE`). It is not Laravel `down`. When maintenance is off, the register form is open. Existing operators can still log in. `/admin/login` still works.
 
 ## Request path (production)
 

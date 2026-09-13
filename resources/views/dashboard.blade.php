@@ -62,26 +62,7 @@
 
         $totalGuestsCount = $operator ? $operator->guests()->count() : 0;
 
-        $hasProfile = $operator && ! empty($operator->contact_whatsapp) && ! empty($operator->bio);
-        $hasTerms = $operator && ! empty($operator->terms_and_conditions);
-        $hasBank = $operator && $operator->hasPayoutBankAccount();
-        $hasBillingEmail = $operator && filled($operator->billing_email);
-        $hasNotificationEmail = $operator && filled($operator->booking_notification_email);
-        $hasReviewUrl = $operator && $operator->hasReviewUrl();
-        $hasProducts = $productsCount > 0;
-        $hasPackages = $packagesCount > 0;
         $storefrontIsPublic = $operator?->isStorefrontPublic() ?? false;
-
-        $requiredSetup = [
-            ['done' => $hasProfile, 'label' => __('Bio & WhatsApp'), 'url' => route('brand.edit')],
-            ['done' => $hasTerms, 'label' => __('Guest booking terms'), 'url' => route('storefront-settings.edit')],
-            ['done' => $hasBank, 'label' => __('Payout bank account'), 'url' => route('payments.edit')],
-            ['done' => $hasBillingEmail, 'label' => __('Billing email'), 'url' => route('brand.edit')],
-            ['done' => $hasNotificationEmail, 'label' => __('Booking notification email'), 'url' => route('brand.edit')],
-            ['done' => $hasReviewUrl, 'label' => $operator?->hasFeature('google_reviews') ? __('Reviews') : __('Review Platform'), 'url' => route('review-settings.edit')],
-        ];
-        $completedSteps = collect($requiredSetup)->where('done', true)->count();
-        $progressPercent = ($completedSteps / count($requiredSetup)) * 100;
 
         $platformDomain = app(\App\Services\DomainResolverService::class)->getPlatformDomain();
         $storefrontUrl = $operator ? request()->getScheme().'://'.$operator->slug.'.'.$platformDomain : '#';
@@ -91,29 +72,6 @@
     @endphp
 
     <div class="animate-fade-in space-y-5" x-data="{ copied: false, board: '{{ $defaultBoard }}' }">
-        @if (session('welcome_onboarding') && $operator)
-            <div class="flex flex-col gap-3 rounded-2xl border border-[#FFEF4D]/50 bg-[#FFEF4D]/15 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#FFEF4D]/20 dark:bg-[#FFEF4D]/10">
-                <div class="min-w-0">
-                    <p class="text-sm font-bold text-op-ink">
-                        {{ $storefrontIsPublic ? __('Your booking page is ready') : __('Your account is created') }}
-                    </p>
-                    <p class="mt-0.5 text-xs text-op-subtle">
-                        {{ $storefrontIsPublic
-                            ? __('Share the link with guests. Add a trip next.')
-                            : __('Guests cannot open your page yet. Finish the setup list, then share your link.') }}
-                    </p>
-                </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                    <x-button :href="$storefrontUrl" target="_blank" size="sm" class="w-full sm:w-auto">
-                        {{ __('Open your page') }}
-                    </x-button>
-                    <x-button :href="route('packages.create')" variant="secondary" size="sm" wire:navigate class="w-full sm:w-auto">
-                        {{ __('Add a trip') }}
-                    </x-button>
-                </div>
-            </div>
-        @endif
-
         @if ($pendingConfirmationCount > 0)
             <div class="flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-amber-800/80 dark:bg-amber-950/40">
                 <div class="min-w-0">
@@ -344,30 +302,6 @@
                                     <span x-text="copied ? '{{ __('Copied') }}' : '{{ __('Copy') }}'"></span>
                                 </button>
                             @endif
-                        </div>
-                    </div>
-                @endif
-
-                @if ($completedSteps < count($requiredSetup) || ! ($hasProducts && $hasPackages))
-                    <div class="op-card space-y-3 p-5">
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold uppercase tracking-wider text-op-subtle">{{ __('Setup') }}</p>
-                            <p class="text-xs font-semibold text-op-ink">{{ $completedSteps }}/{{ count($requiredSetup) }}</p>
-                        </div>
-                        <div class="h-1.5 overflow-hidden rounded-full bg-op-muted">
-                            <div class="h-full rounded-full bg-brand-400" style="width: {{ $progressPercent }}%;"></div>
-                        </div>
-                        <div class="space-y-2 text-xs">
-                            @foreach ($requiredSetup as $step)
-                                <a href="{{ $step['url'] }}" class="flex cursor-pointer items-center justify-between rounded-lg py-2.5 hover:text-op-ink" wire:navigate>
-                                    <span @class(['text-op-subtle line-through' => $step['done'], 'font-semibold text-op-ink' => ! $step['done']])>{{ $step['label'] }}</span>
-                                    <i @class(['fa-solid', 'fa-check text-emerald-500' => $step['done'], 'fa-circle text-op-line' => ! $step['done']])></i>
-                                </a>
-                            @endforeach
-                            <a href="{{ route('packages.create') }}" class="flex cursor-pointer items-center justify-between rounded-lg py-2.5 hover:text-op-ink" wire:navigate>
-                                <span @class(['text-op-subtle line-through' => $hasProducts && $hasPackages, 'font-semibold text-op-ink' => ! ($hasProducts && $hasPackages)])>{{ __('Add a trip') }}</span>
-                                <i @class(['fa-solid', 'fa-check text-emerald-500' => $hasProducts && $hasPackages, 'fa-circle text-op-line' => ! ($hasProducts && $hasPackages)])></i>
-                            </a>
                         </div>
                     </div>
                 @endif

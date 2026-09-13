@@ -64,6 +64,11 @@ test('maintenance blocks operator sign-up but still allows operator log in', fun
     $this->get(route('login'))
         ->assertOk()
         ->assertSee('Sign In to Operator Portal');
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('Coming soon')
+        ->assertDontSee('Start free', false);
 });
 
 test('maintenance blocks storefront booking and pay routes', function () {

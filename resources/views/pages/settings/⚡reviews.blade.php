@@ -20,6 +20,8 @@ new #[Title('Reviews')] class extends Component {
 
     public bool $saved = false;
 
+    public bool $highlightReviews = false;
+
     public function mount(): void
     {
         /** @var Operator|null $operator */
@@ -32,12 +34,14 @@ new #[Title('Reviews')] class extends Component {
 
         if (! $operator->hasFeature('google_reviews')) {
             $this->reviewSource = 'link';
+            $this->syncReviewHighlight();
 
             return;
         }
 
         if ($operator->googlePlaceId() !== null) {
             $this->reviewSource = 'listing';
+            $this->syncReviewHighlight();
 
             return;
         }
@@ -45,6 +49,13 @@ new #[Title('Reviews')] class extends Component {
         if ($this->review_url !== '') {
             $this->reviewSource = 'link';
         }
+
+        $this->syncReviewHighlight();
+    }
+
+    protected function syncReviewHighlight(): void
+    {
+        $this->highlightReviews = ! ($this->currentOperator?->hasReviewUrl() ?? false);
     }
 
     public function chooseReviewSource(string $source): void
@@ -151,7 +162,11 @@ new #[Title('Reviews')] class extends Component {
         $this->googlePlacePreview = null;
         $this->google_place_query = '';
         $this->reviewSource = 'listing';
+        $this->syncReviewHighlight();
         $this->dispatch('close-modal', 'confirm-google-listing');
+        $this->dispatch('reviews-updated');
+        $this->dispatch('setup-progress-updated');
+        $this->dispatch('toast', message: __('Google listing connected.'), type: 'success');
     }
 
     public function promptDisconnectGooglePlace(): void
@@ -182,7 +197,11 @@ new #[Title('Reviews')] class extends Component {
         $this->googlePlacePreview = null;
         $this->google_place_query = '';
         $this->reviewSource = $this->review_url !== '' ? 'link' : '';
+        $this->syncReviewHighlight();
         $this->dispatch('close-modal', 'confirm-disconnect-google-listing');
+        $this->dispatch('reviews-updated');
+        $this->dispatch('setup-progress-updated');
+        $this->dispatch('toast', message: __('Google listing disconnected.'), type: 'success');
     }
 
     public function cancelGooglePlacePreview(): void
@@ -217,7 +236,10 @@ new #[Title('Reviews')] class extends Component {
         unset($this->currentOperator);
 
         $this->saved = true;
+        $this->syncReviewHighlight();
         $this->dispatch('reviews-updated');
+        $this->dispatch('setup-progress-updated');
+        $this->dispatch('toast', message: __('Review settings saved.'), type: 'success');
     }
 }; ?>
 
@@ -245,10 +267,54 @@ new #[Title('Reviews')] class extends Component {
             </div>
         </div>
 
+        @if ($highlightReviews)
+            <div
+                class="flex items-start gap-3 rounded-2xl border border-[#FFEF4D]/50 bg-[#FFEF4D]/15 px-4 py-3 dark:border-[#FFEF4D]/25 dark:bg-[#FFEF4D]/10"
+                role="status"
+            >
+                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E]" aria-hidden="true">
+                    <i class="fa-solid fa-list-check text-sm"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-op-ink">{{ __('Finish the highlighted fields') }}</p>
+                    <p class="mt-0.5 text-xs text-op-subtle">
+                        {{ __('Add a review link so guests can leave feedback after the trip.') }}
+                    </p>
+                </div>
+            </div>
+        @endif
+
         @php
             $connectedPlace = $this->currentOperator?->googlePlace();
             $canConnectListing = (bool) $this->currentOperator?->hasFeature('google_reviews');
         @endphp
+
+        <div
+            id="setup-reviews"
+            @if ($highlightReviews) data-setup-needed="true" @endif
+            @class([
+                'space-y-6 scroll-mt-24',
+                'rounded-[1.35rem] border-2 border-[#FFEF4D] bg-[#FFEF4D]/20 p-1.5 shadow-[0_0_0_4px_rgba(255,239,77,0.35)] dark:bg-[#FFEF4D]/10 dark:shadow-[0_0_0_4px_rgba(255,239,77,0.2)]' => $highlightReviews,
+            ])
+            x-data
+            x-init="
+                $nextTick(() => {
+                    const hash = window.location.hash;
+                    const target = hash
+                        ? document.querySelector(hash)
+                        : document.querySelector('[data-setup-needed]');
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                })
+            "
+        >
+            @if ($highlightReviews)
+                <div class="mb-2 inline-flex items-center gap-1.5 rounded-lg bg-[#FFEF4D] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#12181E]">
+                    <i class="fa-solid fa-circle-exclamation text-[9px]" aria-hidden="true"></i>
+                    <span>{{ __('Needed for bookings — save to confirm') }}</span>
+                </div>
+            @endif
 
         @if ($canConnectListing && ! $connectedPlace)
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -355,10 +421,10 @@ new #[Title('Reviews')] class extends Component {
                         {{ __('Post-trip review emails are only sent when this link is set.') }}
                     </p>
                     <div>
-                        <x-label for="review_url" :value="__('Review Platform (e.g. Google/Tripadvisor)')" />
+                        <x-label for="review_url" :value="__('Review Platform (e.g. Google/Tripadvisor)')" required />
                         <div class="relative">
                             <i class="fa-solid fa-star absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400 text-xs"></i>
-                            <x-input id="review_url" wire:model="review_url" type="url"
+                            <x-input id="review_url" wire:model.live.debounce.300ms="review_url" type="url"
                                 placeholder="https://g.page/r/your-business/review" class="pl-9" :error="$errors->has('review_url')" />
                         </div>
                         <x-input-error :messages="$errors->get('review_url')" />
@@ -366,9 +432,11 @@ new #[Title('Reviews')] class extends Component {
                 </div>
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
-                    <x-button variant="primary" type="submit" data-test="update-reviews-button" class="w-full sm:w-auto shadow-sm">
-                        <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
-                        {{ __('Save review link') }}
+                    <x-button variant="primary" type="submit" data-test="update-reviews-button" class="w-full sm:w-auto shadow-sm" wire:loading.attr="disabled" wire:target="updateReviewSettings">
+                        <i class="fa-solid fa-floppy-disk mr-1 text-xs" wire:loading.remove wire:target="updateReviewSettings"></i>
+                        <i class="fa-solid fa-spinner fa-spin mr-1 text-xs" wire:loading wire:target="updateReviewSettings"></i>
+                        <span wire:loading.remove wire:target="updateReviewSettings">{{ __('Save review link') }}</span>
+                        <span wire:loading wire:target="updateReviewSettings">{{ __('Saving…') }}</span>
                     </x-button>
 
                     <div x-data="{ shown: false, timeout: null }" x-init="@this.on('reviews-updated', () => {
@@ -385,6 +453,7 @@ new #[Title('Reviews')] class extends Component {
                 </div>
             </form>
         @endif
+        </div>
     </div>
 
     @if ($canConnectListing)

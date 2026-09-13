@@ -1,9 +1,8 @@
 {{--
     Storefront floating WhatsApp button.
 
-    Shown on every breakpoint: WhatsApp is the primary enquiry channel and most guests
-    browse on a phone. On small screens it collapses to a circular icon button so it
-    does not cover the booking call to action.
+    Desktop only. The header already has WhatsApp on phones, and a floating
+    button sat on top of the booking bar.
 
     Expects: $agent (Operator model)
 --}}
@@ -18,7 +17,8 @@
             $waMessage = "Hello {$agent->name}, I have a question about your tours.";
             $floatingWaUrl = $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage);
         @endphp
-        <div class="fixed bottom-5 right-4 lg:bottom-6 lg:right-6 z-40 select-none">
+        {{-- Desktop only. Phones already have the header WhatsApp control, and this button sat on the booking bar. --}}
+        <div class="fixed bottom-6 right-6 z-40 hidden select-none lg:block">
             <a href="{{ $floatingWaUrl }}"
                 target="_blank"
                 rel="noopener"

@@ -32,11 +32,45 @@ test('brand settings page is displayed', function () {
     $this->get(route('brand.edit'))
         ->assertOk()
         ->assertSee('Social Media Links')
+        ->assertSee('Booking code prefix')
         ->assertDontSee('Official Website Link')
         ->assertDontSee('Website & Social Media Links')
         ->assertDontSee('Find listing')
         ->assertDontSee('Review Platform (e.g. Google/Tripadvisor)')
         ->assertSee('Reviews');
+});
+
+test('incomplete brand fields are highlighted for setup', function () {
+    Storage::fake(MediaStore::diskName());
+
+    $user = User::factory()->create();
+    $operator = Operator::factory()->incompleteSetup()->create([
+        'name' => 'Needs Bio Tours',
+        'contact_whatsapp' => '+628123456789',
+    ]);
+    $operator->users()->attach($user->id, ['role' => OperatorUserRole::Owner]);
+    $this->actingAs($user);
+
+    $logo = UploadedFile::fake()->image('needs-bio-logo.png', 400, 400);
+
+    Livewire::test('pages::settings.brand')
+        ->assertSee('Finish the highlighted fields')
+        ->assertSee('Needed for bookings')
+        ->assertSee('Storefront Introduction / Bio')
+        ->assertSeeHtml('id="setup-logo"')
+        ->assertSeeHtml('id="setup-bio"')
+        ->assertSeeHtml('data-setup-needed="true"')
+        ->assertSeeHtml('id="setup-billing-email"')
+        ->assertSeeHtml('id="setup-booking-notification-email"')
+        ->set('logo', $logo)
+        ->set('bio', 'We run snorkel trips from Sanur every morning.')
+        ->set('booking_notification_email', 'bookings@needsbio.test')
+        ->set('billing_email', 'finance@needsbio.test')
+        ->call('updateBrandSettings')
+        ->assertHasNoErrors()
+        ->assertDispatched('setup-progress-updated')
+        ->assertDontSee('Finish the highlighted fields')
+        ->assertDontSeeHtml('data-setup-needed="true"');
 });
 
 test('brand settings can be updated with logo and social media links', function () {

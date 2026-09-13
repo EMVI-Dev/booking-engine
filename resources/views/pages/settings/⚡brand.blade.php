@@ -23,6 +23,7 @@ new #[Title('Brand Settings')] class extends Component {
     public string $agency_name = '';
     public string $bio = '';
     public string $brand_color = '#4f46e5';
+    public string $reservation_code_prefix = 'RSV';
 
     // WhatsApp Storefront Integration & Schedule
     public string $contact_whatsapp = '';
@@ -55,6 +56,14 @@ new #[Title('Brand Settings')] class extends Component {
 
     public bool $saved = false;
 
+    public bool $highlightBio = false;
+
+    public bool $highlightLogo = false;
+
+    public bool $highlightBookingNotificationEmail = false;
+
+    public bool $highlightBillingEmail = false;
+
     /**
      * Mount the component.
      */
@@ -69,6 +78,7 @@ new #[Title('Brand Settings')] class extends Component {
             $this->bio = $operator->bio ?? '';
             $this->contact_whatsapp = $operator->contact_whatsapp ?? '';
             $this->brand_color = $operator->brand_color ?? '#4f46e5';
+            $this->reservation_code_prefix = $operator->reservationCodePrefix();
             $this->existing_logo_path = $operator->logo_path;
             $this->booking_notification_email = $operator->booking_notification_email ?? $user->email;
             $this->billing_email = $operator->billing_email ?? $user->email;
@@ -101,6 +111,20 @@ new #[Title('Brand Settings')] class extends Component {
             $this->booking_notification_email = $user->email;
             $this->billing_email = $user->email;
         }
+
+        $this->syncSetupHighlights($operator);
+    }
+
+    /**
+     * Mark which sales-setup fields still need attention on this page.
+     * Highlights clear only after a successful save (or logo remove).
+     */
+    protected function syncSetupHighlights(?Operator $operator): void
+    {
+        $this->highlightLogo = blank($this->logo) && blank($this->existing_logo_path);
+        $this->highlightBio = blank(trim($this->bio));
+        $this->highlightBookingNotificationEmail = blank($operator?->booking_notification_email);
+        $this->highlightBillingEmail = blank($operator?->billing_email);
     }
 
     /**
@@ -109,7 +133,7 @@ new #[Title('Brand Settings')] class extends Component {
     public function toggleDay(string $day): void
     {
         if (in_array($day, $this->whatsapp_days, true)) {
-            $this->whatsapp_days = array_values(array_filter($this->whatsapp_days, fn($d) => $d !== $day));
+            $this->whatsapp_days = array_values(array_filter($this->whatsapp_days, fn ($d) => $d !== $day));
         } else {
             $this->whatsapp_days[] = $day;
         }
@@ -128,11 +152,14 @@ new #[Title('Brand Settings')] class extends Component {
         if ($operator && $operator->logo_path) {
             $this->media()->delete($operator->logo_path);
             $operator->update(['logo_path' => null]);
+            $this->dispatch('setup-progress-updated');
         }
+
+        $this->highlightLogo = true;
     }
 
     /**
-     * Validate logo upon upload.
+     * Validate logo upon upload. Highlight stays until Brand settings are saved.
      */
     public function updatedLogo(): void
     {
@@ -161,6 +188,7 @@ new #[Title('Brand Settings')] class extends Component {
             'whatsapp_end_time' => ['required', 'string', 'regex:/^\d{2}:\d{2}$/'],
             'whatsapp_days' => ['array'],
             'brand_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/'],
+            'reservation_code_prefix' => ['required', 'string', 'max:8', 'regex:/^[A-Za-z0-9]+$/'],
             'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg,gif', 'max:10240'],
             'instagram_url' => ['nullable', 'string', 'max:255'],
             'facebook_url' => ['nullable', 'string', 'max:255'],
@@ -208,7 +236,9 @@ new #[Title('Brand Settings')] class extends Component {
 
             $settings = $operator->settings ?? [];
             $settings['brand_color'] = $validated['brand_color'] ?? '#4f46e5';
+            $settings['reservation_code_prefix'] = \App\Models\Reservation::normalizeCodePrefix($validated['reservation_code_prefix'] ?? 'RSV');
             $settings['whatsapp_prefilled_message'] = $validated['whatsapp_prefilled_message'] ?? '';
+            $this->reservation_code_prefix = $settings['reservation_code_prefix'];
             $settings['whatsapp_schedule'] = [
                 'mode' => $validated['whatsapp_schedule_mode'],
                 'timezone' => $validated['whatsapp_timezone'],
@@ -241,10 +271,14 @@ new #[Title('Brand Settings')] class extends Component {
                 'billing_email' => $validated['billing_email'],
                 'settings' => $settings,
             ]);
+
+            $this->syncSetupHighlights($operator->fresh());
         }
 
         $this->saved = true;
         $this->dispatch('brand-updated');
+        $this->dispatch('setup-progress-updated');
+        $this->dispatch('toast', message: __('Brand settings saved.'), type: 'success');
     }
 
     /**
@@ -255,8 +289,13 @@ new #[Title('Brand Settings')] class extends Component {
         $this->authorizeAbility('manageSettings');
 
         $operator = $this->currentOperator;
-        if (!$operator || !$this->custom_domain) {
-            session()->flash('error', __('Type your website address first.'));
+        if (! $operator || ! $this->custom_domain) {
+            $this->dispatch(
+                'toast',
+                message: __('Type your website address first.'),
+                type: 'error',
+            );
+
             return;
         }
 
@@ -274,11 +313,19 @@ new #[Title('Brand Settings')] class extends Component {
                     'ssl_issued_at' => null,
                 ]);
             }
-            session()->flash('success', __('The address :domain is connected. The padlock appears by itself in a few minutes.', ['domain' => $cleanDomain]));
+            $this->dispatch(
+                'toast',
+                message: __('The address :domain is connected. The padlock appears by itself in a few minutes.', ['domain' => $cleanDomain]),
+                type: 'success',
+            );
         } else {
             $targets = implode(' / ', array_values(array_filter([$targetHost, ...$domains->expectedPlatformIpv4(), ...$domains->expectedPlatformIpv6()])));
 
-            session()->flash('error', __('We cannot see :domain pointing to :target yet. Use a CNAME for a smaller name, or an A setting on yourname.com. Changes at your domain shop can take a little while. Try again in 15 minutes.', ['domain' => $cleanDomain, 'target' => $targets]));
+            $this->dispatch(
+                'toast',
+                message: __('We cannot see :domain pointing to :target yet. Use a CNAME for a smaller name, or an A setting on yourname.com. Changes at your domain shop can take a little while. Try again in 15 minutes.', ['domain' => $cleanDomain, 'target' => $targets]),
+                type: 'error',
+            );
         }
     }
 }; ?>
@@ -305,11 +352,43 @@ new #[Title('Brand Settings')] class extends Component {
             </div>
         </div>
 
-        <!-- Main Settings Form -->
-        <form wire:submit="updateBrandSettings" class="w-full space-y-6">
-            <!-- Card 1: Brand Logo & Visual Assets -->
+        @if ($highlightLogo || $highlightBio || $highlightBookingNotificationEmail || $highlightBillingEmail)
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+                class="flex items-start gap-3 rounded-2xl border border-[#FFEF4D]/50 bg-[#FFEF4D]/15 px-4 py-3 dark:border-[#FFEF4D]/25 dark:bg-[#FFEF4D]/10"
+                role="status"
+            >
+                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E]" aria-hidden="true">
+                    <i class="fa-solid fa-list-check text-sm"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-op-ink">{{ __('Finish the highlighted fields') }}</p>
+                    <p class="mt-0.5 text-xs text-op-subtle">
+                        {{ __('Yellow fields are still needed before guests can pay you.') }}
+                    </p>
+                </div>
+            </div>
+        @endif
+
+        <!-- Main Settings Form -->
+        <form
+            wire:submit="updateBrandSettings"
+            class="w-full space-y-6"
+            x-data
+            x-init="
+                $nextTick(() => {
+                    const hash = window.location.hash;
+                    const target = hash
+                        ? document.querySelector(hash)
+                        : document.querySelector('[data-setup-needed]');
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                })
+            "
+        >
+            <!-- Card 1: Brand Logo & Visual Assets -->
+            <x-setup-needed :needed="$highlightLogo" anchor="setup-logo">
+                <div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-[#1e2433] dark:bg-[#0C0E13]">
                 <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
                     <span
                         class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
@@ -371,7 +450,8 @@ new #[Title('Brand Settings')] class extends Component {
                         <x-input-error :messages="$errors->get('logo')" />
                     </div>
                 </div>
-            </div>
+                </div>
+            </x-setup-needed>
 
             <!-- Card 2: Brand Profile Details -->
             <div
@@ -445,6 +525,19 @@ new #[Title('Brand Settings')] class extends Component {
                         </div>
                     </div>
 
+                    <div class="max-w-sm">
+                        <x-label for="reservation_code_prefix" :value="__('Booking code prefix')" />
+                        <x-input id="reservation_code_prefix" wire:model="reservation_code_prefix" type="text"
+                            maxlength="8" class="font-mono uppercase" placeholder="RSV"
+                            :error="$errors->has('reservation_code_prefix')" />
+                        <p class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            {{ __('Guest booking codes look like :example. Letters and numbers only. Default is RSV.', [
+                                'example' => strtoupper($reservation_code_prefix !== '' ? $reservation_code_prefix : 'RSV').'-A1B2C3D4',
+                            ]) }}
+                        </p>
+                        <x-input-error :messages="$errors->get('reservation_code_prefix')" />
+                    </div>
+
                     <!-- Live Color Theme Preview Box -->
                     @php
                         $previewHex = preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $brand_color)
@@ -489,15 +582,15 @@ new #[Title('Brand Settings')] class extends Component {
                         </div>
                     </div>
 
-                    <div>
+                    <x-setup-needed :needed="$highlightBio" anchor="setup-bio" @class(['space-y-1', 'p-3 sm:p-3.5' => $highlightBio])>
                         <x-label for="bio" :value="__('Storefront Introduction / Bio')" required />
-                        <x-textarea id="bio" wire:model="bio" rows="3"
+                        <x-textarea id="bio" wire:model.live.debounce.300ms="bio" rows="3"
                             placeholder="Tell guests about your experience, services, and local expertise..."
                             :error="$errors->has('bio')" />
                         <p class="text-[11px] text-slate-500 mt-1">
                             {{ __('Displayed prominently on your public storefront header.') }}</p>
                         <x-input-error :messages="$errors->get('bio')" />
-                    </div>
+                    </x-setup-needed>
                 </div>
             </div>
 
@@ -660,7 +753,12 @@ new #[Title('Brand Settings')] class extends Component {
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                    <x-setup-needed
+                        :needed="$highlightBookingNotificationEmail"
+                        anchor="setup-booking-notification-email"
+                        :hint="__('Needed for bookings — save to confirm')"
+                        @class(['space-y-1', 'p-3 sm:p-3.5' => $highlightBookingNotificationEmail])
+                    >
                         <x-label for="booking_notification_email" :value="__('Guest Booking Notifications Email')" required />
                         <x-input id="booking_notification_email" wire:model="booking_notification_email"
                             type="email" placeholder="bookings@yourdomain.com" :error="$errors->has('booking_notification_email')" />
@@ -668,9 +766,14 @@ new #[Title('Brand Settings')] class extends Component {
                             {{ __('Receives instant alerts for new guest bookings, cancellations, and schedule updates.') }}
                         </p>
                         <x-input-error :messages="$errors->get('booking_notification_email')" />
-                    </div>
+                    </x-setup-needed>
 
-                    <div>
+                    <x-setup-needed
+                        :needed="$highlightBillingEmail"
+                        anchor="setup-billing-email"
+                        :hint="__('Needed for bookings — save to confirm')"
+                        @class(['space-y-1', 'p-3 sm:p-3.5' => $highlightBillingEmail])
+                    >
                         <x-label for="billing_email" :value="__('Platform & Billing Statements Email')" required />
                         <x-input id="billing_email" wire:model="billing_email" type="email"
                             placeholder="finance@yourdomain.com" :error="$errors->has('billing_email')" />
@@ -678,7 +781,7 @@ new #[Title('Brand Settings')] class extends Component {
                             {{ __('Receives payout settlement receipts, platform invoices, and critical account security notices.') }}
                         </p>
                         <x-input-error :messages="$errors->get('billing_email')" />
-                    </div>
+                    </x-setup-needed>
                 </div>
             </div>
 
@@ -1278,9 +1381,11 @@ new #[Title('Brand Settings')] class extends Component {
             <!-- Submit Button & Success Toast -->
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
                 <x-button variant="primary" type="submit" data-test="update-brand-button"
-                    class="w-full sm:w-auto shadow-sm">
-                    <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
-                    {{ __('Save Brand Settings') }}
+                    class="w-full sm:w-auto shadow-sm" wire:loading.attr="disabled" wire:target="updateBrandSettings">
+                    <i class="fa-solid fa-floppy-disk mr-1 text-xs" wire:loading.remove wire:target="updateBrandSettings"></i>
+                    <i class="fa-solid fa-spinner fa-spin mr-1 text-xs" wire:loading wire:target="updateBrandSettings"></i>
+                    <span wire:loading.remove wire:target="updateBrandSettings">{{ __('Save Brand Settings') }}</span>
+                    <span wire:loading wire:target="updateBrandSettings">{{ __('Saving…') }}</span>
                 </x-button>
 
                 <div x-data="{ shown: false, timeout: null }" x-init="@this.on('brand-updated', () => {

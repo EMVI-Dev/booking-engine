@@ -50,7 +50,7 @@ test('starter plan operator sees feature gate on guest directory crm', function 
 
     $response->assertOk()
         ->assertSee('Requires Growth Plan')
-        ->assertSee('Guest Directory CRM &amp; Lifetime Tracking', false);
+        ->assertSee('Guest CRM');
 });
 
 test('growth plan operator has full access to guest directory crm', function () {
@@ -60,7 +60,7 @@ test('growth plan operator has full access to guest directory crm', function () 
 
     $response->assertOk()
         ->assertDontSee('Requires Growth Plan')
-        ->assertSee('Guest Directory &amp; CRM', false);
+        ->assertSee('Guest CRM', false);
 });
 
 test('starter plan operator cannot exceed package limit of 5', function () {
@@ -138,17 +138,17 @@ test('starter plan gates tracking pixels and automated review requests while gro
  * Hiding a control in Blade is not authorization: Livewire actions and components
  * stay reachable by name, so each gated feature must also refuse server-side.
  */
-test('starter plan operator cannot mutate the guest crm by calling the action directly', function () {
+test('starter plan operator cannot mount guest profile or export csv', function () {
     $guest = Guest::factory()->create(['operator_id' => $this->operator->id]);
 
     Livewire::actingAs($this->user)
-        ->test('pages::guests.index')
-        ->set('selectedGuestId', $guest->id)
-        ->set('editName', 'Renamed Guest')
-        ->call('saveGuest')
+        ->test('pages::guests.show', ['guest' => $guest])
         ->assertForbidden();
 
-    expect($guest->fresh()->name)->not->toBe('Renamed Guest');
+    Livewire::actingAs($this->user)
+        ->test('pages::guests.index')
+        ->call('exportCsv')
+        ->assertForbidden();
 });
 
 test('starter plan operator cannot mount gated calendar components directly', function () {

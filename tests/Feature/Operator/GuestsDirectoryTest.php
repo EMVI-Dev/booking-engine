@@ -29,7 +29,6 @@ test('reservations automatically link to dedicated Guest entity and merge by ema
 
     $package = Package::factory()->create(['operator_id' => $this->operator->id]);
 
-    // Booking 1
     $res1 = Reservation::factory()->confirmed()->create([
         'operator_id' => $this->operator->id,
         'bookable_type' => 'package',
@@ -45,7 +44,6 @@ test('reservations automatically link to dedicated Guest entity and merge by ema
     expect($guest)->not->toBeNull()
         ->and($guest->email)->toBe('wayan.bali@example.com');
 
-    // Booking 2 with same email (uppercase to test case-insensitivity)
     $res2 = Reservation::factory()->confirmed()->create([
         'operator_id' => $this->operator->id,
         'bookable_type' => 'package',
@@ -60,7 +58,7 @@ test('reservations automatically link to dedicated Guest entity and merge by ema
     expect($guest->reservations()->count())->toBe(2);
 });
 
-test('operator can view guests directory and edit CRM notes and tags', function () {
+test('operator can view guests directory and edit CRM notes and tags on profile', function () {
     $this->actingAs($this->user);
 
     $package = Package::factory()->create(['operator_id' => $this->operator->id]);
@@ -84,14 +82,20 @@ test('operator can view guests directory and edit CRM notes and tags', function 
 
     $this->get(route('guests.index'))
         ->assertOk()
-        ->assertSee('Guest Directory & CRM')
-        ->assertSee('Sarah Johnson');
+        ->assertSee('Guest CRM')
+        ->assertSee('Sarah Johnson')
+        ->assertSee('fa-eye', false)
+        ->assertSee(route('guests.show', $guest), false);
 
-    Livewire::test('pages::guests.index')
+    $this->get(route('guests.show', $guest))
+        ->assertOk()
+        ->assertSee('Sarah Johnson')
+        ->assertSee('Trip history');
+
+    Livewire::test('pages::guests.show', ['guest' => $guest])
         ->assertSee('Sarah Johnson')
         ->assertSee('sarah@example.com')
-        ->assertSee('1 Bookings')
-        ->call('editGuest', $guest->id)
+        ->call('openEdit')
         ->assertSet('showEditModal', true)
         ->set('editNotes', 'Allergic to peanuts. Prefers front row boat seat.')
         ->set('editTagsInput', 'VIP, Vegetarian')
@@ -132,7 +136,19 @@ test('operator only sees guests for their own operator', function () {
         ->assertDontSee('Bob Secret Guest');
 });
 
-test('operator can search and filter guest directory and view booking history drawer', function () {
+test('operator cannot open another operators guest profile', function () {
+    $this->actingAs($this->user);
+
+    $otherOperator = Operator::factory()->create();
+    $otherGuest = Guest::factory()->create([
+        'operator_id' => $otherOperator->id,
+        'name' => 'Bob Secret Guest',
+    ]);
+
+    $this->get(route('guests.show', $otherGuest))->assertNotFound();
+});
+
+test('operator can search filter guests and open profile trip history', function () {
     $this->actingAs($this->user);
 
     $package = Package::factory()->create([
@@ -149,6 +165,7 @@ test('operator can search and filter guest directory and view booking history dr
         'guest_contact' => '08111222333',
         'pax_count' => 4,
         'status' => ReservationStatus::Confirmed,
+        'requested_date' => now()->subDays(10)->toDateString(),
     ]);
 
     Payment::factory()->paid()->create([
@@ -156,7 +173,7 @@ test('operator can search and filter guest directory and view booking history dr
         'amount' => 2000000,
     ]);
 
-    $res2 = Reservation::factory()->create([
+    Reservation::factory()->create([
         'operator_id' => $this->operator->id,
         'bookable_type' => 'package',
         'bookable_id' => $package->id,
@@ -165,26 +182,187 @@ test('operator can search and filter guest directory and view booking history dr
         'guest_contact' => '08777888999',
         'pax_count' => 2,
         'status' => ReservationStatus::PaymentPending,
+        'requested_date' => now()->addDays(5)->toDateString(),
     ]);
 
     $michaelGuest = Guest::where('email', 'michael@example.com')->firstOrFail();
 
-    // Search by name
     Livewire::test('pages::guests.index')
         ->set('search', 'Michael')
         ->assertSee('Michael Chen')
         ->assertDontSee('Elena Rostova')
         ->set('search', 'elena@example.com')
         ->assertSee('Elena Rostova')
-        ->assertDontSee('Michael Chen')
-        ->set('search', '')
-        ->call('viewGuestHistory', $michaelGuest->id)
-        ->assertSet('showHistoryModal', true)
-        ->assertSee('Nusa Penida Snorkeling Trip')
+        ->assertDontSee('Michael Chen');
+
+    Livewire::test('pages::guests.show', ['guest' => $michaelGuest])
         ->assertSee('Michael Chen')
-        ->call('closeHistory')
-        ->assertSet('showHistoryModal', false)
-        ->call('openHistory', $michaelGuest->id)
-        ->assertSet('showHistoryModal', true)
-        ->assertSee('Michael Chen');
+        ->assertSee('Nusa Penida Snorkeling Trip')
+        ->assertSee('Trip history');
+});
+
+test('directory sorts by lifetime spend across all pages', function () {
+    $this->actingAs($this->user);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    $low = Guest::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Low Spender Guest',
+        'email' => 'low@example.com',
+    ]);
+    $high = Guest::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'High Spender Guest',
+        'email' => 'high@example.com',
+    ]);
+
+    $lowRes = Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'guest_id' => $low->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'guest_name' => $low->name,
+        'guest_email' => $low->email,
+    ]);
+    Payment::factory()->paid()->create([
+        'reservation_id' => $lowRes->id,
+        'amount' => 100_000,
+    ]);
+
+    $highRes = Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'guest_id' => $high->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'guest_name' => $high->name,
+        'guest_email' => $high->email,
+    ]);
+    Payment::factory()->paid()->create([
+        'reservation_id' => $highRes->id,
+        'amount' => 9_000_000,
+    ]);
+
+    Livewire::test('pages::guests.index')
+        ->set('sortBy', 'spent')
+        ->assertSeeInOrder(['High Spender Guest', 'Low Spender Guest']);
+});
+
+test('directory shows last and next trip dates and sorts by next trip', function () {
+    $this->actingAs($this->user);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    $soon = Guest::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Soon Trip Guest',
+        'email' => 'soon@example.com',
+    ]);
+    $later = Guest::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Later Trip Guest',
+        'email' => 'later@example.com',
+    ]);
+
+    Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'guest_id' => $soon->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'guest_name' => $soon->name,
+        'guest_email' => $soon->email,
+        'requested_date' => now()->addDays(2)->toDateString(),
+    ]);
+
+    Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'guest_id' => $later->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'guest_name' => $later->name,
+        'guest_email' => $later->email,
+        'requested_date' => now()->addDays(20)->toDateString(),
+    ]);
+
+    Livewire::test('pages::guests.index')
+        ->assertSee(now()->addDays(2)->format('M j, Y'))
+        ->assertSee(now()->addDays(20)->format('M j, Y'))
+        ->set('sortBy', 'next_trip')
+        ->assertSeeInOrder(['Soon Trip Guest', 'Later Trip Guest']);
+});
+
+test('directory flags possible duplicates and profile can merge them', function () {
+    $this->actingAs($this->user);
+
+    $keep = Guest::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Keep Profile',
+        'email' => 'same@example.com',
+        'phone' => '08111111111',
+        'notes' => 'Keep notes',
+        'tags' => ['VIP'],
+    ]);
+    $source = Guest::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Merge Away',
+        'email' => 'same@example.com',
+        'phone' => '08111111111',
+        'notes' => 'Source notes',
+        'tags' => ['Vegetarian'],
+    ]);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+    $moved = Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'guest_id' => $source->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'guest_name' => $source->name,
+        'guest_email' => $source->email,
+    ]);
+
+    Livewire::test('pages::guests.index')
+        ->assertSee('Duplicate?');
+
+    Livewire::test('pages::guests.show', ['guest' => $keep])
+        ->assertSee('Possible duplicates')
+        ->assertSee('Merge Away')
+        ->call('mergeDuplicate', $source->id)
+        ->assertDispatched('toast');
+
+    expect(Guest::find($source->id))->toBeNull();
+    expect($moved->fresh()->guest_id)->toBe($keep->id);
+
+    $keep->refresh();
+    expect($keep->tags)->toEqualCanonicalizing(['VIP', 'Vegetarian'])
+        ->and($keep->notes)->toContain('Keep notes')
+        ->and($keep->notes)->toContain('Source notes');
+});
+
+test('operator can export filtered guests as csv', function () {
+    $this->actingAs($this->user);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'guest_name' => 'Exportable Guest',
+        'guest_email' => 'export@example.com',
+        'guest_contact' => '08123400000',
+    ]);
+
+    Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'guest_name' => 'Hidden Guest',
+        'guest_email' => 'hidden@example.com',
+    ]);
+
+    Livewire::test('pages::guests.index')
+        ->set('search', 'Exportable')
+        ->call('exportCsv')
+        ->assertFileDownloaded('guests-'.now()->format('Y-m-d').'.csv');
 });

@@ -3,6 +3,7 @@ paths:
   - resources/views/pages/settings/⚡team.blade.php
   - resources/views/pages/settings/⚡brand.blade.php
   - resources/views/pages/settings/⚡reviews.blade.php
+  - 'resources/views/pages/settings/**'
 ---
 
 # Settings
@@ -48,3 +49,15 @@ Disconnect opens confirm-disconnect-google-listing with the connected listing na
 
 ## Reviews live on their own Storefront tab
 Review Platform URL and Google listing connect live on /settings/reviews (review-settings.edit), not Brand. Do not add a Reviews sidebar item, command-palette link, or /reviews desk. Agency with no listing chooses Connect a Google listing or Use a review link. A connected listing hides that choice. Other plans see only the manual Review Platform field.
+
+## Payout bank is a phone form
+Payout bank (payments.edit) is a short phone form: bank, name on the account, account number. Do not wrap it in x-desktop-only-notice. Team stays desktop-gated. WhatsApp is collected at registration and is not an onboarding checklist item.
+
+## Highlight incomplete setup fields
+Empty sales-setup fields use x-setup-needed: yellow ring, Needed for bookings badge, and setup-* anchors. Brand: logo, bio, notification/billing emails. Policies: hero banner copy, guest terms. Reviews: review link / Google listing. Payout bank: account fields. Checklist links deep-link to those anchors. After Reviews saves or Google listing connect/disconnect, dispatch setup-progress-updated so the banner refreshes.
+
+## Setup ring wraps card chrome
+Never put card border/bg classes on the same element as x-setup-needed when needed=true. Wrap an inner card div instead (see payout bank and hero). Otherwise slate border utilities override the yellow ring.
+
+## Setup rings clear only after save
+Yellow x-setup-needed rings stay while the operator types or uploads. Clear them only after a successful save (or immediate actions like logo remove / Google listing connect). Do not sync highlights from updated* live hooks. Badge copy is Needed for bookings — save to confirm.

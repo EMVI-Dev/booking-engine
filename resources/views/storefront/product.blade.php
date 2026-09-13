@@ -33,83 +33,156 @@
     </head>
     <body
         x-data="{ mobileBookingOpen: false, mobileMenuOpen: false }"
-        class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full"
+        class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full"
     >
         @include('storefront.partials.navbar', ['bookAction' => true])
 
         <!-- Main Product Content -->
         <main class="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-16 lg:pb-12 space-y-6">
+            <nav class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                <a href="{{ route('home') }}" class="hover:text-brand-800 dark:hover:text-brand-400">{{ __('Home') }}</a>
+                <span>&rsaquo;</span>
+                <a href="{{ route('storefront.products') }}" class="hover:text-brand-800 dark:hover:text-brand-400">{{ __('Single Activities') }}</a>
+                <span>&rsaquo;</span>
+                <span class="text-slate-900 dark:text-white font-bold truncate max-w-[14rem] sm:max-w-md">{{ $product->name }}</span>
+            </nav>
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                 <!-- Left Details -->
                 <div class="lg:col-span-2 space-y-6">
-                    <!-- Product Cover & Gallery Photos -->
-                    @if ($product->cover_photo_url || !empty($product->gallery))
-                        <div class="overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2 p-2">
-                            @if ($product->cover_photo_url)
-                                <div class="aspect-video sm:aspect-21/9 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-zinc-800">
-                                    <img src="{{ $product->cover_photo_url }}" alt="{{ $product->name }}" fetchpriority="high" decoding="async" class="w-full h-full object-cover" />
-                                </div>
-                            @endif
-                            @if (!empty($product->gallery_urls))
-                                <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
-                                    @foreach ($product->gallery_urls as $gUrl)
-                                        <div class="aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700">
-                                            <img src="{{ $gUrl }}" alt="{{ $product->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover hover:scale-105 transition-transform" />
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
-                    @endif
+                    @include('storefront.partials.listing-gallery', [
+                        'coverUrl' => $product->cover_photo_url,
+                        'galleryUrls' => $product->gallery_urls ?? [],
+                        'alt' => $product->name,
+                    ])
 
                     <div class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                        @if ($product->location)
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 text-xs font-bold">
-                                <i class="fa-solid fa-location-dot text-[11px]"></i>
-                                <span>{{ $product->location }}</span>
-                            </div>
-                        @endif
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span
+                                class="px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider bg-brand-50 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300">
+                                {{ $product->category ?? __('Service') }}
+                            </span>
+                            @if ($product->location)
+                                <span
+                                    class="px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                    <i class="fa-solid fa-location-dot text-slate-400"></i>
+                                    {{ $product->location }}
+                                </span>
+                            @endif
+                        </div>
 
                         <h1 class="text-xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
                             {{ $product->name }}
                         </h1>
 
-                        @if ($product->description)
-                            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                                {{ $product->description }}
-                            </p>
-                        @endif
-
-                        @if ($product->capacity_per_day)
-                            <div class="pt-2 flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                                <i class="fa-solid fa-circle-check text-xs"></i>
-                                <span>{{ __(':count units daily capacity verified', ['count' => $product->capacity_per_day]) }}</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                            <div
+                                class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 flex items-center gap-3">
+                                <span
+                                    class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs shrink-0">
+                                    <i class="fa-solid fa-shield"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <span
+                                        class="text-[10px] text-slate-400 uppercase font-bold block leading-none">{{ __('Cancellation') }}</span>
+                                    <span
+                                        class="text-xs font-black text-slate-900 dark:text-white truncate mt-0.5 block">{{ __('Free up to :hours hrs', ['hours' => $product->free_cancellation_hours ?? 24]) }}</span>
+                                </div>
                             </div>
-                        @endif
+
+                            @if (($product->advance_booking_hours ?? 0) > 0)
+                                <div
+                                    class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 flex items-center gap-3">
+                                    <span
+                                        class="w-8 h-8 rounded-xl bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xs shrink-0">
+                                        <i class="fa-solid fa-calendar-plus"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <span
+                                            class="text-[10px] text-slate-400 uppercase font-bold block leading-none">{{ __('Book ahead') }}</span>
+                                        <span
+                                            class="text-xs font-black text-slate-900 dark:text-white truncate mt-0.5 block">{{ __('At least :hours hrs', ['hours' => $product->advance_booking_hours]) }}</span>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+
+                        @include('storefront.partials.listing-share', [
+                            'agent' => $agent,
+                            'listingTitle' => $product->name,
+                            'pageUrl' => route('storefront.product', $product->slug),
+                        ])
                     </div>
 
-                    <!-- Inclusions -->
-                    @if (!empty($product->inclusions))
-                        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
-                            <h4 class="font-black text-xs uppercase tracking-wider text-slate-900 dark:text-white">{{ __('Included in this service') }}</h4>
-                            <div class="flex flex-wrap gap-2">
-                                @foreach ($product->inclusions as $inc)
-                                    <span class="text-xs px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-100 dark:border-zinc-700/60">
-                                        &check; {{ $inc }}
-                                    </span>
-                                @endforeach
+                    @if ($product->description)
+                        <div
+                            class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
+                            <h2
+                                class="font-black text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-circle-info text-brand-700 dark:text-brand-400"></i>
+                                {{ __('Activity Overview') }}
+                            </h2>
+                            <div
+                                class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                                {{ $product->description }}
                             </div>
                         </div>
                     @endif
 
-                    @if ($agent->terms_and_conditions)
-                        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2">
+                    <!-- Inclusions & Exclusions -->
+                    @if (! empty($product->inclusions) || ! empty($product->exclusions))
+                        <div
+                            class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            @if (! empty($product->inclusions))
+                                <div class="space-y-3">
+                                    <h4
+                                        class="font-black text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        {{ __('What is Included') }}
+                                    </h4>
+                                    <ul class="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                                        @foreach ($product->inclusions as $inc)
+                                            <li class="flex items-start gap-2.5">
+                                                <i class="fa-solid fa-check text-emerald-500 text-xs mt-0.5"></i>
+                                                <span class="leading-relaxed">{{ $inc }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @if (! empty($product->exclusions))
+                                <div
+                                    class="space-y-3 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-zinc-800">
+                                    <h4
+                                        class="font-black text-xs uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-circle-xmark"></i>
+                                        {{ __('Not Included') }}
+                                    </h4>
+                                    <ul class="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                                        @foreach ($product->exclusions as $exc)
+                                            <li class="flex items-start gap-2.5">
+                                                <i class="fa-solid fa-xmark text-rose-400 text-xs mt-0.5"></i>
+                                                <span class="leading-relaxed">{{ $exc }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
+                    @php
+                        $productPolicy = $product->cancellation_terms ?: $product->terms_and_conditions ?: $agent->terms_and_conditions;
+                    @endphp
+                    @if ($productPolicy)
+                        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2.5">
                             <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-                                <i class="fa-solid fa-file-contract text-brand-500"></i>
-                                {{ __('Booking Policy & Terms') }}
+                                <i class="fa-solid fa-file-contract text-brand-700 dark:text-brand-400"></i>
+                                {{ __('Booking & Cancellation Policy') }}
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-line">
-                                {{ $agent->terms_and_conditions }}
+                                {{ $productPolicy }}
                             </p>
                         </div>
                     @endif

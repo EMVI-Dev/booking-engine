@@ -37,8 +37,8 @@ new #[Title('Appearance settings')] class extends Component {
                     class="flex flex-col items-center gap-3 p-5 rounded-2xl border text-sm font-semibold cursor-pointer transition-all hover:border-brand-300"
                 >
                     <div class="w-full h-14 rounded-xl overflow-hidden border border-line">
-                        <div class="h-full bg-[#efece4] p-2">
-                            <div class="h-full rounded-lg bg-white border border-[#ddd6c8]"></div>
+                        <div class="h-full bg-[#f6f7f9] p-2">
+                            <div class="h-full rounded-lg bg-white border border-[#e6e8ec]"></div>
                         </div>
                     </div>
                     <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">

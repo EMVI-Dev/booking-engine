@@ -14,7 +14,7 @@
 
     @include('storefront.partials.brand-theme')
 </head>
-<body class="h-full bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 font-sans antialiased flex flex-col justify-between">
+<body class="h-full sf-canvas text-slate-800 dark:text-zinc-200 font-sans antialiased flex flex-col justify-between">
     <!-- Top Branded Header -->
     <header class="w-full border-b border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">

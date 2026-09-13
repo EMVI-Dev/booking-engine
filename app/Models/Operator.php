@@ -261,6 +261,21 @@ class Operator extends Model
     }
 
     /**
+     * Short prefix used before the random part of guest booking codes (default RSV).
+     */
+    public function reservationCodePrefix(): string
+    {
+        return Reservation::normalizeCodePrefix($this->settings['reservation_code_prefix'] ?? 'RSV');
+    }
+
+    public function setReservationCodePrefixAttribute(?string $value): void
+    {
+        $settings = $this->settings ?? [];
+        $settings['reservation_code_prefix'] = Reservation::normalizeCodePrefix($value);
+        $this->settings = $settings;
+    }
+
+    /**
      * Readable text colour to place on top of the operator's brand colour.
      *
      * Brand colours range from near-black to bright yellow, so a fixed white
@@ -335,6 +350,75 @@ class Operator extends Model
         }
 
         return $missing;
+    }
+
+    /**
+     * Steps to finish before taking guest payments.
+     *
+     * @return list<array{key: string, done: bool, label: string, url: string}>
+     */
+    public function salesReadinessChecklist(): array
+    {
+        $productCount = $this->products_count ?? $this->products()->count();
+        $storefront = $this->settings['storefront'] ?? [];
+
+        return [
+            [
+                'key' => 'logo',
+                'done' => filled($this->logo_path),
+                'label' => __('Logo'),
+                'url' => route('brand.edit').'#setup-logo',
+            ],
+            [
+                'key' => 'brand',
+                'done' => filled($this->bio),
+                'label' => __('Short bio'),
+                'url' => route('brand.edit').'#setup-bio',
+            ],
+            [
+                'key' => 'hero',
+                'done' => filled(trim((string) ($storefront['hero_headline'] ?? '')))
+                    || filled(trim((string) ($storefront['hero_tagline'] ?? ''))),
+                'label' => __('Hero banner copy'),
+                'url' => route('storefront-settings.edit').'#setup-hero',
+            ],
+            [
+                'key' => 'terms',
+                'done' => filled($this->terms_and_conditions),
+                'label' => __('Guest booking terms'),
+                'url' => route('storefront-settings.edit').'#setup-terms',
+            ],
+            [
+                'key' => 'reviews',
+                'done' => $this->hasReviewUrl(),
+                'label' => __('Reviews'),
+                'url' => route('review-settings.edit').'#setup-reviews',
+            ],
+            [
+                'key' => 'bank',
+                'done' => $this->hasPayoutBankAccount(),
+                'label' => __('Payout bank account'),
+                'url' => route('payments.edit').'#setup-payout-bank',
+            ],
+            [
+                'key' => 'billing',
+                'done' => filled($this->billing_email),
+                'label' => __('Billing email'),
+                'url' => route('brand.edit').'#setup-billing-email',
+            ],
+            [
+                'key' => 'notifications',
+                'done' => filled($this->booking_notification_email),
+                'label' => __('Booking notification email'),
+                'url' => route('brand.edit').'#setup-booking-notification-email',
+            ],
+            [
+                'key' => 'trip',
+                'done' => $productCount > 0,
+                'label' => __('Add an activity'),
+                'url' => route('products.create'),
+            ],
+        ];
     }
 
     /**

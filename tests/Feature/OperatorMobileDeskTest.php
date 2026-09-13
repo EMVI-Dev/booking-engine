@@ -50,6 +50,16 @@ test('activity and package create forms are available without a desktop gate', f
         ->assertSee('w-full aspect-video', false);
 });
 
+test('payout bank can be filled on a phone', function () {
+    $this->get(route('payments.edit'))
+        ->assertOk()
+        ->assertDontSee('Copy Link for Desktop')
+        ->assertDontSee('Bank details are easier on a computer')
+        ->assertSee('Where we send your money')
+        ->assertSee('Save bank account')
+        ->assertSee('Name on the account');
+});
+
 test('team settings stay desktop-gated', function () {
     $this->get(route('settings.team'))
         ->assertOk()

@@ -38,40 +38,27 @@
 </head>
 
 <body x-data="{ mobileBookingOpen: false, mobileMenuOpen: false }"
-    class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
+    class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
     @include('storefront.partials.navbar', ['bookAction' => true])
 
     <!-- Main Package Content -->
     <main class="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-16 lg:pb-12 space-y-6">
+        <nav class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+            <a href="{{ route('home') }}" class="hover:text-brand-800 dark:hover:text-brand-400">{{ __('Home') }}</a>
+            <span>&rsaquo;</span>
+            <a href="{{ route('storefront.packages') }}" class="hover:text-brand-800 dark:hover:text-brand-400">{{ __('Tour Packages') }}</a>
+            <span>&rsaquo;</span>
+            <span class="text-slate-900 dark:text-white font-bold truncate max-w-[14rem] sm:max-w-md">{{ $package->title }}</span>
+        </nav>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <!-- Left Details (Mobile-First 2 cols) -->
             <div class="lg:col-span-2 space-y-6">
-                <!-- Package Cover & Gallery Photos -->
-                @if ($package->cover_photo_url || !empty($package->gallery))
-                    <div
-                        class="overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2 p-2">
-                        @if ($package->cover_photo_url)
-                            <div
-                                class="aspect-video sm:aspect-21/9 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-zinc-800">
-                                <img src="{{ $package->cover_photo_url }}" alt="{{ $package->title }}"
-                                    fetchpriority="high" decoding="async"
-                                    class="w-full h-full object-cover" />
-                            </div>
-                        @endif
-                        @if (!empty($package->gallery_urls))
-                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
-                                @foreach ($package->gallery_urls as $gUrl)
-                                    <div
-                                        class="aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700">
-                                        <img src="{{ $gUrl }}" alt="{{ $package->title }}"
-                                            loading="lazy" decoding="async"
-                                            class="w-full h-full object-cover hover:scale-105 transition-transform" />
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                @endif
+                @include('storefront.partials.listing-gallery', [
+                    'coverUrl' => $package->cover_photo_url,
+                    'galleryUrls' => $package->gallery_urls ?? [],
+                    'alt' => $package->title,
+                ])
 
                 <!-- Title & Meta Highlights -->
                 <div
@@ -81,11 +68,11 @@
                             class="px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider bg-brand-50 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300">
                             {{ $package->category ?? __('Tour Package') }}
                         </span>
-                        @if ($package->destination)
+                        @if ($package->location)
                             <span
                                 class="px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 flex items-center gap-1">
                                 <i class="fa-solid fa-location-dot text-slate-400"></i>
-                                {{ $package->destination }}
+                                {{ $package->location }}
                             </span>
                         @endif
                     </div>
@@ -101,7 +88,7 @@
                             <div
                                 class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 flex items-center gap-3">
                                 <span
-                                    class="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-950/80 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs shrink-0">
+                                    class="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-950/80 text-brand-800 dark:text-brand-400 flex items-center justify-center text-xs shrink-0">
                                     <i class="fa-solid fa-clock"></i>
                                 </span>
                                 <div class="min-w-0">
@@ -132,7 +119,7 @@
                         @endif
 
                         <div
-                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 flex items-center gap-3 col-span-2 sm:col-span-1">
+                            class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 flex items-center gap-3">
                             <span
                                 class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs shrink-0">
                                 <i class="fa-solid fa-shield"></i>
@@ -144,7 +131,29 @@
                                     class="text-xs font-black text-slate-900 dark:text-white truncate mt-0.5 block">{{ __('Free up to :hours hrs', ['hours' => $package->free_cancellation_hours ?? 24]) }}</span>
                             </div>
                         </div>
+
+                        @if (($package->advance_booking_hours ?? 0) > 0)
+                            <div
+                                class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 flex items-center gap-3">
+                                <span
+                                    class="w-8 h-8 rounded-xl bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xs shrink-0">
+                                    <i class="fa-solid fa-calendar-plus"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <span
+                                        class="text-[10px] text-slate-400 uppercase font-bold block leading-none">{{ __('Book ahead') }}</span>
+                                    <span
+                                        class="text-xs font-black text-slate-900 dark:text-white truncate mt-0.5 block">{{ __('At least :hours hrs', ['hours' => $package->advance_booking_hours]) }}</span>
+                                </div>
+                            </div>
+                        @endif
                     </div>
+
+                    @include('storefront.partials.listing-share', [
+                        'agent' => $agent,
+                        'listingTitle' => $package->title,
+                        'pageUrl' => $packageUrl,
+                    ])
                 </div>
 
                 <!-- Overview / Description -->
@@ -153,7 +162,7 @@
                         class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
                         <h2
                             class="font-black text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                            <i class="fa-solid fa-circle-info text-brand-500"></i>
+                            <i class="fa-solid fa-circle-info text-brand-700 dark:text-brand-400"></i>
                             {{ __('Package Overview') }}
                         </h2>
                         <div
@@ -206,13 +215,66 @@
                     </div>
                 @endif
 
+                @php
+                    $bundledActivities = $package->getRequiredProducts();
+                @endphp
+                @if ($bundledActivities->isNotEmpty())
+                    <div
+                        class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                        <h3
+                            class="font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-brand-700 dark:text-brand-400"></i>
+                            {{ __('What\'s in this package') }}
+                        </h3>
+                        <ul class="space-y-2.5">
+                            @foreach ($bundledActivities as $item)
+                                @php
+                                    /** @var \App\Models\Product $bundled */
+                                    $bundled = $item['product'];
+                                    $qty = max(1, (int) $item['quantity']);
+                                    $canLink = $bundled->status === \App\Enums\ListingStatus::Published
+                                        && $bundled->sellable_standalone;
+                                @endphp
+                                <li
+                                    class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800">
+                                    <div class="min-w-0 flex items-center gap-2.5">
+                                        <span
+                                            class="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-950/80 text-brand-800 dark:text-brand-400 flex items-center justify-center text-xs shrink-0">
+                                            <i class="fa-solid fa-person-hiking"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            @if ($canLink)
+                                                <a href="{{ route('storefront.product', $bundled->slug) }}"
+                                                    class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white hover:text-brand-800 dark:hover:text-brand-400 truncate block">
+                                                    {{ $bundled->name }}
+                                                </a>
+                                            @else
+                                                <span
+                                                    class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate block">{{ $bundled->name }}</span>
+                                            @endif
+                                            @if ($bundled->category)
+                                                <span
+                                                    class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{{ $bundled->category }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @if ($qty > 1)
+                                        <span
+                                            class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">×{{ $qty }}</span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <!-- Schedule / Timeline -->
                 @if ($package->itinerary_text)
                     <div
                         class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
                         <h3
                             class="font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
-                            <i class="fa-solid fa-map-location-dot text-brand-500"></i>
+                            <i class="fa-solid fa-map-location-dot text-brand-700 dark:text-brand-400"></i>
                             {{ __('Schedule & Itinerary') }}
                         </h3>
                         <div
@@ -223,16 +285,19 @@
                 @endif
 
                 <!-- Policy & Terms -->
-                @if ($agent->terms_and_conditions)
+                @php
+                    $packagePolicy = $package->cancellation_terms ?: $package->terms_and_conditions ?: $agent->terms_and_conditions;
+                @endphp
+                @if ($packagePolicy)
                     <div
                         class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-2.5">
                         <h3
                             class="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-                            <i class="fa-solid fa-file-contract text-brand-500"></i>
+                            <i class="fa-solid fa-file-contract text-brand-700 dark:text-brand-400"></i>
                             {{ __('Booking & Cancellation Policy') }}
                         </h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-line">
-                            {{ $agent->terms_and_conditions }}
+                            {{ $packagePolicy }}
                         </p>
                     </div>
                 @endif

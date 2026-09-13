@@ -115,12 +115,123 @@ class Guest extends Model
      */
     public function getCleanPhone(): string
     {
-        $phone = preg_replace('/[^0-9]/', '', (string) $this->phone);
+        $phone = preg_replace('/[^0-9]/', '', (string) $this->phone) ?? '';
         if ($phone !== '' && str_starts_with($phone, '0')) {
             $phone = '62'.substr($phone, 1);
         }
 
         return $phone;
+    }
+
+    /**
+     * Normalize a phone string the same way as getCleanPhone().
+     */
+    public static function normalizePhone(?string $phone): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $phone) ?? '';
+        if ($digits !== '' && str_starts_with($digits, '0')) {
+            $digits = '62'.substr($digits, 1);
+        }
+
+        return $digits;
+    }
+
+    /**
+     * Most recent trip date across all reservations.
+     */
+    public function lastTripDate(): ?Carbon
+    {
+        $date = $this->reservations->max('requested_date');
+
+        return $date ? Carbon::parse($date) : null;
+    }
+
+    /**
+     * Nearest upcoming trip that still counts as active inventory.
+     */
+    public function nextTripDate(): ?Carbon
+    {
+        $upcoming = $this->reservations
+            ->filter(function (Reservation $reservation): bool {
+                if (! $reservation->requested_date) {
+                    return false;
+                }
+
+                $date = Carbon::parse($reservation->requested_date)->startOfDay();
+                if ($date->lt(now()->startOfDay())) {
+                    return false;
+                }
+
+                return in_array($reservation->status, [
+                    ReservationStatus::PaymentPending,
+                    ReservationStatus::PendingConfirmation,
+                    ReservationStatus::Confirmed,
+                ], true);
+            })
+            ->sortBy('requested_date')
+            ->first();
+
+        return $upcoming?->requested_date
+            ? Carbon::parse($upcoming->requested_date)
+            : null;
+    }
+
+    /**
+     * Other guests under the same operator that share email or normalized phone.
+     *
+     * @return Collection<int, Guest>
+     */
+    public function possibleDuplicates(): Collection
+    {
+        $email = filled($this->email) ? strtolower(trim((string) $this->email)) : null;
+        $phone = $this->getCleanPhone();
+
+        if ($email === null && $phone === '') {
+            return collect();
+        }
+
+        return $this->operator
+            ->guests()
+            ->whereKeyNot($this->id)
+            ->get()
+            ->filter(function (Guest $guest) use ($email, $phone): bool {
+                $guestEmail = filled($guest->email) ? strtolower(trim((string) $guest->email)) : null;
+                if ($email !== null && $guestEmail === $email) {
+                    return true;
+                }
+
+                return $phone !== '' && $guest->getCleanPhone() === $phone;
+            })
+            ->values();
+    }
+
+    /**
+     * Merge another guest into this one: move reservations, prefer filled fields, delete source.
+     */
+    public function mergeFrom(Guest $source): void
+    {
+        if ($source->id === $this->id || $source->operator_id !== $this->operator_id) {
+            throw new \InvalidArgumentException('Cannot merge these guests.');
+        }
+
+        $source->reservations()->update(['guest_id' => $this->id]);
+
+        $mergedTags = array_values(array_unique(array_filter(array_merge(
+            is_array($this->tags) ? $this->tags : [],
+            is_array($source->tags) ? $source->tags : [],
+        ))));
+
+        $this->update([
+            'name' => filled($this->name) ? $this->name : $source->name,
+            'email' => filled($this->email) ? $this->email : $source->email,
+            'phone' => filled($this->phone) ? $this->phone : $source->phone,
+            'notes' => filled($this->notes)
+                ? (filled($source->notes) ? trim($this->notes."\n\n".$source->notes) : $this->notes)
+                : $source->notes,
+            'tags' => $mergedTags === [] ? null : $mergedTags,
+        ]);
+
+        $source->delete();
     }
 
     /**

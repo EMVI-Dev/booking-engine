@@ -2,29 +2,27 @@
 
 use App\Models\User;
 
-test('registration page explains operator sign-up is coming soon when disabled', function () {
+test('register page stays open when maintenance is off even if the old registration flag is off', function () {
     config(['fortify.registration_enabled' => false]);
 
     $this->get(route('register'))
         ->assertOk()
-        ->assertSee('We are preparing the operator portal')
-        ->assertSee('New operator accounts are not open yet')
-        ->assertSee('Coming soon')
-        ->assertDontSee('Create account')
-        ->assertDontSee('Sign In to Operator Portal');
+        ->assertSee('Create account')
+        ->assertDontSee('We are preparing the operator portal')
+        ->assertDontSee('Operator sign-up is paused');
 });
 
-test('login stays open when operator sign-up is closed', function () {
+test('login offers create account when maintenance is off', function () {
     config(['fortify.registration_enabled' => false]);
 
     $this->get(route('login'))
         ->assertOk()
         ->assertSee('Sign In to Operator Portal')
-        ->assertSee('We are preparing operator sign-up. Coming soon.')
-        ->assertDontSee('Create an account');
+        ->assertSee('Create an account')
+        ->assertDontSee('We are preparing operator sign-up. Coming soon.');
 });
 
-test('new operator accounts cannot be created when registration is disabled', function () {
+test('new operator accounts can be created when maintenance is off', function () {
     config(['fortify.registration_enabled' => false]);
 
     $this->post(route('register.store'), [
@@ -34,10 +32,10 @@ test('new operator accounts cannot be created when registration is disabled', fu
         'password_confirmation' => 'SecurePass123!',
         'agency_name' => 'Bali Ocean Treks',
         'terms' => '1',
-    ])->assertForbidden();
+    ])->assertSessionHasNoErrors()
+        ->assertRedirect(route('dashboard', absolute: false));
 
-    $this->assertGuest();
-    expect(User::query()->where('email', 'wayan@balitours.com')->exists())->toBeFalse();
+    expect(User::query()->where('email', 'wayan@balitours.com')->exists())->toBeTrue();
 });
 
 test('operators can log in when sign-up is closed', function () {
@@ -53,14 +51,14 @@ test('operators can log in when sign-up is closed', function () {
     $this->assertAuthenticatedAs($user);
 });
 
-test('homepage advertises coming soon instead of sign-up when registration is disabled', function () {
+test('homepage still offers sign-up when registration is closed but maintenance is off', function () {
     config(['fortify.registration_enabled' => false]);
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee('Coming soon')
-        ->assertSee('Coming soon — we are preparing operator sign-up')
-        ->assertDontSee('Create Your Free Tour Website', false);
+        ->assertSee('Start free', false)
+        ->assertSee('Start Free')
+        ->assertDontSee('Coming soon — we are preparing operator sign-up');
 });
 
 test('platform admin login still works when operator registration is disabled', function () {

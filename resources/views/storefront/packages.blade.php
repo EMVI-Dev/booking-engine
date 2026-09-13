@@ -26,7 +26,7 @@
     @livewireStyles
 </head>
 
-<body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
+<body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
     <!-- Ambient Glow -->
     @include('storefront.partials.navbar')
 
@@ -35,7 +35,7 @@
         <!-- Breadcrumb & Header Hero -->
         <div class="space-y-3">
             <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                <a href="{{ route('home') }}" class="hover:text-brand-600">{{ __('Home') }}</a>
+                <a href="{{ route('home') }}" class="hover:text-brand-800">{{ __('Home') }}</a>
                 <span>&rsaquo;</span>
                 <span class="text-slate-900 dark:text-white font-bold">{{ __('All Tour Packages') }}</span>
             </nav>
@@ -138,14 +138,14 @@
                         <div class="p-4 sm:p-6 space-y-3 flex-1 flex flex-col justify-between">
                             <div class="space-y-2">
                                 <div>
-                                    <h3 class="font-black text-base sm:text-lg text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors leading-snug">
+                                    <h3 class="font-black text-base sm:text-lg text-slate-900 dark:text-white group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors leading-snug">
                                         <a href="{{ route('storefront.package', $pkg->slug) }}" class="focus:outline-none">
                                             {{ $pkg->title }}
                                         </a>
                                     </h3>
                                     @if ($pkg->location)
                                         <p class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mt-1">
-                                            <i class="fa-solid fa-location-dot text-brand-500 text-xs"></i>
+                                            <i class="fa-solid fa-location-dot text-brand-700 dark:text-brand-400 text-xs"></i>
                                             {{ $pkg->location }}
                                         </p>
                                     @endif
@@ -187,8 +187,8 @@
                                 </div>
 
                                 <a href="{{ route('storefront.package', $pkg->slug) }}"
-                                    class="h-9 sm:h-10 px-4 sm:px-5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground text-xs font-bold shadow-xs hover:shadow-md transition text-center shrink-0 cursor-pointer">
-                                    <span>{{ __('Book Now') }}</span>
+                                    class="h-9 sm:h-10 px-4 sm:px-5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground text-xs font-bold shadow-xs hover:shadow-md transition text-center shrink-0 whitespace-nowrap cursor-pointer">
+                                    <span>{{ __('View details') }}</span>
                                     <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                 </a>
                             </div>
@@ -204,7 +204,7 @@
             @endif
         @else
             <div class="text-center py-16 px-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 space-y-3">
-                <div class="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto text-xl">
+                <div class="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-950 text-brand-800 dark:text-brand-400 flex items-center justify-center mx-auto text-xl">
                     <i class="fa-solid fa-cubes"></i>
                 </div>
                 <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ __('No Tour Packages Matching Your Filter') }}</h3>

@@ -25,7 +25,22 @@ test('new user registers as operator with storefront and subdomain automatically
         'terms' => '1',
     ]);
 
-    $response->assertRedirect(route('dashboard', absolute: false))
+    $response->assertRedirect();
+
+    $location = $response->headers->get('Location');
+    expect($location)->toBeString()
+        ->and($location)->toContain('://baliocean.')
+        ->and($location)->toContain('/auth/registration-handoff');
+
+    $this->assertAuthenticated();
+
+    $parts = parse_url($location);
+    $handoffPath = ($parts['path'] ?? '').(isset($parts['query']) ? '?'.$parts['query'] : '');
+
+    $this->withServerVariables([
+        'HTTP_HOST' => $parts['host'] ?? 'baliocean.'.config('app.platform_domain', 'booking.test'),
+    ])->get($handoffPath)
+        ->assertRedirect(route('dashboard', absolute: false))
         ->assertSessionHas('welcome_onboarding', true);
 
     $this->assertAuthenticated();

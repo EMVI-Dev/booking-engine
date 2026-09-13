@@ -99,7 +99,7 @@ test('the owner can invite a teammate who is not another owner', function () {
         ->set('invite_role', OperatorUserRole::Reservation->value)
         ->call('inviteTeammate')
         ->assertHasNoErrors()
-        ->assertSee('We emailed them a link to set a password and join.');
+        ->assertDispatched('toast', message: __('We emailed them a link to set a password and join.'), type: 'success');
 
     $invited = User::query()->where('email', 'ayu@example.com')->first();
 

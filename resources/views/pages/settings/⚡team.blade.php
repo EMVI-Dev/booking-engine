@@ -132,7 +132,11 @@ new #[Title('Your team')] class extends Component {
         unset($this->teammates, $this->selectedInviteRole);
 
         $this->dispatch('close-modal', 'confirm-team-invite');
-        session()->flash('success', __('We emailed them a link to set a password and join.'));
+        $this->dispatch(
+            'toast',
+            message: __('We emailed them a link to set a password and join.'),
+            type: 'success',
+        );
     }
 
     public function removeTeammate(string $userId): void
@@ -173,7 +177,11 @@ new #[Title('Your team')] class extends Component {
         $operator->users()->detach($userId);
         unset($this->teammates);
 
-        session()->flash('success', __('They are no longer on your team.'));
+        $this->dispatch(
+            'toast',
+            message: __('They are no longer on your team.'),
+            type: 'success',
+        );
     }
 }; ?>
 
@@ -189,12 +197,6 @@ new #[Title('Your team')] class extends Component {
             :subtitle="__('People who help run this business. Each person only sees what their job needs.')"
             icon="fa-users"
         />
-
-        @if (session('success'))
-            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200" role="status">
-                {{ session('success') }}
-            </div>
-        @endif
 
         <x-input-error :messages="$errors->get('team')" />
 

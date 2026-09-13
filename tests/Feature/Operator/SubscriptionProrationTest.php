@@ -224,7 +224,8 @@ test('operator can view billing invoices page, view receipts, and update billing
         ->set('billing_email', 'finance@testtravel.com')
         ->set('tax_id', '01.234.567.8-901.000')
         ->call('updateBillingInfo')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('toast', message: __('Billing contact saved.'), type: 'success');
 
     $this->operator->refresh();
     expect($this->operator->billing_email)->toBe('finance@testtravel.com')

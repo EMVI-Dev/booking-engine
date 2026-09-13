@@ -25,7 +25,7 @@
     @livewireStyles
 </head>
 
-<body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
+<body x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
     <!-- Ambient Glow -->
     @include('storefront.partials.navbar')
 
@@ -34,7 +34,7 @@
         <!-- Breadcrumb & Header Hero -->
         <div class="space-y-3">
             <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                <a href="{{ route('home') }}" class="hover:text-brand-600">{{ __('Home') }}</a>
+                <a href="{{ route('home') }}" class="hover:text-brand-800">{{ __('Home') }}</a>
                 <span>&rsaquo;</span>
                 <span class="text-slate-900 dark:text-white font-bold">{{ __('Single Activities') }}</span>
             </nav>
@@ -119,29 +119,24 @@
                             @endif
 
                             <!-- Floating Badges on Media -->
-                            <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
+                            <div class="absolute top-2.5 left-2.5 pointer-events-none">
                                 <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/90 dark:bg-zinc-900/90 text-slate-700 dark:text-slate-300 backdrop-blur-md shadow-xs">
                                     {{ $prod->category ?? __('Service') }}
                                 </span>
-                                @if ($prod->capacity_per_day)
-                                    <span class="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/90 text-white backdrop-blur-md shadow-xs">
-                                        {{ $prod->capacity_per_day }}/day
-                                    </span>
-                                @endif
                             </div>
                         </div>
 
                         <!-- Card Content -->
                         <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
                             <div class="space-y-1.5">
-                                <h4 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                <h4 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors">
                                     <a href="{{ route('storefront.product', $prod->slug) }}" class="focus:outline-none">
                                         {{ $prod->name }}
                                     </a>
                                 </h4>
                                 @if ($prod->location)
                                     <p class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                                        <i class="fa-solid fa-location-dot text-brand-500 text-[10px]"></i>
+                                        <i class="fa-solid fa-location-dot text-brand-700 dark:text-brand-400 text-[10px]"></i>
                                         {{ $prod->location }}
                                     </p>
                                 @endif
@@ -150,7 +145,7 @@
                                 @endif
                             </div>
 
-                            <div class="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-zinc-800">
+                            <div class="flex flex-col gap-2.5 pt-2.5 border-t border-slate-100 dark:border-zinc-800">
                                 <div>
                                     <p class="text-[9px] uppercase font-bold text-slate-400">{{ __('Price') }}</p>
                                     <p class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
@@ -158,8 +153,8 @@
                                     </p>
                                 </div>
                                 <a href="{{ route('storefront.product', $prod->slug) }}"
-                                    class="h-8 px-3.5 inline-flex items-center gap-1 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-bold text-xs shadow-xs transition">
-                                    <span>{{ __('Book') }}</span>
+                                    class="h-9 w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-bold text-xs shadow-xs transition whitespace-nowrap">
+                                    <span>{{ __('View details') }}</span>
                                     <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                 </a>
                             </div>

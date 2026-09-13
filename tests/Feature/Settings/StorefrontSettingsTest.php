@@ -28,8 +28,29 @@ beforeEach(function () {
     $this->actingAs($this->user);
 });
 
-test('storefront settings page is displayed', function () {
-    $this->get(route('storefront-settings.edit'))->assertOk();
+test('empty guest booking terms are highlighted for setup', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->incompleteSetup()->create([
+        'name' => 'Needs Terms Tours',
+        'contact_whatsapp' => '+628123456789',
+    ]);
+    $operator->users()->attach($user->id, ['role' => OperatorUserRole::Owner]);
+    $this->actingAs($user);
+
+    Livewire::test('pages::settings.storefront')
+        ->assertSee('Needed for bookings')
+        ->assertSee('Hero Banner Copy & Marketing Text')
+        ->assertSeeHtml('id="setup-hero"')
+        ->assertSeeHtml('id="setup-terms"')
+        ->assertSeeHtml('data-setup-needed="true"')
+        ->assertSeeHtml('border-[#FFEF4D]')
+        ->set('hero_headline', 'Snorkel mornings from Sanur')
+        ->set('terms_and_conditions', 'Cancel up to 24 hours before departure.')
+        ->assertSeeHtml('data-setup-needed="true"')
+        ->call('updateStorefrontSettings')
+        ->assertHasNoErrors()
+        ->assertDispatched('setup-progress-updated')
+        ->assertDontSeeHtml('data-setup-needed="true"');
 });
 
 test('storefront settings can be updated', function () {

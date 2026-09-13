@@ -147,6 +147,14 @@ class StorefrontController extends Controller
             return $statusResponse;
         }
 
+        $hasPublishedPackages = $agent->packages()
+            ->where('status', ListingStatus::Published)
+            ->exists();
+
+        if (! $hasPublishedPackages) {
+            return redirect()->route('home');
+        }
+
         $search = (string) $request->query('search', '');
         $category = (string) $request->query('category', '');
 

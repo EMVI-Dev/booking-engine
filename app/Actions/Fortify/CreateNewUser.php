@@ -58,7 +58,7 @@ class CreateNewUser implements CreatesNewUsers
         ]);
 
         session()->flash('welcome_onboarding', true);
-        session()->flash('status', 'Your booking page is ready. Add a trip, then add your payout bank account when you want to get paid.');
+        session()->flash('status', __('Your account is created. Finish the setup list above to take bookings.'));
 
         return $result['user'];
     }

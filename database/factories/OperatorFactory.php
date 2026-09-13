@@ -75,6 +75,8 @@ class OperatorFactory extends Factory
             'bank_account_name' => null,
             'bank_account_number' => null,
             'bank_account_ref' => null,
+            'billing_email' => '',
+            'booking_notification_email' => '',
         ]);
     }
 }
