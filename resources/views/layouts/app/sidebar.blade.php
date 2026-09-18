@@ -30,6 +30,7 @@
             $currentOperator->loadCount([
                 'packages',
                 'products',
+                'vendors',
                 'reservations as open_reservations_count' => fn ($query) => $query->whereIn('status', [
                     \App\Enums\ReservationStatus::Confirmed->value,
                     \App\Enums\ReservationStatus::PendingConfirmation->value,
@@ -39,6 +40,7 @@
         }
         $packagesCount = $currentOperator?->packages_count ?? 0;
         $productsCount = $currentOperator?->products_count ?? 0;
+        $vendorsCount = $currentOperator?->vendors_count ?? 0;
         $couponsCount = $currentOperator
             ? \App\Models\PlatformCoupon::where('operator_id', $currentOperator->id)->active()->count()
             : 0;
@@ -57,26 +59,29 @@
     @if (auth()->user()?->isAdmin())
         <!-- Full-Width Admin Session Banner (Topmost, Fixed 40px) -->
         <div
-            class="h-10 px-4 sm:px-6 bg-stone-100 dark:bg-zinc-900 border-b border-line dark:border-line-dark text-stone-700 dark:text-zinc-200 text-xs font-semibold flex flex-wrap items-center justify-between gap-2 z-40 shrink-0 select-none">
-            <div class="flex items-center gap-2.5 min-w-0">
-                <span class="p-1 rounded-md bg-brand-400 text-brand-foreground text-[10px] font-semibold">
+            class="h-10 px-3 sm:px-6 bg-stone-100 dark:bg-zinc-900 border-b border-line dark:border-line-dark text-stone-700 dark:text-zinc-200 text-xs font-semibold flex items-center justify-between gap-2 z-40 shrink-0 select-none">
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-brand-400 text-brand-foreground text-[10px] font-black shrink-0">
                     <i class="fa-solid fa-compass"></i>
                 </span>
-                <span class="truncate text-stone-500 dark:text-zinc-400 text-xs">
-                    {{ __('Admin Session: Managing Operator') }} <strong
-                        class="text-stone-800 dark:text-zinc-100 font-semibold">{{ $currentOperator->name ?? 'Default Operator' }}</strong>
-                </span>
+                <div class="flex items-center gap-1.5 min-w-0 text-xs truncate">
+                    <span class="hidden sm:inline text-stone-500 dark:text-zinc-400 font-medium whitespace-nowrap">{{ __('Admin Session: Managing Operator') }}</span>
+                    <span class="sm:hidden text-stone-500 dark:text-zinc-400 font-medium whitespace-nowrap">{{ __('Managing:') }}</span>
+                    <strong class="text-stone-800 dark:text-zinc-100 font-bold truncate">{{ $currentOperator->name ?? 'Default Operator' }}</strong>
+                </div>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-                <a href="{{ route('admin.operators.index') }}" wire:navigate
-                    class="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-stone-700 dark:text-zinc-200 border border-line dark:border-line-dark text-[11px] font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <a href="{{ route('admin.operators.index') }}" wire:navigate title="{{ __('Switch Operator') }}"
+                    class="h-7 px-2 sm:px-2.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-700 text-stone-700 dark:text-zinc-200 border border-line dark:border-line-dark text-[11px] font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
                     <i class="fa-solid fa-users-gear text-stone-400 text-[10px]"></i>
-                    <span>{{ __('Switch Operator') }}</span>
+                    <span class="hidden md:inline">{{ __('Switch Operator') }}</span>
+                    <span class="md:hidden hidden xs:inline">{{ __('Switch') }}</span>
                 </a>
-                <a href="{{ route('admin.platform.edit') }}" wire:navigate
-                    class="px-2.5 py-1 rounded-lg bg-brand-400 hover:bg-brand-500 text-brand-foreground text-[11px] font-semibold transition flex items-center gap-1.5 cursor-pointer">
+                <a href="{{ route('admin.platform.edit') }}" wire:navigate title="{{ __('Platform Admin') }}"
+                    class="h-7 px-2 sm:px-2.5 rounded-lg bg-brand-400 hover:bg-brand-500 text-brand-foreground text-[11px] font-bold transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
                     <i class="fa-solid fa-arrow-left text-[10px]"></i>
-                    <span>{{ __('Platform Admin') }}</span>
+                    <span class="hidden md:inline">{{ __('Platform Admin') }}</span>
+                    <span class="md:hidden">{{ __('Admin') }}</span>
                 </a>
             </div>
         </div>
@@ -163,6 +168,10 @@
 
                     <x-nav-link :href="route('coupons.index')" icon="fa-ticket" :active="request()->routeIs('coupons.*')" :badge="$couponsCount" :title="__('Coupons & Discounts')">
                         {{ __('Coupons') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('vendors.index')" icon="fa-handshake" :active="request()->routeIs('vendors.*')" :badge="$vendorsCount" :title="__('Vendors & Suppliers')">
+                        {{ __('Vendors') }}
                     </x-nav-link>
                 </x-nav-section>
 
@@ -549,6 +558,26 @@
                                     class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Wallet & Payouts') }}</span>
                                 <span
                                     class="text-[10px] text-slate-400 block">{{ __('Balance & settlements') }}</span>
+                            </a>
+
+                            <!-- Vendors & Suppliers -->
+                            <a href="{{ route('vendors.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
+                                <div class="flex items-center justify-between">
+                                    <span
+                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-handshake"></i>
+                                    </span>
+                                    @if ($vendorsCount > 0)
+                                        <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                                            {{ $vendorsCount }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <span
+                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Vendors') }}</span>
+                                <span
+                                    class="text-[10px] text-slate-400 block">{{ __('Activity suppliers') }}</span>
                             </a>
 
                         </div>

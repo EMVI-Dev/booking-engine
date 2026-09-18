@@ -46,6 +46,7 @@ class Reservation extends Model
 
     protected $fillable = [
         'code',
+        'public_token',
         'guest_id',
         'bookable_type',
         'bookable_id',

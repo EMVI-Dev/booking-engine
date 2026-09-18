@@ -20,6 +20,7 @@ use Illuminate\Support\Collection;
 /**
  * @property string $id
  * @property string $operator_id
+ * @property string|null $vendor_id
  * @property string $name
  * @property string $slug
  * @property string|null $description
@@ -41,6 +42,7 @@ use Illuminate\Support\Collection;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Operator $operator
+ * @property-read Vendor|null $vendor
  * @property-read PackageProduct|null $pivot
  */
 class Product extends Model implements Bookable
@@ -54,6 +56,7 @@ class Product extends Model implements Bookable
 
     protected $fillable = [
         'operator_id',
+        'vendor_id',
         'name',
         'slug',
         'description',
@@ -74,6 +77,9 @@ class Product extends Model implements Bookable
         'status',
     ];
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -88,6 +94,14 @@ class Product extends Model implements Bookable
             'advance_booking_hours' => 'integer',
             'status' => ListingStatus::class,
         ];
+    }
+
+    /**
+     * @return BelongsTo<Vendor, $this>
+     */
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
     }
 
     /**

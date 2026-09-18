@@ -17,6 +17,7 @@ new #[Title('Create Activity Item')] class extends Component {
     use UsesMediaStore;
 
     public string $name = '';
+    public ?string $vendor_id = null;
     public string $category = 'Snorkeling Gear';
     public int $capacity_per_day = 20;
     public bool $sellable_standalone = true;
@@ -30,11 +31,84 @@ new #[Title('Create Activity Item')] class extends Component {
     public int $advance_booking_hours = 12;
     public string $status = 'published';
 
+    // Inline vendor creation modal
+    public bool $show_vendor_modal = false;
+    public string $new_vendor_name = '';
+    public string $new_vendor_email = '';
+    public string $new_vendor_phone = '';
+    public string $new_vendor_contact = '';
+
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
     public $coverPhoto = null;
 
     /** @var array<\Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
     public array $galleryFiles = [];
+
+    #[Computed]
+    public function vendors()
+    {
+        return $this->currentOperator?->vendors()->where('is_active', true)->orderBy('name')->get() ?? collect();
+    }
+
+    #[Computed]
+    public function vendorOptions(): array
+    {
+        $options = [
+            [
+                'value' => '',
+                'label' => __('In-House / Direct (No External Vendor)'),
+                'icon' => 'fa-solid fa-house-user',
+                'hint' => __('In-house'),
+            ],
+        ];
+
+        foreach ($this->vendors as $vendor) {
+            $options[] = [
+                'value' => (string) $vendor->id,
+                'label' => $vendor->name,
+                'icon' => 'fa-solid fa-handshake',
+                'hint' => $vendor->reservation_email,
+            ];
+        }
+
+        return $options;
+    }
+
+    public function openVendorModal(): void
+    {
+        $this->resetErrorBag(['new_vendor_name', 'new_vendor_email', 'new_vendor_phone', 'new_vendor_contact']);
+        $this->new_vendor_name = '';
+        $this->new_vendor_email = '';
+        $this->new_vendor_phone = '';
+        $this->new_vendor_contact = '';
+        $this->show_vendor_modal = true;
+    }
+
+    public function quickCreateVendor(): void
+    {
+        if (! $this->currentOperator) {
+            return;
+        }
+
+        $this->validate([
+            'new_vendor_name' => ['required', 'string', 'max:255'],
+            'new_vendor_email' => ['required', 'email', 'max:255'],
+            'new_vendor_phone' => ['nullable', 'string', 'max:50'],
+            'new_vendor_contact' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $vendor = $this->currentOperator->vendors()->create([
+            'name' => $this->new_vendor_name,
+            'reservation_email' => $this->new_vendor_email,
+            'phone' => filled($this->new_vendor_phone) ? $this->new_vendor_phone : null,
+            'contact_person' => filled($this->new_vendor_contact) ? $this->new_vendor_contact : null,
+            'is_active' => true,
+        ]);
+
+        $this->vendor_id = $vendor->id;
+        $this->show_vendor_modal = false;
+        unset($this->vendors);
+    }
 
     #[Computed]
     public function isProfileComplete(): bool
@@ -114,6 +188,7 @@ new #[Title('Create Activity Item')] class extends Component {
 
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
+            'vendor_id' => ['nullable', 'string', 'exists:vendors,id'],
             'category' => ['nullable', 'string', 'max:100'],
             'capacity_per_day' => ['required', 'integer', 'min:1', 'max:10000'],
             'sellable_standalone' => ['boolean'],
@@ -147,6 +222,7 @@ new #[Title('Create Activity Item')] class extends Component {
 
         $product = $this->currentOperator->products()->create([
             'name' => $this->name,
+            'vendor_id' => $this->vendor_id ?: null,
             'slug' => Str::slug($this->name),
             'category' => $this->category ?: null,
             'capacity_per_day' => $this->capacity_per_day,
@@ -295,6 +371,28 @@ new #[Title('Create Activity Item')] class extends Component {
                                 'draft' => __('Draft (Hidden from Public)'),
                             ]" />
                             <x-input-error :messages="$errors->get('status')" />
+                        </div>
+
+                        <!-- Vendor / Supplier Selector -->
+                        <div class="sm:col-span-2 space-y-1.5 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                            <div class="flex items-center justify-between">
+                                <x-label for="vendor_id" :value="__('Activity Vendor / Supplier (Optional)')" />
+                                <button type="button" wire:click="openVendorModal" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 cursor-pointer">
+                                    <i class="fa-solid fa-plus text-[10px]"></i>
+                                    <span>{{ __('Add New Vendor') }}</span>
+                                </button>
+                            </div>
+                            <x-select
+                                id="vendor_id"
+                                wire:model="vendor_id"
+                                :options="$this->vendorOptions"
+                                :searchable="true"
+                                placeholder="{{ __('Select a vendor...') }}"
+                            />
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                {{ __('If an external vendor provides this activity, they will automatically receive a booking dispatch email when confirmed.') }}
+                            </p>
+                            <x-input-error :messages="$errors->get('vendor_id')" />
                         </div>
                     </div>
 
@@ -523,8 +621,107 @@ new #[Title('Create Activity Item')] class extends Component {
                         <i class="fa-solid fa-check mr-1.5 text-xs"></i>
                         {{ __('Save & Publish') }}
                     </x-button>
-                </div>
             </form>
         @endif
     </div>
+
+    <!-- Quick Add Vendor Modal (Mobile-First Bottom Sheet & Desktop Dialog) -->
+    @if ($show_vendor_modal)
+        @teleport('body')
+            <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/75 backdrop-blur-xs overflow-y-auto"
+                wire:keydown.escape="$set('show_vendor_modal', false)">
+                <div class="relative flex w-full max-w-lg max-h-[92vh] sm:max-h-[88vh] flex-col overflow-hidden rounded-t-3xl border border-op-line bg-op-surface shadow-2xl sm:rounded-3xl"
+                    @click.outside="$wire.set('show_vendor_modal', false)">
+
+                    <div class="mx-auto my-2.5 h-1 w-12 shrink-0 rounded-full bg-op-line sm:hidden"></div>
+
+                    <div class="flex shrink-0 items-center justify-between gap-3 border-b border-op-line bg-op-muted/70 px-5 py-4 sm:px-6">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-400 text-brand-foreground">
+                                <i class="fa-solid fa-handshake text-sm"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h3 class="truncate text-base font-bold leading-tight text-op-ink">
+                                    {{ __('Quick Add New Vendor') }}
+                                </h3>
+                                <p class="truncate text-xs text-op-subtle">
+                                    {{ __('Add supplier and link directly to this activity.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <button type="button" wire:click="$set('show_vendor_modal', false)"
+                            class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-op-subtle hover:bg-op-muted hover:text-op-ink">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex-1 space-y-4 overflow-y-auto overscroll-contain p-5 sm:p-6">
+                        <div>
+                            <x-label for="new_vendor_name" :value="__('Vendor / Business Name')" required />
+                            <x-input
+                                id="new_vendor_name"
+                                type="text"
+                                wire:model="new_vendor_name"
+                                placeholder="{{ __('e.g. Bali ATV Adventures') }}"
+                                required
+                                :error="$errors->has('new_vendor_name')"
+                            />
+                            <x-input-error :messages="$errors->get('new_vendor_name')" />
+                        </div>
+
+                        <div>
+                            <x-label for="new_vendor_email" :value="__('Reservation Email')" required />
+                            <x-input
+                                id="new_vendor_email"
+                                type="email"
+                                wire:model="new_vendor_email"
+                                placeholder="{{ __('booking@vendor.com') }}"
+                                required
+                                :error="$errors->has('new_vendor_email')"
+                            />
+                            <p class="text-[11px] text-op-subtle mt-1 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-info text-[10px]"></i>
+                                <span>{{ __('Booking notifications will be dispatched here.') }}</span>
+                            </p>
+                            <x-input-error :messages="$errors->get('new_vendor_email')" />
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <x-label for="new_vendor_contact" :value="__('Contact Person')" />
+                                <x-input
+                                    id="new_vendor_contact"
+                                    type="text"
+                                    wire:model="new_vendor_contact"
+                                    placeholder="{{ __('e.g. Wayan') }}"
+                                    :error="$errors->has('new_vendor_contact')"
+                                />
+                            </div>
+                            <div>
+                                <x-label for="new_vendor_phone" :value="__('Phone / WhatsApp')" />
+                                <x-input
+                                    id="new_vendor_phone"
+                                    type="text"
+                                    wire:model="new_vendor_phone"
+                                    placeholder="{{ __('+62 812...') }}"
+                                    :error="$errors->has('new_vendor_phone')"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex shrink-0 items-center justify-end gap-3 border-t border-op-line bg-op-surface px-5 py-3 pb-6 sm:px-6 sm:pb-4">
+                        <x-button type="button" size="sm" variant="ghost" wire:click="$set('show_vendor_modal', false)">
+                            {{ __('Cancel') }}
+                        </x-button>
+                        <x-button type="button" size="sm" wire:click="quickCreateVendor">
+                            <i class="fa-solid fa-plus mr-1.5 text-xs"></i>
+                            <span>{{ __('Add & Select') }}</span>
+                        </x-button>
+                    </div>
+                </div>
+            </div>
+        @endteleport
+    @endif
 </div>

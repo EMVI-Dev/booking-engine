@@ -14,6 +14,7 @@ use App\Services\CapacityService;
 use App\Services\DokuPaymentService;
 use App\Services\DomainResolverService;
 use App\Services\GuestCancellationService;
+use App\Services\VendorDispatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -564,7 +565,30 @@ class StorefrontController extends Controller
                 ]);
         }
 
-        return redirect()->route('storefront.reservation.receipt', $reservation);
+        return redirect()->route('storefront.reservation.ticket', $reservation);
+    }
+
+    /**
+     * Show tokenized vendor dispatch sheet for a reservation.
+     */
+    public function showVendorDispatch(Request $request, Reservation $reservation): View
+    {
+        $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
+
+        $token = (string) $request->query('token', '');
+
+        if (empty($token) || ! hash_equals((string) $reservation->public_token, $token)) {
+            abort(403, __('Invalid or missing vendor access token.'));
+        }
+
+        $reservation->loadMissing(['operator', 'bookable']);
+        $vendorsData = app(VendorDispatchService::class)->resolveVendorsForReservation($reservation);
+
+        return view('storefront.vendor-dispatch', [
+            'reservation' => $reservation,
+            'operator' => $reservation->operator,
+            'vendorsData' => $vendorsData,
+        ]);
     }
 
     /**

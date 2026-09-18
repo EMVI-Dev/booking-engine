@@ -654,9 +654,17 @@ new #[Title('Bookings & Reservations')] class extends Component {
             'hold_expires_at' => $status === ReservationStatus::PaymentPending ? now()->addMinutes(30) : null,
         ]);
 
-        if ($status === ReservationStatus::Confirmed && !empty($res->guest_email)) {
+        if ($status === ReservationStatus::Confirmed) {
+            if (!empty($res->guest_email)) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($res->guest_email)->send(new \App\Mail\GuestBookingConfirmedMail($res));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
             try {
-                \Illuminate\Support\Facades\Mail::to($res->guest_email)->send(new \App\Mail\GuestBookingConfirmedMail($res));
+                app(\App\Services\VendorDispatchService::class)->dispatchBookingConfirmation($res);
             } catch (\Throwable $e) {
                 report($e);
             }
@@ -664,6 +672,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
         if ($status === ReservationStatus::Cancelled) {
             app(\App\Services\WalletService::class)->cancelBookingEarning($res, 'Cancelled by operator');
+
+            try {
+                app(\App\Services\VendorDispatchService::class)->dispatchBookingCancellation($res);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         $this->actionSuccess = true;

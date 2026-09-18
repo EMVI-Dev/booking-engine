@@ -59,7 +59,7 @@ test('a matching code and email opens the reservation e-ticket', function () {
         'code' => $this->reservation->code,
         'contact' => 'sarah@example.com',
     ], $this->headers)
-        ->assertRedirect(route('storefront.reservation.receipt', $this->reservation));
+        ->assertRedirect(route('storefront.reservation.ticket', $this->reservation));
 });
 
 test('a matching code and phone opens the reservation e-ticket', function () {
@@ -67,7 +67,7 @@ test('a matching code and phone opens the reservation e-ticket', function () {
         'code' => $this->reservation->code,
         'contact' => '081234567890',
     ], $this->headers)
-        ->assertRedirect(route('storefront.reservation.receipt', $this->reservation));
+        ->assertRedirect(route('storefront.reservation.ticket', $this->reservation));
 });
 
 test('a matching code and guest name opens the reservation e-ticket', function () {
@@ -75,7 +75,7 @@ test('a matching code and guest name opens the reservation e-ticket', function (
         'code' => $this->reservation->code,
         'contact' => 'Sarah Connor',
     ], $this->headers)
-        ->assertRedirect(route('storefront.reservation.receipt', $this->reservation));
+        ->assertRedirect(route('storefront.reservation.ticket', $this->reservation));
 });
 
 test('wrong contact details do not reveal that the booking exists', function () {

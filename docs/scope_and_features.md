@@ -16,7 +16,8 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 | Entity | DB Table | Concept & Purpose |
 | :--- | :--- | :--- |
 | **Tour Packages** | `packages` | Full curated day tours, excursions, and multi-activity packages with chronological itineraries, inclusions, and exclusions. Bundles 1+ single activities. |
-| **Single Activities** | `products` | Standalone bookable activities, workshop sessions, day passes, guide hire, or transport services. Can be sold standalone or linked into packages. |
+| **Single Activities** | `products` | Standalone bookable activities, workshop sessions, day passes, guide hire, or transport services. Can be sold standalone or linked into packages. Optional vendor attachment. |
+| **Vendors** | `vendors` | 3rd-party suppliers/activity providers (e.g., dive centers, ATV parks, boat charters). Receives automated booking notification copies with operator (Booker) info upon payment confirmation. |
 | **Reservations** | `reservations` | Single-date booking records (`#RSV-XXXX`) tracking guest info, selected date, pax count, payment status, and snapshot-frozen terms. Guest-facing URLs use `public_token`, never the record id. |
 
 ---
@@ -29,6 +30,10 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - Synchronized capacity: Links to underlying Single Activities to automatically deduct and synchronize daily capacity.
 - **Single Activities (`products`)**:
     - Define standalone bookable items with daily capacity limits (`capacity_per_day`), pricing, category classifications (*Day Tour / Trip, Workshop & Class, Activity Session, Guide Hire, Ticket & Admission, Day Transport, Add-on Service*), and toggleable storefront standalone availability (`sellable_standalone`).
+    - **Vendor Attachment (Reselling / Outsourced Services)**: Optional `vendor_id` on activities. When confirmed, 3rd-party suppliers automatically receive booking dispatch copies.
+- **Vendors & Suppliers (`vendors`)**:
+    - Manage external suppliers, dedicated `reservation_email` dispatch inboxes, contact persons, phone/WhatsApp, and payout bank accounts.
+    - Inline vendor creation directly inside the activity creation and editing workflow.
 
 ### 2. Operator Portal & Daily Operations
 - **1-Click Direct Booking & Payment Link Generator**:
@@ -122,6 +127,9 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
     - `GuestReviewRequestMail`: Post-trip review request (Growth and Agency). Agency with a connected Google listing uses that listing. Every other case uses the Review Platform URL from the Reviews tab. CTA stays "Leave a review".
 - **Operator notification (`OperatorNewBookingNotificationMail`)**:
     - Instant email alert on paid booking capture. Agency uses the operator as the From name.
+- **Vendor notification lifecycle (`VendorDispatchService`)**:
+    - `VendorBookingNotificationMail`: Automated booking dispatch copy sent to the supplier's `reservation_email` with operator (Booker) details, guest attendance manifest, and 1-click tokenized dispatch view. Supports single activities and multi-vendor packages.
+    - `VendorBookingCancelledMail`: Automated cancellation notice sent when a paid reservation is cancelled.
 - **1-Click WhatsApp Dispatch Center**:
     - Pre-formatted messages for Payment Hold Recovery, E-Voucher Delivery, 24-Hour Departure Reminders, and Meeting Point Pins.
 

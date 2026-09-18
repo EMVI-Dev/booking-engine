@@ -481,6 +481,13 @@ class DokuPaymentService
                         report($e);
                     }
                 }
+
+                // Dispatch vendor booking notifications
+                try {
+                    app(VendorDispatchService::class)->dispatchBookingConfirmation($reservation);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             return true;

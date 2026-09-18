@@ -36,8 +36,9 @@ class GuestCancellationService
 
         $reservation->loadMissing('latestPayment');
         $payment = $reservation->latestPayment;
+        $wasPaid = (bool) $payment?->isPaid();
 
-        if ($payment?->isPaid() && ! app(DokuPaymentService::class)->refundPayment($payment)) {
+        if ($wasPaid && ! app(DokuPaymentService::class)->refundPayment($payment)) {
             throw ValidationException::withMessages([
                 'reservation' => __('We could not send the refund to your original payment. Message the team and we will sort it out.'),
             ]);
@@ -49,6 +50,15 @@ class GuestCancellationService
         ]);
 
         $this->walletService->cancelBookingEarning($reservation, 'Guest cancelled before the free-cancel cutoff');
+
+        // Notify vendors if this was a confirmed / paid reservation
+        if ($wasPaid) {
+            try {
+                app(VendorDispatchService::class)->dispatchBookingCancellation($reservation);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return $reservation->fresh() ?? $reservation;
     }

@@ -70,7 +70,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('calendar', 'pages::calendar.index')->name('calendar.index');
     Route::livewire('wallet', 'pages::wallet.index')->name('wallet.index');
     Route::livewire('coupons', 'pages::coupons.index')->name('coupons.index');
+    Route::livewire('vendors', 'pages::vendors.index')->name('vendors.index');
 });
+
+// Vendor Dispatch View (Token-secured, no login required)
+Route::get('/find-booking/{reservation}/vendor', [StorefrontController::class, 'showVendorDispatch'])->name('storefront.reservation.vendor-view');
 
 // Public Storefront Item Details (Wildcard Slugs)
 Route::get('/packages/{slug}', [StorefrontController::class, 'showPackage'])->name('storefront.package');

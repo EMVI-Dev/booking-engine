@@ -163,6 +163,14 @@ class Operator extends Model
     }
 
     /**
+     * @return HasMany<Vendor, $this>
+     */
+    public function vendors(): HasMany
+    {
+        return $this->hasMany(Vendor::class);
+    }
+
+    /**
      * @return HasMany<Package, $this>
      */
     public function packages(): HasMany
@@ -724,6 +732,22 @@ class Operator extends Model
         }
 
         return $this->getPlan()->commission_rate;
+    }
+
+    /**
+     * Get primary contact email for this operator.
+     */
+    public function getEmailAttribute(): ?string
+    {
+        return $this->booking_notification_email ?: $this->billing_email;
+    }
+
+    /**
+     * Get primary contact phone for this operator.
+     */
+    public function getPhoneAttribute(): ?string
+    {
+        return $this->contact_whatsapp;
     }
 
     /**
