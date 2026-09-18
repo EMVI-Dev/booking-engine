@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $email = (string) env('ADMIN_EMAIL', 'admin@travelengine.online');
+        $email = (string) env('ADMIN_EMAIL', 'admin@travelengine.id');
         $password = env('ADMIN_PASSWORD');
 
         if (! is_string($password) || $password === '') {
