@@ -141,14 +141,14 @@ test('demo slug login offers the demo operator and hides platform admin', functi
         ->assertSee(__('Demo operator'))
         ->assertDontSee('baliridetours@gmail.com')
         ->assertDontSee('Platform Admin')
-        ->assertDontSee('admin@travelengine.online');
+        ->assertDontSee('admin@travelengine.id');
 });
 
 test('platform operator login does not offer admin or demo fill helpers', function () {
     $this->get(route('login'))
         ->assertOk()
         ->assertDontSee('Platform Admin')
-        ->assertDontSee('admin@travelengine.online')
+        ->assertDontSee('admin@travelengine.id')
         ->assertDontSee(__('Demo operator'));
 });
 

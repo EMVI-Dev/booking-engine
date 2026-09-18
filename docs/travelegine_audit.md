@@ -4,7 +4,7 @@
 
 ## Vision & Architecture
 
-A generic booking and inventory engine built simple and straightforward for tour providers and travel agencies. Each operator gets their own branded booking storefront (`slug.travelengine.online` by default, upgradeable to custom domain `yourbrand.com`). There is no cross-agent search/discovery — the platform marketing site is for SaaS onboarding and operator logins only; each agent's page is its own standalone destination.
+A generic booking and inventory engine built simple and straightforward for tour providers and travel agencies. Each operator gets their own branded booking storefront (`slug.travelengine.id` by default, upgradeable to custom domain `yourbrand.com`). There is no cross-agent search/discovery — the platform marketing site is for SaaS onboarding and operator logins only; each agent's page is its own standalone destination.
 
 ---
 
@@ -17,7 +17,7 @@ A generic booking and inventory engine built simple and straightforward for tour
 | **Guest Service Fee** | **5.0%** (Paid by Guest) | **5.0%** (Paid by Guest) | **0.0%** (Direct BYO Gateway) | **0.0%** (Direct BYO Gateway) |
 | **Package Listings Limit** | Up to **5** Packages | Up to **25** Packages | **Unlimited Listings** | **Unlimited Listings** |
 | **Team Staff Seats** | **Unlimited Staff** | **Unlimited Staff** | **Unlimited Staff** | **Unlimited Staff** |
-| **Storefront Subdomain** | ✅ `slug.travelengine.online` | ✅ `slug.travelengine.online` | ✅ `slug.travelengine.online` | ✅ `slug.travelengine.online` |
+| **Storefront Subdomain** | ✅ `slug.travelengine.id` | ✅ `slug.travelengine.id` | ✅ `slug.travelengine.id` | ✅ `slug.travelengine.id` |
 | **Custom Domain (`yourbrand.com`)** | 🔒 *Gated* | 🔒 *Gated* | ✅ **Included with Auto-SSL** | ✅ **Included with Auto-SSL** |
 | **Google Calendar & Live iCal Feed** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** | ✅ **Included** |
 | **Guest CRM Directory & LTV** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** | ✅ **Included** |

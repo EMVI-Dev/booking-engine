@@ -246,7 +246,7 @@ class DokuPaymentService
             ],
             'customer' => [
                 'name' => $reservation->guest_name,
-                'email' => $reservation->guest_email ?: 'guest@travelengine.online',
+                'email' => $reservation->guest_email ?: 'guest@travelengine.id',
                 'phone' => $reservation->guest_contact ?: '081234567890',
             ],
         ];

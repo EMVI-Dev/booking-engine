@@ -1,10 +1,10 @@
 @extends('errors.layout')
 
-@section('title', __('Server Error'))
-@section('code', '500')
-@section('icon', 'fa-solid fa-triangle-exclamation')
-@section('heading', __('Something went wrong'))
-@section('message', ! empty($exception?->getMessage()) ? $exception->getMessage() : __('An unexpected error occurred. Try again in a moment, or message the team if it keeps happening.'))
+@section('title', __('Too Many Requests'))
+@section('code', '429')
+@section('icon', 'fa-solid fa-gauge-high')
+@section('heading', __('Too many requests'))
+@section('message', ! empty($exception?->getMessage()) ? $exception->getMessage() : __('You have made too many requests recently. Please pause for a moment before trying again.'))
 
 @section('actions')
     <button type="button"

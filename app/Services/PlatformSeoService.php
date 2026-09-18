@@ -85,7 +85,7 @@ class PlatformSeoService
             'url' => url('/'),
             'logo' => url('/favicon.png'),
             'image' => $imageUrl,
-            'email' => config('mail.from.address', 'no-reply@travelengine.online'),
+            'email' => config('mail.from.address', 'no-reply@travelengine.id'),
             'areaServed' => [
                 '@type' => 'Country',
                 'name' => 'Indonesia',

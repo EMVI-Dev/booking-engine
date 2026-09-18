@@ -5,7 +5,7 @@
 A focused, single-day capacity booking and inventory engine built specifically for **Freelance Guides, Activity Hosts, and Travel Agencies**.
 
 Unlike complex legacy software that assumes enterprise hotel or multi-day vehicle rental operations, this platform is tailored to **Daily Capacity Booking**:
-- Each operator gets their own branded booking storefront (default subdomain `slug.travelengine.online`, upgradeable to custom domain `yourbrand.com` on Agency).
+- Each operator gets their own branded booking storefront (default subdomain `slug.travelengine.id`, upgradeable to custom domain `yourbrand.com` on Agency).
 - No cross-agent marketplace search/discovery — the root platform domain handles marketing and authentication; each operator's storefront is an independent booking destination.
 - Single calendar date selection (`requested_date`) and daily capacity limits per activity (`capacity_per_day`).
 
@@ -47,8 +47,8 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 
 ### 3. Branded Storefront & Guest Experience
 - **Subdomain & Custom Domain Routing**:
-    - Default: `slug.travelengine.online` (DNS only to Lightsail). Platform apex `travelengine.online` is Cloudflare-proxied.
-    - Custom Domain (Agency): CNAME to a grey hostname (`cname.travelengine.online` or the operator slug), or A / AAAA the apex at the Lightsail IP. Caddy issues the guest padlock. Do not CNAME at the orange apex.
+    - Default: `slug.travelengine.id` (DNS only to Lightsail). Platform apex `travelengine.id` is Cloudflare-proxied.
+    - Custom Domain (Agency): CNAME to a grey hostname (`cname.travelengine.id` or the operator slug), or A / AAAA the apex at the Lightsail IP. Caddy issues the guest padlock. Do not CNAME at the orange apex.
 - **Segmented Storefront Navigation**:
     - Direct access to *Catalog (Home)*, *Tour Packages*, *Single Activities*, and *Terms & Policies*.
 - **Direct Checkout & 30-Minute Hold Recovery**:
@@ -144,7 +144,7 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
 
 - **Framework**: Laravel 12 on PHP 8.5.
 - **UI Stack**: Livewire 4 SFCs, Tailwind CSS v4, Alpine.js, FontAwesome 6 icons.
-- **Hosting**: AWS Lightsail is the origin. Cloudflare orange-clouds the platform apex (`travelengine.online` / `www`) only. `*.travelengine.online` is DNS-only to Lightsail. Ports 80/443 stay open. Trust `X-Forwarded-*` on the proxied apex. Not Laravel Cloud. Not Cloudflare for SaaS in V1. Mail from `no-reply@travelengine.online`.
+- **Hosting**: AWS Lightsail is the origin. Cloudflare orange-clouds the platform apex (`travelengine.id` / `www`) only. `*.travelengine.id` is DNS-only to Lightsail. Ports 80/443 stay open. Trust `X-Forwarded-*` on the proxied apex. Not Laravel Cloud. Not Cloudflare for SaaS in V1. Mail from `no-reply@travelengine.id`.
 - **Testing**: Pest 5 with **336 automated feature and unit tests (100% passing)**.
 - **Code Style**: Formatted and enforced with Laravel Pint.
 - **Primary Keys**: ULIDs throughout.

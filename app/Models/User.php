@@ -59,7 +59,7 @@ class User extends Authenticatable implements PasskeyUser
     public function isAdmin(): bool
     {
         return (bool) ($this->is_admin ?? false) || in_array($this->email, [
-            'admin@travelengine.online',
+            'admin@travelengine.id',
             'admin@emvi.dev',
         ], true);
     }

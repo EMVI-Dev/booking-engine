@@ -128,8 +128,8 @@ class DomainResolverService
             'www.booking.test',
             'booking.emvi',
             'www.booking.emvi',
-            'travelengine.online',
-            'www.travelengine.online',
+            'travelengine.id',
+            'www.travelengine.id',
         ]));
     }
 
@@ -221,7 +221,7 @@ class DomainResolverService
     /**
      * Whether Caddy may ask Let's Encrypt for a padlock on this host.
      *
-     * Platform slugs ({slug}.travelengine.online) are included. Apex and www
+     * Platform slugs ({slug}.travelengine.id) are included. Apex and www
      * are refused so Cloudflare keeps those certificates.
      */
     public function hostMayReceiveCertificate(string $host): bool
@@ -236,7 +236,7 @@ class DomainResolverService
         // for Cloudflare Full (strict) after the Origin wildcard cert was
         // removed so slugs can use Let's Encrypt.
         if ($this->isPlatformRoot($host)) {
-            return in_array($host, ['travelengine.online', 'www.travelengine.online'], true);
+            return in_array($host, ['travelengine.id', 'www.travelengine.id'], true);
         }
 
         if ($this->hostIsPlatformSubdomain($host)) {

@@ -53,9 +53,9 @@ test('production admin seeder requires an admin password', function () {
 test('production seed creates plans and an admin without sample operators', function () {
     $this->app['env'] = 'production';
 
-    putenv('ADMIN_EMAIL=admin@travelengine.online');
-    $_ENV['ADMIN_EMAIL'] = 'admin@travelengine.online';
-    $_SERVER['ADMIN_EMAIL'] = 'admin@travelengine.online';
+    putenv('ADMIN_EMAIL=admin@travelengine.id');
+    $_ENV['ADMIN_EMAIL'] = 'admin@travelengine.id';
+    $_SERVER['ADMIN_EMAIL'] = 'admin@travelengine.id';
     putenv('ADMIN_PASSWORD=secret-admin-pass');
     $_ENV['ADMIN_PASSWORD'] = 'secret-admin-pass';
     $_SERVER['ADMIN_PASSWORD'] = 'secret-admin-pass';
@@ -69,7 +69,7 @@ test('production seed creates plans and an admin without sample operators', func
     expect(Plan::where('slug', 'starter')->exists())->toBeTrue()
         ->and(Plan::where('slug', 'growth')->exists())->toBeTrue()
         ->and(Plan::where('slug', 'agency')->exists())->toBeTrue()
-        ->and(User::query()->where('email', 'admin@travelengine.online')->where('is_admin', true)->exists())->toBeTrue()
+        ->and(User::query()->where('email', 'admin@travelengine.id')->where('is_admin', true)->exists())->toBeTrue()
         ->and(Operator::query()->where('is_demo', true)->count())->toBe(1)
         ->and(Operator::query()->where('slug', 'bali-ride-tours')->exists())->toBeFalse();
 

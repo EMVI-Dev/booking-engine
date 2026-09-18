@@ -15,7 +15,7 @@ test('login screen can be rendered', function () {
 
     $response->assertOk()
         ->assertDontSee('Platform Admin')
-        ->assertDontSee('admin@travelengine.online');
+        ->assertDontSee('admin@travelengine.id');
 });
 
 test('users can authenticate using the login screen', function () {

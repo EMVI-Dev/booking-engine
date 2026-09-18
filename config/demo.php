@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'email' => env('DEMO_OPERATOR_EMAIL', 'demo@travelengine.online'),
+    'email' => env('DEMO_OPERATOR_EMAIL', 'demo@travelengine.id'),
     'password' => env('DEMO_OPERATOR_PASSWORD'),
     'name' => env('DEMO_OPERATOR_NAME', 'Demo Tours'),
     'slug' => 'demo',

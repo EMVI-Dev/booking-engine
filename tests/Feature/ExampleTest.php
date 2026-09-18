@@ -25,7 +25,7 @@ test('home pricing uses the three public plan names', function () {
         ->assertSee('WhatsApp tickets, guest lists, calendar')
         ->assertSee('Your own website address (yourbrand.com)')
         ->assertSee('Tour website + 24/7 booking')
-        ->assertSee('yourname.travelengine.online')
+        ->assertSee('yourname.travelengine.id')
         ->assertSee('Create Booking Link')
         ->assertDontSee('Pay links you send in WhatsApp')
         ->assertDontSee('WhatsApp pay links')

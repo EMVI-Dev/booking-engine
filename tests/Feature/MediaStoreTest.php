@@ -63,5 +63,5 @@ test('uploads are stored under the operator folder', function () {
 });
 
 test('the r2 disk public url is the storage subdomain', function () {
-    expect(config('filesystems.disks.r2.url'))->toBe('https://storage.travelengine.online');
+    expect(config('filesystems.disks.r2.url'))->toBe('https://storage.travelengine.id');
 });

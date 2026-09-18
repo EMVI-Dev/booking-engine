@@ -43,7 +43,7 @@ test('operator dashboard and bookings share dry chrome tokens', function () {
         ->assertSee(__('Packages'))
         ->assertSee(__('Direct Revenue'))
         ->assertSee('op-palette-ebony')
-        ->assertSee('mailto:support@travelengine.online', false)
+        ->assertSee('mailto:support@travelengine.id', false)
         ->assertDontSee('bg-[#FFEF4D] text-[#090d16] font-black shadow-xs', false);
 
     $this->get(route('packages.index'))

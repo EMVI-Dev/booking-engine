@@ -35,7 +35,7 @@ test('admin login page is rendered for guests', function () {
         ->assertOk()
         ->assertSee('Admin sign in')
         ->assertSee('Admin')
-        ->assertDontSee('admin@travelengine.online / password')
+        ->assertDontSee('admin@travelengine.id / password')
         ->assertDontSee('Auto-fill');
 });
 

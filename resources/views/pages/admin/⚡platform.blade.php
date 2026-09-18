@@ -11,7 +11,7 @@ use Livewire\Component;
 new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
     // Global Platform Parameters
     public string $platform_name = 'TravelEngine';
-    public string $support_email = 'support@travelengine.online';
+    public string $support_email = 'support@travelengine.id';
     public float $commission_percentage = 0.0; // 0% operator commission
     public float $guest_service_fee_percentage = 5.0; // 5% guest service fee
     public int $booking_hold_minutes = 30;
@@ -77,7 +77,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
 
         $settings['platform_name'] = $validated['platform_name'];
         $settings['support_email'] = $platform->isUnusableOperatorSupportEmail($validated['support_email'])
-            ? 'support@travelengine.online'
+            ? 'support@travelengine.id'
             : $validated['support_email'];
         $settings['commission_rate'] = round($validated['commission_percentage'] / 100, 4);
         $settings['guest_service_fee_rate'] = round($validated['guest_service_fee_percentage'] / 100, 4);

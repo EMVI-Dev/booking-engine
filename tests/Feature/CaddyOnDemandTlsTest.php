@@ -79,7 +79,7 @@ test('caddy may issue a padlock for an operator slug on the platform domain', fu
         'plan_id' => Plan::factory()->starter()->create()->id,
     ]);
 
-    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=bali-trek.travelengine.online')
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=bali-trek.travelengine.id')
         ->assertOk();
 
     $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=bali-trek.booking.test')
@@ -87,15 +87,15 @@ test('caddy may issue a padlock for an operator slug on the platform domain', fu
 });
 
 test('caddy may issue a padlock for the orange-clouded platform hosts', function () {
-    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=travelengine.online')
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=travelengine.id')
         ->assertOk();
 
-    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=www.travelengine.online')
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=www.travelengine.id')
         ->assertOk();
 });
 
 test('caddy is refused for unknown slugs', function () {
-    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=no-such-operator.travelengine.online')
+    $this->get('/internal/caddy/ask?token=test-caddy-ask-token&domain=no-such-operator.travelengine.id')
         ->assertNotFound();
 });
 

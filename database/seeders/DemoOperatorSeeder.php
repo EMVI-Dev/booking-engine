@@ -166,7 +166,7 @@ class DemoOperatorSeeder extends Seeder
         OperatorDomain::query()->create([
             'operator_id' => $operator->id,
             'type' => DomainType::Subdomain,
-            'domain' => $slug . '.' . $platformDomain,
+            'domain' => $slug.'.'.$platformDomain,
             'is_primary' => true,
             'status' => DomainStatus::Active,
             'verified_at' => now(),
@@ -174,7 +174,7 @@ class DemoOperatorSeeder extends Seeder
 
         if ($platformDomain !== 'travelengine.id') {
             OperatorDomain::query()->firstOrCreate(
-                ['domain' => $slug . '.travelengine.id'],
+                ['domain' => $slug.'.travelengine.id'],
                 [
                     'operator_id' => $operator->id,
                     'type' => DomainType::Subdomain,
@@ -214,7 +214,7 @@ class DemoOperatorSeeder extends Seeder
                     'products/covers',
                 ),
                 'gallery' => array_map(
-                    fn(string $photoId): string => $this->storeDemoImage(
+                    fn (string $photoId): string => $this->storeDemoImage(
                         $operator,
                         $this->unsplash($photoId, 800),
                         MediaStore::COVER_MAX_WIDTH,
@@ -255,7 +255,7 @@ class DemoOperatorSeeder extends Seeder
                     'packages/covers',
                 ),
                 'gallery' => array_map(
-                    fn(string $photoId): string => $this->storeDemoImage(
+                    fn (string $photoId): string => $this->storeDemoImage(
                         $operator,
                         $this->unsplash($photoId, 1200),
                         MediaStore::COVER_MAX_WIDTH,
@@ -350,7 +350,7 @@ class DemoOperatorSeeder extends Seeder
             'balance_snapshot' => 1300000.00,
             'status' => WalletTransactionStatus::Cleared,
             'available_at' => now(),
-            'description' => 'Demo booking #' . $firstReservation->code,
+            'description' => 'Demo booking #'.$firstReservation->code,
         ]);
 
         $secondReservation = Reservation::query()->create([
@@ -394,7 +394,7 @@ class DemoOperatorSeeder extends Seeder
             'balance_snapshot' => 4300000.00,
             'status' => WalletTransactionStatus::Cleared,
             'available_at' => now(),
-            'description' => 'Demo booking #' . $secondReservation->code,
+            'description' => 'Demo booking #'.$secondReservation->code,
         ]);
     }
 
@@ -657,7 +657,7 @@ class DemoOperatorSeeder extends Seeder
 
     protected function unsplash(string $photoId, int $width = 1200): string
     {
-        return 'https://images.unsplash.com/photo-' . $photoId . '?auto=format&fit=crop&w=' . $width . '&q=80';
+        return 'https://images.unsplash.com/photo-'.$photoId.'?auto=format&fit=crop&w='.$width.'&q=80';
     }
 
     protected function shouldDownloadDemoImages(): bool
@@ -704,7 +704,7 @@ class DemoOperatorSeeder extends Seeder
 
         return (string) base64_decode(
             ''
-                . '/9j/4AAQSkZJRgABAQAAAQABAAD/2wAAAAD/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==',
+                .'/9j/4AAQSkZJRgABAQAAAQABAAD/2wAAAAD/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==',
             true
         );
     }

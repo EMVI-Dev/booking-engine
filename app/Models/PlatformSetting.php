@@ -43,7 +43,7 @@ class PlatformSetting extends Model
                 'currency_code' => 'IDR',
                 'currency_symbol' => 'Rp',
                 'platform_name' => config('app.name', 'Emvi Booking Platform'),
-                'support_email' => 'support@travelengine.online',
+                'support_email' => 'support@travelengine.id',
                 'doku' => [
                     'mode' => config('doku.default_mode', 'sandbox'),
                     'sandbox' => [
@@ -142,7 +142,7 @@ class PlatformSetting extends Model
             return $configured;
         }
 
-        return 'support@travelengine.online';
+        return 'support@travelengine.id';
     }
 
     public function isUnusableOperatorSupportEmail(string $email): bool
@@ -159,7 +159,7 @@ class PlatformSetting extends Model
         }
 
         return in_array($normalized, [
-            'hello@travelengine.online',
+            'hello@travelengine.id',
             'hello@emvi.dev',
             'support@emvi.dev',
         ], true);

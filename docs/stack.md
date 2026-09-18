@@ -22,8 +22,8 @@ There is no React/Vue SPA. Operator UI is Livewire. Guest storefront is mostly B
 
 The same Laravel app answers on three kinds of hostname:
 
-1. **Platform** — `travelengine.online` and `www` (and local Herd hosts such as `booking.emvi`). Marketing site, operator portal, Fortify auth, platform admin.
-2. **Operator slug** — `{slug}.travelengine.online`. Guest storefront only.
+1. **Platform** — `travelengine.id` and `www` (and local Herd hosts such as `booking.emvi`). Marketing site, operator portal, Fortify auth, platform admin.
+2. **Operator slug** — `{slug}.travelengine.id`. Guest storefront only.
 3. **Custom domain** — Agency plan, e.g. `yourbrand.com`. Guest storefront only.
 
 `IdentifyOperatorDomain` looks at `Host` and binds the operator (or leaves platform mode). Admin routes are meant to run only on the platform host, not on slugs.
@@ -35,8 +35,8 @@ Operator sign-up and storefront booking follow platform maintenance only (Admin 
 ```
 Guest / operator
     │
-    ├─ travelengine.online / www     → Cloudflare (orange-cloud) → Lightsail
-    └─ {slug}.travelengine.online    → DNS only (grey) → Lightsail
+    ├─ travelengine.id / www         → Cloudflare (orange-cloud) → Lightsail
+    └─ {slug}.travelengine.id        → DNS only (grey) → Lightsail
        custom domain                 → DNS only → Lightsail
 
 Lightsail  18.141.202.28   app in /var/www/travelengine
@@ -56,7 +56,7 @@ Supervisor runs `travelengine-worker` and `travelengine-scheduler` (queue + sche
 
 - **Apex + www** — visitors see Cloudflare’s padlock. Origin talks to Cloudflare on 443.
 - **Slugs and custom domains** — browsers hit Lightsail directly. Caddy asks Laravel `GET /internal/caddy/ask` before Let’s Encrypt will issue a cert (`CADDY_ASK_TOKEN`). Allowed: real operator slugs, Agency custom domains, and the platform apex/www so origin TLS stays valid.
-- Do not put a Cloudflare Origin certificate that includes `*.travelengine.online` in Caddy. That cert is only trusted by Cloudflare, so grey-cloud slugs look “Not secure”.
+- Do not put a Cloudflare Origin certificate that includes `*.travelengine.id` in Caddy. That cert is only trusted by Cloudflare, so grey-cloud slugs look “Not secure”.
 
 First HTTPS visit to a new slug can take a few seconds while Let’s Encrypt runs.
 

@@ -15,7 +15,7 @@ test('platform setting returns default values when none exist', function () {
         ->and($settings->getGuestServiceFeeRate())->toBe(0.05)
         ->and($settings->getBookingHoldMinutes())->toBe(30)
         ->and($settings->getDokuMode())->toBe(DokuMode::Sandbox)
-        ->and($settings->getOperatorSupportEmail())->toBe('support@travelengine.online');
+        ->and($settings->getOperatorSupportEmail())->toBe('support@travelengine.id');
 });
 
 test('platform setting reads updated config', function () {
@@ -38,11 +38,11 @@ test('operator support never uses a no-reply address', function () {
     $settings = PlatformSetting::current();
     $settings->update([
         'settings' => array_merge($settings->settings ?? [], [
-            'support_email' => 'no-reply@travelengine.online',
+            'support_email' => 'no-reply@travelengine.id',
         ]),
     ]);
 
-    expect($settings->fresh()->getOperatorSupportEmail())->toBe('support@travelengine.online');
+    expect($settings->fresh()->getOperatorSupportEmail())->toBe('support@travelengine.id');
 });
 
 test('operator support ignores leftover brand mailboxes', function () {
@@ -53,7 +53,7 @@ test('operator support ignores leftover brand mailboxes', function () {
         ]),
     ]);
 
-    expect($settings->fresh()->getOperatorSupportEmail())->toBe('support@travelengine.online');
+    expect($settings->fresh()->getOperatorSupportEmail())->toBe('support@travelengine.id');
 });
 
 test('guest service fee applies on every plan including agency', function () {

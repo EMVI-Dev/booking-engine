@@ -7,10 +7,10 @@ return [
     | Public server addresses
     |--------------------------------------------------------------------------
     |
-    | Production origin is AWS Lightsail. The apex travelengine.online is on
+    | Production origin is AWS Lightsail. The apex travelengine.id is on
     | Cloudflare; slugs and custom domains hit this box directly. These
     | addresses are what Agency apex names A / AAAA to. Prefer a CNAME to a
-    | grey hostname (cname.travelengine.online). Comma-separate more than
+    | grey hostname (cname.travelengine.id). Comma-separate more than
     | one address if needed.
     |
     */
@@ -25,7 +25,7 @@ return [
     |
     | Caddy calls GET /internal/caddy/ask?token=…&domain=… before it asks
     | Let's Encrypt for a padlock. Allowed hosts are operator slugs
-    | ({slug}.travelengine.online) and Agency custom domains. Apex and www
+    | ({slug}.travelengine.id) and Agency custom domains. Apex and www
     | stay on Cloudflare. An empty token fails closed. Point Caddy at:
     | http://127.0.0.1:8080/internal/caddy/ask?token=…
     |
