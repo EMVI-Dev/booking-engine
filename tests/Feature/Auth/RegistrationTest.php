@@ -31,8 +31,10 @@ test('new users can register', function () {
         'terms' => '1',
     ]);
 
-    $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+    $response->assertSessionHasNoErrors();
+
+    $location = (string) $response->headers->get('Location');
+    expect($location)->toContain('/auth/registration-handoff');
 
     $this->assertAuthenticated();
 });

@@ -3,19 +3,30 @@
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\PlatformSetting;
+use App\Services\OperatorActivitySlackNotifier;
 use App\Services\PaymentMatchService;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
+{
     // Global Platform Parameters
     public string $platform_name = 'TravelEngine';
+
     public string $support_email = 'support@travelengine.id';
+
     public float $commission_percentage = 0.0; // 0% operator commission
+
     public float $guest_service_fee_percentage = 5.0; // 5% guest service fee
+
     public int $booking_hold_minutes = 30;
+
     public string $currency_code = 'IDR';
+
     public string $currency_symbol = 'Rp';
 
     public bool $platform_maintenance = false;
@@ -25,6 +36,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
     public bool $pending_maintenance = false;
 
     public int $approved_operators = 0;
+
     public int $total_operators = 0;
 
     /**
@@ -55,6 +67,66 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
         $this->total_operators = Operator::count();
         $this->approved_operators = Operator::where('status', OperatorStatus::Approved)->count();
         $this->unmatched_payments = $platform->getUnmatchedPayments();
+        $this->loadSystemHealth();
+    }
+
+    public int $failed_jobs_count = 0;
+
+    public string $cache_driver = '';
+
+    public string $database_status = 'connected';
+
+    public bool $slack_configured = false;
+
+    public function loadSystemHealth(): void
+    {
+        $this->failed_jobs_count = DB::table('failed_jobs')->count();
+        $this->cache_driver = (string) config('cache.default', 'file');
+        $this->slack_configured = app(OperatorActivitySlackNotifier::class)->enabled();
+
+        try {
+            DB::connection()->getPdo();
+            $this->database_status = 'connected';
+        } catch (Throwable $e) {
+            $this->database_status = 'disconnected';
+        }
+    }
+
+    public function testSlackAlert(): void
+    {
+        $notifier = app(OperatorActivitySlackNotifier::class);
+
+        if (! $notifier->enabled()) {
+            $this->dispatch('toast', message: __('Slack webhook is not configured. Set SLACK_OPERATOR_WEBHOOK_URL in your .env file.'), type: 'error');
+
+            return;
+        }
+
+        $user = Auth::user();
+        $name = $user?->name ?? 'Platform Administrator';
+        $email = $user?->email;
+
+        $sent = $notifier->testAlert($name, $email);
+
+        if ($sent) {
+            $this->dispatch('toast', message: __('Test alert dispatched to Slack channel successfully.'), type: 'success');
+        } else {
+            $this->dispatch('toast', message: __('Failed to send Slack test alert. Check server logs.'), type: 'error');
+        }
+    }
+
+    public function retryFailedJobs(): void
+    {
+        Artisan::call('queue:retry all');
+        $this->loadSystemHealth();
+        $this->dispatch('failed-jobs-retried');
+    }
+
+    public function clearFailedJobs(): void
+    {
+        Artisan::call('queue:flush');
+        $this->loadSystemHealth();
+        $this->dispatch('failed-jobs-cleared');
     }
 
     /**
@@ -184,6 +256,107 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component {
                     {{ $platform_maintenance ? __('On') : __('Off') }}
                 </span>
             </button>
+        </div>
+    </div>
+
+    {{-- System Health Card --}}
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+            <div class="flex items-start gap-2.5">
+                <span class="p-1.5 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60 text-xs mt-0.5">
+                    <i class="fa-solid fa-server"></i>
+                </span>
+                <div>
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        {{ __('System Health & Queues') }}
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {{ __('Background workers, queue jobs, database connection, and cache status.') }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    wire:click="loadSystemHealth"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
+                >
+                    <i class="fa-solid fa-rotate text-xs" wire:loading.class="animate-spin" wire:target="loadSystemHealth"></i>
+                    <span>{{ __('Check status') }}</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Database') }}</span>
+                <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full {{ $database_status === 'connected' ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                    <span class="text-xs font-bold text-slate-900 dark:text-white capitalize">{{ $database_status }}</span>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Cache Driver') }}</span>
+                <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-xs font-bold text-slate-900 dark:text-white uppercase font-mono">{{ $cache_driver }}</span>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Failed Queue Jobs') }}</span>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full {{ $failed_jobs_count === 0 ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse' }}"></span>
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $failed_jobs_count }} {{ __('failed') }}</span>
+                    </div>
+
+                    @if ($failed_jobs_count > 0)
+                        <div class="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                wire:click="retryFailedJobs"
+                                class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500 text-white hover:bg-amber-600 transition cursor-pointer"
+                            >
+                                {{ __('Retry all') }}
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="clearFailedJobs"
+                                class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-300 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                            >
+                                {{ __('Clear') }}
+                            </button>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Operator Slack Alerts') }}</span>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full {{ $slack_configured ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $slack_configured ? __('Connected') : __('Not set') }}</span>
+                    </div>
+
+                    @if ($slack_configured)
+                        <button
+                            type="button"
+                            wire:click="testSlackAlert"
+                            class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition cursor-pointer inline-flex items-center gap-1 shadow-xs"
+                            wire:loading.attr="disabled"
+                            title="{{ __('Send a test alert to the Slack channel') }}"
+                        >
+                            <i class="fa-solid fa-paper-plane text-[9px]" wire:loading.class="hidden" wire:target="testSlackAlert"></i>
+                            <i class="fa-solid fa-spinner fa-spin text-[9px]" wire:loading wire:target="testSlackAlert"></i>
+                            <span>{{ __('Test') }}</span>
+                        </button>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 

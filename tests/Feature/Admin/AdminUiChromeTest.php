@@ -30,9 +30,9 @@ test('admin dashboard uses ebony palette and shared nav chrome', function () {
         ->assertSee(__('Dashboard'))
         ->assertSee(__('Operators'))
         ->assertSee(__('Operator Portal'))
-        ->assertSee(__('Money overview'))
-        ->assertSee(__('All guest payments'))
+        ->assertSee(__('Platform overview'))
         ->assertSee(__('Plan fees this month'))
+        ->assertSee(__('Subscription revenue'))
         ->assertDontSee('bg-[#FFEF4D] text-[#090d16] font-black shadow-xs', false);
 });
 

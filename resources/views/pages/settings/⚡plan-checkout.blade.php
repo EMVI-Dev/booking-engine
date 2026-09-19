@@ -1,35 +1,52 @@
 <?php
 
 use App\Models\Plan;
+use App\Models\PlatformCoupon;
 use App\Models\SubscriptionPayment;
+use App\Services\DokuPaymentService;
 use App\Services\SubscriptionProrationService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Component {
+new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Component
+{
     public SubscriptionPayment $payment;
 
-    public string $payment_method = 'cc'; // 'cc' | 'qris' | 'va' | 'direct'
+    public string $payment_method = 'doku'; // 'doku' | 'cc' | 'qris' | 'va' | 'direct'
 
-    // Credit Card Form Fields
+    // Gateway & Environment state
+    public bool $simulator_enabled = false;
+
+    public bool $doku_configured = false;
+
+    // Credit Card Form Fields (Sandbox simulator only)
     public string $card_number = '';
+
     public string $card_holder = '';
+
     public string $card_expiry = '';
+
     public string $card_cvv = '';
 
     // VA Field
     public string $va_bank = 'BCA';
 
     public bool $is_processing = false;
+
     public bool $auto_renew_consent = false;
+
     public ?string $error_message = null;
 
     // Platform Subscription Promo Code
     public string $couponCode = '';
+
     public ?string $appliedCouponCode = null;
+
     public float $discountAmount = 0.0;
+
     public string $couponMessage = '';
+
     public bool $couponValid = false;
 
     /**
@@ -46,15 +63,23 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
         if ($payment->status === 'completed') {
             session()->flash('success', __('This subscription invoice has already been paid and activated.'));
             $this->redirectRoute('settings.plan', navigate: true);
+
             return;
         }
 
         $this->payment = $payment;
-        $this->payment_method = in_array($payment->gateway, ['cc', 'qris', 'va', 'direct', 'credit_card'], true)
-            ? ($payment->gateway === 'credit_card' ? 'cc' : $payment->gateway)
-            : 'cc';
+        $this->simulator_enabled = DokuPaymentService::simulatorEnabled();
+        $this->doku_configured = DokuPaymentService::isConfigured();
 
-        $this->card_holder = auth()->user()->name;
+        if ($this->doku_configured) {
+            $this->payment_method = 'doku';
+        } elseif ($this->simulator_enabled) {
+            $this->payment_method = 'cc';
+        } else {
+            $this->payment_method = 'doku';
+        }
+
+        $this->card_holder = (string) (auth()->user()?->name ?? '');
 
         if (! empty($payment->breakdown['coupon_code'])) {
             $this->appliedCouponCode = (string) $payment->breakdown['coupon_code'];
@@ -73,11 +98,12 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
         if (empty($cleanCode)) {
             $this->couponMessage = __('Please enter a promo code.');
             $this->couponValid = false;
+
             return;
         }
 
         // Platform subscription coupons have operator_id = null
-        $coupon = \App\Models\PlatformCoupon::whereNull('operator_id')
+        $coupon = PlatformCoupon::whereNull('operator_id')
             ->where('code', $cleanCode)
             ->first();
 
@@ -85,6 +111,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             $this->couponMessage = __('Invalid subscription promo code.');
             $this->couponValid = false;
             $this->removeCoupon();
+
             return;
         }
 
@@ -95,6 +122,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             $this->couponMessage = $result['reason'] ?? __('Promo code cannot be applied.');
             $this->couponValid = false;
             $this->removeCoupon();
+
             return;
         }
 
@@ -141,10 +169,83 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
     }
 
     /**
-     * Process credit card payment authorization.
+     * Redirect to DOKU Jokul Hosted Checkout for real payment processing.
      */
-    public function processCreditCardPayment(SubscriptionProrationService $prorationService): void
+    public function payWithDoku(DokuPaymentService $dokuService, SubscriptionProrationService $prorationService): void
     {
+        $this->is_processing = true;
+        $this->error_message = null;
+
+        if ($this->payment->net_amount_paid <= 0) {
+            $this->completeZeroAmountPayment($prorationService);
+
+            return;
+        }
+
+        try {
+            $url = $dokuService->createSubscriptionCheckoutSession($this->payment);
+
+            if ($url) {
+                $this->redirect($url);
+
+                return;
+            }
+
+            throw new Exception(__('Unable to initialize payment session. Please check gateway configuration.'));
+        } catch (Throwable $e) {
+            $this->is_processing = false;
+            $this->error_message = $e->getMessage();
+        }
+    }
+
+    /**
+     * Activate a zero-amount subscription invoice covered entirely by credits or coupons.
+     */
+    public function completeZeroAmountPayment(SubscriptionProrationService $prorationService): void
+    {
+        if ($this->payment->net_amount_paid > 0) {
+            abort(400, __('Payment required.'));
+        }
+
+        $this->is_processing = true;
+
+        try {
+            if ($this->appliedCouponCode) {
+                PlatformCoupon::whereNull('operator_id')
+                    ->where('code', $this->appliedCouponCode)
+                    ->first()
+                    ?->incrementUsage();
+            }
+
+            $prorationService->completePendingPayment(
+                payment: $this->payment,
+                gatewayRef: 'FREE-ACTIVATION-'.strtoupper(bin2hex(random_bytes(4))),
+                gateway: 'free'
+            );
+
+            session()->flash('success', __(
+                'Subscription activated! Upgraded to :plan tier successfully.',
+                ['plan' => $this->payment->plan->name]
+            ));
+
+            $this->redirectRoute('settings.plan', navigate: true);
+        } catch (Throwable $e) {
+            $this->is_processing = false;
+            $this->error_message = $e->getMessage();
+        }
+    }
+
+    /**
+     * Process credit card payment authorization (Only available in sandbox/simulator mode).
+     */
+    public function processCreditCardPayment(SubscriptionProrationService $prorationService, DokuPaymentService $dokuService): void
+    {
+        if (! DokuPaymentService::simulatorEnabled()) {
+            $this->payWithDoku($dokuService, $prorationService);
+
+            return;
+        }
+
         $rules = [
             'card_number' => ['required', 'string', 'min:12'],
             'card_holder' => ['required', 'string', 'min:3'],
@@ -170,7 +271,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             $gatewayRef = 'CC-AUTH-'.strtoupper(bin2hex(random_bytes(4)));
 
             if ($this->appliedCouponCode) {
-                \App\Models\PlatformCoupon::whereNull('operator_id')
+                PlatformCoupon::whereNull('operator_id')
                     ->where('code', $this->appliedCouponCode)
                     ->first()
                     ?->incrementUsage();
@@ -188,7 +289,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             ));
 
             $this->redirectRoute('settings.plan', navigate: true);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->is_processing = false;
             $this->error_message = $e->getMessage();
         }
@@ -199,6 +300,10 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function processSimulatedPayment(SubscriptionProrationService $prorationService): void
     {
+        if (! DokuPaymentService::simulatorEnabled()) {
+            abort(403, __('Payment simulation is disabled in production.'));
+        }
+
         $this->is_processing = true;
         $this->error_message = null;
 
@@ -206,7 +311,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             $gatewayRef = strtoupper($this->payment_method).'-SIM-'.strtoupper(bin2hex(random_bytes(4)));
 
             if ($this->appliedCouponCode) {
-                \App\Models\PlatformCoupon::whereNull('operator_id')
+                PlatformCoupon::whereNull('operator_id')
                     ->where('code', $this->appliedCouponCode)
                     ->first()
                     ?->incrementUsage();
@@ -224,7 +329,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             ));
 
             $this->redirectRoute('settings.plan', navigate: true);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->is_processing = false;
             $this->error_message = $e->getMessage();
         }
@@ -256,237 +361,213 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <!-- Left: Payment Form & Gateway Selection (7 Cols) -->
         <div class="lg:col-span-7 space-y-5">
-            <!-- Payment Method Selector -->
-            <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                    <div>
-                        <h3 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                            <i class="fa-solid fa-shield-halved text-purple-600 dark:text-purple-400"></i>
-                            {{ __('Select Payment Method') }}
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {{ __('Choose how you would like to complete your subscription payment.') }}
-                        </p>
+            @if ($payment->net_amount_paid <= 0)
+                <div class="p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs text-center space-y-5">
+                    <div class="w-16 h-16 rounded-3xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-3xl mx-auto shadow-inner">
+                        <i class="fa-solid fa-gift"></i>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <button
-                        type="button"
-                        wire:click="$set('payment_method', 'cc')"
-                        class="p-3.5 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer {{ $payment_method === 'cc' ? 'border-purple-600 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-white ring-2 ring-purple-600 shadow-xs' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}"
-                    >
-                        <i class="fa-solid fa-credit-card text-lg text-purple-600 dark:text-purple-400 mt-0.5"></i>
-                        <div>
-                            <span class="font-black text-xs block">{{ __('Credit / Debit Card') }}</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">Visa / Mastercard / JCB</span>
-                        </div>
-                    </button>
-
-                    <button
-                        type="button"
-                        wire:click="$set('payment_method', 'qris')"
-                        class="p-3.5 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer {{ $payment_method === 'qris' ? 'border-purple-600 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-white ring-2 ring-purple-600 shadow-xs' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}"
-                    >
-                        <i class="fa-solid fa-qrcode text-lg text-purple-600 dark:text-purple-400 mt-0.5"></i>
-                        <div>
-                            <span class="font-black text-xs block">{{ __('QRIS Instant') }}</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">GoPay / OVO / BCA / Dana</span>
-                        </div>
-                    </button>
-
-                    <button
-                        type="button"
-                        wire:click="$set('payment_method', 'va')"
-                        class="p-3.5 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer {{ $payment_method === 'va' ? 'border-purple-600 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-white ring-2 ring-purple-600 shadow-xs' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}"
-                    >
-                        <i class="fa-solid fa-building-columns text-lg text-purple-600 dark:text-purple-400 mt-0.5"></i>
-                        <div>
-                            <span class="font-black text-xs block">{{ __('Virtual Account') }}</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">BCA / Mandiri / BRI / BNI</span>
-                        </div>
-                    </button>
-
-                    <button
-                        type="button"
-                        wire:click="$set('payment_method', 'direct')"
-                        class="p-3.5 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer {{ $payment_method === 'direct' ? 'border-purple-600 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-white ring-2 ring-purple-600 shadow-xs' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}"
-                    >
-                        <i class="fa-solid fa-bolt text-lg text-amber-500 mt-0.5"></i>
-                        <div>
-                            <span class="font-black text-xs block">{{ __('Instant Sandbox Test') }}</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">1-Click Test Activation</span>
-                        </div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Active Form Content based on method -->
-            @if ($payment_method === 'cc')
-                <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                        <h4 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                            <i class="fa-solid fa-credit-card text-purple-600"></i>
-                            {{ __('Card Information') }}
-                        </h4>
-                        <div class="flex items-center gap-2 text-slate-400 text-base">
-                            <i class="fa-brands fa-cc-visa"></i>
-                            <i class="fa-brands fa-cc-mastercard"></i>
-                            <i class="fa-brands fa-cc-jcb"></i>
-                        </div>
-                    </div>
-
-                    <form wire:submit="processCreditCardPayment" class="space-y-4">
-                        <div>
-                            <x-label for="card_holder" :value="__('Cardholder Name')" required />
-                            <x-input id="card_holder" type="text" wire:model="card_holder" placeholder="John Doe" :error="$errors->has('card_holder')" />
-                            <x-input-error :messages="$errors->get('card_holder')" />
-                        </div>
-
-                        <div>
-                            <x-label for="card_number" :value="__('Card Number')" required />
-                            <div class="relative">
-                                <i class="fa-solid fa-credit-card absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                                <x-input id="card_number" type="text" wire:model="card_number" placeholder="4000 1234 5678 9010" class="pl-9 font-mono" maxlength="19" :error="$errors->has('card_number')" />
-                            </div>
-                            <x-input-error :messages="$errors->get('card_number')" />
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <x-label for="card_expiry" :value="__('Expiration Date')" required />
-                                <x-input id="card_expiry" type="text" wire:model="card_expiry" placeholder="MM/YY" class="font-mono text-center" maxlength="5" :error="$errors->has('card_expiry')" />
-                                <x-input-error :messages="$errors->get('card_expiry')" />
-                            </div>
-                            <div>
-                                <x-label for="card_cvv" :value="__('Security Code (CVV)')" required />
-                                <x-input id="card_cvv" type="password" wire:model="card_cvv" placeholder="123" class="font-mono text-center" maxlength="4" :error="$errors->has('card_cvv')" />
-                                <x-input-error :messages="$errors->get('card_cvv')" />
-                            </div>
-                        </div>
-
-                        @if ($payment->breakdown['auto_renew'] ?? true)
-                            <div class="p-3.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/50 text-xs space-y-1.5">
-                                <label class="flex items-start gap-2.5 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        wire:model="auto_renew_consent"
-                                        class="mt-0.5 rounded border-purple-300 text-purple-600 focus:ring-purple-500 dark:border-purple-800 dark:bg-zinc-900"
-                                    />
-                                    <span class="text-xs text-purple-900 dark:text-purple-200 font-semibold leading-tight">
-                                        {{ __('I consent to recurring auto-renewal charges at the end of each billing cycle until cancelled.') }}
-                                    </span>
-                                </label>
-                                @error('auto_renew_consent')
-                                    <p class="text-[11px] font-bold text-rose-600 dark:text-rose-400">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        @endif
-
-                        <div class="pt-3">
-                            <button
-                                type="submit"
-                                wire:loading.attr="disabled"
-                                class="w-full h-11 rounded-2xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                            >
-                                <span wire:loading.remove class="flex items-center gap-2">
-                                    <i class="fa-solid fa-lock text-xs"></i>
-                                    <span>{{ __('Authorize & Pay Rp :amount', ['amount' => number_format((float) $payment->net_amount_paid, 0, ',', '.')]) }}</span>
-                                </span>
-                                <span wire:loading class="flex items-center gap-2">
-                                    <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
-                                    <span>{{ __('Processing Card Authorization...') }}</span>
-                                </span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            @elseif ($payment_method === 'qris')
-                <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4 text-center">
-                    <div class="inline-flex p-4 rounded-3xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-inner">
-                        <!-- Simulated QRIS Matrix -->
-                        <div class="w-48 h-48 bg-slate-900 dark:bg-white rounded-2xl flex flex-col items-center justify-center p-3 text-white dark:text-slate-900">
-                            <i class="fa-solid fa-qrcode text-7xl"></i>
-                            <span class="text-[10px] font-mono font-black mt-2 tracking-widest uppercase">QRIS STANDAR INDONESIA</span>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <h4 class="font-black text-sm text-slate-900 dark:text-white">{{ __('Scan QRIS to Pay') }}</h4>
+                    <div class="space-y-1.5 max-w-md mx-auto">
+                        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">{{ __('Zero Amount Due') }}</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                            {{ __('Open BCA Mobile, GoPay, OVO, Dana, or any banking app supporting QRIS.') }}
+                            {{ __('Your unused plan credit or promotional discount covers 100% of this invoice. No payment gateway or credit card charge required.') }}
                         </p>
                     </div>
-
                     <div class="pt-2">
                         <button
                             type="button"
-                            wire:click="processSimulatedPayment"
+                            wire:click="completeZeroAmountPayment"
                             wire:loading.attr="disabled"
-                            class="w-full h-11 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                            class="w-full h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                         >
-                            <i class="fa-solid fa-circle-check text-xs"></i>
-                            <span>{{ __('I Have Completed QRIS Payment (Simulate)') }}</span>
-                        </button>
-                    </div>
-                </div>
-            @elseif ($payment_method === 'va')
-                <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                    <div class="space-y-2">
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">{{ __('Choose Virtual Account Bank') }}</label>
-                        <select wire:model.live="va_bank" class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-slate-900 dark:text-white">
-                            <option value="BCA">BCA Virtual Account</option>
-                            <option value="Mandiri">Mandiri Virtual Account</option>
-                            <option value="BRI">BRI Virtual Account (BRIVA)</option>
-                            <option value="BNI">BNI Virtual Account</option>
-                        </select>
-                    </div>
-
-                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 space-y-2">
-                        <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">{{ $va_bank }} Virtual Account Number</span>
-                        <div class="flex items-center justify-between">
-                            <span class="text-lg font-black font-mono text-purple-700 dark:text-purple-300">
-                                8800 9182 3910 2819
+                            <span wire:loading.remove wire:target="completeZeroAmountPayment" class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-sm"></i>
+                                <span>{{ __('Activate :plan Tier Now', ['plan' => $payment->plan->name]) }}</span>
                             </span>
-                            <span class="text-xs text-slate-400 font-semibold">{{ __('Copy') }}</span>
-                        </div>
-                    </div>
-
-                    <div class="pt-2">
-                        <button
-                            type="button"
-                            wire:click="processSimulatedPayment"
-                            wire:loading.attr="disabled"
-                            class="w-full h-11 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                            <i class="fa-solid fa-circle-check text-xs"></i>
-                            <span>{{ __('Simulate VA Transfer Success') }}</span>
+                            <span wire:loading wire:target="completeZeroAmountPayment" class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-notch fa-spin text-sm"></i>
+                                <span>{{ __('Activating Subscription...') }}</span>
+                            </span>
                         </button>
                     </div>
                 </div>
             @else
-                <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4 text-center">
-                    <div class="w-14 h-14 rounded-3xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl mx-auto">
-                        <i class="fa-solid fa-bolt"></i>
+                @if ($doku_configured)
+                    <!-- DOKU Hosted Payment Gateway -->
+                    <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                            <div>
+                                <h3 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-shield-halved text-purple-600 dark:text-purple-400"></i>
+                                    {{ __('DOKU Secure Checkout') }}
+                                </h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {{ __('Pay securely via DOKU Jokul Payment Gateway with instant activation.') }}
+                                </p>
+                            </div>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/70">
+                                <i class="fa-solid fa-lock text-[9px]"></i>
+                                <span>{{ __('PCI-DSS Verified') }}</span>
+                            </span>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/70 dark:border-zinc-700/60 space-y-3">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">{{ __('Payment Channels Supported:') }}</span>
+                            <div class="grid grid-cols-2 gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                                <span class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xs flex items-center gap-2">
+                                    <i class="fa-solid fa-credit-card text-purple-600"></i>
+                                    <span class="truncate">Visa / Mastercard / JCB</span>
+                                </span>
+                                <span class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xs flex items-center gap-2">
+                                    <i class="fa-solid fa-qrcode text-emerald-600"></i>
+                                    <span class="truncate">QRIS Instant</span>
+                                </span>
+                                <span class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xs flex items-center gap-2">
+                                    <i class="fa-solid fa-building-columns text-blue-600"></i>
+                                    <span class="truncate">BCA, Mandiri, BRI, BNI</span>
+                                </span>
+                                <span class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xs flex items-center gap-2">
+                                    <i class="fa-solid fa-wallet text-amber-600"></i>
+                                    <span class="truncate">OVO, ShopeePay</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        @if ($payment->breakdown['auto_renew'] ?? true)
+                            <div class="p-3.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/50 text-xs">
+                                <span class="text-xs text-purple-900 dark:text-purple-200 font-semibold leading-tight flex items-start gap-2">
+                                    <i class="fa-solid fa-rotate text-purple-600 dark:text-purple-400 mt-0.5 shrink-0"></i>
+                                    <span>{{ __('Your plan renewal will be calculated at each interval and billed securely.') }}</span>
+                                </span>
+                            </div>
+                        @endif
+
+                        <div class="pt-2">
+                            <button
+                                type="button"
+                                wire:click="payWithDoku"
+                                wire:loading.attr="disabled"
+                                class="w-full h-12 rounded-2xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                            >
+                                <span wire:loading.remove wire:target="payWithDoku" class="flex items-center gap-2">
+                                    <i class="fa-solid fa-lock text-xs"></i>
+                                    <span>{{ __('Pay Rp :amount via DOKU Secure Gateway', ['amount' => number_format((float) $payment->net_amount_paid, 0, ',', '.')]) }}</span>
+                                </span>
+                                <span wire:loading wire:target="payWithDoku" class="flex items-center gap-2">
+                                    <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                                    <span>{{ __('Connecting to Gateway...') }}</span>
+                                </span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="space-y-1">
-                        <h4 class="font-black text-base text-slate-900 dark:text-white">{{ __('Fast Sandbox Activation') }}</h4>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            {{ __('Instantly approve this subscription payment in sandbox mode without entering card credentials.') }}
+                @endif
+
+                @if ($simulator_enabled)
+                    <!-- Sandbox Testing Controls (Visible only in local / sandbox / test environments) -->
+                    <div class="p-6 rounded-3xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 shadow-xs space-y-4">
+                        <div class="flex items-center justify-between pb-3 border-b border-amber-200/60 dark:border-amber-900/50">
+                            <div>
+                                <h3 class="font-extrabold text-sm text-amber-950 dark:text-amber-300 flex items-center gap-2">
+                                    <i class="fa-solid fa-vial text-amber-600 dark:text-amber-400"></i>
+                                    <span>{{ __('Developer Sandbox Simulator') }}</span>
+                                </h3>
+                                <p class="text-[11px] text-amber-800/80 dark:text-amber-400/80 mt-0.5">
+                                    {{ __('Active in testing environments only. Hidden automatically in live production.') }}
+                                </p>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-200/60 text-amber-900 dark:bg-amber-900/60 dark:text-amber-300">
+                                {{ __('Sandbox Mode') }}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                wire:click="$set('payment_method', 'direct')"
+                                class="p-2.5 rounded-xl border text-left text-xs font-bold transition cursor-pointer {{ $payment_method === 'direct' ? 'border-amber-600 bg-amber-100/60 dark:bg-amber-950/60 text-amber-950 dark:text-amber-200' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-300' }}"
+                            >
+                                <i class="fa-solid fa-bolt text-amber-600 mr-1"></i>
+                                <span>{{ __('1-Click Test Activation') }}</span>
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('payment_method', 'cc')"
+                                class="p-2.5 rounded-xl border text-left text-xs font-bold transition cursor-pointer {{ $payment_method === 'cc' ? 'border-amber-600 bg-amber-100/60 dark:bg-amber-950/60 text-amber-950 dark:text-amber-200' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-300' }}"
+                            >
+                                <i class="fa-solid fa-credit-card text-amber-600 mr-1"></i>
+                                <span>{{ __('Simulated Card Form') }}</span>
+                            </button>
+                        </div>
+
+                        @if ($payment_method === 'direct')
+                            <div class="pt-1">
+                                <button
+                                    type="button"
+                                    wire:click="processSimulatedPayment"
+                                    wire:loading.attr="disabled"
+                                    class="w-full h-11 rounded-2xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 font-black text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                >
+                                    <i class="fa-solid fa-bolt text-xs"></i>
+                                    <span>{{ __('Simulate 1-Click Upgrade (:plan)', ['plan' => $payment->plan->name]) }}</span>
+                                </button>
+                            </div>
+                        @elseif ($payment_method === 'cc')
+                            <div class="flex items-center justify-between pb-2 border-b border-amber-200/60 dark:border-amber-900/40">
+                                <h4 class="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-credit-card text-purple-600"></i>
+                                    <span>{{ __('Card Information') }}</span>
+                                </h4>
+                                <div class="flex items-center gap-1.5 text-slate-400 text-xs">
+                                    <i class="fa-brands fa-cc-visa"></i>
+                                    <i class="fa-brands fa-cc-mastercard"></i>
+                                    <i class="fa-brands fa-cc-jcb"></i>
+                                </div>
+                            </div>
+
+                            <form wire:submit="processCreditCardPayment" class="space-y-3 pt-1">
+                                <div>
+                                    <x-label for="card_holder" :value="__('Cardholder Name')" required />
+                                    <x-input id="card_holder" type="text" wire:model="card_holder" placeholder="John Doe" :error="$errors->has('card_holder')" />
+                                    <x-input-error :messages="$errors->get('card_holder')" />
+                                </div>
+                                <div>
+                                    <x-label for="card_number" :value="__('Card Number')" required />
+                                    <x-input id="card_number" type="text" wire:model="card_number" placeholder="4000 1234 5678 9010" class="font-mono" maxlength="19" :error="$errors->has('card_number')" />
+                                    <x-input-error :messages="$errors->get('card_number')" />
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <x-label for="card_expiry" :value="__('Expiration Date')" required />
+                                        <x-input id="card_expiry" type="text" wire:model="card_expiry" placeholder="MM/YY" class="font-mono text-center" maxlength="5" :error="$errors->has('card_expiry')" />
+                                        <x-input-error :messages="$errors->get('card_expiry')" />
+                                    </div>
+                                    <div>
+                                        <x-label for="card_cvv" :value="__('CVV')" required />
+                                        <x-input id="card_cvv" type="password" wire:model="card_cvv" placeholder="123" class="font-mono text-center" maxlength="4" :error="$errors->has('card_cvv')" />
+                                        <x-input-error :messages="$errors->get('card_cvv')" />
+                                    </div>
+                                </div>
+                                <button
+                                    type="submit"
+                                    wire:loading.attr="disabled"
+                                    class="w-full h-11 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                >
+                                    <i class="fa-solid fa-lock text-xs"></i>
+                                    <span>{{ __('Authorize Test Card Charge') }}</span>
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                @endif
+
+                @if (! $doku_configured && ! $simulator_enabled)
+                    <div class="p-6 rounded-3xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center space-y-3">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600 text-2xl"></i>
+                        <h4 class="font-bold text-sm text-amber-900 dark:text-amber-200">{{ __('Payment Gateway Offline') }}</h4>
+                        <p class="text-xs text-amber-800 dark:text-amber-300 max-w-sm mx-auto">
+                            {{ __('The platform payment gateway is currently being configured. Please contact platform support.') }}
                         </p>
                     </div>
-                    <div class="pt-2">
-                        <button
-                            type="button"
-                            wire:click="processSimulatedPayment"
-                            wire:loading.attr="disabled"
-                            class="w-full h-11 rounded-2xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                            <i class="fa-solid fa-bolt text-xs"></i>
-                            <span>{{ __('Activate :plan Instantly', ['plan' => $payment->plan->name]) }}</span>
-                        </button>
-                    </div>
-                </div>
+                @endif
             @endif
         </div>
 

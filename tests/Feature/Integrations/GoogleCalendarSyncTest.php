@@ -74,3 +74,25 @@ test('invalid calendar token returns 404', function () {
     $this->get(route('calendar.feed', ['token' => 'invalid-token-12345']))
         ->assertNotFound();
 });
+
+test('feed route handles .ics extension and returns valid feed', function () {
+    $token = $this->operator->getCalendarFeedToken();
+
+    $response = $this->get("/calendar/feed/{$token}.ics");
+
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'text/calendar; charset=utf-8');
+
+    expect($response->getContent())
+        ->toContain('BEGIN:VCALENDAR')
+        ->toContain('END:VCALENDAR');
+});
+
+test('generates valid 1-click google calendar subscription url', function () {
+    $service = app(GoogleCalendarService::class);
+    $feedUrl = 'https://example.com/calendar/feed/abc123xyz.ics';
+
+    $subUrl = $service->buildGoogleCalendarSubscriptionUrl($feedUrl);
+
+    expect($subUrl)->toBe('https://calendar.google.com/calendar/r?cid='.urlencode('webcal://example.com/calendar/feed/abc123xyz.ics'));
+});

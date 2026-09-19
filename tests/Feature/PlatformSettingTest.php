@@ -19,12 +19,13 @@ test('platform setting returns default values when none exist', function () {
 });
 
 test('platform setting reads updated config', function () {
+    config(['doku.default_mode' => 'live']);
+
     $settings = PlatformSetting::current();
     $settings->update([
         'settings' => [
             'commission_rate' => 0.15,
             'booking_hold_minutes' => 45,
-            'doku_mode' => 'live',
         ],
     ]);
 

@@ -13,6 +13,7 @@ use App\Models\PlatformSetting;
 use App\Models\Reservation;
 use App\Models\SubscriptionPayment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -35,6 +36,20 @@ class DokuPaymentService
         }
 
         return app()->environment('local', 'testing');
+    }
+
+    /**
+     * Whether valid DOKU gateway credentials are configured for the active mode.
+     */
+    public static function isConfigured(): bool
+    {
+        $platform = PlatformSetting::current();
+        $mode = $platform->getDokuMode()->value;
+
+        $clientId = $mode === 'live' ? $platform->getDokuLiveClientId() : $platform->getDokuSandboxClientId();
+        $secretKey = $mode === 'live' ? $platform->getDokuLiveSecretKey() : $platform->getDokuSandboxSecretKey();
+
+        return ! empty($clientId) && ! empty($secretKey);
     }
 
     /**
@@ -273,6 +288,60 @@ class DokuPaymentService
     }
 
     /**
+     * Request a hosted payment page URL from DOKU Jokul Checkout API for an operator subscription invoice.
+     */
+    public function createSubscriptionCheckoutSession(SubscriptionPayment $payment): ?string
+    {
+        $operator = $payment->operator;
+        $credentials = $this->gatewayCredentials($operator);
+
+        if (trim($credentials['client_id']) === '' || trim($credentials['secret_key']) === '') {
+            return null;
+        }
+
+        $targetPath = '/checkout/v1/payment';
+        $owner = $operator?->users()->first();
+
+        $body = [
+            'order' => [
+                'amount' => (int) round((float) $payment->net_amount_paid),
+                'invoice_number' => (string) $payment->invoice_number,
+                'currency' => 'IDR',
+                'callback_url' => route('settings.plan'),
+                'auto_redirect' => true,
+            ],
+            'payment' => [
+                'payment_due_date' => 60,
+            ],
+            'customer' => [
+                'name' => $owner?->name ?: ($operator?->name ?: 'Tour Operator'),
+                'email' => $operator?->billing_email ?: ($owner?->email ?: 'billing@travelengine.id'),
+                'phone' => $operator?->contact_whatsapp ?: '081234567890',
+            ],
+        ];
+
+        $jsonBody = (string) json_encode($body);
+
+        try {
+            $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody))
+                ->timeout(10)
+                ->connectTimeout(3)
+                ->post($credentials['base_url'].$targetPath, $body);
+
+            if ($response->successful()) {
+                $paymentUrl = $response->json('response.payment.url');
+                if (! empty($paymentUrl) && is_string($paymentUrl)) {
+                    return $paymentUrl;
+                }
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return null;
+    }
+
+    /**
      * Query live payment transaction status from DOKU API.
      */
     public function queryPaymentStatus(string $invoiceNumber): ?string
@@ -362,8 +431,13 @@ class DokuPaymentService
             $payload['transaction']['status']
             ?? $payload['status']
             ?? $payload['transactionStatus']
-            ?? ($payload['latestTransactionStatus'] === '00' ? 'SUCCESS' : ($payload['latestTransactionStatus'] ?? 'SUCCESS'))
+            ?? ''
         );
+        $rawAmount = $payload['order']['amount']
+            ?? $payload['amount']['value']
+            ?? $payload['amount']
+            ?? null;
+        $paidAmount = is_numeric($rawAmount) ? (float) $rawAmount : null;
 
         if ($invoiceNumber === '') {
             return false;
@@ -383,6 +457,16 @@ class DokuPaymentService
                 $normalizedSubscriptionStatus = strtoupper($transactionStatus);
 
                 if (in_array($normalizedSubscriptionStatus, ['SUCCESS', 'PAID', '00'], true)) {
+                    if ($paidAmount !== null && $paidAmount > 0 && $paidAmount < (float) $subscriptionPayment->net_amount_paid) {
+                        Log::warning('DOKU notification rejected: paid amount is less than subscription invoice net amount', [
+                            'invoice_number' => $invoiceNumber,
+                            'expected' => (float) $subscriptionPayment->net_amount_paid,
+                            'received' => $paidAmount,
+                        ]);
+
+                        return false;
+                    }
+
                     app(SubscriptionProrationService::class)->completePendingPayment($subscriptionPayment, $invoiceNumber, 'doku');
 
                     return true;
@@ -437,46 +521,70 @@ class DokuPaymentService
         }
 
         if ($normalizedStatus === 'SUCCESS' || $normalizedStatus === 'PAID' || $normalizedStatus === '00') {
-            // Gateways retry notifications; replaying a settled payment must not
-            // re-confirm the reservation or re-send the guest e-voucher.
-            if ($payment->status === PaymentStatus::Paid) {
+            if ($paidAmount !== null && $paidAmount > 0 && $paidAmount < (float) $payment->amount) {
+                Log::warning('DOKU notification rejected: paid amount is less than booking payment amount', [
+                    'invoice_number' => $invoiceNumber,
+                    'expected' => (float) $payment->amount,
+                    'received' => $paidAmount,
+                ]);
+
+                return false;
+            }
+
+            $confirmedReservation = null;
+            $shouldNotify = false;
+
+            DB::transaction(function () use ($payment, &$confirmedReservation, &$shouldNotify): void {
+                /** @var Payment|null $lockedPayment */
+                $lockedPayment = Payment::query()->whereKey($payment->id)->lockForUpdate()->first();
+
+                if (! $lockedPayment || $lockedPayment->status === PaymentStatus::Paid) {
+                    return;
+                }
+
+                $lockedPayment->update([
+                    'status' => PaymentStatus::Paid,
+                ]);
+
+                $reservation = $lockedPayment->reservation;
+                $agent = $reservation?->agent;
+                $isManual = $agent?->isManualConfirmationEnabled() ?? false;
+
+                $reservation?->update([
+                    'status' => $isManual ? ReservationStatus::PendingConfirmation : ReservationStatus::Confirmed,
+                    'hold_expires_at' => null,
+                ]);
+
+                // Credit operator wallet ledger
+                app(WalletService::class)->creditBookingPayment($lockedPayment);
+
+                $confirmedReservation = $reservation;
+                $shouldNotify = true;
+            });
+
+            if (! $shouldNotify) {
                 Log::info('DOKU notification ignored for already-settled payment', ['invoice_number' => $invoiceNumber]);
 
                 return true;
             }
 
-            $payment->update([
-                'status' => PaymentStatus::Paid,
-            ]);
-
-            $agent = $payment->reservation?->agent;
-            $isManual = $agent?->isManualConfirmationEnabled() ?? false;
-
-            $payment->reservation?->update([
-                'status' => $isManual ? ReservationStatus::PendingConfirmation : ReservationStatus::Confirmed,
-                'hold_expires_at' => null,
-            ]);
-
-            // Credit operator wallet ledger
-            app(WalletService::class)->creditBookingPayment($payment);
-
             // Dispatch confirmation and alert emails
-            $reservation = $payment->reservation;
-            if ($reservation) {
-                if (! empty($reservation->guest_email)) {
+            if ($confirmedReservation) {
+                if (! empty($confirmedReservation->guest_email)) {
                     try {
-                        Mail::to($reservation->guest_email)
-                            ->send(new GuestBookingConfirmedMail($reservation));
+                        Mail::to($confirmedReservation->guest_email)
+                            ->send(new GuestBookingConfirmedMail($confirmedReservation));
                     } catch (\Throwable $e) {
                         report($e);
                     }
                 }
 
+                $agent = $confirmedReservation->agent;
                 $agentEmail = $agent ? ($agent->booking_notification_email ?: $agent->users()->first()?->email) : null;
                 if (! empty($agentEmail)) {
                     try {
                         Mail::to($agentEmail)
-                            ->send(new OperatorNewBookingNotificationMail($reservation));
+                            ->send(new OperatorNewBookingNotificationMail($confirmedReservation));
                     } catch (\Throwable $e) {
                         report($e);
                     }
@@ -484,7 +592,7 @@ class DokuPaymentService
 
                 // Dispatch vendor booking notifications
                 try {
-                    app(VendorDispatchService::class)->dispatchBookingConfirmation($reservation);
+                    app(VendorDispatchService::class)->dispatchBookingConfirmation($confirmedReservation);
                 } catch (\Throwable $e) {
                     report($e);
                 }

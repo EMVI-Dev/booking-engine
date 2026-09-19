@@ -74,9 +74,10 @@ test('admin can access platform revenue dashboard', function () {
     $this->actingAs($this->adminUser)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertSee('Money overview')
-        ->assertSee('All guest payments')
-        ->assertSee('Plan fees this month');
+        ->assertSee('Platform overview')
+        ->assertSee('Plan fees this month')
+        ->assertSee('Subscription revenue')
+        ->assertSee('Operators');
 });
 
 test('revenue dashboard computes financial metrics accurately', function () {
@@ -85,5 +86,19 @@ test('revenue dashboard computes financial metrics accurately', function () {
         ->assertSet('period', '12m')
         ->assertSee('Bali Ocean Adventures')
         ->assertSee('Enterprise Pro')
-        ->assertSee('Rp 5.000.000');
+        ->assertSee('Rp 999.000');
+});
+
+test('admin dashboard displays attention banner when operators are pending verification', function () {
+    Operator::factory()->create([
+        'name' => 'Pending Explorer Corp',
+        'status' => OperatorStatus::Pending,
+    ]);
+
+    $this->actingAs($this->adminUser)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('Items needing attention')
+        ->assertSee('operator(s) awaiting approval')
+        ->assertSee('Review operators');
 });

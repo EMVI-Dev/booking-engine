@@ -40,7 +40,9 @@ Route::post('/find-booking', [StorefrontController::class, 'lookupBooking'])
     ->name('storefront.find-booking.lookup');
 
 // Live iCal Calendar Feed for Google / Apple / Outlook Subscriptions
-Route::get('/calendar/feed/{token}', [CalendarFeedController::class, 'feed'])->name('calendar.feed');
+Route::get('/calendar/feed/{token}', [CalendarFeedController::class, 'feed'])
+    ->where('token', '.*')
+    ->name('calendar.feed');
 
 // DOKU Webhook Notification Endpoint
 Route::post('/api/v1/payments/doku/notify', [DokuWebhookController::class, 'handleNotification'])
@@ -92,11 +94,12 @@ Route::middleware('platform')->group(function () {
         Route::livewire('/operators', 'pages::admin.operators.index')->name('operators.index');
         Route::livewire('/operators/{operator}', 'pages::admin.operators.show')->name('operators.show');
         Route::livewire('/plans', 'pages::admin.plans')->name('plans.index');
+        Route::livewire('/subscriptions', 'pages::admin.subscriptions')->name('subscriptions.index');
         Route::livewire('/announcements', 'pages::admin.announcements')->name('announcements.index');
         Route::livewire('/coupons', 'pages::admin.coupons')->name('coupons.index');
         Route::livewire('/payouts', 'pages::admin.payouts')->name('payouts.index');
-        Route::livewire('/payments', 'pages::admin.payments')->name('payments.index');
         Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
+        Route::livewire('/admins', 'pages::admin.admins')->name('admins.index');
         Route::livewire('/profile', 'pages::admin.profile')->name('profile.edit');
     });
 });

@@ -2,17 +2,25 @@
 
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
+use App\Models\Reservation;
 use App\Services\DomainResolverService;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
-new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
+{
     use WithPagination;
 
+    #[Url]
     public string $search = '';
+
+    #[Url]
     public string $status_filter = 'all';
 
     /**
@@ -37,8 +45,53 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component {
         $this->redirect(route('dashboard'), navigate: true);
     }
 
+    public function exportCsv(): StreamedResponse
+    {
+        $fileName = 'operators-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Name', 'Slug', 'Status', 'Plan', 'Email', 'WhatsApp', 'Bank Provider', 'Bank Account', 'Bank Account Name', 'Created At']);
+
+            Operator::query()
+                ->with(['plan'])
+                ->when($this->status_filter !== 'all', function ($query) {
+                    $query->where('status', $this->status_filter);
+                })
+                ->when(filled($this->search), function ($query) {
+                    $query->where(function ($q) {
+                        $q->where('name', 'like', "%{$this->search}%")
+                            ->orWhere('slug', 'like', "%{$this->search}%")
+                            ->orWhere('booking_notification_email', 'like', "%{$this->search}%");
+                    });
+                })
+                ->latest()
+                ->chunk(100, function ($operators) use ($handle) {
+                    foreach ($operators as $operator) {
+                        fputcsv($handle, [
+                            $operator->id,
+                            $operator->name,
+                            $operator->slug,
+                            $operator->status->value ?? (string) $operator->status,
+                            $operator->plan?->name ?? 'Free Tier',
+                            $operator->booking_notification_email ?? '-',
+                            $operator->contact_whatsapp ?? '-',
+                            $operator->bank_provider ?? '-',
+                            $operator->bank_account_number ?? '-',
+                            $operator->bank_account_name ?? '-',
+                            $operator->created_at?->format('Y-m-d H:i:s') ?? '-',
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $fileName, ['Content-Type' => 'text/csv']);
+    }
+
     public bool $showConfirmOperatorStatusModal = false;
+
     public ?string $statusActionOperatorId = null;
+
     public ?string $pendingOperatorStatus = null;
 
     #[Computed]
@@ -88,8 +141,10 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component {
             };
 
             $operator->update(['status' => $operatorStatus]);
-            app(DomainResolverService::class)->clearOperatorDomainCache($operator);
-            Cache::flush();
+            $domainResolver = app(DomainResolverService::class);
+            $domainResolver->clearOperatorDomainCache($operator);
+            Cache::forget('operator_settings_'.$operator->id);
+            Cache::forget('operator_plan_'.$operator->id);
             $this->dispatch('operator-status-updated', ['name' => $operator->name, 'status' => $operatorStatus->label()]);
         }
     }
@@ -132,7 +187,7 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component {
             'approvedCount' => Operator::where('status', OperatorStatus::Approved)->count(),
             'pendingCount' => Operator::where('status', OperatorStatus::Pending)->count(),
             'suspendedCount' => Operator::where('status', OperatorStatus::Suspended)->count(),
-            'totalReservationsCount' => \App\Models\Reservation::count(),
+            'totalReservationsCount' => Reservation::count(),
         ];
     }
 }; ?>
@@ -142,7 +197,18 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component {
         :title="__('Operators')"
         :subtitle="__('Who is on the platform, and whether they can sell.')"
         icon="fa-users-gear"
-    />
+    >
+        <x-slot:actions>
+            <button
+                type="button"
+                wire:click="exportCsv"
+                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#141821] border border-slate-200 dark:border-[#1e2433] hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 transition cursor-pointer shadow-2xs"
+            >
+                <i class="fa-solid fa-download text-xs text-slate-400"></i>
+                <span>{{ __('Export CSV') }}</span>
+            </button>
+        </x-slot:actions>
+    </x-page-header>
 
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <x-metric-card

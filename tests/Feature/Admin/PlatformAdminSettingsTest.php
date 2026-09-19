@@ -218,47 +218,57 @@ test('saving platform settings does not change maintenance without confirmation'
     expect(PlatformSetting::current()->fresh()->isPlatformMaintenance())->toBeFalse();
 });
 
-test('platform admin can access payment gateways settings page', function () {
-    $this->actingAs($this->adminUser)
-        ->get(route('admin.payments.index'))
-        ->assertOk()
-        ->assertSee('Guest payments')
-        ->assertSee('Checkout keys')
-        ->assertSee('Client ID / API Key')
-        ->assertSee('SNAP keys (optional)')
-        ->assertSee('Webhook URL')
-        ->assertSee('Save keys');
+test('platform setting resolves doku mode strictly from config', function () {
+    config(['doku.default_mode' => 'live']);
+    expect(PlatformSetting::current()->getDokuMode()->value)->toBe('live');
+
+    config(['doku.default_mode' => 'sandbox']);
+    expect(PlatformSetting::current()->getDokuMode()->value)->toBe('sandbox');
 });
 
-test('platform admin can update DOKU payment credentials', function () {
-    $this->actingAs($this->adminUser);
+test('platform setting ignores database values for doku mode', function () {
+    config(['doku.default_mode' => 'sandbox']);
 
-    Livewire::test('pages::admin.payments')
-        ->set('doku_mode', 'live')
-        ->set('sandbox_client_id', 'MALLID_SANDBOX_TEST')
-        ->set('sandbox_secret_key', 'KEY_SANDBOX_TEST')
-        ->set('sandbox_doku_public_key', 'DOKU_PUB_KEY')
-        ->set('sandbox_merchant_public_key', 'MERCHANT_PUB_KEY')
-        ->set('sandbox_merchant_private_key', 'MERCHANT_PRIV_KEY')
-        ->set('sandbox_snap_token_url', 'https://api-sandbox.doku.com/authorization/v1/access-token/b2b')
-        ->set('sandbox_base_url', 'https://api-sandbox.doku.com')
-        ->set('sandbox_checkout_url', 'https://jokul-sandbox.doku.com/checkout')
-        ->set('live_client_id', 'MALLID_LIVE_PROD')
-        ->set('live_secret_key', 'KEY_LIVE_PROD')
-        ->set('live_base_url', 'https://api.doku.com')
-        ->set('live_checkout_url', 'https://jokul.doku.com/checkout')
-        ->call('updatePaymentSettings')
-        ->assertHasNoErrors();
+    $platform = PlatformSetting::current();
+    $platform->update([
+        'settings' => [
+            'doku_mode' => 'live',
+            'doku' => ['mode' => 'live'],
+        ],
+    ]);
 
-    $settings = PlatformSetting::current()->fresh();
+    expect($platform->fresh()->getDokuMode()->value)->toBe('sandbox');
+});
 
-    expect($settings->getDokuMode()->value)->toBe('live')
-        ->and($settings->getDokuSandboxClientId())->toBe('MALLID_SANDBOX_TEST')
-        ->and($settings->getDokuSandboxSecretKey())->toBe('KEY_SANDBOX_TEST')
-        ->and($settings->getDokuSandboxDokuPublicKey())->toBe('DOKU_PUB_KEY')
-        ->and($settings->getDokuSandboxMerchantPublicKey())->toBe('MERCHANT_PUB_KEY')
-        ->and($settings->getDokuLiveClientId())->toBe('MALLID_LIVE_PROD')
-        ->and($settings->getDokuLiveSecretKey())->toBe('KEY_LIVE_PROD');
+test('platform settings reads doku credentials strictly from config and ignores database values', function () {
+    config([
+        'doku.sandbox.client_id' => 'cfg-sandbox-client',
+        'doku.sandbox.secret_key' => 'cfg-sandbox-secret',
+        'doku.live.client_id' => 'cfg-live-client',
+        'doku.live.secret_key' => 'cfg-live-secret',
+    ]);
+
+    $platform = PlatformSetting::current();
+    $platform->update([
+        'settings' => [
+            'doku' => [
+                'sandbox' => [
+                    'client_id' => 'db-leaked-client',
+                    'secret_key' => 'db-leaked-secret',
+                ],
+                'live' => [
+                    'client_id' => 'db-leaked-client',
+                    'secret_key' => 'db-leaked-secret',
+                ],
+            ],
+        ],
+    ]);
+
+    $fresh = $platform->fresh();
+    expect($fresh->getDokuSandboxClientId())->toBe('cfg-sandbox-client')
+        ->and($fresh->getDokuSandboxSecretKey())->toBe('cfg-sandbox-secret')
+        ->and($fresh->getDokuLiveClientId())->toBe('cfg-live-client')
+        ->and($fresh->getDokuLiveSecretKey())->toBe('cfg-live-secret');
 });
 
 test('platform admin can view operators management directory', function () {
@@ -339,7 +349,7 @@ test('platform admin can access dedicated operator details page and view insight
         ->assertSee('999888777')
         ->assertSee('PT Sea Explorers')
         ->assertSee('Open their dashboard')
-        ->assertSee('Guest payments');
+        ->assertSee('Settings');
 });
 
 test('platform admin can update operator status and plan from dedicated operator details page', function () {

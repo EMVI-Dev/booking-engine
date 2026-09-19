@@ -1,9 +1,10 @@
 <?php
 
+use App\Concerns\UsesMediaStore;
 use App\Enums\PayoutStatus;
 use App\Models\PayoutRequest;
+use App\Services\DokuPaymentService;
 use App\Services\WalletService;
-use App\Concerns\UsesMediaStore;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -11,20 +12,26 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
-new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
-    use WithFileUploads, WithPagination, UsesMediaStore;
+new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
+{
+    use UsesMediaStore, WithFileUploads, WithPagination;
 
     public string $statusFilter = 'all';
+
     public string $search = '';
 
     // Approve / Complete Modal
     public bool $showApproveModal = false;
+
     public ?string $selectedPayoutId = null;
+
     public $proofFile = null;
 
     // Reject Modal
     public bool $showRejectModal = false;
+
     public string $rejectionReason = '';
 
     public function updatedStatusFilter(): void
@@ -35,6 +42,52 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
     public function updatedSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function exportCsv(): StreamedResponse
+    {
+        $fileName = 'operator-payouts-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Reference', 'Operator', 'Bank Provider', 'Bank Account Number', 'Bank Account Name', 'Amount', 'Status', 'Notes', 'Rejection Reason', 'Requested At', 'Processed At']);
+
+            PayoutRequest::query()
+                ->with('operator')
+                ->when($this->statusFilter !== 'all', function ($query) {
+                    $query->where('status', $this->statusFilter);
+                })
+                ->when(filled($this->search), function ($query) {
+                    $query->where(function ($q) {
+                        $q->where('reference_number', 'like', "%{$this->search}%")
+                            ->orWhere('bank_account_name', 'like', "%{$this->search}%")
+                            ->orWhere('bank_account_number', 'like', "%{$this->search}%")
+                            ->orWhereHas('operator', function ($operatorQuery) {
+                                $operatorQuery->where('name', 'like', "%{$this->search}%");
+                            });
+                    });
+                })
+                ->latest()
+                ->chunk(100, function ($payouts) use ($handle) {
+                    foreach ($payouts as $payout) {
+                        fputcsv($handle, [
+                            $payout->reference_number,
+                            $payout->operator?->name ?? 'Deleted Operator',
+                            $payout->bank_provider,
+                            $payout->bank_account_number,
+                            $payout->bank_account_name,
+                            (float) $payout->amount,
+                            $payout->status->label() ?? $payout->status->value,
+                            $payout->notes ?? '-',
+                            $payout->rejection_reason ?? '-',
+                            $payout->created_at?->format('Y-m-d H:i:s') ?? '-',
+                            $payout->processed_at?->format('Y-m-d H:i:s') ?? '-',
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $fileName, ['Content-Type' => 'text/csv']);
     }
 
     /**
@@ -60,7 +113,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
     public function payoutRequests(): LengthAwarePaginator
     {
         return PayoutRequest::query()
-            ->with('agent')
+            ->with('operator')
             ->when($this->statusFilter !== 'all', function ($query) {
                 $query->where('status', $this->statusFilter);
             })
@@ -69,8 +122,8 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
                     $q->where('reference_number', 'like', "%{$this->search}%")
                         ->orWhere('bank_account_name', 'like', "%{$this->search}%")
                         ->orWhere('bank_account_number', 'like', "%{$this->search}%")
-                        ->orWhereHas('agent', function ($agentQuery) {
-                            $agentQuery->where('name', 'like', "%{$this->search}%");
+                        ->orWhereHas('operator', function ($operatorQuery) {
+                            $operatorQuery->where('name', 'like', "%{$this->search}%");
                         });
                 });
             })
@@ -99,6 +152,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
         $payout = PayoutRequest::find($this->selectedPayoutId);
         if (! $payout || $payout->status !== PayoutStatus::Pending) {
             $this->showApproveModal = false;
+
             return;
         }
 
@@ -119,7 +173,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
         $this->dispatch('payout-approved');
     }
 
-    public function disburseViaDokuApi(string $payoutId, \App\Services\DokuPaymentService $dokuService): void
+    public function disburseViaDokuApi(string $payoutId, DokuPaymentService $dokuService): void
     {
         $payout = PayoutRequest::find($payoutId);
         if (! $payout || $payout->status !== PayoutStatus::Pending) {
@@ -132,7 +186,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
                 'status' => PayoutStatus::Completed,
                 'processed_by' => 'DOKU BI-FAST API (Admin Trigger)',
                 'processed_at' => now(),
-                'notes' => ($payout->notes ? $payout->notes . ' | ' : '') . $res['message'] . ' [Ref: ' . $res['reference'] . ']',
+                'notes' => ($payout->notes ? $payout->notes.' | ' : '').$res['message'].' [Ref: '.$res['reference'].']',
             ]);
             session()->flash('success', __('Sent payout :ref to their bank.', ['ref' => $payout->reference_number]));
         } else {
@@ -145,6 +199,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
         $payout = PayoutRequest::find($this->selectedPayoutId);
         if (! $payout || $payout->status !== PayoutStatus::Pending) {
             $this->showRejectModal = false;
+
             return;
         }
 
@@ -168,6 +223,14 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component {
         icon="fa-money-bill-transfer"
     >
         <x-slot:actions>
+            <button
+                type="button"
+                wire:click="exportCsv"
+                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#141821] border border-slate-200 dark:border-[#1e2433] hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 transition cursor-pointer shadow-2xs"
+            >
+                <i class="fa-solid fa-download text-xs text-slate-400"></i>
+                <span>{{ __('Export CSV') }}</span>
+            </button>
             <span class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
                 <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
                 <span>{{ __('Auto send is on') }}</span>

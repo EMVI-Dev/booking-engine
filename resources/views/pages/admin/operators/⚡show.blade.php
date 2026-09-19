@@ -12,12 +12,14 @@ use App\Services\DomainResolverService;
 use App\Services\OperatorActivitySlackNotifier;
 use App\Services\SubscriptionProrationService;
 use App\Services\WalletService;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class extends Component
+{
     public Operator $operator;
 
     public string $selected_plan_id = '';
@@ -54,8 +56,10 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
 
         $fromStatus = $this->operator->status->label();
         $this->operator->update(['status' => $operatorStatus]);
-        app(DomainResolverService::class)->clearOperatorDomainCache($this->operator);
-        Cache::flush();
+        $domainResolver = app(DomainResolverService::class);
+        $domainResolver->clearOperatorDomainCache($this->operator);
+        Cache::forget('operator_settings_'.$this->operator->id);
+        Cache::forget('operator_plan_'.$this->operator->id);
         $this->operator->refresh();
         app(OperatorActivitySlackNotifier::class)->statusChanged($this->operator, $fromStatus, $operatorStatus->label());
         $this->dispatch('operator-status-updated', ['name' => $this->operator->name, 'status' => $operatorStatus->label()]);
@@ -117,8 +121,10 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         }
 
         app(SubscriptionProrationService::class)->grantComplimentaryPlan($this->operator, $plan, $days);
-        app(DomainResolverService::class)->clearOperatorDomainCache($this->operator);
-        Cache::flush();
+        $domainResolver = app(DomainResolverService::class);
+        $domainResolver->clearOperatorDomainCache($this->operator);
+        Cache::forget('operator_settings_'.$this->operator->id);
+        Cache::forget('operator_plan_'.$this->operator->id);
         $this->operator->refresh();
         $this->operator->unsetRelation('plan');
         $this->selected_plan_id = (string) $this->operator->plan_id;
@@ -173,7 +179,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     #[Computed]
     public function totalRevenue(): float
     {
-        return (float) Payment::where('status', PaymentStatus::Paid)->whereHas('reservation', fn($q) => $q->where('operator_id', $this->operator->id))->sum('amount');
+        return (float) Payment::where('status', PaymentStatus::Paid)->whereHas('reservation', fn ($q) => $q->where('operator_id', $this->operator->id))->sum('amount');
     }
 
     #[Computed]
@@ -298,7 +304,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     #[Computed]
     public function storefrontUrl(): string
     {
-        return request()->getScheme() . '://' . $this->operator->slug . '.' . $this->platformDomain;
+        return request()->getScheme().'://'.$this->operator->slug.'.'.$this->platformDomain;
     }
 
     #[Computed]

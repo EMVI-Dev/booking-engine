@@ -29,77 +29,83 @@ class WalletService
      */
     public function creditBookingPayment(Payment $payment): ?WalletTransaction
     {
-        if ($payment->status !== PaymentStatus::Paid) {
-            return null;
-        }
+        return DB::transaction(function () use ($payment): ?WalletTransaction {
+            /** @var Payment|null $lockedPayment */
+            $lockedPayment = Payment::query()->whereKey($payment->id)->lockForUpdate()->first();
 
-        $reservation = $payment->reservation;
-        if (! $reservation || ! $reservation->operator) {
-            return null;
-        }
+            if (! $lockedPayment || $lockedPayment->status !== PaymentStatus::Paid) {
+                return null;
+            }
 
-        // Idempotency: Prevent duplicate credits for the same reservation
-        $existing = WalletTransaction::query()
-            ->where('reservation_id', $reservation->id)
-            ->where('type', WalletTransactionType::BookingEarning)
-            ->first();
+            $reservation = $lockedPayment->reservation;
+            if (! $reservation || ! $reservation->operator) {
+                return null;
+            }
 
-        if ($existing) {
-            return $existing;
-        }
+            // Idempotency: Prevent duplicate credits for the same reservation
+            $existing = WalletTransaction::query()
+                ->where('reservation_id', $reservation->id)
+                ->where('type', WalletTransactionType::BookingEarning)
+                ->lockForUpdate()
+                ->first();
 
-        $operator = $reservation->operator;
-        $splitDetails = $payment->split_details ?? [];
+            if ($existing) {
+                return $existing;
+            }
 
-        $grossAmount = (float) $payment->amount;
-        $platformCommission = (float) ($splitDetails['platform_commission'] ?? 0);
-        $operatorAmount = (float) ($splitDetails['operator_amount'] ?? ($splitDetails['agent_amount'] ?? ($grossAmount - $platformCommission)));
+            $operator = $reservation->operator;
+            $splitDetails = $lockedPayment->split_details ?? [];
 
-        if ($platformCommission <= 0 && $operatorAmount <= 0) {
-            $commissionRate = $operator->getEffectiveCommissionRate();
-            $platformCommission = round($grossAmount * $commissionRate, 2);
-            $operatorAmount = round($grossAmount - $platformCommission, 2);
-        }
+            $grossAmount = (float) $lockedPayment->amount;
+            $platformCommission = (float) ($splitDetails['platform_commission'] ?? 0);
+            $operatorAmount = (float) ($splitDetails['operator_amount'] ?? ($splitDetails['agent_amount'] ?? ($grossAmount - $platformCommission)));
 
-        // Check if departure date is already in the past or today
-        $departureDate = Carbon::parse($reservation->requested_date)->startOfDay();
-        $isDeparturePassed = $departureDate->isPast() || $departureDate->isToday();
+            if ($platformCommission <= 0 && $operatorAmount <= 0) {
+                $commissionRate = $operator->getEffectiveCommissionRate();
+                $platformCommission = round($grossAmount * $commissionRate, 2);
+                $operatorAmount = round($grossAmount - $platformCommission, 2);
+            }
 
-        $status = $isDeparturePassed
-            ? WalletTransactionStatus::Cleared
-            : WalletTransactionStatus::PendingEscrow;
+            // Check if departure date is already in the past or today
+            $departureDate = Carbon::parse($reservation->requested_date)->startOfDay();
+            $isDeparturePassed = $departureDate->isPast() || $departureDate->isToday();
 
-        $bookableTitle = $reservation->bookable instanceof Bookable
-            ? $reservation->bookable->getTitle()
-            : 'Tour Experience';
+            $status = $isDeparturePassed
+                ? WalletTransactionStatus::Cleared
+                : WalletTransactionStatus::PendingEscrow;
 
-        $earning = WalletTransaction::query()->create([
-            'operator_id' => $operator->id,
-            'reservation_id' => $reservation->id,
-            'type' => WalletTransactionType::BookingEarning,
-            'gross_amount' => $grossAmount,
-            'fee_amount' => $platformCommission,
-            'net_amount' => $operatorAmount,
-            'status' => $status,
-            'available_at' => $departureDate,
-            'description' => "Booking #{$reservation->code} ({$bookableTitle}) - {$reservation->guest_name}",
-        ]);
+            $bookableTitle = $reservation->bookable instanceof Bookable
+                ? $reservation->bookable->getTitle()
+                : 'Tour Experience';
 
-        if ($platformCommission > 0) {
-            WalletTransaction::query()->create([
+            $earning = WalletTransaction::query()->create([
                 'operator_id' => $operator->id,
                 'reservation_id' => $reservation->id,
-                'type' => WalletTransactionType::PlatformCommission,
-                'gross_amount' => 0,
+                'type' => WalletTransactionType::BookingEarning,
+                'gross_amount' => $grossAmount,
                 'fee_amount' => $platformCommission,
-                'net_amount' => 0,
+                'net_amount' => $operatorAmount,
                 'status' => $status,
                 'available_at' => $departureDate,
-                'description' => "Guest service fee for booking #{$reservation->code}",
+                'description' => "Booking #{$reservation->code} ({$bookableTitle}) - {$reservation->guest_name}",
             ]);
-        }
 
-        return $earning;
+            if ($platformCommission > 0) {
+                WalletTransaction::query()->create([
+                    'operator_id' => $operator->id,
+                    'reservation_id' => $reservation->id,
+                    'type' => WalletTransactionType::PlatformCommission,
+                    'gross_amount' => 0,
+                    'fee_amount' => $platformCommission,
+                    'net_amount' => 0,
+                    'status' => $status,
+                    'available_at' => $departureDate,
+                    'description' => "Guest service fee for booking #{$reservation->code}",
+                ]);
+            }
+
+            return $earning;
+        });
     }
 
     /**
@@ -123,20 +129,24 @@ class WalletService
         }
 
         $transferFee = $amount < self::PAYOUT_FEE_WAIVER_AMOUNT ? self::PAYOUT_TRANSFER_FEE : 0.0;
-        $availableBalance = $operator->getAvailableBalance();
-        if (($amount + $transferFee) > $availableBalance) {
-            throw ValidationException::withMessages([
-                'amount' => $transferFee > 0
-                    ? __('Payouts under Rp 500.000 include a Rp 2.500 transfer fee. You need Rp :needed available.', [
-                        'needed' => number_format($amount + $transferFee, 0, ',', '.'),
-                    ])
-                    : __('Requested amount exceeds your available balance of Rp :balance.', [
-                        'balance' => number_format($availableBalance, 0, ',', '.'),
-                    ]),
-            ]);
-        }
 
         return DB::transaction(function () use ($operator, $amount, $notes, $transferFee): PayoutRequest {
+            /** @var Operator|null $lockedOperator */
+            $lockedOperator = Operator::query()->whereKey($operator->id)->lockForUpdate()->first();
+
+            $availableBalance = $lockedOperator ? $lockedOperator->getAvailableBalance() : 0.0;
+            if (($amount + $transferFee) > $availableBalance) {
+                throw ValidationException::withMessages([
+                    'amount' => $transferFee > 0
+                        ? __('Payouts under Rp 500.000 include a Rp 2.500 transfer fee. You need Rp :needed available.', [
+                            'needed' => number_format($amount + $transferFee, 0, ',', '.'),
+                        ])
+                        : __('Requested amount exceeds your available balance of Rp :balance.', [
+                            'balance' => number_format($availableBalance, 0, ',', '.'),
+                        ]),
+                ]);
+            }
+
             /** @var PayoutRequest $payout */
             $payout = PayoutRequest::query()->create([
                 'operator_id' => $operator->id,

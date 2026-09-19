@@ -397,4 +397,73 @@ class OperatorActivitySlackNotifier
             ]);
         }
     }
+
+    public function testAlert(string $adminName, ?string $adminEmail = null): bool
+    {
+        $url = $this->webhookUrl();
+
+        if ($url === null) {
+            return false;
+        }
+
+        $card = [
+            'type' => 'card',
+            'title' => [
+                'type' => 'mrkdwn',
+                'text' => '🔔 Platform Test Alert',
+                'verbatim' => false,
+            ],
+            'subtitle' => [
+                'type' => 'mrkdwn',
+                'text' => 'Platform Settings Test Notification',
+                'verbatim' => false,
+            ],
+            'body' => [
+                'type' => 'mrkdwn',
+                'text' => "Slack operator activity alerts are configured correctly.\nTriggered by: {$adminName}".($adminEmail ? " ({$adminEmail})" : ''),
+                'verbatim' => false,
+            ],
+            'subtext' => [
+                'type' => 'mrkdwn',
+                'text' => now()->timezone((string) config('app.timezone'))->format('M j, Y · H:i'),
+                'verbatim' => false,
+            ],
+        ];
+
+        $iconUrl = $this->iconUrl();
+
+        if ($iconUrl !== null) {
+            $card = [
+                'icon' => [
+                    'type' => 'image',
+                    'image_url' => $iconUrl,
+                    'alt_text' => (string) config('app.name', 'TravelEngine'),
+                ],
+                ...$card,
+            ];
+        }
+
+        $payload = [
+            'text' => "Platform Slack notification test by {$adminName}",
+            'blocks' => [$card],
+        ];
+
+        try {
+            Http::timeout(5)
+                ->connectTimeout(3)
+                ->retry(2, 200, fn (Throwable $exception): bool => $exception instanceof ConnectionException)
+                ->post($url, $payload)
+                ->throw();
+
+            return true;
+        } catch (Throwable $exception) {
+            report($exception);
+            Log::warning('Slack test alert webhook failed.', [
+                'admin' => $adminName,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
 }

@@ -21,7 +21,6 @@
 
     @php
         $platform = \App\Models\PlatformSetting::current();
-        $dokuMode = $platform->getDokuMode();
         $totalOperators = \App\Models\Operator::count();
         $pendingPayouts = \App\Models\PayoutRequest::where('status', \App\Enums\PayoutStatus::Pending)->count();
         $activeAnnouncements = \App\Models\PlatformAnnouncement::active()->count();
@@ -68,16 +67,16 @@
                     {{ __('Plans') }}
                 </x-nav-link>
 
+                <x-nav-link :href="route('admin.subscriptions.index')" icon="fa-receipt" :active="request()->routeIs('admin.subscriptions.*')">
+                    {{ __('Subscriptions') }}
+                </x-nav-link>
+
                 <x-nav-link :href="route('admin.payouts.index')" icon="fa-money-bill-transfer" :active="request()->routeIs('admin.payouts.*')" :badge="$pendingPayouts">
-                    {{ __('Payouts') }}
+                    {{ __('Operator payouts') }}
                 </x-nav-link>
 
                 <x-nav-link :href="route('admin.coupons.index')" icon="fa-ticket" :active="request()->routeIs('admin.coupons.*')">
                     {{ __('Coupons') }}
-                </x-nav-link>
-
-                <x-nav-link :href="route('admin.payments.index')" icon="fa-credit-card" :active="request()->routeIs('admin.payments.*')">
-                    {{ __('Guest payments') }}
                 </x-nav-link>
             </x-nav-section>
 
@@ -86,29 +85,14 @@
                     {{ __('Notices') }}
                 </x-nav-link>
 
+                <x-nav-link :href="route('admin.admins.index')" icon="fa-shield-halved" :active="request()->routeIs('admin.admins.*')">
+                    {{ __('Administrators') }}
+                </x-nav-link>
+
                 <x-nav-link :href="route('admin.platform.edit')" icon="fa-sliders" :active="request()->routeIs('admin.platform.*')">
                     {{ __('Settings') }}
                 </x-nav-link>
             </x-nav-section>
-
-            <div class="rounded-xl bg-white/5 p-3">
-                <p class="text-[10px] font-bold uppercase tracking-wider text-op-subtle">{{ __('Checkout') }}</p>
-                <div class="mt-2 flex items-center justify-between gap-2">
-                    <span class="text-xs font-semibold text-op-ink">{{ __('Guest checkout') }}</span>
-                    <span @class([
-                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                        'bg-emerald-400/15 text-emerald-300' => $dokuMode->value === 'live',
-                        'bg-amber-400/15 text-amber-300' => $dokuMode->value !== 'live',
-                    ])>
-                        <span @class([
-                            'h-1.5 w-1.5 rounded-full',
-                            'bg-emerald-400' => $dokuMode->value === 'live',
-                            'bg-amber-400' => $dokuMode->value !== 'live',
-                        ])></span>
-                        {{ $dokuMode->value === 'live' ? __('Live') : __('Test') }}
-                    </span>
-                </div>
-            </div>
         </nav>
 
         <div class="relative z-20 shrink-0 p-3">

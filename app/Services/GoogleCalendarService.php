@@ -48,12 +48,22 @@ class GoogleCalendarService
     }
 
     /**
+     * Build a 1-click Google Calendar subscription web URL for an iCal feed.
+     */
+    public function buildGoogleCalendarSubscriptionUrl(string $feedUrl): string
+    {
+        $webcalUrl = preg_replace('/^https?:\/\//i', 'webcal://', $feedUrl);
+
+        return 'https://calendar.google.com/calendar/r?cid='.urlencode($webcalUrl);
+    }
+
+    /**
      * Generate an RFC 5545 standard iCal calendar feed string for an operator.
      */
     public function generateIcalFeed(Operator $operator): string
     {
         $platformDomain = app(DomainResolverService::class)->getPlatformDomain();
-        $calName = $operator->name.' Bookings';
+        $calName = ($operator->name ?? 'Tour Operator').' Bookings';
 
         $reservations = $operator->reservations()
             ->whereIn('status', [
@@ -64,7 +74,15 @@ class GoogleCalendarService
             ->with('bookable')
             ->get();
 
-        $events = [];
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//TravelEngine Booking Platform//Tour Operator iCal Feed//EN',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            $this->foldIcalLine("X-WR-CALNAME:{$this->escapeIcalText($calName)}"),
+            'X-WR-TIMEZONE:UTC',
+        ];
 
         foreach ($reservations as $res) {
             $code = $res->code ?: strtoupper(substr($res->id, -8));
@@ -77,42 +95,64 @@ class GoogleCalendarService
                 : 'Tour Experience';
 
             $summary = $this->escapeIcalText("{$res->pax_count}x {$bookableTitle} - {$res->guest_name} (#{$code})");
+            $voucherUrl = route('storefront.reservation.receipt', $res);
+
             $description = $this->escapeIcalText(
                 "Booking Code: #{$code}\n"
                 ."Guest: {$res->guest_name}\n"
                 ."Contact: {$res->guest_contact}\n"
                 ."Pax: {$res->pax_count}\n"
                 ."Status: {$res->status->label()}\n"
-                .'Voucher: '.route('storefront.reservation.receipt', $res)
+                ."Voucher: {$voucherUrl}"
             );
 
-            $events[] = implode("\r\n", [
+            $location = $this->escapeIcalText(
+                $res->pickup_location ?: ($operator->name ?? 'Tour Operator')
+            );
+
+            $eventStatus = $res->status->isPendingConfirmation() ? 'TENTATIVE' : 'CONFIRMED';
+
+            $eventProps = [
                 'BEGIN:VEVENT',
-                "UID:reservation-{$res->id}@{$platformDomain}",
+                $this->foldIcalLine("UID:reservation-{$res->id}@{$platformDomain}"),
                 "DTSTAMP:{$dtstamp}",
                 "DTSTART;VALUE=DATE:{$startDate}",
                 "DTEND;VALUE=DATE:{$endDate}",
-                "SUMMARY:{$summary}",
-                "DESCRIPTION:{$description}",
-                'STATUS:CONFIRMED',
+                $this->foldIcalLine("SUMMARY:{$summary}"),
+                $this->foldIcalLine("DESCRIPTION:{$description}"),
+                $this->foldIcalLine("LOCATION:{$location}"),
+                $this->foldIcalLine("URL:{$voucherUrl}"),
+                "STATUS:{$eventStatus}",
                 'END:VEVENT',
-            ]);
+            ];
+
+            foreach ($eventProps as $prop) {
+                $lines[] = $prop;
+            }
         }
 
-        $body = implode("\r\n", $events);
+        $lines[] = 'END:VCALENDAR';
+        $lines[] = '';
 
-        return implode("\r\n", [
-            'BEGIN:VCALENDAR',
-            'VERSION:2.0',
-            'PRODID:-//TravelEngine Booking Platform//Tour Operator iCal Feed//EN',
-            'CALSCALE:GREGORIAN',
-            'METHOD:PUBLISH',
-            "X-WR-CALNAME:{$this->escapeIcalText($calName)}",
-            'X-WR-TIMEZONE:UTC',
-            $body,
-            'END:VCALENDAR',
-            '',
-        ]);
+        return implode("\r\n", $lines);
+    }
+
+    /**
+     * Fold lines to maximum 75 octets as specified in RFC 5545 Section 3.1.
+     */
+    protected function foldIcalLine(string $line): string
+    {
+        if (strlen($line) <= 75) {
+            return $line;
+        }
+
+        $result = '';
+        while (strlen($line) > 75) {
+            $result .= substr($line, 0, 75)."\r\n ";
+            $line = substr($line, 75);
+        }
+
+        return $result.$line;
     }
 
     /**

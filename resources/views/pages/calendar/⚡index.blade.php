@@ -76,7 +76,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
         icon="fa-calendar-days"
     >
         <x-slot:actions>
-            <x-button type="button" variant="secondary" wire:click="openGoogleSyncModal">
+            <x-button type="button" variant="secondary" x-data x-on:click="$dispatch('open-modal', 'google-calendar-sync')">
                 <i class="fa-brands fa-google text-sm"></i>
                 <span>{{ __('Sync iCal Feed') }}</span>
                 @if (! $this->hasGoogleCalendarFeature)
@@ -173,76 +173,157 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
         @endif
     </div>
 
-    <!-- Google / Apple Calendar Live Sync Modal -->
+    <!-- Google / Apple / Outlook Calendar Live Sync Modal -->
     <x-modal name="google-calendar-sync" maxWidth="lg">
         @php
             $feedToken = $this->currentOperator?->getCalendarFeedToken() ?? '';
             $feedUrl = $feedToken ? route('calendar.feed', ['token' => $feedToken]) : '';
+            $webcalUrl = $feedUrl ? preg_replace('/^https?:\/\//i', 'webcal://', $feedUrl) : '';
+            $googleSubUrl = $feedUrl ? 'https://calendar.google.com/calendar/r?cid=' . urlencode($webcalUrl) : '';
+            $feedHost = parse_url($feedUrl, PHP_URL_HOST);
+            $isLocalHost = in_array($feedHost, ['localhost', '127.0.0.1'], true)
+                || str_ends_with((string) $feedHost, '.test')
+                || str_ends_with((string) $feedHost, '.emvi')
+                || str_ends_with((string) $feedHost, '.local');
         @endphp
         <div class="p-6 space-y-5" x-data="{ copied: false }">
             <div class="flex items-center gap-3">
                 <span class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-lg">
-                    <i class="fa-brands fa-google"></i>
+                    <i class="fa-solid fa-calendar-check"></i>
                 </span>
                 <div>
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-                        {{ __('Sync with Google & Apple Calendar') }}
+                        {{ __('Calendar Live Sync & iCal Feed') }}
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        {{ __('Automatically display incoming reservations in your personal calendar in real-time.') }}
+                        {{ __('Automatically stream reservations to Google Calendar, Apple Calendar, and Outlook in real-time.') }}
                     </p>
                 </div>
             </div>
 
-            <!-- Live Feed URL Box -->
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 space-y-2">
-                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                    {{ __('Your Private Live Calendar Feed URL (iCal / .ics)') }}
-                </span>
-                <div class="flex items-center gap-2">
-                    <input
-                        type="text"
-                        readonly
-                        value="{{ $feedUrl }}"
-                        id="calendarFeedUrlInput"
-                        class="h-9 w-full px-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono text-xs text-slate-700 dark:text-slate-300 select-all"
-                    />
-                    <button
-                        type="button"
-                        @click="navigator.clipboard.writeText('{{ $feedUrl }}'); copied = true; setTimeout(() => copied = false, 2500)"
-                        class="h-9 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-2xs transition shrink-0 flex items-center gap-1.5 cursor-pointer"
-                    >
-                        <i class="fa-solid" :class="copied ? 'fa-check' : 'fa-copy'"></i>
-                        <span x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy') }}'">{{ __('Copy') }}</span>
-                    </button>
+            @if (! $this->hasGoogleCalendarFeature)
+                <!-- Feature Gating Notice inside modal -->
+                <div class="p-5 rounded-3xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 space-y-3 text-center">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center text-xl mx-auto">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">{{ __('Growth Tier Feature') }}</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            {{ __('Live calendar subscriptions, automated manifest run-sheets, and WhatsApp dispatch are unlocked on Growth and Agency plans.') }}
+                        </p>
+                    </div>
+                    <div class="pt-1">
+                        <x-button :href="route('settings.plan')" variant="primary" class="w-full justify-center">
+                            <span>{{ __('Upgrade to Growth Plan') }}</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </x-button>
+                    </div>
                 </div>
-            </div>
+            @else
+                <!-- 1-Click Subscription Quick Actions -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <a
+                        href="{{ $googleSubUrl }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition text-left flex flex-col justify-between group"
+                    >
+                        <i class="fa-brands fa-google text-rose-500 text-lg"></i>
+                        <div class="mt-2">
+                            <span class="font-bold text-xs text-slate-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ __('Google') }}</span>
+                            <span class="text-[10px] text-slate-400 block">{{ __('1-Click Add') }}</span>
+                        </div>
+                    </a>
 
-            <!-- How to Add to Google Calendar Steps -->
-            <div class="space-y-3 text-xs">
-                <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-circle-info text-indigo-500"></i>
-                    {{ __('How to subscribe in Google Calendar:') }}
-                </h4>
-                <ol class="list-decimal list-inside space-y-1.5 text-slate-600 dark:text-slate-300 pl-1">
-                    <li>{{ __('Open Google Calendar on your browser.') }}</li>
-                    <li>{{ __('On the left sidebar, click the "+" icon next to "Other calendars".') }}</li>
-                    <li>{{ __('Select "From URL".') }}</li>
-                    <li>{{ __('Paste the feed URL copied above and click "Add calendar".') }}</li>
-                </ol>
-            </div>
+                    <a
+                        href="{{ $webcalUrl }}"
+                        class="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition text-left flex flex-col justify-between group"
+                    >
+                        <i class="fa-brands fa-apple text-slate-800 dark:text-white text-lg"></i>
+                        <div class="mt-2">
+                            <span class="font-bold text-xs text-slate-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ __('Apple / Outlook') }}</span>
+                            <span class="text-[10px] text-slate-400 block">{{ __('Direct Webcal') }}</span>
+                        </div>
+                    </a>
+
+                    <a
+                        href="{{ $feedUrl }}"
+                        download="bookings.ics"
+                        class="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition text-left flex flex-col justify-between group"
+                    >
+                        <i class="fa-solid fa-file-arrow-down text-indigo-600 dark:text-indigo-400 text-lg"></i>
+                        <div class="mt-2">
+                            <span class="font-bold text-xs text-slate-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ __('Download .ics') }}</span>
+                            <span class="text-[10px] text-slate-400 block">{{ __('Offline File') }}</span>
+                        </div>
+                    </a>
+                </div>
+
+                @if ($isLocalHost)
+                    <!-- Local environment advice -->
+                    <div class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                        <div class="flex items-center gap-1.5 font-bold">
+                            <i class="fa-solid fa-circle-info text-amber-600"></i>
+                            <span>{{ __('Local Development Host (:host)', ['host' => $feedHost]) }}</span>
+                        </div>
+                        <p class="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                            {{ __('Google Calendar cloud servers cannot resolve local domains (:host). Use "Apple / Outlook" or "Download .ics" for local testing. On production, Google Calendar subscribes automatically.', ['host' => $feedHost]) }}
+                        </p>
+                    </div>
+                @endif
+
+                <!-- Live Feed URL Box -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 space-y-2">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                        {{ __('Your Private Live Calendar Feed URL (iCal / .ics)') }}
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <input
+                            type="text"
+                            readonly
+                            value="{{ $feedUrl }}"
+                            id="calendarFeedUrlInput"
+                            class="h-9 w-full px-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono text-xs text-slate-700 dark:text-slate-300 select-all"
+                        />
+                        <button
+                            type="button"
+                            @click="
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    navigator.clipboard.writeText('{{ $feedUrl }}');
+                                } else {
+                                    const el = document.getElementById('calendarFeedUrlInput');
+                                    el.select();
+                                    document.execCommand('copy');
+                                }
+                                copied = true;
+                                setTimeout(() => copied = false, 2500)
+                            "
+                            class="h-9 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-2xs transition shrink-0 flex items-center gap-1.5 cursor-pointer"
+                        >
+                            <i class="fa-solid" :class="copied ? 'fa-check' : 'fa-copy'"></i>
+                            <span x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy') }}'">{{ __('Copy') }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- How to Add Steps -->
+                <div class="space-y-2.5 text-xs">
+                    <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-circle-question text-indigo-500"></i>
+                        {{ __('Manual Subscription Steps:') }}
+                    </h4>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-300 pl-1">
+                        <li>{{ __('Copy the feed URL above.') }}</li>
+                        <li>{{ __('In Google Calendar: click "+" next to "Other calendars" > "From URL".') }}</li>
+                        <li>{{ __('In Apple Calendar (Mac/iOS): click "File" > "New Calendar Subscription".') }}</li>
+                        <li>{{ __('In Microsoft Outlook: click "Add Calendar" > "Subscribe from web".') }}</li>
+                    </ol>
+                </div>
+            @endif
 
             <!-- Modal Actions -->
-            <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-800">
-                <a
-                    href="https://calendar.google.com/calendar/r/settings/addbyurl"
-                    target="_blank"
-                    class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
-                >
-                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                    <span>{{ __('Open Google Calendar Settings') }}</span>
-                </a>
-
+            <div class="flex items-center justify-end pt-4 border-t border-slate-100 dark:border-zinc-800">
                 <x-button type="button" variant="secondary" x-on:click="$dispatch('close-modal', 'google-calendar-sync')">
                     {{ __('Done') }}
                 </x-button>

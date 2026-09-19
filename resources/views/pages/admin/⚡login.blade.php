@@ -2,15 +2,28 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component {
+new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component
+{
     public string $email = '';
+
     public string $password = '';
+
     public bool $remember = true;
+
+    /**
+     * Throttle key scoped to email + IP address (5 attempts / minute).
+     */
+    private function throttleKey(): string
+    {
+        return Str::lower($this->email).'|'.request()->ip();
+    }
 
     /**
      * Authenticate platform administrator.
@@ -22,7 +35,20 @@ new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component 
             'password' => ['required', 'string'],
         ]);
 
+        if (RateLimiter::tooManyAttempts('admin-login:'.$this->throttleKey(), 5)) {
+            $seconds = RateLimiter::availableIn('admin-login:'.$this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => trans('auth.throttle', [
+                    'seconds' => $seconds,
+                    'minutes' => ceil($seconds / 60),
+                ]),
+            ]);
+        }
+
         if (! Auth::attempt(['email' => $validated['email'], 'password' => $validated['password']], $this->remember)) {
+            RateLimiter::hit('admin-login:'.$this->throttleKey());
+
             throw ValidationException::withMessages([
                 'email' => __('These credentials do not match our platform records.'),
             ]);
@@ -35,12 +61,14 @@ new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component 
             Auth::logout();
             session()->invalidate();
             session()->regenerateToken();
+            RateLimiter::hit('admin-login:'.$this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => __('Access denied. This login portal is strictly reserved for platform administrators.'),
             ]);
         }
 
+        RateLimiter::clear('admin-login:'.$this->throttleKey());
         session()->regenerate();
 
         $this->redirectIntended(route('admin.dashboard'), navigate: true);

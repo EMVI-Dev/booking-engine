@@ -18,7 +18,8 @@ class CalendarFeedController extends Controller
 
         /** @var Operator|null $operator */
         $operator = Operator::query()
-            ->whereJsonContains('settings->calendar_feed_token', $cleanToken)
+            ->where('settings->calendar_feed_token', $cleanToken)
+            ->orWhereJsonContains('settings->calendar_feed_token', $cleanToken)
             ->first();
 
         if (! $operator) {
@@ -33,6 +34,8 @@ class CalendarFeedController extends Controller
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',
             'Expires' => '0',
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'GET, HEAD, OPTIONS',
         ]);
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Plan;
 use App\Models\PlatformCoupon;
 use App\Models\SubscriptionPayment;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class SubscriptionProrationService
@@ -204,44 +205,58 @@ class SubscriptionProrationService
         ?string $gatewayRef = null,
         ?string $gateway = null
     ): void {
-        if ($payment->status === 'completed') {
-            return;
+        $shouldNotify = false;
+        $operatorForNotification = null;
+        $fromPlanName = '';
+
+        DB::transaction(function () use ($payment, $gatewayRef, $gateway, &$shouldNotify, &$operatorForNotification, &$fromPlanName): void {
+            /** @var SubscriptionPayment|null $lockedPayment */
+            $lockedPayment = SubscriptionPayment::query()->whereKey($payment->id)->lockForUpdate()->first();
+
+            if (! $lockedPayment || $lockedPayment->status === 'completed') {
+                return;
+            }
+
+            $lockedPayment->update([
+                'status' => 'completed',
+                'gateway' => $gateway ?: $lockedPayment->gateway,
+                'gateway_ref' => $gatewayRef ?: $lockedPayment->gateway_ref,
+                'paid_at' => now(),
+            ]);
+
+            $operator = $lockedPayment->operator;
+            $targetPlan = $lockedPayment->plan;
+            $fromPlanName = $lockedPayment->previousPlan?->name ?? $operator->getPlan()->name;
+            $interval = $lockedPayment->billing_interval;
+            $autoRenew = (bool) ($lockedPayment->breakdown['auto_renew'] ?? true);
+
+            $now = now();
+            $expiresAt = ($interval === 'yearly') ? $now->copy()->addYear() : $now->copy()->addMonth();
+
+            $operator->update([
+                'plan_id' => $targetPlan->id,
+                'subscription_interval' => $interval,
+                'subscription_auto_renew' => $autoRenew,
+                'subscribed_at' => $now,
+                'plan_expires_at' => $targetPlan->isFree() ? null : $expiresAt,
+                'pending_plan_id' => null,
+                'pending_plan_action_at' => null,
+            ]);
+
+            $operator->unsetRelation('plan');
+            $operator->unsetRelation('pendingPlan');
+
+            $shouldNotify = true;
+            $operatorForNotification = $operator;
+        });
+
+        if ($shouldNotify && $operatorForNotification) {
+            $this->slack->subscriptionPaid(
+                $operatorForNotification->fresh() ?? $operatorForNotification,
+                $payment->fresh() ?? $payment,
+                $fromPlanName,
+            );
         }
-
-        $payment->update([
-            'status' => 'completed',
-            'gateway' => $gateway ?: $payment->gateway,
-            'gateway_ref' => $gatewayRef ?: $payment->gateway_ref,
-            'paid_at' => now(),
-        ]);
-
-        $operator = $payment->operator;
-        $targetPlan = $payment->plan;
-        $fromPlanName = $payment->previousPlan?->name ?? $operator->getPlan()->name;
-        $interval = $payment->billing_interval;
-        $autoRenew = (bool) ($payment->breakdown['auto_renew'] ?? true);
-
-        $now = now();
-        $expiresAt = ($interval === 'yearly') ? $now->copy()->addYear() : $now->copy()->addMonth();
-
-        $operator->update([
-            'plan_id' => $targetPlan->id,
-            'subscription_interval' => $interval,
-            'subscription_auto_renew' => $autoRenew,
-            'subscribed_at' => $now,
-            'plan_expires_at' => $targetPlan->isFree() ? null : $expiresAt,
-            'pending_plan_id' => null,
-            'pending_plan_action_at' => null,
-        ]);
-
-        $operator->unsetRelation('plan');
-        $operator->unsetRelation('pendingPlan');
-
-        $this->slack->subscriptionPaid(
-            $operator->fresh() ?? $operator,
-            $payment->fresh() ?? $payment,
-            $fromPlanName,
-        );
     }
 
     /**

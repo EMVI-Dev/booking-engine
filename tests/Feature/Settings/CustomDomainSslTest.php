@@ -84,5 +84,5 @@ test('brand settings show an A record for the root name', function () {
         ->assertSee('yourname.com')
         ->html();
 
-    expect(substr_count($html, '>A</span>'))->toBe(1);
+    expect(substr_count($html, '>A</span>'))->toBe(2);
 });

@@ -1,14 +1,12 @@
 <?php
 
 use App\Enums\OperatorStatus;
-use App\Enums\PaymentStatus;
-use App\Enums\ReservationStatus;
+use App\Enums\PayoutStatus;
 use App\Models\Operator;
-use App\Models\Payment;
+use App\Models\PayoutRequest;
 use App\Models\Plan;
-use App\Models\Reservation;
+use App\Models\PlatformSetting;
 use App\Models\SubscriptionPayment;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -16,44 +14,9 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
+new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
+{
     public string $period = '12m'; // '30d', '6m', '12m'
-
-    #[Computed]
-    public function totalGmv(): float
-    {
-        return (float) Payment::where('status', PaymentStatus::Paid)->sum('amount');
-    }
-
-    #[Computed]
-    public function currentMonthGmv(): float
-    {
-        return (float) Payment::where('status', PaymentStatus::Paid)
-            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
-            ->sum('amount');
-    }
-
-    #[Computed]
-    public function previousMonthGmv(): float
-    {
-        $start = now()->subMonth()->startOfMonth();
-        $end = now()->subMonth()->endOfMonth();
-
-        return (float) Payment::where('status', PaymentStatus::Paid)
-            ->whereBetween('created_at', [$start, $end])
-            ->sum('amount');
-    }
-
-    #[Computed]
-    public function mtdGrowthPercentage(): float
-    {
-        $prev = $this->previousMonthGmv;
-        if ($prev <= 0) {
-            return $this->currentMonthGmv > 0 ? 100.0 : 0.0;
-        }
-
-        return round((($this->currentMonthGmv - $prev) / $prev) * 100, 1);
-    }
 
     #[Computed]
     public function currentMrr(): float
@@ -98,6 +61,30 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
     }
 
     #[Computed]
+    public function pendingOperatorsCount(): int
+    {
+        return Operator::where('status', OperatorStatus::Pending)->count();
+    }
+
+    #[Computed]
+    public function pendingPayoutsCount(): int
+    {
+        return PayoutRequest::where('status', PayoutStatus::Pending)->count();
+    }
+
+    #[Computed]
+    public function pendingPayoutsAmount(): float
+    {
+        return (float) PayoutRequest::where('status', PayoutStatus::Pending)->sum('amount');
+    }
+
+    #[Computed]
+    public function isPlatformMaintenance(): bool
+    {
+        return PlatformSetting::current()->isPlatformMaintenance();
+    }
+
+    #[Computed]
     public function monthlyTrends(): array
     {
         $monthsCount = match ($this->period) {
@@ -106,99 +93,92 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
             default => 12,
         };
 
+        $rangeStart = now()->subMonths($monthsCount - 1)->startOfMonth();
+        $rangeEnd = now()->endOfMonth();
+
+        // Driver-aware month grouping: MySQL uses DATE_FORMAT, SQLite uses strftime.
+        $isSqlite = DB::getDriverName() === 'sqlite';
+        $monthExpr = $isSqlite
+            ? "strftime('%Y-%m', created_at) as month_key"
+            : "DATE_FORMAT(created_at, '%Y-%m') as month_key";
+
+        $subRevByMonth = DB::table('subscription_payments')
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+            ->groupBy('month_key')
+            ->selectRaw("{$monthExpr}, SUM(net_amount_paid) as total")
+            ->pluck('total', 'month_key');
+
         $months = [];
-        $maxGmv = 1.0;
+        $maxRevenue = 1.0;
 
         for ($i = $monthsCount - 1; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $start = (clone $date)->startOfMonth();
-            $end = (clone $date)->endOfMonth();
+            $key = $date->format('Y-m');
 
-            $gmv = (float) Payment::where('status', PaymentStatus::Paid)
-                ->whereBetween('created_at', [$start, $end])
-                ->sum('amount');
+            $rev = (float) ($subRevByMonth[$key] ?? 0);
 
-            $subRev = (float) SubscriptionPayment::where('status', 'completed')
-                ->whereBetween('created_at', [$start, $end])
-                ->sum('net_amount_paid');
-
-            $count = Reservation::whereBetween('created_at', [$start, $end])->count();
-
-            if ($gmv > $maxGmv) {
-                $maxGmv = $gmv;
+            if ($rev > $maxRevenue) {
+                $maxRevenue = $rev;
             }
 
             $months[] = [
                 'label' => $date->format('M Y'),
                 'short' => $date->format('M'),
-                'gmv' => $gmv,
-                'sub_revenue' => $subRev,
-                'bookings_count' => $count,
+                'revenue' => $rev,
             ];
         }
 
         return [
             'data' => $months,
-            'maxGmv' => $maxGmv,
+            'maxRevenue' => $maxRevenue,
         ];
     }
 
     #[Computed]
-    public function topOperators(): Collection
+    public function operatorsForReview(): Collection
     {
         return Operator::query()
             ->with(['plan'])
-            ->withCount(['reservations'])
-            ->get()
-            ->map(function (Operator $operator) {
-                $gmv = (float) Payment::where('status', PaymentStatus::Paid)
-                    ->whereHas('reservation', fn ($q) => $q->where('operator_id', $operator->id))
-                    ->sum('amount');
-
-                $operator->calculated_gmv = $gmv;
-
-                return $operator;
-            })
-            ->sortByDesc('calculated_gmv')
-            ->take(5)
-            ->values();
-    }
-
-    #[Computed]
-    public function recentTransactions(): Collection
-    {
-        return Payment::query()
-            ->where('status', PaymentStatus::Paid)
-            ->with(['reservation.operator', 'reservation.guest'])
+            ->withCount(['packages', 'products'])
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->latest('created_at')
-            ->take(10)
+            ->take(6)
             ->get();
     }
 
     #[Computed]
     public function planDistribution(): array
     {
+        $countByPlan = Operator::query()
+            ->selectRaw('plan_id, COUNT(*) as cnt')
+            ->groupBy('plan_id')
+            ->pluck('cnt', 'plan_id');
+
+        $totalOperators = $countByPlan->sum();
+
         $plans = Plan::orderBy('sort_order')->get();
         $distribution = [];
 
         foreach ($plans as $plan) {
-            $count = Operator::where('plan_id', $plan->id)->count();
+            $count = (int) ($countByPlan[$plan->id] ?? 0);
             $distribution[] = [
                 'name' => $plan->name,
                 'slug' => $plan->slug,
                 'count' => $count,
                 'price' => (float) $plan->price_monthly,
+                'total_operators' => $totalOperators,
             ];
         }
 
-        // Also add Free / Unassigned
-        $unassigned = Operator::whereNull('plan_id')->count();
+        $unassigned = (int) ($countByPlan[null] ?? $countByPlan->get(null, 0));
         if ($unassigned > 0) {
             $distribution[] = [
                 'name' => 'Unassigned',
                 'slug' => 'starter',
                 'count' => $unassigned,
                 'price' => 0.0,
+                'total_operators' => $totalOperators,
             ];
         }
 
@@ -209,109 +189,149 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
 <div class="space-y-6">
     <div class="op-hero">
         <x-page-header
-            :title="__('Money overview')"
-            :subtitle="__('What guests paid, and what operators pay for their plans.')"
+            :title="__('Platform overview')"
+            :subtitle="__('Operator subscriptions, pending approvals, and platform health.')"
             icon="fa-chart-pie"
         >
             <x-slot:actions>
-                <x-filter-tabs padded>
-                    <x-filter-tab wire:click="$set('period', '30d')" :active="$period === '30d'">
-                        {{ __('30 Days') }}
-                    </x-filter-tab>
-                    <x-filter-tab wire:click="$set('period', '6m')" :active="$period === '6m'">
-                        {{ __('6 Months') }}
-                    </x-filter-tab>
-                    <x-filter-tab wire:click="$set('period', '12m')" :active="$period === '12m'">
-                        {{ __('12 Months') }}
-                    </x-filter-tab>
-                </x-filter-tabs>
+                @if ($this->isPlatformMaintenance)
+                    <span class="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                        <span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        {{ __('Maintenance active') }}
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                        {{ __('Platform operational') }}
+                    </span>
+                @endif
             </x-slot:actions>
         </x-page-header>
     </div>
 
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <x-metric-card
-            :label="__('All guest payments')"
-            :value="'Rp '.number_format($this->totalGmv, 0, ',', '.')"
-            :hint="__('Every paid booking, all time')"
-            icon="fa-coins"
-            tone="featured"
-        />
-
-        <x-metric-card
-            :label="__('This month')"
-            :value="'Rp '.number_format($this->currentMonthGmv, 0, ',', '.')"
-            icon="fa-calendar-check"
-            tone="success"
-        >
-            <x-slot:meta>
-                @if ($this->mtdGrowthPercentage >= 0)
-                    <span class="font-semibold text-emerald-600 dark:text-emerald-400">
-                        <i class="fa-solid fa-arrow-trend-up"></i> +{{ $this->mtdGrowthPercentage }}%
-                    </span>
-                @else
-                    <span class="font-semibold text-rose-600 dark:text-rose-400">
-                        <i class="fa-solid fa-arrow-trend-down"></i> {{ $this->mtdGrowthPercentage }}%
-                    </span>
+    {{-- Items Needing Attention Banner --}}
+    @if ($this->isPlatformMaintenance || $this->pendingOperatorsCount > 0 || $this->pendingPayoutsCount > 0)
+        <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-2">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>{{ __('Items needing attention') }}</span>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-6 text-xs font-medium text-slate-700 dark:text-slate-300">
+                @if ($this->isPlatformMaintenance)
+                    <div class="flex items-center gap-2">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                        <span>{{ __('Maintenance mode is active — public storefront transactions are paused.') }}</span>
+                        <a href="{{ route('admin.platform.edit') }}" wire:navigate class="font-bold underline text-amber-700 dark:text-amber-400 hover:text-amber-600">
+                            {{ __('Settings') }} &rarr;
+                        </a>
+                    </div>
                 @endif
-                <span>{{ __('vs previous month') }}</span>
-            </x-slot:meta>
-        </x-metric-card>
 
+                @if ($this->pendingOperatorsCount > 0)
+                    <div class="flex items-center gap-2">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                        <span>{{ __(':count operator(s) awaiting approval.', ['count' => $this->pendingOperatorsCount]) }}</span>
+                        <a href="{{ route('admin.operators.index', ['status_filter' => 'pending']) }}" wire:navigate class="font-bold underline text-amber-700 dark:text-amber-400 hover:text-amber-600">
+                            {{ __('Review operators') }} &rarr;
+                        </a>
+                    </div>
+                @endif
+
+                @if ($this->pendingPayoutsCount > 0)
+                    <div class="flex items-center gap-2">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                        <span>{{ __(':count payout request(s) pending (Rp :amount).', ['count' => $this->pendingPayoutsCount, 'amount' => number_format($this->pendingPayoutsAmount, 0, ',', '.')]) }}</span>
+                        <a href="{{ route('admin.payouts.index') }}" wire:navigate class="font-bold underline text-amber-700 dark:text-amber-400 hover:text-amber-600">
+                            {{ __('Review payouts') }} &rarr;
+                        </a>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
+
+    {{-- Top 4 Key Metric Cards --}}
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <x-metric-card
             :label="__('Plan fees this month')"
             :value="'Rp '.number_format($this->currentMrr, 0, ',', '.')"
-            :hint="__('What operators pay for Growth and Agency')"
+            :hint="__('Monthly recurring plan revenue')"
             icon="fa-repeat"
+            tone="featured"
             :href="route('admin.plans.index')"
+        />
+
+        <x-metric-card
+            :label="__('Subscription revenue')"
+            :value="'Rp '.number_format($this->totalSubscriptionRevenue, 0, ',', '.')"
+            :hint="__('Total plan upgrades collected')"
+            icon="fa-vault"
+            tone="success"
+            :href="route('admin.subscriptions.index')"
         />
 
         <x-metric-card
             :label="__('Operators')"
             :value="$this->approvedOperatorsCount"
             :suffix="'/ '.$this->totalOperatorsCount.' '.__('total')"
-            :hint="__('Approved and selling')"
+            :hint="__('Approved and active')"
             icon="fa-users-gear"
             :href="route('admin.operators.index')"
         />
+
+        <x-metric-card
+            :label="__('Pending verification')"
+            :value="$this->pendingOperatorsCount"
+            :hint="$this->pendingOperatorsCount > 0 ? __('Awaiting your review') : __('All accounts verified')"
+            icon="fa-user-clock"
+            :tone="$this->pendingOperatorsCount > 0 ? 'warning' : 'neutral'"
+            :href="route('admin.operators.index', ['status_filter' => 'pending'])"
+        />
     </div>
 
-    <!-- Monthly GMV Trend Visualizer -->
+    <!-- Monthly Platform Revenue Visualizer -->
     <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-5">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#1e2433]">
             <div>
                 <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                     <i class="fa-solid fa-chart-column text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                    {{ __('Payments over time') }}
+                    {{ __('Subscription revenue over time') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('How much guests paid each month.') }}
+                    {{ __('Platform fee earnings from operator plans.') }}
                 </p>
             </div>
-            <div class="flex items-center gap-4 text-xs font-semibold">
-                <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                    <span class="w-3 h-3 rounded bg-[#FFEF4D] inline-block"></span>
-                    {{ __('Bookings') }}
-                </span>
+            <div class="flex items-center gap-3">
+                <x-filter-tabs padded>
+                    <x-filter-tab wire:click="$set('period', '30d')" :active="$period === '30d'">
+                        {{ __('30d') }}
+                    </x-filter-tab>
+                    <x-filter-tab wire:click="$set('period', '6m')" :active="$period === '6m'">
+                        {{ __('6m') }}
+                    </x-filter-tab>
+                    <x-filter-tab wire:click="$set('period', '12m')" :active="$period === '12m'">
+                        {{ __('12m') }}
+                    </x-filter-tab>
+                </x-filter-tabs>
             </div>
         </div>
 
         @php
             $trends = $this->monthlyTrends;
             $data = $trends['data'];
-            $maxGmv = max($trends['maxGmv'], 1);
+            $maxRevenue = max($trends['maxRevenue'], 1);
         @endphp
 
         <!-- Bar Visualizer -->
         <div class="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-3 items-end pt-8 pb-2 min-h-[220px]">
             @foreach ($data as $m)
                 @php
-                    $pct = min(100, max(6, round(($m['gmv'] / $maxGmv) * 100)));
+                    $pct = $m['revenue'] > 0 ? min(100, max(8, round(($m['revenue'] / $maxRevenue) * 100))) : 4;
                 @endphp
                 <div class="flex flex-col items-center gap-2 group h-full justify-end">
                     <!-- Tooltip Hover Value -->
                     <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-xs font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-1 px-2 rounded-lg whitespace-nowrap shadow-md pointer-events-none mb-1">
-                        Rp {{ number_format($m['gmv'] / 1000, 0) }}k ({{ $m['bookings_count'] }} res)
+                        Rp {{ number_format($m['revenue'] / 1000, 0) }}k
                     </div>
 
                     <!-- Bar -->
@@ -331,18 +351,18 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
         </div>
     </div>
 
-    <!-- Dual Column: Top Operators & Plan Distribution -->
+    <!-- Dual Column: Operators & Plan Distribution + Shortcuts -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left: Top Operators by GMV (2 Cols) -->
+        <!-- Left: Operators Directory (2 Cols) -->
         <div class="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
                 <div>
                     <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                        <i class="fa-solid fa-trophy text-amber-500"></i>
-                        {{ __('Top operators') }}
+                        <i class="fa-solid fa-users-gear text-amber-500"></i>
+                        {{ __('Operators') }}
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        {{ __('Who has taken the most guest payments.') }}
+                        {{ __('Recent registrations and pending verification accounts.') }}
                     </p>
                 </div>
                 <a href="{{ route('admin.operators.index') }}" wire:navigate class="text-xs font-bold text-[#8a7808] dark:text-[#FFEF4D] hover:underline">
@@ -351,7 +371,7 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
             </div>
 
             <div class="divide-y divide-slate-100 dark:divide-[#1e2433]">
-                @forelse ($this->topOperators as $index => $operator)
+                @forelse ($this->operatorsForReview as $index => $operator)
                     <div class="py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-[#141824]/50 px-2 rounded-2xl transition">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-6 text-center font-black text-xs text-slate-400">{{ $index + 1 }}</span>
@@ -367,176 +387,97 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component {
                                     {{ $operator->name }}
                                 </a>
                                 <span class="text-xs text-slate-500 dark:text-slate-400">
-                                    {{ $operator->reservations_count }} {{ __('reservations') }} &bull; {{ $operator->plan?->name ?? 'Free Tier' }}
+                                    {{ $operator->packages_count + $operator->products_count }} {{ __('offerings') }} &bull; {{ $operator->plan?->name ?? 'Free Tier' }}
                                 </span>
                             </div>
                         </div>
 
-                        <div class="text-right shrink-0">
-                            <div class="font-black text-sm text-slate-900 dark:text-white">
-                                Rp {{ number_format($operator->calculated_gmv, 0, ',', '.') }}
-                            </div>
-                            <span class="text-xs font-bold uppercase px-2.5 py-0.5 rounded-full {{ $operator->status === OperatorStatus::Approved ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-600' }}">
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="text-xs font-bold uppercase px-2.5 py-0.5 rounded-full {{ $operator->status === OperatorStatus::Approved ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : ($operator->status === OperatorStatus::Pending ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' : 'bg-slate-100 text-slate-600') }}">
                                 {{ $operator->status->label() }}
                             </span>
+                            <a href="{{ route('admin.operators.show', $operator->id) }}" wire:navigate class="hidden sm:inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-[#141821] border border-slate-200 dark:border-[#1e2433] hover:border-slate-300 dark:hover:border-slate-600 transition text-slate-700 dark:text-slate-300">
+                                {{ $operator->status === OperatorStatus::Pending ? __('Review') : __('Manage') }}
+                            </a>
                         </div>
                     </div>
                 @empty
-                    <p class="text-xs text-slate-400 py-6 text-center">{{ __('No operator sales recorded yet.') }}</p>
+                    <p class="text-xs text-slate-400 py-6 text-center">{{ __('No operators registered yet.') }}</p>
                 @endforelse
             </div>
         </div>
 
-        <!-- Right: Subscription Plans Breakdown (1 Col) -->
-        <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-            <div class="pb-3 border-b border-slate-100 dark:border-[#1e2433]">
-                <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-[#8a7808] dark:text-[#FFEF4D]"></i>
-                    {{ __('Plans') }}
-                </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('How many operators are on each plan.') }}
-                </p>
-            </div>
-
-            <div class="space-y-3">
-                @foreach ($this->planDistribution as $plan)
-                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{{ $plan['name'] }}</span>
-                            <span class="font-black text-sm text-[#8a7808] dark:text-[#FFEF4D]">
-                                {{ $plan['count'] }} {{ __('operators') }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                            <span>
-                                @if ($plan['price'] > 0)
-                                    Rp {{ number_format($plan['price'], 0, ',', '.') }}/mo
-                                @else
-                                    {{ __('Free Tier') }}
-                                @endif
-                            </span>
-                            <span>{{ round(($plan['count'] / max(1, Operator::count())) * 100) }}% {{ __('of total') }}</span>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="pt-2">
-                <a href="{{ route('admin.plans.index') }}" wire:navigate class="w-full h-9 flex items-center justify-center rounded-xl bg-[#FFEF4D]/15 hover:bg-[#FFEF4D]/25 text-[#8a7808] dark:text-[#FFEF4D] text-xs font-bold transition border border-[#FFEF4D]/30">
-                    <i class="fa-solid fa-sliders mr-1.5 text-xs"></i>
-                    {{ __('Edit plans') }}
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Platform-Wide Transactions Stream -->
-    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
-            <div>
-                <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-receipt text-emerald-500"></i>
-                    {{ __('Recent payments') }}
-                </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ __('Latest guest payments across all operators.') }}
-                </p>
-            </div>
-            <a href="{{ route('admin.payouts.index') }}" wire:navigate class="text-xs font-bold text-[#8a7808] dark:text-[#FFEF4D] hover:underline">
-                {{ __('View Payouts') }} &rarr;
-            </a>
-        </div>
-
-        <!-- Mobile Admin Transactions Feed Card List (md:hidden) -->
-        <div class="md:hidden space-y-3 transition-opacity duration-200" wire:loading.class="opacity-60">
-            @forelse ($this->recentTransactions as $payment)
-                <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="font-mono font-extrabold text-xs text-[#FFEF4D]">
-                            #{{ $payment->reservation?->code ?? substr($payment->id, 0, 8) }}
-                        </span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300">
-                            {{ strtoupper($payment->gateway) }}
-                        </span>
-                    </div>
-
-                    <div class="space-y-1">
-                        <h4 class="font-bold text-xs text-slate-900 dark:text-white">
-                            {{ $payment->reservation?->operator?->name ?? 'System' }} &bull; <span class="font-normal text-slate-500">{{ $payment->reservation?->guest_name ?? '-' }}</span>
-                        </h4>
-                    </div>
-
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#1e2433] text-xs">
-                        <span class="text-slate-400 text-[10px] uppercase font-bold">{{ __('Amount') }}</span>
-                        <span class="font-mono font-black text-slate-900 dark:text-white">
-                            Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}
-                        </span>
-                    </div>
+        <!-- Right: Subscription Plans & Quick Actions (1 Col) -->
+        <div class="space-y-6">
+            <!-- Plans Breakdown -->
+            <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+                <div class="pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+                    <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-[#8a7808] dark:text-[#FFEF4D]"></i>
+                        {{ __('Plans') }}
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        {{ __('How many operators are on each plan.') }}
+                    </p>
                 </div>
-            @empty
-                <div class="py-8 text-center text-xs text-slate-400">
-                    {{ __('No recent customer transactions recorded.') }}
-                </div>
-            @endforelse
-        </div>
 
-        <!-- Desktop Admin Transactions Table (hidden on mobile) -->
-        <div class="hidden md:block overflow-x-auto">
-            <table class="w-full text-left text-xs sm:text-sm">
-                <thead>
-                    <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        <th class="py-3.5 px-4 sm:px-6">{{ __('Transaction / Code') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Operator') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Guest') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Amount') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Gateway') }}</th>
-                        <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Date & Time') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
-                    @forelse ($this->recentTransactions as $payment)
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
-                            <td class="py-3.5 px-4 sm:px-6">
-                                <span class="font-mono text-[10px] font-bold text-[#FFEF4D] px-2 py-0.5 rounded-lg bg-[#FFEF4D]/10 border border-[#FFEF4D]/30 inline-block mb-0.5">
-                                    #{{ $payment->reservation?->code ?? substr($payment->id, 0, 8) }}
+                <div class="space-y-3">
+                    @foreach ($this->planDistribution as $plan)
+                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{{ $plan['name'] }}</span>
+                                <span class="font-black text-sm text-[#8a7808] dark:text-[#FFEF4D]">
+                                    {{ $plan['count'] }} {{ __('operators') }}
                                 </span>
-                                <span class="text-[10px] text-slate-400 font-mono block">{{ $payment->gateway_ref ?? '-' }}</span>
-                            </td>
-                            <td class="py-3.5 px-4">
-                                @if ($payment->reservation?->operator)
-                                    <a href="{{ route('admin.operators.show', $payment->reservation->operator->id) }}" wire:navigate class="font-bold text-slate-900 dark:text-white hover:text-[#FFEF4D] transition">
-                                        {{ $payment->reservation->operator->name }}
-                                    </a>
-                                @else
-                                    <span class="text-slate-400">-</span>
-                                @endif
-                            </td>
-                            <td class="py-3.5 px-4 text-slate-700 dark:text-slate-300 font-medium">
-                                {{ $payment->reservation?->guest_name ?? '-' }}
-                            </td>
-                            <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
-                                Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}
-                            </td>
-                            <td class="py-3.5 px-4">
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
-                                    {{ strtoupper($payment->gateway) }}
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                                <span>
+                                    @if ($plan['price'] > 0)
+                                        Rp {{ number_format($plan['price'], 0, ',', '.') }}/mo
+                                    @else
+                                        {{ __('Free Tier') }}
+                                    @endif
                                 </span>
-                            </td>
-                            <td class="py-3.5 px-4 sm:px-6 text-right text-slate-500 dark:text-slate-400 font-mono text-xs">
-                                {{ $payment->created_at?->format('d M Y, H:i') }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="py-12 text-center text-slate-400">
-                                <i class="fa-solid fa-receipt text-3xl mb-2 block opacity-40"></i>
-                                <p class="font-bold text-sm text-slate-600 dark:text-slate-300">{{ __('No recent customer transactions recorded.') }}</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                <span>{{ round(($plan['count'] / max(1, $plan['total_operators'])) * 100) }}% {{ __('of total') }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="pt-2">
+                    <a href="{{ route('admin.plans.index') }}" wire:navigate class="w-full h-9 flex items-center justify-center rounded-xl bg-[#FFEF4D]/15 hover:bg-[#FFEF4D]/25 text-[#8a7808] dark:text-[#FFEF4D] text-xs font-bold transition border border-[#FFEF4D]/30">
+                        <i class="fa-solid fa-sliders mr-1.5 text-xs"></i>
+                        {{ __('Edit plans') }}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Platform Shortcuts -->
+            <div class="p-5 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-3">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Quick shortcuts') }}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+                    <a href="{{ route('admin.announcements.index') }}" wire:navigate class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-[#141821] text-xs font-semibold text-slate-700 dark:text-slate-300 transition">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                            <i class="fa-solid fa-bullhorn text-xs"></i>
+                        </span>
+                        <span>{{ __('Post announcement') }}</span>
+                    </a>
+
+                    <a href="{{ route('admin.coupons.index') }}" wire:navigate class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-[#141821] text-xs font-semibold text-slate-700 dark:text-slate-300 transition">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
+                            <i class="fa-solid fa-ticket text-xs"></i>
+                        </span>
+                        <span>{{ __('Create coupon') }}</span>
+                    </a>
+
+                    <a href="{{ route('admin.platform.edit') }}" wire:navigate class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-[#141821] text-xs font-semibold text-slate-700 dark:text-slate-300 transition">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+                            <i class="fa-solid fa-sliders text-xs"></i>
+                        </span>
+                        <span>{{ __('Platform settings') }}</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>

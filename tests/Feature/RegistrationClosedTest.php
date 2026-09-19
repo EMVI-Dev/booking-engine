@@ -25,15 +25,19 @@ test('login offers create account when maintenance is off', function () {
 test('new operator accounts can be created when maintenance is off', function () {
     config(['fortify.registration_enabled' => false]);
 
-    $this->post(route('register.store'), [
+    $response = $this->post(route('register.store'), [
         'name' => 'Wayan Sudarma',
         'email' => 'wayan@balitours.com',
         'password' => 'SecurePass123!',
         'password_confirmation' => 'SecurePass123!',
         'agency_name' => 'Bali Ocean Treks',
         'terms' => '1',
-    ])->assertSessionHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+    ]);
+
+    $response->assertSessionHasNoErrors();
+
+    $location = (string) $response->headers->get('Location');
+    expect($location)->toContain('/auth/registration-handoff');
 
     expect(User::query()->where('email', 'wayan@balitours.com')->exists())->toBeTrue();
 });
