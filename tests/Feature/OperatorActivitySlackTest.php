@@ -44,22 +44,24 @@ test('registration posts an operator activity alert to slack', function () {
     Http::assertSent(function (Request $request) use ($result): bool {
         $body = (string) json_encode($request->data());
         $blocks = $request['blocks'] ?? [];
-        $card = $blocks[0] ?? [];
-        $cardBody = (string) ($card['body']['text'] ?? '');
+        $header = $blocks[0] ?? [];
+        $contextSlug = $blocks[1] ?? [];
+        $section = $blocks[2] ?? [];
+        $sectionText = (string) ($section['text']['text'] ?? '');
 
         return str_contains($request->url(), 'hooks.slack.com')
             && $request['text'] === 'New operator registered: '.$result['operator']->name
-            && count($blocks) === 1
-            && ($card['type'] ?? null) === 'card'
-            && ($card['title']['text'] ?? null) === 'New operator registered'
-            && ($card['subtitle']['text'] ?? null) === 'Slug · '.$result['operator']->slug
-            && str_contains($cardBody, '*'.$result['operator']->name.'*')
-            && str_contains($cardBody, '```')
-            && str_contains($cardBody, "Owner : {$result['user']->name}")
-            && str_contains($cardBody, "Email : {$result['user']->email}")
-            && isset($card['subtext']['text'])
-            && ! str_contains($cardBody, 'Plan')
-            && ! str_contains($cardBody, 'Status')
+            && ($header['type'] ?? null) === 'header'
+            && ($header['text']['text'] ?? null) === 'New operator registered'
+            && ($contextSlug['type'] ?? null) === 'context'
+            && str_contains((string) json_encode($contextSlug), $result['operator']->slug)
+            && ($section['type'] ?? null) === 'section'
+            && str_contains($sectionText, '*'.$result['operator']->name.'*')
+            && str_contains($sectionText, '```')
+            && str_contains($sectionText, "Owner : {$result['user']->name}")
+            && str_contains($sectionText, "Email : {$result['user']->email}")
+            && ! str_contains($sectionText, 'Plan')
+            && ! str_contains($sectionText, 'Status')
             && str_contains($body, 'Open Admin')
             && str_contains($body, 'Open Storefront');
     });

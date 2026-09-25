@@ -64,11 +64,11 @@ it('sends automated review request emails to guests 12 hours after trip departur
     $this->artisan('trips:send-review-requests')
         ->assertSuccessful();
 
-    Mail::assertSent(GuestReviewRequestMail::class, function ($mail) {
+    Mail::assertQueued(GuestReviewRequestMail::class, function ($mail) {
         return $mail->hasTo('traveler@example.com') && $mail->reviewUrl === 'https://g.page/r/my-tour-review';
     });
 
-    Mail::assertNotSent(GuestReviewRequestMail::class, function ($mail) {
+    Mail::assertNotQueued(GuestReviewRequestMail::class, function ($mail) {
         return $mail->hasTo('future@example.com') || $mail->hasTo('past@example.com');
     });
 
@@ -143,7 +143,7 @@ it('sends agency review mail to the connected listing even when a manual review 
 
     $this->artisan('trips:send-review-requests')->assertSuccessful();
 
-    Mail::assertSent(GuestReviewRequestMail::class, function ($mail) {
+    Mail::assertQueued(GuestReviewRequestMail::class, function ($mail) {
         return $mail->hasTo('agency-guest@example.com')
             && $mail->reviewUrl === 'https://search.google.com/local/writereview?placeid=ChIJsunrise1234567890'
             && str_contains($mail->render(), 'Please leave a review for Sunrise Reef Tours.');

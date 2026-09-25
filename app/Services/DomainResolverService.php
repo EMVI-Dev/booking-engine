@@ -128,6 +128,8 @@ class DomainResolverService
             'www.booking.test',
             'booking.emvi',
             'www.booking.emvi',
+            'travelengine.emvi',
+            'www.travelengine.emvi',
             'travelengine.id',
             'www.travelengine.id',
         ]));

@@ -6,6 +6,7 @@ use App\Concerns\SendsOperatorBrandedMail;
 use App\Models\Reservation;
 use App\Models\Vendor;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
@@ -13,7 +14,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class VendorBookingCancelledMail extends Mailable
+class VendorBookingCancelledMail extends Mailable implements ShouldQueue
 {
     use Queueable, SendsOperatorBrandedMail, SerializesModels;
 
@@ -24,7 +25,9 @@ class VendorBookingCancelledMail extends Mailable
         public Reservation $reservation,
         public Vendor $vendor,
         public array $activities = []
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     public function envelope(): Envelope
     {

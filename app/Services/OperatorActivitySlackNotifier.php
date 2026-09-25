@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Operator;
+use App\Models\PlatformSetting;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
@@ -17,6 +18,15 @@ class OperatorActivitySlackNotifier
      */
     public function webhookUrl(): ?string
     {
+        try {
+            $fromSetting = trim((string) (PlatformSetting::current()->settings['slack_operator_webhook_url'] ?? ''));
+            if ($fromSetting !== '') {
+                return $fromSetting;
+            }
+        } catch (Throwable) {
+            // DB may not be ready during earliest boot/tests.
+        }
+
         $url = trim((string) config('services.slack.operator_webhook_url'));
 
         return $url !== '' ? $url : null;
@@ -326,47 +336,54 @@ class OperatorActivitySlackNotifier
 
         $storefrontUrl = $operator->getStorefrontUrl();
 
-        $card = [
-            'type' => 'card',
-            'title' => [
-                'type' => 'mrkdwn',
-                'text' => $title,
-                'verbatim' => false,
+        $blocks = [
+            [
+                'type' => 'header',
+                'text' => [
+                    'type' => 'plain_text',
+                    'text' => $title,
+                    'emoji' => false,
+                ],
             ],
-            'subtitle' => [
-                'type' => 'mrkdwn',
-                'text' => 'Slug · '.$operator->slug,
-                'verbatim' => false,
+            [
+                'type' => 'context',
+                'elements' => [
+                    [
+                        'type' => 'mrkdwn',
+                        'text' => 'Slug · `'.$operator->slug.'`',
+                    ],
+                ],
             ],
-            'body' => [
-                'type' => 'mrkdwn',
-                'text' => $this->formatCardBody($operator->name, $fields),
-                'verbatim' => false,
+            [
+                'type' => 'section',
+                'text' => [
+                    'type' => 'mrkdwn',
+                    'text' => $this->formatCardBody($operator->name, $fields),
+                ],
             ],
-            'subtext' => [
-                'type' => 'mrkdwn',
-                'text' => now()->timezone((string) config('app.timezone'))->format('M j, Y · H:i'),
-                'verbatim' => false,
+            [
+                'type' => 'context',
+                'elements' => [
+                    [
+                        'type' => 'mrkdwn',
+                        'text' => now()->timezone((string) config('app.timezone'))->format('M j, Y · H:i'),
+                    ],
+                ],
             ],
-            'actions' => $this->actionButtons($operator, $adminUrl, $storefrontUrl),
         ];
 
-        $iconUrl = $this->iconUrl();
+        $buttons = $this->actionButtons($operator, $adminUrl, $storefrontUrl);
 
-        if ($iconUrl !== null) {
-            $card = [
-                'icon' => [
-                    'type' => 'image',
-                    'image_url' => $iconUrl,
-                    'alt_text' => (string) config('app.name', 'TravelEngine'),
-                ],
-                ...$card,
+        if (! empty($buttons)) {
+            $blocks[] = [
+                'type' => 'actions',
+                'elements' => $buttons,
             ];
         }
 
         return [
             'text' => $text,
-            'blocks' => [$card],
+            'blocks' => $blocks,
         ];
     }
 
@@ -406,46 +423,45 @@ class OperatorActivitySlackNotifier
             return false;
         }
 
-        $card = [
-            'type' => 'card',
-            'title' => [
-                'type' => 'mrkdwn',
-                'text' => '🔔 Platform Test Alert',
-                'verbatim' => false,
+        $blocks = [
+            [
+                'type' => 'header',
+                'text' => [
+                    'type' => 'plain_text',
+                    'text' => 'Platform Test Alert',
+                    'emoji' => false,
+                ],
             ],
-            'subtitle' => [
-                'type' => 'mrkdwn',
-                'text' => 'Platform Settings Test Notification',
-                'verbatim' => false,
+            [
+                'type' => 'context',
+                'elements' => [
+                    [
+                        'type' => 'mrkdwn',
+                        'text' => 'Platform Settings Test Notification',
+                    ],
+                ],
             ],
-            'body' => [
-                'type' => 'mrkdwn',
-                'text' => "Slack operator activity alerts are configured correctly.\nTriggered by: {$adminName}".($adminEmail ? " ({$adminEmail})" : ''),
-                'verbatim' => false,
+            [
+                'type' => 'section',
+                'text' => [
+                    'type' => 'mrkdwn',
+                    'text' => "Slack operator activity alerts are configured correctly.\nTriggered by: {$adminName}".($adminEmail ? " ({$adminEmail})" : ''),
+                ],
             ],
-            'subtext' => [
-                'type' => 'mrkdwn',
-                'text' => now()->timezone((string) config('app.timezone'))->format('M j, Y · H:i'),
-                'verbatim' => false,
+            [
+                'type' => 'context',
+                'elements' => [
+                    [
+                        'type' => 'mrkdwn',
+                        'text' => now()->timezone((string) config('app.timezone'))->format('M j, Y · H:i'),
+                    ],
+                ],
             ],
         ];
 
-        $iconUrl = $this->iconUrl();
-
-        if ($iconUrl !== null) {
-            $card = [
-                'icon' => [
-                    'type' => 'image',
-                    'image_url' => $iconUrl,
-                    'alt_text' => (string) config('app.name', 'TravelEngine'),
-                ],
-                ...$card,
-            ];
-        }
-
         $payload = [
             'text' => "Platform Slack notification test by {$adminName}",
-            'blocks' => [$card],
+            'blocks' => $blocks,
         ];
 
         try {

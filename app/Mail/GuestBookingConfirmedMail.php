@@ -5,19 +5,22 @@ namespace App\Mail;
 use App\Concerns\SendsOperatorBrandedMail;
 use App\Models\Reservation;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class GuestBookingConfirmedMail extends Mailable
+class GuestBookingConfirmedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SendsOperatorBrandedMail, SerializesModels;
 
     public function __construct(
         public Reservation $reservation
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     public function envelope(): Envelope
     {

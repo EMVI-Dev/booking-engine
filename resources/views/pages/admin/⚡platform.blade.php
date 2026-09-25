@@ -15,9 +15,11 @@ use Livewire\Component;
 new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
 {
     // Global Platform Parameters
-    public string $platform_name = 'TravelEngine';
+    public string $platform_name = '';
 
-    public string $support_email = 'support@travelengine.id';
+    public string $support_email = '';
+
+    public string $slack_webhook_url = '';
 
     public float $commission_percentage = 0.0; // 0% operator commission
 
@@ -56,6 +58,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
 
         $this->platform_name = (string) ($settings['platform_name'] ?? 'TravelEngine');
         $this->support_email = $platform->getOperatorSupportEmail();
+        $this->slack_webhook_url = (string) ($settings['slack_operator_webhook_url'] ?? config('services.slack.operator_webhook_url', ''));
         $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.0) * 100);
         $this->guest_service_fee_percentage = (float) (($settings['guest_service_fee_rate'] ?? 0.05) * 100);
         $this->booking_hold_minutes = (int) ($settings['booking_hold_minutes'] ?? 30);
@@ -137,6 +140,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
         $validated = $this->validate([
             'platform_name' => ['required', 'string', 'max:255'],
             'support_email' => ['required', 'email', 'max:255'],
+            'slack_webhook_url' => ['nullable', 'string', 'max:500'],
             'commission_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'guest_service_fee_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'booking_hold_minutes' => ['required', 'integer', 'min:5', 'max:1440'],
@@ -151,6 +155,9 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
         $settings['support_email'] = $platform->isUnusableOperatorSupportEmail($validated['support_email'])
             ? 'support@travelengine.id'
             : $validated['support_email'];
+        $settings['slack_operator_webhook_url'] = filled($validated['slack_webhook_url'])
+            ? trim($validated['slack_webhook_url'])
+            : null;
         $settings['commission_rate'] = round($validated['commission_percentage'] / 100, 4);
         $settings['guest_service_fee_rate'] = round($validated['guest_service_fee_percentage'] / 100, 4);
         $settings['booking_hold_minutes'] = $validated['booking_hold_minutes'];
@@ -158,6 +165,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
         $settings['currency_symbol'] = $validated['currency_symbol'];
 
         $platform->update(['settings' => $settings]);
+        $this->loadSystemHealth();
 
         $this->saved = true;
         $this->dispatch('platform-settings-saved');
@@ -489,6 +497,16 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
                     <x-label for="currency_symbol" :value="__('Currency symbol')" required />
                     <x-input id="currency_symbol" wire:model="currency_symbol" type="text" :error="$errors->has('currency_symbol')" />
                     <x-input-error :messages="$errors->get('currency_symbol')" />
+                </div>
+
+                <!-- Slack Webhook URL -->
+                <div class="sm:col-span-2">
+                    <x-label for="slack_webhook_url" :value="__('Operator Slack Webhook URL')" />
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 mb-1.5">
+                        {{ __('Incoming webhook URL for registration, plan changes, and status alerts. Overrides SLACK_OPERATOR_WEBHOOK_URL from .env.') }}
+                    </p>
+                    <x-input id="slack_webhook_url" wire:model="slack_webhook_url" type="url" placeholder="https://hooks.slack.com/services/..." :error="$errors->has('slack_webhook_url')" />
+                    <x-input-error :messages="$errors->get('slack_webhook_url')" />
                 </div>
             </div>
         </div>

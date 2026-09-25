@@ -53,7 +53,7 @@ test('vendor receives booking notification email when single product is confirme
 
     app(VendorDispatchService::class)->dispatchBookingConfirmation($reservation);
 
-    Mail::assertSent(VendorBookingNotificationMail::class, function (VendorBookingNotificationMail $mail) use ($vendor) {
+    Mail::assertQueued(VendorBookingNotificationMail::class, function (VendorBookingNotificationMail $mail) use ($vendor) {
         return $mail->hasTo('booking@baliquad.com')
             && $mail->vendor->id === $vendor->id
             && in_array('2-Hour Jungle ATV', $mail->activities, true);
@@ -132,14 +132,14 @@ test('package booking with multiple vendors dispatches separate notifications to
     app(VendorDispatchService::class)->dispatchBookingConfirmation($reservation);
 
     // Vendor A received their activity
-    Mail::assertSent(VendorBookingNotificationMail::class, function (VendorBookingNotificationMail $mail) {
+    Mail::assertQueued(VendorBookingNotificationMail::class, function (VendorBookingNotificationMail $mail) {
         return $mail->hasTo('dispatch@fastferry.com')
             && in_array('Return Speedboat Ticket', $mail->activities, true)
             && ! in_array('2-Dive Scuba Package', $mail->activities, true);
     });
 
     // Vendor B received their activity
-    Mail::assertSent(VendorBookingNotificationMail::class, function (VendorBookingNotificationMail $mail) {
+    Mail::assertQueued(VendorBookingNotificationMail::class, function (VendorBookingNotificationMail $mail) {
         return $mail->hasTo('booking@coralscuba.com')
             && in_array('2-Dive Scuba Package', $mail->activities, true)
             && ! in_array('Return Speedboat Ticket', $mail->activities, true);
@@ -182,7 +182,7 @@ test('vendor receives cancellation email when paid booking is cancelled', functi
 
     app(GuestCancellationService::class)->cancel($reservation);
 
-    Mail::assertSent(VendorBookingCancelledMail::class, function (VendorBookingCancelledMail $mail) {
+    Mail::assertQueued(VendorBookingCancelledMail::class, function (VendorBookingCancelledMail $mail) {
         return $mail->hasTo('info@baturjeep.com')
             && in_array('Sunrise 4WD Jeep', $mail->activities, true);
     });

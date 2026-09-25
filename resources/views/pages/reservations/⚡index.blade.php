@@ -30,6 +30,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     public bool $showDetailModal = false;
     public ?string $selectedReservationId = null;
     public string $agentNote = '';
+    public bool $isEditingNotes = false;
 
     public bool $actionSuccess = false;
     public string $actionMessage = '';
@@ -550,6 +551,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     public function viewDetails(string $reservationId): void
     {
         $this->selectedReservationId = $reservationId;
+        $this->isEditingNotes = false;
         $res = $this->selectedReservation;
 
         if ($res) {
@@ -565,6 +567,20 @@ new #[Title('Bookings & Reservations')] class extends Component {
     {
         $this->showDetailModal = false;
         $this->selectedReservationId = null;
+        $this->isEditingNotes = false;
+    }
+
+    public function startEditingNotes(): void
+    {
+        $this->isEditingNotes = true;
+    }
+
+    public function cancelEditingNotes(): void
+    {
+        $this->isEditingNotes = false;
+        if ($this->selectedReservation) {
+            $this->agentNote = (string) ($this->selectedReservation->notes ?? '');
+        }
     }
 
     /**
@@ -607,6 +623,47 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
     public function confirmStatusTransition(string $reservationId, string $statusValue): void
     {
+        if (!$this->currentOperator) {
+            return;
+        }
+
+        $res = $this->currentOperator->reservations()->with('latestPayment')->find($reservationId);
+
+        if (!$res) {
+            return;
+        }
+
+        // Safeguard 1: Cannot decline if payment has already been completed
+        if ($statusValue === 'declined' && $res->latestPayment?->isPaid()) {
+            $this->actionSuccess = false;
+            $this->actionMessage = __('Cannot decline a paid reservation. Please process a cancellation and refund instead.');
+            return;
+        }
+
+        // Safeguard 2: Cannot mark completed prematurely if trip date is in the future
+        if ($statusValue === 'completed') {
+            if ($res->status !== ReservationStatus::Confirmed) {
+                $this->actionSuccess = false;
+                $this->actionMessage = __('Only confirmed reservations can be marked as completed.');
+                return;
+            }
+
+            if ($res->requested_date && $res->requested_date->isFuture() && !$res->requested_date->isToday()) {
+                $this->actionSuccess = false;
+                $this->actionMessage = __('Cannot mark a reservation completed before its scheduled trip date (:date).', [
+                    'date' => $res->requested_date->format('M d, Y'),
+                ]);
+                return;
+            }
+        }
+
+        // Safeguard 3: Cannot transition already cancelled or declined reservations directly to confirmed or completed
+        if (in_array($res->status, [ReservationStatus::Cancelled, ReservationStatus::Declined], true) && in_array($statusValue, ['confirmed', 'completed'], true)) {
+            $this->actionSuccess = false;
+            $this->actionMessage = __('Cancelled or declined reservations cannot be transitioned directly.');
+            return;
+        }
+
         $this->statusActionReservationId = $reservationId;
         $this->pendingStatusValue = $statusValue;
         $this->showConfirmStatusModal = true;
@@ -637,7 +694,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
             return;
         }
 
-        $res = $this->currentOperator->reservations()->find($reservationId);
+        $res = $this->currentOperator->reservations()->with('latestPayment')->find($reservationId);
 
         if (!$res) {
             return;
@@ -647,6 +704,28 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
         if (!$status) {
             return;
+        }
+
+        // Safeguard 1: Cannot decline if paid
+        if ($status === ReservationStatus::Declined && $res->latestPayment?->isPaid()) {
+            $this->actionSuccess = false;
+            $this->actionMessage = __('Cannot decline a paid reservation. Please process a cancellation and refund instead.');
+            return;
+        }
+
+        // Safeguard 2: Cannot mark completed prematurely
+        if ($status === ReservationStatus::Completed) {
+            if ($res->status !== ReservationStatus::Confirmed) {
+                $this->actionSuccess = false;
+                $this->actionMessage = __('Only confirmed reservations can be marked as completed.');
+                return;
+            }
+
+            if ($res->requested_date && $res->requested_date->isFuture() && !$res->requested_date->isToday()) {
+                $this->actionSuccess = false;
+                $this->actionMessage = __('Cannot mark a reservation completed before its scheduled trip date.');
+                return;
+            }
         }
 
         $res->update([
@@ -697,6 +776,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
         }
 
         $res->update(['notes' => $this->agentNote]);
+        $this->isEditingNotes = false;
 
         $this->actionSuccess = true;
         $this->actionMessage = __('Reservation notes saved successfully.');
@@ -1087,12 +1167,14 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                             <i class="fa-solid fa-check text-[10px]"></i>
                                             <span>{{ __('Confirm') }}</span>
                                         </button>
-                                        <button type="button"
-                                            wire:click="confirmStatusTransition('{{ $res->id }}', 'declined')"
-                                            class="h-8 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 font-bold text-xs transition cursor-pointer"
-                                            title="{{ __('Decline Booking') }}">
-                                            <i class="fa-solid fa-xmark text-[10px]"></i>
-                                        </button>
+                                        @if (!($res->latestPayment?->isPaid()))
+                                            <button type="button"
+                                                wire:click="confirmStatusTransition('{{ $res->id }}', 'declined')"
+                                                class="h-8 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 font-bold text-xs transition cursor-pointer"
+                                                title="{{ __('Decline Booking') }}">
+                                                <i class="fa-solid fa-xmark text-[10px]"></i>
+                                            </button>
+                                        @endif
                                     @endif
 
                                     <x-button type="button" size="sm" variant="secondary"
@@ -1118,7 +1200,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                                     {{ __('Send Payment Link (WA)') }}
                                                 </a>
                                             @endif
-                                            @if ($res->status !== ReservationStatus::Confirmed)
+                                            @if (in_array($res->status, [ReservationStatus::PaymentPending, ReservationStatus::PendingConfirmation], true))
                                                 <button type="button"
                                                     wire:click="confirmStatusTransition('{{ $res->id }}', 'confirmed')"
                                                     @click="open = false"
@@ -1127,7 +1209,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                                     {{ __('Mark Confirmed') }}
                                                 </button>
                                             @endif
-                                            @if ($res->status !== ReservationStatus::Declined)
+                                            @if (!in_array($res->status, [ReservationStatus::Declined, ReservationStatus::Completed, ReservationStatus::Cancelled], true) && !($res->latestPayment?->isPaid()))
                                                 <button type="button"
                                                     wire:click="confirmStatusTransition('{{ $res->id }}', 'declined')"
                                                     @click="open = false"
@@ -1136,7 +1218,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                                     {{ __('Decline Booking') }}
                                                 </button>
                                             @endif
-                                            @if ($res->status !== ReservationStatus::Completed)
+                                            @if ($res->status === ReservationStatus::Confirmed && ($res->requested_date->isToday() || $res->requested_date->isPast()))
                                                 <button type="button"
                                                     wire:click="confirmStatusTransition('{{ $res->id }}', 'completed')"
                                                     @click="open = false"
@@ -1145,7 +1227,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                                     {{ __('Mark Completed') }}
                                                 </button>
                                             @endif
-                                            @if ($res->status !== ReservationStatus::Cancelled)
+                                            @if (!in_array($res->status, [ReservationStatus::Cancelled, ReservationStatus::Declined, ReservationStatus::Completed], true))
                                                 <button type="button"
                                                     wire:click="confirmStatusTransition('{{ $res->id }}', 'cancelled')"
                                                     @click="open = false"
@@ -1468,18 +1550,43 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         </div>
 
                         <!-- Internal Agent Notes -->
-                        <div class="space-y-2">
-                            <x-label for="agentNote" :value="__('Internal Reservation Notes')" />
-                            <x-textarea id="agentNote" wire:model="agentNote" rows="3"
-                                placeholder="{{ __('Add special dietary requests, pickup instructions, guide assignments, etc...') }}"
-                                class="text-xs" />
-                            <div class="flex justify-end">
-                                <x-button size="sm" variant="secondary" wire:click="saveNotes"
-                                    class="font-bold text-xs">
-                                    <i class="fa-solid fa-floppy-disk mr-1"></i>
-                                    {{ __('Save Notes') }}
-                                </x-button>
+                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-note-sticky text-amber-500"></i>
+                                    {{ __('Internal Reservation Notes') }}
+                                </span>
+                                @if (!$isEditingNotes)
+                                    <button type="button" wire:click="startEditingNotes"
+                                        class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+                                        <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                                        <span>{{ __('Edit Notes') }}</span>
+                                    </button>
+                                @endif
                             </div>
+
+                            @if ($isEditingNotes)
+                                <div class="space-y-2">
+                                    <x-textarea id="agentNote" wire:model="agentNote" rows="3"
+                                        placeholder="{{ __('Add special dietary requests, pickup instructions, guide assignments, etc...') }}"
+                                        class="text-xs" />
+                                    <div class="flex items-center justify-end gap-2">
+                                        <x-button size="sm" variant="secondary" wire:click="cancelEditingNotes"
+                                            class="font-bold text-xs">
+                                            {{ __('Cancel') }}
+                                        </x-button>
+                                        <x-button size="sm" variant="primary" wire:click="saveNotes"
+                                            class="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
+                                            <i class="fa-solid fa-floppy-disk mr-1"></i>
+                                            {{ __('Save Notes') }}
+                                        </x-button>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">
+                                    {{ !empty($res->notes) ? $res->notes : __('No internal notes added yet.') }}
+                                </div>
+                            @endif
                         </div>
 
                         <!-- Agreed Terms Snapshot -->
@@ -1507,7 +1614,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                     <div
                         class="p-5 bg-slate-50/50 dark:bg-zinc-800/40 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-3 rounded-b-3xl">
                         <div class="flex items-center gap-2 flex-wrap">
-                            @if ($res->status !== ReservationStatus::Confirmed)
+                            @if (in_array($res->status, [ReservationStatus::PaymentPending, ReservationStatus::PendingConfirmation], true))
                                 <x-button size="sm" variant="primary"
                                     wire:click="confirmStatusTransition('{{ $res->id }}', 'confirmed')"
                                     class="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -1515,7 +1622,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     {{ __('Mark Confirmed') }}
                                 </x-button>
                             @endif
-                            @if ($res->status !== ReservationStatus::Declined && $res->status !== ReservationStatus::Completed)
+                            @if (!in_array($res->status, [ReservationStatus::Declined, ReservationStatus::Completed, ReservationStatus::Cancelled], true) && !($latestPayment?->isPaid()))
                                 <x-button size="sm" variant="danger"
                                     wire:click="confirmStatusTransition('{{ $res->id }}', 'declined')"
                                     class="font-bold text-xs">
@@ -1523,7 +1630,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     {{ __('Decline') }}
                                 </x-button>
                             @endif
-                            @if ($res->status !== ReservationStatus::Completed)
+                            @if ($res->status === ReservationStatus::Confirmed && ($res->requested_date->isToday() || $res->requested_date->isPast()))
                                 <x-button size="sm" variant="secondary"
                                     wire:click="confirmStatusTransition('{{ $res->id }}', 'completed')"
                                     class="font-bold text-xs">

@@ -136,7 +136,7 @@ test('vendor dispatch service can send test notification', function () {
 
     app(VendorDispatchService::class)->sendTestNotification($vendor, $this->operator);
 
-    Mail::assertSent(VendorBookingNotificationMail::class, function ($mail) use ($vendor) {
+    Mail::assertQueued(VendorBookingNotificationMail::class, function ($mail) use ($vendor) {
         return $mail->hasTo('booking@sanurwatersports.com')
             && $mail->vendor->id === $vendor->id
             && $mail->isTest === true;

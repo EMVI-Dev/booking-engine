@@ -360,6 +360,17 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                             class="font-mono text-[#8a7808] dark:text-[#FFEF4D] font-semibold">{{ $operator->slug }}.{{ $this->platformDomain }}</span>
                         <span>&bull;</span>
                         <span>{{ __('Registered') }} {{ $operator->created_at?->diffForHumans() }}</span>
+                        <span>&bull;</span>
+                        <span>
+                            {{ __('Last Active') }}:
+                            @if ($operator->last_active_at)
+                                <strong class="{{ $operator->last_active_at->diffInDays(now()) >= 30 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300' }}">
+                                    {{ $operator->last_active_at->diffForHumans() }}
+                                </strong>
+                            @else
+                                <span class="text-slate-400">{{ __('Never') }}</span>
+                            @endif
+                        </span>
                     </div>
                 </div>
             </div>

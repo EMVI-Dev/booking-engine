@@ -242,3 +242,97 @@ test('reservations automatically generate unique code and can be searched by cod
         ->assertSee('Dewi Sartika')
         ->assertSee($reservation->code);
 });
+
+test('operator cannot decline a paid reservation', function () {
+    $this->actingAs($this->user);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    $reservation = Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+    ]);
+
+    Payment::factory()->paid()->create([
+        'reservation_id' => $reservation->id,
+        'amount' => 1000000,
+    ]);
+
+    Livewire::test('pages::reservations.index')
+        ->call('confirmStatusTransition', $reservation->id, 'declined')
+        ->assertSet('showConfirmStatusModal', false)
+        ->assertSet('actionSuccess', false)
+        ->call('updateStatus', $reservation->id, 'declined')
+        ->assertSet('actionSuccess', false);
+
+    expect($reservation->fresh()->status)->toBe(ReservationStatus::Confirmed);
+});
+
+test('operator cannot mark a reservation completed before scheduled trip date', function () {
+    $this->actingAs($this->user);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    $reservation = Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'requested_date' => now()->addDays(5)->toDateString(),
+    ]);
+
+    Livewire::test('pages::reservations.index')
+        ->call('confirmStatusTransition', $reservation->id, 'completed')
+        ->assertSet('showConfirmStatusModal', false)
+        ->assertSet('actionSuccess', false)
+        ->call('updateStatus', $reservation->id, 'completed')
+        ->assertSet('actionSuccess', false);
+
+    expect($reservation->fresh()->status)->toBe(ReservationStatus::Confirmed);
+});
+
+test('operator can mark a confirmed reservation completed on or after scheduled date', function () {
+    $this->actingAs($this->user);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    $reservation = Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'requested_date' => now()->toDateString(),
+    ]);
+
+    Livewire::test('pages::reservations.index')
+        ->call('confirmStatusTransition', $reservation->id, 'completed')
+        ->assertSet('showConfirmStatusModal', true)
+        ->call('executeStatusTransition')
+        ->assertDispatched('reservation-updated');
+
+    expect($reservation->fresh()->status)->toBe(ReservationStatus::Completed);
+});
+
+test('details modal supports toggling note editing mode and saving notes', function () {
+    $this->actingAs($this->user);
+
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'notes' => 'Existing internal note',
+    ]);
+
+    Livewire::test('pages::reservations.index')
+        ->call('viewDetails', $reservation->id)
+        ->assertSet('showDetailModal', true)
+        ->assertSet('isEditingNotes', false)
+        ->call('startEditingNotes')
+        ->assertSet('isEditingNotes', true)
+        ->set('agentNote', 'Updated note for driver')
+        ->call('saveNotes')
+        ->assertSet('isEditingNotes', false);
+
+    expect($reservation->fresh()->notes)->toBe('Updated note for driver');
+});

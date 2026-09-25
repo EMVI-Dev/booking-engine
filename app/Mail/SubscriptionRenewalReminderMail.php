@@ -5,12 +5,13 @@ namespace App\Mail;
 use App\Models\Operator;
 use App\Models\Plan;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SubscriptionRenewalReminderMail extends Mailable
+class SubscriptionRenewalReminderMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -18,7 +19,9 @@ class SubscriptionRenewalReminderMail extends Mailable
         public Operator $operator,
         public Plan $plan,
         public int $daysRemaining
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     public function envelope(): Envelope
     {

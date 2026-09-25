@@ -94,15 +94,15 @@ test('guest can complete full booking and test payment via internal doku sandbox
     expect($this->operator->getPendingEscrowBalance())->toBe(1000000.00);
 
     // Verify Mailables sent to guest and operator
-    Mail::assertSent(GuestBookingCreatedMail::class, function ($mail) use ($reservation) {
+    Mail::assertQueued(GuestBookingCreatedMail::class, function ($mail) use ($reservation) {
         return $mail->hasTo('sarah@example.com') && $mail->reservation->id === $reservation->id;
     });
 
-    Mail::assertSent(GuestBookingConfirmedMail::class, function ($mail) use ($reservation) {
+    Mail::assertQueued(GuestBookingConfirmedMail::class, function ($mail) use ($reservation) {
         return $mail->hasTo('sarah@example.com') && $mail->reservation->id === $reservation->id;
     });
 
-    Mail::assertSent(OperatorNewBookingNotificationMail::class);
+    Mail::assertQueued(OperatorNewBookingNotificationMail::class);
 
     // 5. Verify digital receipt & voucher view with normalized WhatsApp URL
     $receiptResponse = $this->get(route('storefront.reservation.receipt', $reservation));

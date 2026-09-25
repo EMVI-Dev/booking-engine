@@ -30,6 +30,7 @@ return [
 
     'google' => [
         'places_key' => env('GOOGLE_PLACES_API_KEY'),
+        'platform_analytics_id' => env('PLATFORM_GOOGLE_ANALYTICS_ID', 'G-WBQZPFT82S'),
     ],
 
     'slack' => [

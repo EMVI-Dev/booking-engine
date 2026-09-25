@@ -43,3 +43,6 @@ Schedule::command('demo:refresh')
     ->dailyAt('03:00')
     ->timezone('Asia/Makassar')
     ->withoutOverlapping();
+
+// 14. Check operator activity: remind after 30 days, suspend after 90 days (3 months)
+Schedule::command('operators:check-inactivity')->daily();

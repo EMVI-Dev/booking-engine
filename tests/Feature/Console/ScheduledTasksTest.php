@@ -131,7 +131,7 @@ test('send departure reminder job sends email and updates timestamp', function (
     $job = new SendDepartureReminderJob($reservation);
     $job->handle();
 
-    Mail::assertSent(GuestDepartureReminderMail::class, function ($mail) use ($reservation) {
+    Mail::assertQueued(GuestDepartureReminderMail::class, function ($mail) use ($reservation) {
         return $mail->hasTo($reservation->guest_email);
     });
 
@@ -174,7 +174,7 @@ test('process review request job sends email and updates timestamp', function ()
     $job = new ProcessReviewRequestJob($reservation, 'https://g.page/r/test');
     $job->handle();
 
-    Mail::assertSent(GuestReviewRequestMail::class, function ($mail) use ($reservation) {
+    Mail::assertQueued(GuestReviewRequestMail::class, function ($mail) use ($reservation) {
         return $mail->hasTo($reservation->guest_email);
     });
 

@@ -59,22 +59,22 @@ test('command sends renewal reminders at 7 days, 3 days, and on the due date', f
         ->assertSuccessful();
 
     // Verify 7-day reminder sent
-    Mail::assertSent(SubscriptionRenewalReminderMail::class, function ($mail) {
+    Mail::assertQueued(SubscriptionRenewalReminderMail::class, function ($mail) {
         return $mail->hasTo('billing7@example.com') && $mail->daysRemaining === 7;
     });
 
     // Verify 3-day reminder sent
-    Mail::assertSent(SubscriptionRenewalReminderMail::class, function ($mail) {
+    Mail::assertQueued(SubscriptionRenewalReminderMail::class, function ($mail) {
         return $mail->hasTo('billing3@example.com') && $mail->daysRemaining === 3;
     });
 
     // Verify 0-day (due date) reminder sent
-    Mail::assertSent(SubscriptionRenewalReminderMail::class, function ($mail) {
+    Mail::assertQueued(SubscriptionRenewalReminderMail::class, function ($mail) {
         return $mail->hasTo('billing0@example.com') && $mail->daysRemaining === 0;
     });
 
     // Verify 15-day operator was NOT sent
-    Mail::assertNotSent(SubscriptionRenewalReminderMail::class, function ($mail) {
+    Mail::assertNotQueued(SubscriptionRenewalReminderMail::class, function ($mail) {
         return $mail->hasTo('billing15@example.com');
     });
 });

@@ -162,7 +162,7 @@ test('doku webhook accepts a correctly signed notification and confirms the rese
     expect($this->payment->fresh()->status)->toBe(PaymentStatus::Paid)
         ->and($this->reservation->fresh()->status)->toBe(ReservationStatus::Confirmed);
 
-    Mail::assertSent(GuestBookingConfirmedMail::class, 1);
+    Mail::assertQueued(GuestBookingConfirmedMail::class, 1);
 });
 
 test('replaying a settled payment notification does not resend the e-voucher or double credit the wallet', function () {
@@ -176,7 +176,7 @@ test('replaying a settled payment notification does not resend the e-voucher or 
         $this->call('POST', route('doku.webhook'), [], [], [], dokuSignedHeaders($body, 'BRN-CLIENT', 'super-secret'), $body)->assertOk();
     }
 
-    Mail::assertSent(GuestBookingConfirmedMail::class, 1);
+    Mail::assertQueued(GuestBookingConfirmedMail::class, 1);
 
     expect(WalletTransaction::where('reservation_id', $this->reservation->id)->where('type', WalletTransactionType::BookingEarning)->count())->toBe(1);
 });

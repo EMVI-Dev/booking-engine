@@ -305,8 +305,10 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
                             <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $operator->packages_count }} {{ __('Pkgs') }} • {{ $operator->products_count }} {{ __('Acts') }}</span>
                         </div>
                         <div>
-                            <span class="block text-[10px] uppercase font-bold text-slate-400">{{ __('Bookings') }}</span>
-                            <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $operator->reservations_count }} {{ __('Total') }}</span>
+                            <span class="block text-[10px] uppercase font-bold text-slate-400">{{ __('Last Active') }}</span>
+                            <span class="font-semibold {{ $operator->last_active_at && $operator->last_active_at->diffInDays(now()) >= 30 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-800 dark:text-slate-200' }}">
+                                {{ $operator->last_active_at ? $operator->last_active_at->diffForHumans() : __('Never') }}
+                            </span>
                         </div>
                     </div>
 
@@ -413,7 +415,10 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
                                         {{ $owner?->email ?? '-' }}
                                     </div>
                                     @if ($hasWhatsApp)
-                                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $operator->contact_whatsapp) }}" target="_blank"
+                                        @php
+                                            $adminWaUrl = app(\App\Services\WhatsAppDispatchService::class)->buildWhatsAppUrl($operator->contact_whatsapp, __('Hello :name, reaching out from platform administration.', ['name' => $operator->name]));
+                                        @endphp
+                                        <a href="{{ $adminWaUrl }}" target="_blank"
                                             class="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-mono">
                                             <i class="fa-brands fa-whatsapp text-[10px]"></i>
                                             <span>{{ $operator->contact_whatsapp }}</span>
@@ -432,6 +437,16 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
                                         <span class="font-bold text-slate-700 dark:text-zinc-300">{{ $operator->reservations_count }}</span> {{ __('bookings') }}
                                         <span class="opacity-40">•</span>
                                         <span class="font-bold text-slate-700 dark:text-zinc-300">{{ $operator->packages_count }}</span> {{ __('pkgs') }}
+                                    </div>
+                                    <div class="text-[10px] text-slate-400 dark:text-zinc-500 flex items-center gap-1">
+                                        <span>{{ __('Active') }}:</span>
+                                        @if ($operator->last_active_at)
+                                            <span class="{{ $operator->last_active_at->diffInDays(now()) >= 30 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-600 dark:text-zinc-300 font-medium' }}">
+                                                {{ $operator->last_active_at->diffForHumans() }}
+                                            </span>
+                                        @else
+                                            <span class="text-slate-400">{{ __('Never') }}</span>
+                                        @endif
                                     </div>
                                 </div>
                             </td>

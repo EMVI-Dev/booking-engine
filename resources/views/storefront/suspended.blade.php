@@ -34,8 +34,12 @@
             </div>
 
             @if ($agent->contact_whatsapp)
+                @php
+                    $waService = app(\App\Services\WhatsAppDispatchService::class);
+                    $suspendedSupportWaUrl = $waService->buildWhatsAppUrl($agent->contact_whatsapp, __('Hello :name, reaching out regarding your storefront.', ['name' => $agent->name]));
+                @endphp
                 <a
-                    href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $agent->contact_whatsapp) }}"
+                    href="{{ $suspendedSupportWaUrl }}"
                     target="_blank"
                     class="h-9 px-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs transition flex items-center gap-2 border border-emerald-200/60 dark:border-emerald-800/60"
                 >
@@ -79,7 +83,7 @@
             <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 @if ($agent->contact_whatsapp)
                     <a
-                        href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $agent->contact_whatsapp) }}"
+                        href="{{ $suspendedSupportWaUrl ?? app(\App\Services\WhatsAppDispatchService::class)->buildWhatsAppUrl($agent->contact_whatsapp, __('Hello :name, reaching out regarding your storefront.', ['name' => $agent->name])) }}"
                         target="_blank"
                         class="w-full sm:w-auto h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2"
                     >

@@ -585,3 +585,28 @@ test('pending operator storefront displays pending verification notice and retur
         ->assertSee('still being reviewed')
         ->assertSee('Pending Verification Island Tour');
 });
+
+test('empty operator storefront renders coming soon notice with normalized international whatsapp link', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'name' => 'Sunset Sail Bali',
+        'slug' => 'sunset-sail',
+        'status' => OperatorStatus::Approved,
+        'contact_whatsapp' => '081234567890',
+    ]);
+
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
+        'domain' => 'sunset-sail.booking.test',
+        'type' => DomainType::Subdomain,
+        'status' => DomainStatus::Active,
+    ]);
+
+    $response = $this->get('http://sunset-sail.booking.test', ['Host' => 'sunset-sail.booking.test']);
+
+    $response->assertOk()
+        ->assertSee('New experiences coming soon')
+        ->assertSee('https://wa.me/6281234567890', false)
+        ->assertDontSee('https://wa.me/081234567890', false);
+});

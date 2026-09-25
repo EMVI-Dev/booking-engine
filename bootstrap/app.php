@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureOperatorPortalOpen;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\IdentifyOperatorDomain;
 use App\Http\Middleware\PreventDemoIndexing;
+use App\Http\Middleware\TrackOperatorActivity;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             IdentifyOperatorDomain::class,
             PreventDemoIndexing::class,
             EnsureOperatorPortalOpen::class,
+            TrackOperatorActivity::class,
         ]);
 
         $middleware->alias([

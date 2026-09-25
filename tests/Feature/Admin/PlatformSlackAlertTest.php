@@ -59,3 +59,21 @@ test('platform settings component can trigger test slack alert', function () {
 
     Http::assertSentCount(1);
 });
+
+test('slack webhook can be configured and saved via platform settings', function () {
+    Http::fake();
+    config(['services.slack.operator_webhook_url' => '']);
+
+    $notifier = app(OperatorActivitySlackNotifier::class);
+    expect($notifier->enabled())->toBeFalse();
+
+    Livewire::actingAs($this->adminUser)
+        ->test('pages::admin.platform')
+        ->set('slack_webhook_url', 'https://hooks.slack.com/services/CUSTOM/SETTING/URL')
+        ->call('updatePlatformSettings')
+        ->assertHasNoErrors()
+        ->assertSet('slack_configured', true);
+
+    expect($notifier->enabled())->toBeTrue()
+        ->and($notifier->webhookUrl())->toBe('https://hooks.slack.com/services/CUSTOM/SETTING/URL');
+});

@@ -172,7 +172,7 @@ test('admin can view renewals tab and send renewal reminder email', function () 
         ->call('sendRenewalReminder', $operator->id)
         ->assertHasNoErrors();
 
-    Mail::assertSent(SubscriptionRenewalReminderMail::class, function ($mail) use ($operator) {
+    Mail::assertQueued(SubscriptionRenewalReminderMail::class, function ($mail) use ($operator) {
         return $mail->hasTo('billing@komodoyacht.com') && $mail->operator->id === $operator->id;
     });
 });

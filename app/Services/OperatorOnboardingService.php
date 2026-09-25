@@ -6,11 +6,13 @@ use App\Enums\DomainStatus;
 use App\Enums\DomainType;
 use App\Enums\OperatorStatus;
 use App\Enums\OperatorUserRole;
+use App\Mail\OperatorWelcomeMail;
 use App\Models\Operator;
 use App\Models\OperatorDomain;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class OperatorOnboardingService
@@ -80,6 +82,7 @@ class OperatorOnboardingService
                     'brand_color' => $data['brand_color'] ?? '#0f172a',
                     'display_name' => $businessName,
                 ],
+                'last_active_at' => now(),
             ]);
 
             // 4. Attach Owner to Operator
@@ -109,6 +112,13 @@ class OperatorOnboardingService
                 'domain' => $domain,
             ];
         });
+
+        try {
+            Mail::to($result['user']->email)
+                ->queue(new OperatorWelcomeMail($result['operator'], $result['user']));
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $this->slack->operatorRegistered($result['operator'], $result['user']);
 

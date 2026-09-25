@@ -203,8 +203,12 @@
                         </p>
                     </div>
                     @if ($agent->contact_whatsapp)
+                        @php
+                            $waService = app(\App\Services\WhatsAppDispatchService::class);
+                            $comingSoonWaUrl = $waService->buildWhatsAppUrl($agent->contact_whatsapp, __('Hello :name, I would like to inquire about upcoming tour availability.', ['name' => $agent->name]));
+                        @endphp
                         <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
-                            <a href="https://wa.me/{{ preg_replace('/\D/', '', $agent->contact_whatsapp) }}?text={{ urlencode('Hello ' . $agent->name . ', I would like to inquire about upcoming tour availability.') }}"
+                            <a href="{{ $comingSoonWaUrl }}"
                                 target="_blank" rel="noopener noreferrer"
                                 class="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition cursor-pointer">
                                 <i class="fa-brands fa-whatsapp text-sm"></i>
@@ -527,7 +531,10 @@
                         @if (! empty($socialLinks['instagram']) || ! empty($socialLinks['facebook']) || $agent->contact_whatsapp)
                             <div class="flex flex-wrap items-center gap-3 pt-2">
                                 @if ($agent->contact_whatsapp)
-                                    <a href="https://wa.me/{{ preg_replace('/\D/', '', $agent->contact_whatsapp) }}"
+                                    @php
+                                        $bioWaUrl = app(\App\Services\WhatsAppDispatchService::class)->buildWhatsAppUrl($agent->contact_whatsapp, __('Hello :name, I have a question about your tours.', ['name' => $agent->name]));
+                                    @endphp
+                                    <a href="{{ $bioWaUrl }}"
                                         target="_blank" rel="noopener noreferrer"
                                         class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
                                         <i class="fa-brands fa-whatsapp text-sm"></i>

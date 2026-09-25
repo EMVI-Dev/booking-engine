@@ -16,6 +16,10 @@ test('domain resolver returns null for root platform domain', function () {
     expect($service->resolveOperator('localhost'))->toBeNull()
         ->and($service->resolveOperator('127.0.0.1'))->toBeNull()
         ->and($service->resolveOperator('booking.test'))->toBeNull()
+        ->and($service->resolveOperator('booking.emvi'))->toBeNull()
+        ->and($service->resolveOperator('www.booking.emvi'))->toBeNull()
+        ->and($service->resolveOperator('travelengine.emvi'))->toBeNull()
+        ->and($service->resolveOperator('www.travelengine.emvi'))->toBeNull()
         ->and($service->resolveOperator('travelengine.id'))->toBeNull()
         ->and($service->resolveOperator('www.travelengine.id'))->toBeNull();
 });
@@ -47,10 +51,13 @@ test('domain resolver resolves approved operator by subdomain', function () {
 
     $service = new DomainResolverService;
     $resolved = $service->resolveOperator('balitrek.booking.test');
+    $resolvedOnLocalHerdHost = $service->resolveOperator('balitrek.travelengine.emvi');
     $resolvedOnProductionHost = $service->resolveOperator('balitrek.travelengine.id');
 
     expect($resolved)->not->toBeNull()
         ->and($resolved->id)->toBe($operator->id)
+        ->and($resolvedOnLocalHerdHost)->not->toBeNull()
+        ->and($resolvedOnLocalHerdHost->id)->toBe($operator->id)
         ->and($resolvedOnProductionHost)->not->toBeNull()
         ->and($resolvedOnProductionHost->id)->toBe($operator->id);
 });

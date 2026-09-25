@@ -5,5 +5,6 @@ paths:
 
 # Services
 
-## Slack operator alerts use card blocks
-Operator activity Slack webhooks use a single card block that wraps everything: title, subtitle `Slug · {slug}`, body = bold operator name plus a monospace ``` box with padded `Label : Value` rows (split Owner/Email on registration; amounts as `Rp 1.234.567`), subtext timestamp, URL buttons Open Admin / Open Storefront. Event-useful fields only. Omit icon when APP_URL is a local Herd host. No emoji in titles. Keep fallback text for notifications list.
+## Slack operator alerts use Block Kit blocks
+Operator activity Slack webhooks use standard Block Kit layout blocks (header for title, context for `Slug · {slug}`, section for bold operator name plus a monospace ``` box with padded `Label : Value` rows, context for timestamp, actions for URL buttons Open Admin / Open Storefront). Do not use an unsupported card block type. Event-useful fields only. Omit icon when APP_URL is a local Herd host. No emoji in titles. Keep fallback text for notifications list.
+

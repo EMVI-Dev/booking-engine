@@ -81,6 +81,8 @@ class Operator extends Model
         'favicon_path',
         'banner_path',
         'settings',
+        'last_active_at',
+        'inactivity_reminder_sent_at',
     ];
 
     /**
@@ -100,7 +102,49 @@ class Operator extends Model
             'pending_plan_action_at' => 'datetime',
             'subscription_auto_renew' => 'boolean',
             'settings' => 'array',
+            'last_active_at' => 'datetime',
+            'inactivity_reminder_sent_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Record operator activity if not updated recently (throttled to once every 15 minutes).
+     * Also clears any pending inactivity reminder flag.
+     */
+    public function touchActivity(bool $force = false): bool
+    {
+        $now = now();
+
+        if ($force || ! $this->last_active_at || $this->last_active_at->diffInMinutes($now) >= 15) {
+            $updates = [
+                'last_active_at' => $now,
+            ];
+
+            if ($this->inactivity_reminder_sent_at !== null) {
+                $updates['inactivity_reminder_sent_at'] = null;
+            }
+
+            $this->forceFill($updates)->saveQuietly();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine if operator has been inactive for a given number of days.
+     * Falls back to created_at if last_active_at is null.
+     */
+    public function isInactiveForDays(int $days): bool
+    {
+        $reference = $this->last_active_at ?? $this->created_at;
+
+        if (! $reference) {
+            return false;
+        }
+
+        return $reference->diffInDays(now()) >= $days;
     }
 
     /**
@@ -558,6 +602,22 @@ class Operator extends Model
         }
 
         return "{$scheme}://{$this->slug}.{$appUrlHost}";
+    }
+
+    /**
+     * Get the operator desk login URL on the operator domain/subdomain.
+     */
+    public function getDeskUrl(): string
+    {
+        return rtrim($this->getStorefrontUrl(), '/').'/login';
+    }
+
+    /**
+     * Get the operator desk dashboard URL on the operator domain/subdomain.
+     */
+    public function getDashboardUrl(): string
+    {
+        return rtrim($this->getStorefrontUrl(), '/').'/dashboard';
     }
 
     /**
