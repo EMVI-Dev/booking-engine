@@ -168,10 +168,14 @@ class DokuPaymentService
         $subtotal = isset($termsSnapshot['subtotal']) ? (float) $termsSnapshot['subtotal'] : null;
         $serviceFee = isset($termsSnapshot['service_fee']) ? (float) $termsSnapshot['service_fee'] : null;
         $serviceFeeRate = isset($termsSnapshot['service_fee_rate']) ? (float) $termsSnapshot['service_fee_rate'] : null;
+        $discountAmount = isset($termsSnapshot['discount_amount']) ? (float) $termsSnapshot['discount_amount'] : 0.0;
+        $couponCode = isset($termsSnapshot['coupon_code']) ? (string) $termsSnapshot['coupon_code'] : null;
 
         if ($subtotal !== null && $serviceFee !== null) {
-            $agentShare = round($subtotal, 2); // 100% of operator's listed price
+            $discountedSubtotal = max(0.0, $subtotal - $discountAmount);
             $platformCommission = round($serviceFee, 2); // Guest service fee
+            // Operator earning is discounted subtotal, capped at net collected funds
+            $agentShare = min(round($discountedSubtotal, 2), max(0.0, round($totalAmount - $platformCommission, 2)));
             $commissionRate = (float) ($serviceFeeRate ?? 0.05);
         } else {
             // Fallback for direct bookings or legacy reservations
@@ -190,10 +194,14 @@ class DokuPaymentService
             'gateway_ref' => $invoiceNumber,
             'split_details' => [
                 'subtotal' => $subtotal ?? $agentShare,
+                'coupon_code' => $couponCode,
+                'discount_amount' => $discountAmount,
+                'discounted_subtotal' => $discountedSubtotal ?? $agentShare,
                 'guest_service_fee' => $serviceFee ?? $platformCommission,
                 'commission_rate' => $commissionRate,
                 'platform_commission' => $platformCommission,
                 'agent_amount' => $agentShare,
+                'operator_amount' => $agentShare,
                 'agent_bank_provider' => $agent->bank_provider ?? 'BCA',
                 'agent_bank_account' => $agent->bank_account_number ?? '',
                 'agent_bank_account_name' => $agent->bank_account_name ?? '',

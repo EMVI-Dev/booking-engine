@@ -66,6 +66,11 @@ class WalletService
                 $operatorAmount = round($grossAmount - $platformCommission, 2);
             }
 
+            // Guard against splitDetails exceeding net collected funds (e.g. if raw subtotal was stored without coupon discount)
+            if ($grossAmount > 0 && ($operatorAmount + $platformCommission) > $grossAmount) {
+                $operatorAmount = max(0.0, round($grossAmount - $platformCommission, 2));
+            }
+
             // Check if departure date is already in the past or today
             $departureDate = Carbon::parse($reservation->requested_date)->startOfDay();
             $isDeparturePassed = $departureDate->isPast() || $departureDate->isToday();
@@ -254,6 +259,20 @@ class WalletService
         return WalletTransaction::query()
             ->where('status', WalletTransactionStatus::PendingEscrow)
             ->where('available_at', '<=', now())
+            ->update([
+                'status' => WalletTransactionStatus::Cleared,
+                'updated_at' => now(),
+            ]);
+    }
+
+    /**
+     * Release pending escrow funds for a specific completed reservation.
+     */
+    public function releaseReservationEscrow(Reservation $reservation): int
+    {
+        return WalletTransaction::query()
+            ->where('reservation_id', $reservation->id)
+            ->where('status', WalletTransactionStatus::PendingEscrow)
             ->update([
                 'status' => WalletTransactionStatus::Cleared,
                 'updated_at' => now(),

@@ -18,11 +18,11 @@ new #[Title('Create Activity Item')] class extends Component {
 
     public string $name = '';
     public ?string $vendor_id = null;
-    public string $category = 'Snorkeling Gear';
+    public string $category = '';
     public int $capacity_per_day = 20;
     public bool $sellable_standalone = true;
-    public ?float $price = 75000;
-    public string $location = 'Nusa Penida & Bali';
+    public ?float $price = 0;
+    public string $location = '';
     public string $description = '';
     public string $inclusions = '';
     public string $exclusions = '';
@@ -86,7 +86,7 @@ new #[Title('Create Activity Item')] class extends Component {
 
     public function quickCreateVendor(): void
     {
-        if (! $this->currentOperator) {
+        if (!$this->currentOperator) {
             return;
         }
 
@@ -377,18 +377,14 @@ new #[Title('Create Activity Item')] class extends Component {
                         <div class="sm:col-span-2 space-y-1.5 pt-3 border-t border-slate-100 dark:border-zinc-800">
                             <div class="flex items-center justify-between">
                                 <x-label for="vendor_id" :value="__('Activity Vendor / Supplier (Optional)')" />
-                                <button type="button" wire:click="openVendorModal" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 cursor-pointer">
+                                <button type="button" wire:click="openVendorModal"
+                                    class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 cursor-pointer">
                                     <i class="fa-solid fa-plus text-[10px]"></i>
                                     <span>{{ __('Add New Vendor') }}</span>
                                 </button>
                             </div>
-                            <x-select
-                                id="vendor_id"
-                                wire:model="vendor_id"
-                                :options="$this->vendorOptions"
-                                :searchable="true"
-                                placeholder="{{ __('Select a vendor...') }}"
-                            />
+                            <x-select id="vendor_id" wire:model="vendor_id" :options="$this->vendorOptions" :searchable="true"
+                                placeholder="{{ __('Select a vendor...') }}" />
                             <p class="text-[11px] text-slate-500 dark:text-slate-400">
                                 {{ __('If an external vendor provides this activity, they will automatically receive a booking dispatch email when confirmed.') }}
                             </p>
@@ -635,9 +631,11 @@ new #[Title('Create Activity Item')] class extends Component {
 
                     <div class="mx-auto my-2.5 h-1 w-12 shrink-0 rounded-full bg-op-line sm:hidden"></div>
 
-                    <div class="flex shrink-0 items-center justify-between gap-3 border-b border-op-line bg-op-muted/70 px-5 py-4 sm:px-6">
+                    <div
+                        class="flex shrink-0 items-center justify-between gap-3 border-b border-op-line bg-op-muted/70 px-5 py-4 sm:px-6">
                         <div class="flex min-w-0 items-center gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-400 text-brand-foreground">
+                            <div
+                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-400 text-brand-foreground">
                                 <i class="fa-solid fa-handshake text-sm"></i>
                             </div>
                             <div class="min-w-0">
@@ -659,27 +657,15 @@ new #[Title('Create Activity Item')] class extends Component {
                     <div class="flex-1 space-y-4 overflow-y-auto overscroll-contain p-5 sm:p-6">
                         <div>
                             <x-label for="new_vendor_name" :value="__('Vendor / Business Name')" required />
-                            <x-input
-                                id="new_vendor_name"
-                                type="text"
-                                wire:model="new_vendor_name"
-                                placeholder="{{ __('e.g. Bali ATV Adventures') }}"
-                                required
-                                :error="$errors->has('new_vendor_name')"
-                            />
+                            <x-input id="new_vendor_name" type="text" wire:model="new_vendor_name"
+                                placeholder="{{ __('e.g. Bali ATV Adventures') }}" required :error="$errors->has('new_vendor_name')" />
                             <x-input-error :messages="$errors->get('new_vendor_name')" />
                         </div>
 
                         <div>
                             <x-label for="new_vendor_email" :value="__('Reservation Email')" required />
-                            <x-input
-                                id="new_vendor_email"
-                                type="email"
-                                wire:model="new_vendor_email"
-                                placeholder="{{ __('booking@vendor.com') }}"
-                                required
-                                :error="$errors->has('new_vendor_email')"
-                            />
+                            <x-input id="new_vendor_email" type="email" wire:model="new_vendor_email"
+                                placeholder="{{ __('booking@vendor.com') }}" required :error="$errors->has('new_vendor_email')" />
                             <p class="text-[11px] text-op-subtle mt-1 flex items-center gap-1">
                                 <i class="fa-solid fa-circle-info text-[10px]"></i>
                                 <span>{{ __('Booking notifications will be dispatched here.') }}</span>
@@ -690,29 +676,21 @@ new #[Title('Create Activity Item')] class extends Component {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <x-label for="new_vendor_contact" :value="__('Contact Person')" />
-                                <x-input
-                                    id="new_vendor_contact"
-                                    type="text"
-                                    wire:model="new_vendor_contact"
-                                    placeholder="{{ __('e.g. Wayan') }}"
-                                    :error="$errors->has('new_vendor_contact')"
-                                />
+                                <x-input id="new_vendor_contact" type="text" wire:model="new_vendor_contact"
+                                    placeholder="{{ __('e.g. Wayan') }}" :error="$errors->has('new_vendor_contact')" />
                             </div>
                             <div>
                                 <x-label for="new_vendor_phone" :value="__('Phone / WhatsApp')" />
-                                <x-input
-                                    id="new_vendor_phone"
-                                    type="text"
-                                    wire:model="new_vendor_phone"
-                                    placeholder="{{ __('+62 812...') }}"
-                                    :error="$errors->has('new_vendor_phone')"
-                                />
+                                <x-input id="new_vendor_phone" type="text" wire:model="new_vendor_phone"
+                                    placeholder="{{ __('+62 812...') }}" :error="$errors->has('new_vendor_phone')" />
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex shrink-0 items-center justify-end gap-3 border-t border-op-line bg-op-surface px-5 py-3 pb-6 sm:px-6 sm:pb-4">
-                        <x-button type="button" size="sm" variant="ghost" wire:click="$set('show_vendor_modal', false)">
+                    <div
+                        class="flex shrink-0 items-center justify-end gap-3 border-t border-op-line bg-op-surface px-5 py-3 pb-6 sm:px-6 sm:pb-4">
+                        <x-button type="button" size="sm" variant="ghost"
+                            wire:click="$set('show_vendor_modal', false)">
                             {{ __('Cancel') }}
                         </x-button>
                         <x-button type="button" size="sm" wire:click="quickCreateVendor">

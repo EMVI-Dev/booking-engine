@@ -313,8 +313,7 @@ test('pro plan builds a whatsapp send link and shows ready-made guest messages',
     ]);
 
     Livewire::actingAs($this->user)
-        ->test('pages::reservations.index')
-        ->call('viewDetails', $reservation->id)
+        ->test('pages::reservations.show', ['reservation' => $reservation])
         ->assertSee('1-Click WhatsApp Guest Dispatch');
 });
 
@@ -336,8 +335,7 @@ test('starter plan shows an upgrade note instead of ready-made whatsapp messages
     ]);
 
     Livewire::actingAs($this->user)
-        ->test('pages::reservations.index')
-        ->call('viewDetails', $reservation->id)
+        ->test('pages::reservations.show', ['reservation' => $reservation])
         ->assertSee('Ready-made WhatsApp messages are on Growth')
         ->assertDontSee('1-Click WhatsApp Guest Dispatch');
 });

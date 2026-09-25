@@ -157,6 +157,24 @@ class Reservation extends Model
         return 'public_token';
     }
 
+    /**
+     * Retrieve the model for a bound value, supporting public token, code, or ULID.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field === 'code') {
+            return $this->where('code', $value)
+                ->orWhere('id', $value)
+                ->first();
+        }
+
+        if ($field) {
+            return $this->where($field, $value)->first();
+        }
+
+        return $this->where('public_token', $value)->first();
+    }
+
     protected function casts(): array
     {
         return [

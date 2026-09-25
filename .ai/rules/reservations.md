@@ -14,5 +14,5 @@ Demo desk pay-link modal is sample-shop, not platform maintenance. Show Sample s
 ## Date chips sit above Date and Guests
 Pay-link date chips sit in a full-width segmented row above Date and Guests so the picker and pax stepper share one baseline. Spots-left sits under Guests, not inside the Date column.
 
-## Phone booking Details uses viewDetails
-Phone booking cards must call viewDetails, same as the desktop table. There is no viewReservation method. Do not restore that wire:click name.
+## Details button navigates to dedicated page
+The Details button on phone cards and the desktop table navigates directly to the dedicated reservation page (`reservations.show` with `wire:navigate`). The inline details modal has been removed and all actions (confirmation, decline, completion, cancellation & refund) are centralized on the detail page.

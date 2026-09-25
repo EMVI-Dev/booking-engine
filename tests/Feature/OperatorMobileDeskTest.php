@@ -69,7 +69,7 @@ test('team settings stay desktop-gated', function () {
 test('the bookings list includes a phone card layout', function () {
     $package = Package::factory()->create(['operator_id' => $this->operator->id]);
 
-    Reservation::factory()->confirmed()->create([
+    $reservation = Reservation::factory()->confirmed()->create([
         'operator_id' => $this->operator->id,
         'bookable_type' => 'package',
         'bookable_id' => $package->id,
@@ -82,7 +82,7 @@ test('the bookings list includes a phone card layout', function () {
         ->assertOk()
         ->assertSee('md:hidden space-y-3', false)
         ->assertSee('Phone Desk Guest')
-        ->assertSee("wire:click=\"viewDetails('", false)
+        ->assertSee(route('reservations.show', $reservation), false)
         ->assertDontSee('viewReservation', false);
 });
 

@@ -67,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('products/{product}/edit', 'pages::products.edit')->name('products.edit');
 
     Route::livewire('reservations', 'pages::reservations.index')->name('reservations.index');
+    Route::livewire('reservations/{reservation:code}', 'pages::reservations.show')->name('reservations.show');
     Route::livewire('guests', 'pages::guests.index')->name('guests.index');
     Route::livewire('guests/{guest}', 'pages::guests.show')->name('guests.show');
     Route::livewire('calendar', 'pages::calendar.index')->name('calendar.index');
