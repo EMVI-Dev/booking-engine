@@ -150,8 +150,12 @@ class SubscriptionProrationService
             );
 
             if ($couponCode) {
-                PlatformCoupon::whereNull('operator_id')
+                PlatformCoupon::forSubscription()
                     ->where('code', $couponCode)
+                    ->where(function ($q) use ($operator) {
+                        $q->whereNull('operator_id')
+                            ->orWhere('operator_id', $operator->id);
+                    })
                     ->first()
                     ?->incrementUsage();
 

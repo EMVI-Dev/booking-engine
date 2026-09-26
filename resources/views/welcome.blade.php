@@ -102,6 +102,11 @@
             <div
                 class="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-5xl flex-col justify-center gap-8 px-4 py-8 text-center sm:px-6 md:block md:min-h-0 md:space-y-8 md:py-0">
                 <div class="space-y-5 md:space-y-8">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#131316] border border-zinc-800 text-xs font-medium text-zinc-300 shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-[#FFEF4D]"></span>
+                        <span>{{ __('Website + Booking Engine + Payment in one platform') }}</span>
+                    </div>
+
                     <h1
                         class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight text-balance">
                         {{ __('Guests book themselves.') }}
@@ -561,13 +566,16 @@
                                         class="p-2.5 rounded-lg bg-[#09090b] border border-zinc-800 text-[11px] text-zinc-300 space-y-1.5">
                                         <div class="flex items-center gap-2"><i
                                                 class="fa-solid fa-location-dot w-3 text-center text-[10px] text-zinc-500"></i>
-                                            <span><strong>Pickup:</strong> Hilton Bali Resort (06:45 AM)</span></div>
+                                            <span><strong>Pickup:</strong> Hilton Bali Resort (06:45 AM)</span>
+                                        </div>
                                         <div class="flex items-center gap-2"><i
                                                 class="fa-solid fa-ship w-3 text-center text-[10px] text-zinc-500"></i>
-                                            <span><strong>Trip:</strong> Nusa Penida Snorkeling (2 Guests)</span></div>
+                                            <span><strong>Trip:</strong> Nusa Penida Snorkeling (2 Guests)</span>
+                                        </div>
                                         <div class="flex items-center gap-2"><i
                                                 class="fa-solid fa-qrcode w-3 text-center text-[10px] text-zinc-500"></i>
-                                            <span><strong>Digital QR Pass:</strong> travelengine.id/v/8821</span></div>
+                                            <span><strong>Digital QR Pass:</strong> travelengine.id/v/8821</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -639,7 +647,7 @@
                     <h2 class="text-2xl font-black tracking-tight text-white sm:text-4xl">
                         {{ __('Three steps') }}
                     </h2>
-                    <p class="text-sm leading-snug text-zinc-400">{{ __('Your shop. They book. You get paid.') }}</p>
+                    <p class="text-sm leading-snug text-zinc-400">{{ __('Your website. They book. You get paid.') }}</p>
                 </div>
 
                 <ol class="md:hidden">
@@ -650,7 +658,7 @@
                             <span class="mt-2 w-px flex-1 bg-zinc-800"></span>
                         </div>
                         <div class="min-w-0 pb-1">
-                            <h3 class="text-base font-bold text-white">{{ __('Your shop') }}</h3>
+                            <h3 class="text-base font-bold text-white">{{ __('Your website') }}</h3>
                             <p class="text-sm leading-snug text-zinc-400">
                                 {{ __('Your trips, your prices, one link.') }}</p>
                         </div>
@@ -685,7 +693,7 @@
                             <i class="fa-solid fa-store"></i>
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-white">{{ __('Your shop') }}</h3>
+                            <h3 class="text-lg font-bold text-white">{{ __('Your website') }}</h3>
                             <p class="text-base leading-relaxed text-zinc-400">
                                 {{ __('Your trips, your prices, one link.') }}
                             </p>
@@ -708,7 +716,7 @@
                     <div class="space-y-4 rounded-2xl border border-zinc-800 bg-[#131316] p-7">
                         <div
                             class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-lg font-black text-[#090d16]">
-                            <i class="fa-solid fa-wallet"></i>
+                            <i class="fa-solid fa-credit-card"></i>
                         </div>
                         <div>
                             <h3 class="text-lg font-bold text-white">{{ __('You get paid') }}</h3>
@@ -733,7 +741,7 @@
                     <p class="text-sm leading-snug text-zinc-400 md:hidden">
                         {{ __('Copy a link. They pay. The rest is already done.') }}</p>
                     <p class="hidden text-base leading-relaxed text-zinc-400 sm:block">
-                        Spend less time answering repetitive questions and more time growing your tours.
+                        {{ __('Spend less time answering repetitive questions and more time growing your tours.') }}
                     </p>
                 </div>
 
@@ -1337,6 +1345,24 @@
 
                 <div
                     class="overflow-hidden rounded-2xl border border-zinc-800 bg-[#131316] md:space-y-3 md:overflow-visible md:rounded-none md:border-0 md:bg-transparent">
+                    <!-- FAQ Item 0: Key Selling Point -->
+                    <div
+                        class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">
+                        <button type="button" @click="activeAccordion = activeAccordion === 0 ? null : 0"
+                            class="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left sm:gap-4 sm:p-5">
+                            <span class="text-sm font-bold text-white sm:text-base">
+                                {{ __('What does “Website + Booking Engine + Payment in one platform” mean?') }}
+                            </span>
+                            <i class="fa-solid fa-chevron-down text-xs text-zinc-400 transition-transform duration-200"
+                                :class="activeAccordion === 0 ? 'rotate-180 text-[#FFEF4D]' : ''"></i>
+                        </button>
+                        <div x-show="activeAccordion === 0" x-collapse
+                            class="px-4 sm:px-5 pb-5 text-base text-zinc-400 leading-relaxed border-t border-zinc-800 pt-3"
+                            style="display: none;">
+                            {{ __('It means you do not need separate subscriptions for a website builder, an external booking plugin, and a payment gateway. TravelEngine gives you all three in one place: a mobile-ready tour website, live booking calendar with holds, and automated payments (QRIS, virtual accounts, cards) sent directly to your Indonesian bank account.') }}
+                        </div>
+                    </div>
+
                     <!-- FAQ Item 1 -->
                     <div
                         class="overflow-hidden border-b border-zinc-800 transition-colors last:border-b-0 md:rounded-xl md:border md:border-zinc-800 md:bg-[#131316]">

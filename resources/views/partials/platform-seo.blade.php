@@ -5,11 +5,14 @@
 @endphp
 <title>{{ $title }}</title>
 <meta name="description" content="{{ $description }}" />
+<meta name="keywords" content="website booking engine payment, tour operator platform, tour booking engine, tour website builder, qris tour booking, travel booking platform Indonesia, direct tour reservations" />
+<meta name="application-name" content="{{ $seo->platformName() }}" />
 <link rel="canonical" href="{{ $url }}" />
 
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
 <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
 <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}" />
+<link rel="alternate" type="text/plain" href="{{ url('/llms.txt') }}" title="LLMs.txt" />
 
 <link rel="icon" href="/favicon.svg?v={{ $faviconVersion }}" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico?v={{ $faviconVersion }}" sizes="any">

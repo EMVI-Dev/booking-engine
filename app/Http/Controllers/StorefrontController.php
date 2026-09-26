@@ -631,7 +631,7 @@ class StorefrontController extends Controller
         }
 
         $content .= "Sitemap: {$baseUrl}/sitemap.xml\n";
-        if ($agent && $hasAiDiscovery) {
+        if (! $agent || $hasAiDiscovery) {
             $content .= "# AI Discovery Files\n";
             $content .= "llms-txt: {$baseUrl}/llms.txt\n";
             $content .= "llms-full: {$baseUrl}/llms-full.txt\n";
@@ -709,7 +709,28 @@ class StorefrontController extends Controller
         $baseUrl = $request->getSchemeAndHttpHost();
 
         if (! $agent) {
-            $content = "# Direct Booking Engine\n\nPlatform for direct verified tour operator storefronts.\n";
+            $name = config('app.name', 'TravelEngine');
+            $content = "# {$name} - Website + Booking Engine + Payment in One Platform\n\n";
+            $content .= "> All-in-one platform for tour and activity operators in Indonesia: Website + Booking Engine + Payment in one platform. Operators keep 100% of the listed ticket price.\n\n";
+            $content .= "## Key Value Propositions\n";
+            $content .= "- **Website**: Branded tour operator storefront, mobile-optimized, custom domains (yourbrand.com).\n";
+            $content .= "- **Booking Engine**: 24/7 direct reservations, real-time availability holds, calendar integration, daily manifests for drivers and boat captains.\n";
+            $content .= "- **Payment Processing**: Integrated QRIS, Indonesian bank transfers (BCA, Mandiri, BRI, BNI), and credit cards. Money settles directly to Indonesian bank accounts.\n";
+            $content .= "- **0% Ticket Commission**: Operators keep 100% of their listed ticket price. Transparent 5% platform fee added at checkout.\n";
+            $content .= "- **WhatsApp E-Tickets**: Automatic vouchers with digital QR check-in passes delivered to guests.\n\n";
+            $content .= "## Plans & Pricing\n";
+            $content .= "- **Starter Plan**: Free forever. 2 listings, 2 team seats, tour website + 24/7 direct booking.\n";
+            $content .= "- **Growth Plan**: Rp 299.000 / month. 10 listings, unlimited seats, WhatsApp tickets, daily guest manifests, calendar sync.\n";
+            $content .= "- **Agency Plan**: Rp 799.000 / month. 30 listings, custom domain (yourbrand.com), remove branding, AI discovery.\n\n";
+            $content .= "## Navigation & Documentation\n";
+            $content .= "- [Homepage]({$baseUrl})\n";
+            $content .= "- [How It Works]({$baseUrl}#how-it-works)\n";
+            $content .= "- [Features]({$baseUrl}#features)\n";
+            $content .= "- [Pricing]({$baseUrl}#pricing)\n";
+            $content .= "- [Frequently Asked Questions]({$baseUrl}#faq)\n";
+            $content .= "- [Complete Platform Knowledge Base (LLMs Full)]({$baseUrl}/llms-full.txt)\n";
+            $content .= "- [Terms of Service]({$baseUrl}/legal)\n";
+            $content .= "- [Privacy Policy]({$baseUrl}/privacy)\n";
 
             return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
         }
@@ -786,7 +807,28 @@ class StorefrontController extends Controller
         $baseUrl = $request->getSchemeAndHttpHost();
 
         if (! $agent) {
-            $content = "# Direct Booking Engine\n\nPlatform for direct verified tour operator storefronts.\n";
+            $name = config('app.name', 'TravelEngine');
+            $content = "# {$name} - Comprehensive Platform Knowledge Base\n\n";
+            $content .= "## What is {$name}?\n";
+            $content .= "{$name} is an all-in-one platform for tour and activity operators in Indonesia that integrates three essential business capabilities into one unified system:\n";
+            $content .= "1. **Tour Operator Website**: A dedicated, mobile-optimized online storefront displaying tours, activities, pickup details, photos, and policies.\n";
+            $content .= "2. **24/7 Booking Engine**: Direct online reservation system with real-time capacity checks, 30-minute availability holds, automated reminders, and daily pickup manifests for guides, drivers, and captains.\n";
+            $content .= "3. **Integrated Payment Processing**: Multi-channel payment acceptance via QRIS, Indonesian bank virtual accounts (BCA, Mandiri, BRI, BNI), and credit cards. Money settles directly to Indonesian bank accounts.\n\n";
+            $content .= "## The Problem We Solve\n";
+            $content .= "Traditionally, tour and activity operators struggle with fragmented setups:\n";
+            $content .= "- Paying expensive web designers or monthly website builders.\n";
+            $content .= "- Losing 15% to 30% commission per booking to online travel agencies (OTAs) or third-party booking plugins.\n";
+            $content .= "- Manually chasing bank transfer receipts and confirming passenger names over chat messages.\n";
+            $content .= "{$name} replaces these disconnected systems with one seamless platform where operators keep 100% of their listed ticket prices.\n\n";
+            $content .= "## Key Operational Capabilities\n";
+            $content .= "- **100% Ticket Payout (0% Commission)**: The operator receives 100% of the listed ticket price. A transparent 5% platform fee is added at checkout.\n";
+            $content .= "- **Automated WhatsApp Tickets**: Once guests pay, they receive their digital ticket, meeting point directions, and QR check-in pass directly on WhatsApp.\n";
+            $content .= "- **Daily Dispatch Manifests**: Digital and printable passenger lists showing guest names, party sizes, pickup hotels, times, and payment status for drivers and guides.\n";
+            $content .= "- **Calendar Sync**: Departures sync automatically to Google Calendar, Apple Calendar, and Outlook.\n\n";
+            $content .= "## Pricing & Subscription Tiers\n";
+            $content .= "- **Starter Plan**: Free forever. 2 listings, 2 team seats, tour website + 24/7 direct booking.\n";
+            $content .= "- **Growth Plan**: Rp 299.000 / month. 10 listings, unlimited seats, WhatsApp tickets, daily guest manifests, calendar sync.\n";
+            $content .= "- **Agency Plan**: Rp 799.000 / month. 30 listings, custom domain (yourbrand.com), remove branding, AI discovery.\n";
 
             return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
         }

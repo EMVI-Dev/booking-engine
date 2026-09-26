@@ -403,6 +403,48 @@ class DokuPaymentService
     }
 
     /**
+     * Synchronize a pending subscription invoice against DOKU (return-path safety net).
+     */
+    public function syncSubscriptionPaymentStatus(SubscriptionPayment $payment): bool
+    {
+        if ($payment->status !== 'pending') {
+            return false;
+        }
+
+        $invoiceNumber = (string) ($payment->invoice_number ?: $payment->gateway_ref);
+
+        if ($invoiceNumber === '') {
+            return false;
+        }
+
+        $status = $this->queryPaymentStatus($invoiceNumber);
+
+        if ($status) {
+            return $this->processNotification([
+                'order' => [
+                    'invoice_number' => $invoiceNumber,
+                    'amount' => (float) $payment->net_amount_paid,
+                ],
+                'transaction' => ['status' => $status],
+            ]);
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether real gateway credentials are configured for the active mode.
+     *
+     * When true, refund/payout must not fall back to the offline simulator after an API failure.
+     */
+    protected function hasGatewayCredentials(?Operator $operator = null): bool
+    {
+        $credentials = $this->gatewayCredentials($operator);
+
+        return trim($credentials['client_id']) !== '' && trim($credentials['secret_key']) !== '';
+    }
+
+    /**
      * Process an incoming notification / webhook callback from DOKU.
      *
      * @param  array<string, mixed>  $payload
@@ -457,8 +499,10 @@ class DokuPaymentService
 
         if (! $payment) {
             $subscriptionPayment = SubscriptionPayment::query()
-                ->where('invoice_number', $invoiceNumber)
-                ->orWhere('gateway_ref', $invoiceNumber)
+                ->where(function ($query) use ($invoiceNumber): void {
+                    $query->where('invoice_number', $invoiceNumber)
+                        ->orWhere('gateway_ref', $invoiceNumber);
+                })
                 ->first();
 
             if ($subscriptionPayment) {
@@ -519,11 +563,7 @@ class DokuPaymentService
         }
 
         if (in_array($normalizedStatus, ['REFUND', 'REFUNDED', 'SUCCESS_REFUND'], true)) {
-            $payment->update([
-                'status' => PaymentStatus::Refunded,
-                'refund_status' => 'refunded',
-                'refunded_at' => now(),
-            ]);
+            $this->applyExternalRefund($payment);
 
             return true;
         }
@@ -633,6 +673,9 @@ class DokuPaymentService
 
     /**
      * Send the guest's money back through DOKU, or locally when the simulator is on.
+     *
+     * When real gateway credentials are configured, API failures fail closed — the
+     * offline simulator must not mark money as refunded after a live/sandbox rejection.
      */
     public function refundPayment(Payment $payment): bool
     {
@@ -646,8 +689,9 @@ class DokuPaymentService
 
         $credentials = $this->gatewayCredentials();
         $invoiceNumber = (string) $payment->gateway_ref;
+        $hasCredentials = $this->hasGatewayCredentials();
 
-        if (trim($credentials['client_id']) !== '' && trim($credentials['secret_key']) !== '' && $invoiceNumber !== '') {
+        if ($hasCredentials && $invoiceNumber !== '') {
             $targetPath = '/orders/v1/refund';
             $body = [
                 'order' => [
@@ -677,9 +721,7 @@ class DokuPaymentService
                 report($e);
             }
 
-            if (! static::simulatorEnabled()) {
-                return false;
-            }
+            return false;
         }
 
         if (! static::simulatorEnabled()) {
@@ -698,6 +740,47 @@ class DokuPaymentService
             'refund_status' => 'refunded',
             'refunded_at' => now(),
         ]);
+    }
+
+    /**
+     * Apply a refund reported by DOKU (webhook) and keep reservation/wallet in sync.
+     */
+    protected function applyExternalRefund(Payment $payment): void
+    {
+        if ($payment->status === PaymentStatus::Refunded || $payment->refund_status === 'refunded') {
+            return;
+        }
+
+        $this->markPaymentRefunded($payment);
+
+        $reservation = $payment->reservation;
+
+        if (! $reservation) {
+            return;
+        }
+
+        if (! in_array($reservation->status, [
+            ReservationStatus::Confirmed,
+            ReservationStatus::PendingConfirmation,
+        ], true)) {
+            return;
+        }
+
+        $reservation->update([
+            'status' => ReservationStatus::Cancelled,
+            'hold_expires_at' => null,
+        ]);
+
+        app(WalletService::class)->cancelBookingEarning(
+            $reservation,
+            'Refunded via DOKU notification'
+        );
+
+        try {
+            app(VendorDispatchService::class)->dispatchBookingCancellation($reservation);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
@@ -747,13 +830,12 @@ class DokuPaymentService
                 report($e);
             }
 
-            if (! static::simulatorEnabled()) {
-                return [
-                    'success' => false,
-                    'reference' => $reference,
-                    'message' => __('The bank transfer did not go through. The payout is still waiting.'),
-                ];
-            }
+            // Credentials are set — fail closed even if the offline simulator is enabled.
+            return [
+                'success' => false,
+                'reference' => $reference,
+                'message' => __('The bank transfer did not go through. The payout is still waiting.'),
+            ];
         }
 
         if (! static::simulatorEnabled()) {

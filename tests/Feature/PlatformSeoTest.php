@@ -14,9 +14,12 @@ test('platform homepage has canonical share tags and software schema', function 
         ->assertSee('<meta name="twitter:card" content="summary_large_image" />', false)
         ->assertSee('Guests book themselves. You keep the listed price.', false)
         ->assertSee('you keep 100% of the listed price', false)
+        ->assertSee('Website + Booking Engine + Payment in one platform', false)
         ->assertSee('"@type":"Organization"', false)
         ->assertSee('"@type":"WebSite"', false)
+        ->assertSee('"@type":"WebPage"', false)
         ->assertSee('"@type":"SoftwareApplication"', false)
+        ->assertSee('"@type":"FAQPage"', false)
         ->assertSee('"@id":"'.url('/').'#organization"', false)
         ->assertSee('"slogan":"Guests book themselves. You keep the listed price."', false)
         ->assertDontSee('"@type":"TravelAgency"', false)
@@ -46,4 +49,23 @@ test('platform sitemap lists legal pages', function () {
         ->assertSee('<loc>'.url('/').'</loc>', false)
         ->assertSee('<loc>'.url('/legal').'</loc>', false)
         ->assertSee('<loc>'.url('/privacy').'</loc>', false);
+});
+
+test('platform robots.txt and llms discovery files are available for AI search crawlers', function () {
+    $this->get('/robots.txt')
+        ->assertOk()
+        ->assertSee('llms-txt:', false)
+        ->assertSee('/llms.txt', false);
+
+    $this->get('/llms.txt')
+        ->assertOk()
+        ->assertSee('Website + Booking Engine + Payment in One Platform', false)
+        ->assertSee('0% Ticket Commission', false);
+
+    $this->get('/llms-full.txt')
+        ->assertOk()
+        ->assertSee('Comprehensive Platform Knowledge Base', false)
+        ->assertSee('Tour Operator Website', false)
+        ->assertSee('Booking Engine', false)
+        ->assertSee('Payment Processing', false);
 });

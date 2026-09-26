@@ -6,7 +6,9 @@ use App\Models\Plan;
 use App\Models\PlatformCoupon;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
+use App\Services\DokuPaymentService;
 use App\Services\SubscriptionProrationService;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -64,7 +66,7 @@ test('operator can initiate upgrade, redirect to checkout, and complete card pay
         ->assertSet('target_plan_id', $this->proPlan->id)
         ->set('auto_renew', true)
         ->set('auto_renew_consent', true)
-        ->set('payment_method', 'cc')
+        ->set('payment_method', 'doku')
         ->call('confirmPlanSwitch')
         ->assertSet('show_switch_modal', false)
         ->assertHasNoErrors();
@@ -238,6 +240,7 @@ test('operator can apply platform subscription coupon during checkout to receive
 
     PlatformCoupon::create([
         'code' => 'PLATFORM50',
+        'scope' => 'subscription',
         'operator_id' => null, // Platform Master Coupon
         'discount_type' => 'percentage',
         'discount_value' => 50.0,
@@ -274,6 +277,7 @@ test('operator can apply platform subscription coupon directly in plan upgrade m
 
     PlatformCoupon::create([
         'code' => 'UPGRADE25',
+        'scope' => 'subscription',
         'operator_id' => null, // Platform Master Coupon
         'discount_type' => 'percentage',
         'discount_value' => 25.0,
@@ -326,4 +330,38 @@ test('operator invoice receipt displays coupon promo code discount breakdown', f
         ->call('closeInvoiceModal')
         ->call('viewInvoice', $payment->id)
         ->assertSee('Official Subscription Receipt');
+});
+
+test('pending subscription upgrade activates plan when DOKU status sync reports SUCCESS', function () {
+    config()->set('doku.sandbox.client_id', 'BRN-CLIENT');
+    config()->set('doku.sandbox.secret_key', 'super-secret');
+    config()->set('doku.sandbox.base_url', 'https://api-sandbox.doku.com');
+
+    $payment = SubscriptionPayment::create([
+        'operator_id' => $this->operator->id,
+        'plan_id' => $this->proPlan->id,
+        'previous_plan_id' => $this->operator->plan_id,
+        'invoice_number' => 'SUB-PRORATION-SYNC-1',
+        'type' => 'subscription_upgrade',
+        'billing_interval' => 'monthly',
+        'gross_amount' => (float) $this->proPlan->price_monthly,
+        'prorated_credit' => 0,
+        'net_amount_paid' => (float) $this->proPlan->price_monthly,
+        'status' => 'pending',
+        'gateway' => 'doku',
+        'gateway_ref' => 'SUB-PRORATION-SYNC-1',
+        'breakdown' => ['auto_renew' => true],
+    ]);
+
+    Http::fake([
+        'https://api-sandbox.doku.com/orders/v1/status/SUB-PRORATION-SYNC-1' => Http::response([
+            'transaction' => ['status' => 'SUCCESS'],
+        ], 200),
+    ]);
+
+    $synced = app(DokuPaymentService::class)->syncSubscriptionPaymentStatus($payment);
+
+    expect($synced)->toBeTrue()
+        ->and($payment->fresh()->status)->toBe('completed')
+        ->and($this->operator->fresh()->plan_id)->toBe($this->proPlan->id);
 });

@@ -60,6 +60,11 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             abort(403, __('Unauthorized subscription payment.'));
         }
 
+        if ($payment->status === 'pending') {
+            app(DokuPaymentService::class)->syncSubscriptionPaymentStatus($payment);
+            $payment->refresh();
+        }
+
         if ($payment->status === 'completed') {
             session()->flash('success', __('This subscription invoice has already been paid and activated.'));
             $this->redirectRoute('settings.plan', navigate: true);
@@ -102,9 +107,18 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             return;
         }
 
-        // Platform subscription coupons have operator_id = null
-        $coupon = PlatformCoupon::whereNull('operator_id')
+        $operator = auth()->user()?->currentOperator();
+
+        // Match platform-wide subscription coupons (operator_id = null)
+        // or coupons targeted specifically to this operator.
+        $coupon = PlatformCoupon::forSubscription()
             ->where('code', $cleanCode)
+            ->where(function ($q) use ($operator) {
+                $q->whereNull('operator_id');
+                if ($operator) {
+                    $q->orWhere('operator_id', $operator->id);
+                }
+            })
             ->first();
 
         if (! $coupon) {
@@ -199,6 +213,29 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
     }
 
     /**
+     * Increment usage for the applied subscription promo (platform-wide or operator-targeted).
+     */
+    protected function incrementAppliedCouponUsage(): void
+    {
+        if (! $this->appliedCouponCode) {
+            return;
+        }
+
+        $operator = auth()->user()?->currentOperator();
+
+        PlatformCoupon::forSubscription()
+            ->where('code', $this->appliedCouponCode)
+            ->where(function ($q) use ($operator) {
+                $q->whereNull('operator_id');
+                if ($operator) {
+                    $q->orWhere('operator_id', $operator->id);
+                }
+            })
+            ->first()
+            ?->incrementUsage();
+    }
+
+    /**
      * Activate a zero-amount subscription invoice covered entirely by credits or coupons.
      */
     public function completeZeroAmountPayment(SubscriptionProrationService $prorationService): void
@@ -210,12 +247,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
         $this->is_processing = true;
 
         try {
-            if ($this->appliedCouponCode) {
-                PlatformCoupon::whereNull('operator_id')
-                    ->where('code', $this->appliedCouponCode)
-                    ->first()
-                    ?->incrementUsage();
-            }
+            $this->incrementAppliedCouponUsage();
 
             $prorationService->completePendingPayment(
                 payment: $this->payment,
@@ -270,12 +302,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
         try {
             $gatewayRef = 'CC-AUTH-'.strtoupper(bin2hex(random_bytes(4)));
 
-            if ($this->appliedCouponCode) {
-                PlatformCoupon::whereNull('operator_id')
-                    ->where('code', $this->appliedCouponCode)
-                    ->first()
-                    ?->incrementUsage();
-            }
+            $this->incrementAppliedCouponUsage();
 
             $prorationService->completePendingPayment(
                 payment: $this->payment,
@@ -310,12 +337,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
         try {
             $gatewayRef = strtoupper($this->payment_method).'-SIM-'.strtoupper(bin2hex(random_bytes(4)));
 
-            if ($this->appliedCouponCode) {
-                PlatformCoupon::whereNull('operator_id')
-                    ->where('code', $this->appliedCouponCode)
-                    ->first()
-                    ?->incrementUsage();
-            }
+            $this->incrementAppliedCouponUsage();
 
             $prorationService->completePendingPayment(
                 payment: $this->payment,
@@ -410,26 +432,9 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
                             </span>
                         </div>
 
-                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/70 dark:border-zinc-700/60 space-y-3">
-                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">{{ __('Payment Channels Supported:') }}</span>
-                            <div class="grid grid-cols-2 gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
-                                <span class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xs flex items-center gap-2">
-                                    <i class="fa-solid fa-credit-card text-purple-600"></i>
-                                    <span class="truncate">Visa / Mastercard / JCB</span>
-                                </span>
-                                <span class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xs flex items-center gap-2">
-                                    <i class="fa-solid fa-qrcode text-emerald-600"></i>
-                                    <span class="truncate">QRIS Instant</span>
-                                </span>
-                                <span class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xs flex items-center gap-2">
-                                    <i class="fa-solid fa-building-columns text-blue-600"></i>
-                                    <span class="truncate">BCA, Mandiri, BRI, BNI</span>
-                                </span>
-                                <span class="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xs flex items-center gap-2">
-                                    <i class="fa-solid fa-wallet text-amber-600"></i>
-                                    <span class="truncate">OVO, ShopeePay</span>
-                                </span>
-                            </div>
+                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/70 dark:border-zinc-700/60 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info text-slate-400 shrink-0"></i>
+                            <span>{{ __('You will choose your payment method on the DOKU secure page — Credit Card, QRIS, Virtual Account, and e-wallets are all available.') }}</span>
                         </div>
 
                         @if ($payment->breakdown['auto_renew'] ?? true)

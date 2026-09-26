@@ -3,6 +3,9 @@
 use App\Concerns\ResolvesCurrentOperator;
 use App\Models\Operator;
 use App\Models\Plan;
+use App\Models\PlatformCoupon;
+use App\Models\SubscriptionPayment;
+use App\Services\DokuPaymentService;
 use App\Services\OperatorActivitySlackNotifier;
 use App\Services\SubscriptionProrationService;
 use Carbon\Carbon;
@@ -12,27 +15,42 @@ use Livewire\Component;
 
 new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Component {
     use ResolvesCurrentOperator;
+
     public ?string $active_plan_id = null;
+
     public string $billing_interval = 'monthly';
 
     public bool $show_switch_modal = false;
+
     public bool $show_cancel_modal = false;
+
     public bool $show_auto_renew_modal = false;
+
     public bool $target_auto_renew_state = false;
+
     public bool $modal_consent_checkbox = false;
 
     public ?string $target_plan_id = null;
+
     public string $downgrade_mode = 'end_of_cycle'; // 'end_of_cycle' | 'immediate'
-    public string $payment_method = 'cc'; // 'cc' | 'qris' | 'va' | 'direct'
+
+    public string $payment_method = 'doku'; // Always routes through Doku checkout
+
     public bool $auto_renew = true;
+
     public bool $auto_renew_consent = false;
+
     public bool $is_processing = false;
 
     // Platform Subscription Promo Code
     public string $couponCode = '';
+
     public ?string $appliedCouponCode = null;
+
     public float $discountAmount = 0.0;
+
     public string $couponMessage = '';
+
     public bool $couponValid = false;
 
     /**
@@ -43,10 +61,41 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         $operator = auth()->user()?->currentOperator();
 
         if ($operator) {
+            $this->reconcilePendingSubscriptionPayment($operator);
+
+            $operator->refresh();
             $this->active_plan_id = $operator->plan_id ?: Plan::getDefaultPlan()->id;
             $this->billing_interval = (string) ($operator->subscription_interval ?: 'monthly');
             $this->auto_renew = (bool) ($operator->subscription_auto_renew ?? true);
         }
+    }
+
+    /**
+     * Poll DOKU for a pending subscription invoice after hosted checkout return.
+     */
+    protected function reconcilePendingSubscriptionPayment(Operator $operator): void
+    {
+        $pending = SubscriptionPayment::query()->where('operator_id', $operator->id)->where('status', 'pending')->latest()->first();
+
+        if (!$pending) {
+            return;
+        }
+
+        $synced = app(DokuPaymentService::class)->syncSubscriptionPaymentStatus($pending);
+
+        if (!$synced) {
+            return;
+        }
+
+        $pending->refresh();
+
+        if ($pending->status !== 'completed') {
+            return;
+        }
+
+        $planName = $pending->plan?->name ?? __('your new plan');
+
+        session()->flash('success', __('Subscription activated! Upgraded to :plan successfully.', ['plan' => $planName]));
     }
 
     /**
@@ -59,20 +108,33 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         if (empty($cleanCode)) {
             $this->couponMessage = __('Please enter a promo code.');
             $this->couponValid = false;
+
             return;
         }
 
-        // Platform subscription coupons have operator_id = null
-        $coupon = \App\Models\PlatformCoupon::whereNull('operator_id')->where('code', $cleanCode)->first();
+        $operator = auth()->user()?->currentOperator();
+
+        // Match platform-wide subscription coupons (operator_id = null)
+        // or coupons targeted specifically to this operator.
+        $coupon = PlatformCoupon::forSubscription()
+            ->where('code', $cleanCode)
+            ->where(function ($q) use ($operator) {
+                $q->whereNull('operator_id');
+                if ($operator) {
+                    $q->orWhere('operator_id', $operator->id);
+                }
+            })
+            ->first();
 
         if (!$coupon) {
             $this->couponMessage = __('Invalid subscription promo code.');
             $this->couponValid = false;
             $this->removeCoupon();
+
             return;
         }
 
-        $operator = auth()->user()?->currentOperator();
+        // $operator already resolved above.
         $targetPlan = $this->target_plan_id ? Plan::find($this->target_plan_id) : null;
 
         if (!$operator || !$targetPlan) {
@@ -87,6 +149,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
             $this->couponMessage = $result['reason'] ?? __('Promo code cannot be applied.');
             $this->couponValid = false;
             $this->removeCoupon();
+
             return;
         }
 
@@ -144,12 +207,14 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
         if (!$operator) {
             $this->closeAutoRenewModal();
+
             return;
         }
 
         // If enabling auto-renew, require explicit user consent
         if ($this->target_auto_renew_state && !$this->modal_consent_checkbox) {
             $this->addError('modal_consent_checkbox', __('Please check the box to authorize recurring auto-renewal billing.'));
+
             return;
         }
 
@@ -223,6 +288,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
         if (!$operator || !$targetPlan) {
             $this->closeSwitchModal();
+
             return;
         }
 
@@ -234,6 +300,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
             if ($this->auto_renew && !$this->auto_renew_consent) {
                 $this->addError('auto_renew_consent', __('Please confirm your consent for recurring auto-renewal before proceeding.'));
                 $this->is_processing = false;
+
                 return;
             }
 
@@ -253,6 +320,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 );
             } else {
                 $this->redirectRoute('settings.plan.checkout', $payment->id, navigate: true);
+
                 return;
             }
         } elseif ($proration['is_downgrade']) {
@@ -461,7 +529,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </p>
                 <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
                     {{ __('Plan or billing questions:') }}
-                    <a href="mailto:{{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}" class="font-semibold text-slate-800 dark:text-slate-200 hover:underline">
+                    <a href="mailto:{{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}"
+                        class="font-semibold text-slate-800 dark:text-slate-200 hover:underline">
                         {{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}
                     </a>
                 </p>
@@ -559,7 +628,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                         <x-button size="xs" variant="primary"
                                             wire:click="initiatePlanSwitch('{{ $plan->id }}')"
                                             class="w-full shadow-xs"
-                                            icon="<i class='fa-solid fa-arrow-up text-amber-300 text-xs'></i>">
+                                            icon="<i class='fa-solid fa-arrow-up text-xs'></i>">
                                             <span>{{ __('Upgrade') }}</span>
                                         </x-button>
                                     @else
@@ -612,7 +681,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                     @endforeach
                 </tr>
                 <tr>
-                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('People on your team') }}</td>
+                    <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ __('People on your team') }}
+                    </td>
                     @foreach ($plans as $plan)
                         <td
                             class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60 font-bold text-slate-900 dark:text-white">
@@ -803,15 +873,15 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 </tr>
                 <tr>
                     <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <i class="fa-solid fa-wand-magic-sparkles text-purple-600 dark:text-purple-400"></i>
+                        <i class="fa-solid fa-wand-magic-sparkles text-[#FFEF4D]"></i>
                         <span>{{ \App\Models\Plan::featureLabel('ai_discovery') }}</span>
                     </td>
                     @foreach ($plans as $plan)
                         <td class="px-5 py-3.5 text-center border-l border-slate-100 dark:border-zinc-800/60">
                             @if ($plan->hasFeature('ai_discovery'))
                                 <span
-                                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-[#090d16] dark:bg-purple-950 dark:text-purple-300">
-                                    <i class="fa-solid fa-check text-[#090d16]"></i> {{ __('Included') }}
+                                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-brand-foreground dark:bg-[#FFEF4D] dark:text-brand-background">
+                                    <i class="fa-solid fa-check text-brand-background"></i> {{ __('Included') }}
                                 </span>
                             @else
                                 <i class="fa-solid fa-minus text-slate-300 dark:text-zinc-700"></i>
@@ -865,9 +935,9 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                     class="flex items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
                     <div class="flex items-center gap-3">
                         <span
-                            class="p-2.5 rounded-2xl {{ $prorationData['is_upgrade'] ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300' }} text-lg">
+                            class="p-2.5 rounded-2xl {{ $prorationData['is_upgrade'] ? 'bg-[#FFEF4D] text-[#090d16]' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300' }} text-lg">
                             <i
-                                class="fa-solid {{ $prorationData['is_upgrade'] ? 'fa-arrow-up' : 'fa-arrow-down' }}"></i>
+                                class="fa-solid {{ $prorationData['is_upgrade'] ? 'fa-arrow-up text-brand-background' : 'fa-arrow-down text-brand-background' }}"></i>
                         </span>
                         <div>
                             <h3 class="text-lg font-black text-slate-900 dark:text-white">
@@ -1051,60 +1121,6 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                                 @enderror
                             </div>
                         @endif
-                    </div>
-
-                    <!-- Payment Method Selection -->
-                    <div class="space-y-2">
-                        <label
-                            class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            {{ __('Select Payment Method') }}
-                        </label>
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <label
-                                class="p-3 rounded-2xl border flex items-center gap-2.5 cursor-pointer transition {{ $payment_method === 'cc' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white ring-1 ring-indigo-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}">
-                                <input type="radio" wire:model.live="payment_method" value="cc"
-                                    class="hidden" />
-                                <i class="fa-solid fa-credit-card text-base text-indigo-600 dark:text-indigo-400"></i>
-                                <div class="text-xs">
-                                    <span class="font-bold block">Credit Card</span>
-                                    <span class="text-[10px] text-slate-400">Visa / Mastercard</span>
-                                </div>
-                            </label>
-
-                            <label
-                                class="p-3 rounded-2xl border flex items-center gap-2.5 cursor-pointer transition {{ $payment_method === 'qris' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white ring-1 ring-indigo-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}">
-                                <input type="radio" wire:model.live="payment_method" value="qris"
-                                    class="hidden" />
-                                <i class="fa-solid fa-qrcode text-base text-indigo-600 dark:text-indigo-400"></i>
-                                <div class="text-xs">
-                                    <span class="font-bold block">QRIS Instant</span>
-                                    <span class="text-[10px] text-slate-400">GoPay / OVO / BCA</span>
-                                </div>
-                            </label>
-
-                            <label
-                                class="p-3 rounded-2xl border flex items-center gap-2.5 cursor-pointer transition {{ $payment_method === 'va' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white ring-1 ring-indigo-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}">
-                                <input type="radio" wire:model.live="payment_method" value="va"
-                                    class="hidden" />
-                                <i
-                                    class="fa-solid fa-building-columns text-base text-indigo-600 dark:text-indigo-400"></i>
-                                <div class="text-xs">
-                                    <span class="font-bold block">Virtual Account</span>
-                                    <span class="text-[10px] text-slate-400">Mandiri / BRI / BNI</span>
-                                </div>
-                            </label>
-
-                            <label
-                                class="p-3 rounded-2xl border flex items-center gap-2.5 cursor-pointer transition {{ $payment_method === 'direct' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white ring-1 ring-indigo-600' : 'border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-slate-300' }}">
-                                <input type="radio" wire:model.live="payment_method" value="direct"
-                                    class="hidden" />
-                                <i class="fa-solid fa-bolt text-base text-amber-500"></i>
-                                <div class="text-xs">
-                                    <span class="font-bold block">Test Simulation</span>
-                                    <span class="text-[10px] text-slate-400">Instant Activate</span>
-                                </div>
-                            </label>
-                        </div>
                     </div>
                 @else
                     <!-- Downgrade Options -->
