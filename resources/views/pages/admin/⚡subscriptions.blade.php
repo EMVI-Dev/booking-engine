@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\RecordsAdminActions;
 use App\Models\SubscriptionPayment;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
@@ -11,6 +12,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Title('Subscription Invoices')] #[Layout('layouts.admin')] class extends Component
 {
+    use RecordsAdminActions;
+
     use WithPagination;
 
     public string $statusFilter = 'all';
@@ -34,9 +37,9 @@ new #[Title('Subscription Invoices')] #[Layout('layouts.admin')] class extends C
     public function metrics(): array
     {
         return [
-            'total_revenue' => (float) SubscriptionPayment::where('status', 'completed')->sum('net_amount_paid'),
-            'completed_count' => SubscriptionPayment::where('status', 'completed')->count(),
-            'pending_count' => SubscriptionPayment::where('status', 'pending')->count(),
+            'total_revenue' => app(\App\Services\AdminMetricsService::class)->subscriptionRevenue(),
+            'completed_count' => SubscriptionPayment::where('status', SubscriptionPayment::STATUS_COMPLETED)->count(),
+            'pending_count' => SubscriptionPayment::where('status', SubscriptionPayment::STATUS_PENDING)->count(),
             'total_count' => SubscriptionPayment::count(),
         ];
     }
@@ -65,6 +68,8 @@ new #[Title('Subscription Invoices')] #[Layout('layouts.admin')] class extends C
     public function exportCsv(): StreamedResponse
     {
         $fileName = 'subscription-invoices-'.now()->format('Y-m-d').'.csv';
+
+        $this->audit('export.subscription_invoices', null, ['status' => $this->statusFilter, 'search' => $this->search]);
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');

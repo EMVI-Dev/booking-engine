@@ -25,6 +25,11 @@ class WalletService
     public const PAYOUT_FEE_WAIVER_AMOUNT = 500000.00;
 
     /**
+     * Payouts up to this amount are sent to the bank automatically; larger ones wait for an admin.
+     */
+    public const AUTO_DISBURSE_LIMIT = 10000000.00;
+
+    /**
      * Credit the operator's wallet from a settled reservation payment.
      */
     public function creditBookingPayment(Payment $payment): ?WalletTransaction
@@ -60,10 +65,9 @@ class WalletService
             $platformCommission = (float) ($splitDetails['platform_commission'] ?? 0);
             $operatorAmount = (float) ($splitDetails['operator_amount'] ?? ($splitDetails['agent_amount'] ?? ($grossAmount - $platformCommission)));
 
+            // No split recorded: the operator keeps the full charge (no operator commission, spec §5).
             if ($platformCommission <= 0 && $operatorAmount <= 0) {
-                $commissionRate = $operator->getEffectiveCommissionRate();
-                $platformCommission = round($grossAmount * $commissionRate, 2);
-                $operatorAmount = round($grossAmount - $platformCommission, 2);
+                $operatorAmount = $grossAmount;
             }
 
             // Guard against splitDetails exceeding net collected funds (e.g. if raw subtotal was stored without coupon discount)
@@ -120,6 +124,8 @@ class WalletService
      */
     public function createPayoutRequest(Operator $operator, float $amount, ?string $notes = null): PayoutRequest
     {
+        $operator->assertRealMoneyMovementAllowed();
+
         if (! $operator->hasValidBankAccount()) {
             throw ValidationException::withMessages([
                 'bank' => __('Please configure your bank name, account number, and account holder name in Settings before requesting a payout.'),
@@ -135,7 +141,7 @@ class WalletService
 
         $transferFee = $amount < self::PAYOUT_FEE_WAIVER_AMOUNT ? self::PAYOUT_TRANSFER_FEE : 0.0;
 
-        return DB::transaction(function () use ($operator, $amount, $notes, $transferFee): PayoutRequest {
+        $payout = DB::transaction(function () use ($operator, $amount, $notes, $transferFee): PayoutRequest {
             /** @var Operator|null $lockedOperator */
             $lockedOperator = Operator::query()->whereKey($operator->id)->lockForUpdate()->first();
 
@@ -176,52 +182,120 @@ class WalletService
                     : "Payout Request #{$payout->reference_number} ({$operator->bank_provider} - {$operator->bank_account_number})",
             ]);
 
-            // Auto-Disburse via DOKU API if amount <= Rp 10.000.000 (Industry Standard)
-            if ($amount <= 10000000.00) {
-                try {
-                    $disbursement = app(DokuPaymentService::class)->disbursePayout($payout);
-                    if ($disbursement['success']) {
-                        $payout->update([
-                            'status' => PayoutStatus::Completed,
-                            'processed_by' => 'DOKU BI-FAST API',
-                            'processed_at' => now(),
-                            'notes' => ($notes ? $notes.' | ' : '').$disbursement['message'].' [Ref: '.$disbursement['reference'].']',
-                        ]);
-                    } else {
-                        $payout->update([
-                            'notes' => ($notes ? $notes.' | ' : '').$disbursement['message'],
-                        ]);
-                    }
-                } catch (\Throwable $e) {
-                    report($e);
-                }
+            return $payout;
+        });
+
+        // The bank call runs after the ledger commits so no row lock is held across HTTP,
+        // and a gateway failure can never roll back the recorded withdrawal.
+        if ($amount <= self::AUTO_DISBURSE_LIMIT) {
+            $this->disbursePayout($payout, 'DOKU BI-FAST API');
+        }
+
+        return $payout->fresh() ?? $payout;
+    }
+
+    /**
+     * Send a pending payout to the operator's bank through DOKU.
+     *
+     * The payout is atomically claimed (Pending → Processing) first, so double clicks or
+     * parallel workers can never send the same payout twice. On failure it returns to
+     * Pending; the withdrawal stays on the ledger until an admin rejects it.
+     *
+     * @return array{success: bool, reference: string, message: string}
+     */
+    public function disbursePayout(PayoutRequest $payout, string $processedBy = 'DOKU BI-FAST API'): array
+    {
+        $claimed = PayoutRequest::query()
+            ->whereKey($payout->id)
+            ->where('status', PayoutStatus::Pending)
+            ->update(['status' => PayoutStatus::Processing, 'updated_at' => now()]);
+
+        if ($claimed === 0) {
+            return [
+                'success' => false,
+                'reference' => (string) $payout->reference_number,
+                'message' => __('This payout is already being processed or is finished.'),
+            ];
+        }
+
+        $payout->refresh();
+
+        try {
+            $disbursement = app(DokuPaymentService::class)->disbursePayout($payout);
+        } catch (\Throwable $e) {
+            report($e);
+
+            $disbursement = [
+                'success' => false,
+                'reference' => (string) $payout->reference_number,
+                'message' => __('The bank transfer did not go through. The payout is still waiting.'),
+            ];
+        }
+
+        $notes = $payout->notes ? $payout->notes.' | ' : '';
+
+        if ($disbursement['success']) {
+            $payout->update([
+                'status' => PayoutStatus::Completed,
+                'processed_by' => $processedBy,
+                'processed_at' => now(),
+                'notes' => $notes.$disbursement['message'].' [Ref: '.$disbursement['reference'].']',
+            ]);
+        } else {
+            $payout->update([
+                'status' => PayoutStatus::Pending,
+                'notes' => $notes.$disbursement['message'],
+            ]);
+        }
+
+        return $disbursement;
+    }
+
+    /**
+     * Approve and mark a payout request as completed (manual bank transfer by an admin).
+     *
+     * @throws ValidationException
+     */
+    public function approvePayout(PayoutRequest $payout, ?string $proofPath = null, ?string $processedBy = null): PayoutRequest
+    {
+        return DB::transaction(function () use ($payout, $proofPath, $processedBy): PayoutRequest {
+            $locked = $this->lockPayout($payout);
+
+            if (! in_array($locked->status, [PayoutStatus::Pending, PayoutStatus::Processing], true)) {
+                throw ValidationException::withMessages([
+                    'payout' => __('Only waiting payouts can be marked as paid.'),
+                ]);
             }
 
-            return $payout;
+            $locked->update([
+                'status' => PayoutStatus::Completed,
+                'proof_document_path' => $proofPath ?? $locked->proof_document_path,
+                'processed_by' => $processedBy,
+                'processed_at' => now(),
+            ]);
+
+            return $locked;
         });
     }
 
     /**
-     * Approve and mark a payout request as completed.
-     */
-    public function approvePayout(PayoutRequest $payout, ?string $proofPath = null, ?string $processedBy = null): PayoutRequest
-    {
-        $payout->update([
-            'status' => PayoutStatus::Completed,
-            'proof_document_path' => $proofPath ?? $payout->proof_document_path,
-            'processed_by' => $processedBy,
-            'processed_at' => now(),
-        ]);
-
-        return $payout;
-    }
-
-    /**
-     * Reject a payout request and restore funds to the operator's available balance.
+     * Reject a payout (or record a bank bounce) and restore funds to the operator's balance.
+     *
+     * Runs once per payout: a second call is refused so funds are never restored twice.
+     *
+     * @throws ValidationException
      */
     public function rejectPayout(PayoutRequest $payout, string $reason, ?string $processedBy = null): PayoutRequest
     {
         return DB::transaction(function () use ($payout, $reason, $processedBy): PayoutRequest {
+            $payout = $this->lockPayout($payout);
+
+            if ($payout->status === PayoutStatus::Rejected) {
+                throw ValidationException::withMessages([
+                    'payout' => __('This payout was already rejected and its money returned.'),
+                ]);
+            }
+
             $payout->update([
                 'status' => PayoutStatus::Rejected,
                 'rejection_reason' => $reason,
@@ -249,6 +323,17 @@ class WalletService
 
             return $payout;
         });
+    }
+
+    /**
+     * Re-read a payout under a row lock so status checks and writes cannot interleave.
+     */
+    protected function lockPayout(PayoutRequest $payout): PayoutRequest
+    {
+        /** @var PayoutRequest $locked */
+        $locked = PayoutRequest::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
+
+        return $locked;
     }
 
     /**
@@ -284,28 +369,44 @@ class WalletService
      */
     public function cancelBookingEarning(Reservation $reservation, string $reason = 'Booking Cancelled'): ?WalletTransaction
     {
-        /** @var WalletTransaction|null $earningTx */
-        $earningTx = WalletTransaction::query()
-            ->where('reservation_id', $reservation->id)
-            ->where('type', WalletTransactionType::BookingEarning)
-            ->first();
+        return DB::transaction(function () use ($reservation, $reason): ?WalletTransaction {
+            /** @var WalletTransaction|null $earningTx */
+            $earningTx = WalletTransaction::query()
+                ->where('reservation_id', $reservation->id)
+                ->where('type', WalletTransactionType::BookingEarning)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $earningTx) {
-            return null;
-        }
+            if (! $earningTx) {
+                return null;
+            }
 
-        // If pending in escrow, cancel transaction
-        if ($earningTx->status === WalletTransactionStatus::PendingEscrow) {
-            $earningTx->update([
-                'status' => WalletTransactionStatus::Cancelled,
-                'description' => "{$earningTx->description} (Cancelled: {$reason})",
-            ]);
+            // Still in escrow: void it.
+            if ($earningTx->status === WalletTransactionStatus::PendingEscrow) {
+                $earningTx->update([
+                    'status' => WalletTransactionStatus::Cancelled,
+                    'description' => "{$earningTx->description} (Cancelled: {$reason})",
+                ]);
 
-            return $earningTx;
-        }
+                return $earningTx;
+            }
 
-        // If already cleared, issue a debit reversal transaction
-        if ($earningTx->status === WalletTransactionStatus::Cleared) {
+            if ($earningTx->status !== WalletTransactionStatus::Cleared) {
+                return $earningTx;
+            }
+
+            // Already paid out to the balance: debit it back exactly once.
+            $existingReversal = WalletTransaction::query()
+                ->where('reservation_id', $reservation->id)
+                ->where('type', WalletTransactionType::ManualAdjustment)
+                ->whereNull('payout_request_id')
+                ->where('net_amount', '<', 0)
+                ->first();
+
+            if ($existingReversal) {
+                return $existingReversal;
+            }
+
             return WalletTransaction::query()->create([
                 'operator_id' => $earningTx->operator_id,
                 'reservation_id' => $reservation->id,
@@ -316,9 +417,7 @@ class WalletService
                 'status' => WalletTransactionStatus::Cleared,
                 'description' => "Reversal for Cancelled Booking #{$reservation->code}: {$reason}",
             ]);
-        }
-
-        return $earningTx;
+        });
     }
 
     /**
@@ -387,6 +486,85 @@ class WalletService
             'net_amount' => -1 * $amount,
             'status' => WalletTransactionStatus::Cleared,
             'description' => "Money held for a card dispute on booking #{$reservation->code}: {$reason}",
+        ]);
+    }
+
+    /**
+     * Open a card dispute on a paid booking: hold the charged amount plus the DOKU dispute fee.
+     *
+     * Used by both the DOKU webhook and the admin desk so the held amount is always the same.
+     * Returns null when the booking has no paid charge or money is already held.
+     */
+    public function openCardDispute(Reservation $reservation, string $reason = 'Card payment disputed'): ?WalletTransaction
+    {
+        $payment = $reservation->latestPayment()->first();
+
+        if ($payment === null || ! $payment->isPaid() || $this->outstandingDisputeHold($reservation) > 0) {
+            return null;
+        }
+
+        return $this->holdDispute($reservation, (float) $payment->amount + self::DISPUTE_ADMIN_FEE, $reason);
+    }
+
+    /**
+     * The card dispute was lost: the held amount becomes a permanent deduction (spec Policy 3).
+     *
+     * Writes a release that closes the hold and a refund deduction of the same amount, so the
+     * balance does not move again but the ledger shows the final outcome.
+     *
+     * @throws ValidationException
+     */
+    public function settleLostDispute(Reservation $reservation, string $reason = 'Card dispute lost'): WalletTransaction
+    {
+        return DB::transaction(function () use ($reservation, $reason): WalletTransaction {
+            Operator::query()->whereKey($reservation->operator_id)->lockForUpdate()->first();
+
+            $held = $this->outstandingDisputeHold($reservation);
+
+            if ($held <= 0) {
+                throw ValidationException::withMessages([
+                    'amount' => __('There is no held money on this booking.'),
+                ]);
+            }
+
+            $this->releaseDispute($reservation, $held, 'Hold closed: '.$reason);
+
+            return WalletTransaction::query()->create([
+                'operator_id' => $reservation->operator_id,
+                'reservation_id' => $reservation->id,
+                'type' => WalletTransactionType::RefundDeduction,
+                'gross_amount' => -1 * $held,
+                'fee_amount' => 0,
+                'net_amount' => -1 * $held,
+                'status' => WalletTransactionStatus::Cleared,
+                'description' => "Chargeback for booking #{$reservation->code}: {$reason}",
+            ]);
+        });
+    }
+
+    /**
+     * Platform finance correction on an operator wallet (positive credits, negative debits).
+     *
+     * @throws ValidationException
+     */
+    public function recordManualAdjustment(Operator $operator, float $amount, string $reason, ?string $actor = null): WalletTransaction
+    {
+        $reason = trim($reason);
+
+        if (abs($amount) < 1 || mb_strlen($reason) < 5) {
+            throw ValidationException::withMessages([
+                'adjustment' => __('Enter an amount and a reason of at least 5 characters.'),
+            ]);
+        }
+
+        return WalletTransaction::query()->create([
+            'operator_id' => $operator->id,
+            'type' => WalletTransactionType::ManualAdjustment,
+            'gross_amount' => $amount,
+            'fee_amount' => 0,
+            'net_amount' => $amount,
+            'status' => WalletTransactionStatus::Cleared,
+            'description' => 'Platform adjustment: '.$reason.($actor ? " (by {$actor})" : ''),
         ]);
     }
 

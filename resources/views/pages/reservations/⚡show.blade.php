@@ -6,10 +6,10 @@ use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Services\DokuPaymentService;
 use App\Services\GoogleCalendarService;
-use App\Services\VendorDispatchService;
-use App\Services\WalletService;
+use App\Services\ReservationLifecycleService;
 use App\Services\WhatsAppDispatchService;
 use Illuminate\Support\Carbon;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -24,6 +24,7 @@ new #[Title('Reservation Details')] class extends Component {
 
     public bool $showConfirmStatusModal = false;
 
+    #[Locked]
     public ?string $pendingStatusValue = null;
 
     public ?string $actionMessage = null;
@@ -94,12 +95,11 @@ new #[Title('Reservation Details')] class extends Component {
         }
 
         try {
-            $dokuService = app(DokuPaymentService::class);
-            $result = $dokuService->checkPaymentStatus($payment);
+            app(DokuPaymentService::class)->syncPaymentStatus($payment);
 
-            $this->reservation->load('latestPayment', 'walletTransactions');
+            $this->reservation->refresh()->load('latestPayment', 'walletTransactions');
 
-            if ($result['paid'] ?? false) {
+            if ($this->reservation->latestPayment?->isPaid()) {
                 $this->dispatch('toast', message: __('Payment confirmed! Status updated to Paid.'), type: 'success');
             } else {
                 $this->dispatch('toast', message: __('Payment is still pending on the payment gateway.'), type: 'info');
@@ -112,31 +112,17 @@ new #[Title('Reservation Details')] class extends Component {
 
     public function confirmStatusTransition(string $statusValue): void
     {
+        $this->authorizeAbility('manageReservations');
+
         $target = ReservationStatus::tryFrom($statusValue);
         if (!$target) {
             return;
         }
 
-        // Prevent declining paid bookings
-        if ($target === ReservationStatus::Declined && $this->reservation->latestPayment?->isPaid()) {
-            $this->dispatch('toast', message: __('Cannot decline a paid reservation. Please cancel and refund instead.'), type: 'warning');
+        if ($reason = app(ReservationLifecycleService::class)->operatorBlockReason($this->reservation, $target)) {
+            $this->dispatch('toast', message: $reason, type: 'warning');
 
             return;
-        }
-
-        // Prevent premature completion
-        if ($target === ReservationStatus::Completed) {
-            if ($this->reservation->status !== ReservationStatus::Confirmed) {
-                $this->dispatch('toast', message: __('Only confirmed reservations can be marked as completed.'), type: 'warning');
-
-                return;
-            }
-
-            if ($this->reservation->requested_date && $this->reservation->requested_date->isFuture() && !$this->reservation->requested_date->isToday()) {
-                $this->dispatch('toast', message: __('Cannot mark a reservation completed before its scheduled trip date.'), type: 'warning');
-
-                return;
-            }
         }
 
         $this->pendingStatusValue = $statusValue;
@@ -155,75 +141,34 @@ new #[Title('Reservation Details')] class extends Component {
             return;
         }
 
+        $this->authorizeAbility('manageReservations');
+
         $status = ReservationStatus::tryFrom($this->pendingStatusValue);
         if (!$status) {
             return;
         }
 
         $this->showConfirmStatusModal = false;
+        $this->pendingStatusValue = null;
 
-        $wasPaid = false;
-        $refundAmount = 0.0;
-        if ($status === ReservationStatus::Cancelled) {
-            $this->reservation->loadMissing('latestPayment');
-            $payment = $this->reservation->latestPayment;
-            $wasPaid = (bool) $payment?->isPaid();
-
-            if ($wasPaid) {
-                $refundAmount = (float) $payment->amount;
-                $refundSuccess = app(DokuPaymentService::class)->refundPayment($payment);
-                if (!$refundSuccess) {
-                    $this->dispatch('toast', message: __('Could not process automated refund with the payment gateway. Please check gateway connection or refund manually.'), type: 'danger');
-
-                    return;
-                }
-            }
-        }
-
-        $this->reservation->update([
-            'status' => $status,
-            'hold_expires_at' => $status === ReservationStatus::PaymentPending ? now()->addMinutes(30) : null,
-        ]);
-
-        if ($status === ReservationStatus::Confirmed) {
-            if (!empty($this->reservation->guest_email)) {
-                try {
-                    \Illuminate\Support\Facades\Mail::to($this->reservation->guest_email)->send(new \App\Mail\GuestBookingConfirmedMail($this->reservation));
-                } catch (\Throwable $e) {
-                    report($e);
-                }
-            }
-
-            try {
-                app(VendorDispatchService::class)->dispatchBookingConfirmation($this->reservation);
-            } catch (\Throwable $e) {
-                report($e);
-            }
-        }
-
-        if ($status === ReservationStatus::Completed) {
-            app(WalletService::class)->releaseReservationEscrow($this->reservation);
-        }
-
-        if ($status === ReservationStatus::Cancelled) {
-            app(WalletService::class)->cancelBookingEarning($this->reservation, 'Cancelled and refunded by operator');
-
-            try {
-                app(VendorDispatchService::class)->dispatchBookingCancellation($this->reservation);
-            } catch (\Throwable $e) {
-                report($e);
-            }
-
-            $message = $wasPaid ? __('Reservation cancelled and full refund of :amount issued to guest.', ['amount' => 'Rp ' . number_format($refundAmount, 0, ',', '.')]) : __('Reservation cancelled and inventory released.');
-
+        try {
+            $result = app(ReservationLifecycleService::class)->transitionByOperator($this->reservation, $status);
+        } catch (\Illuminate\Validation\ValidationException $e) {
             $this->reservation->refresh()->loadMissing(['latestPayment', 'walletTransactions']);
-            $this->dispatch('toast', message: $message, type: 'success');
+            $this->dispatch('toast', message: (string) collect($e->errors())->flatten()->first(), type: 'warning');
 
             return;
         }
 
         $this->reservation->refresh()->loadMissing(['latestPayment', 'walletTransactions']);
-        $this->dispatch('toast', message: __('Reservation status updated to :status', ['status' => $status->label()]), type: 'success');
+
+        $message = match (true) {
+            $status === ReservationStatus::Cancelled && $result['refunded'] => __('Reservation cancelled and full refund of :amount issued to guest.', ['amount' => 'Rp ' . number_format($result['refund_amount'], 0, ',', '.')]),
+            $status === ReservationStatus::Cancelled => __('Reservation cancelled and inventory released.'),
+            default => __('Reservation status updated to :status', ['status' => $status->label()]),
+        };
+
+        $this->dispatch('toast', message: $message, type: 'success');
     }
 }; ?>
 
@@ -232,10 +177,7 @@ new #[Title('Reservation Details')] class extends Component {
         $res = $this->reservation;
         $bookable = $res->bookable;
         $latestPayment = $res->latestPayment;
-        $cleanPhone = preg_replace('/[^0-9]/', '', $res->guest_contact);
-        if (str_starts_with($cleanPhone, '0')) {
-            $cleanPhone = '62' . substr($cleanPhone, 1);
-        }
+        $cleanPhone = \App\Services\PhoneNumber::normalize($res->guest_contact);
         $resCode = $res->code ?? 'RSV-' . strtoupper(substr($res->id, -8));
 
         $directWaUrl =

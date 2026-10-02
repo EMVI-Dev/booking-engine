@@ -1,9 +1,9 @@
 <?php
 
+use App\Concerns\RecordsAdminActions;
 use App\Concerns\UsesMediaStore;
 use App\Enums\PayoutStatus;
 use App\Models\PayoutRequest;
-use App\Services\DokuPaymentService;
 use App\Services\WalletService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
@@ -16,6 +16,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
 {
+    use RecordsAdminActions;
+
     use UsesMediaStore, WithFileUploads, WithPagination;
 
     public string $statusFilter = 'all';
@@ -47,6 +49,8 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
     public function exportCsv(): StreamedResponse
     {
         $fileName = 'operator-payouts-'.now()->format('Y-m-d').'.csv';
+
+        $this->audit('export.payouts', null, ['status' => $this->statusFilter, 'search' => $this->search]);
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');
@@ -98,11 +102,15 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
     #[Computed]
     public function metrics(): array
     {
+        $metrics = app(\App\Services\AdminMetricsService::class);
+        $pending = $metrics->payoutTotals(PayoutStatus::Pending);
+        $completed = $metrics->payoutTotals(PayoutStatus::Completed);
+
         return [
-            'pending_count' => PayoutRequest::where('status', PayoutStatus::Pending)->count(),
-            'pending_amount' => (float) PayoutRequest::where('status', PayoutStatus::Pending)->sum('amount'),
-            'completed_count' => PayoutRequest::where('status', PayoutStatus::Completed)->count(),
-            'completed_amount' => (float) PayoutRequest::where('status', PayoutStatus::Completed)->sum('amount'),
+            'pending_count' => $pending['count'],
+            'pending_amount' => $pending['amount'],
+            'completed_count' => $completed['count'],
+            'completed_amount' => $completed['amount'],
         ];
     }
 
@@ -165,7 +173,12 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
             $proofPath = $this->media()->storeUpload($this->proofFile, $this->media()->directoryFor($payout->operator_id, 'payouts'));
         }
 
-        $walletService->approvePayout($payout, $proofPath, auth()->id());
+        try {
+            $walletService->approvePayout($payout, $proofPath, auth()->id());
+            $this->audit('payout.approved', $payout, ['amount' => (float) $payout->amount, 'reference' => $payout->reference_number]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            session()->flash('error', (string) $e->validator->errors()->first());
+        }
 
         $this->showApproveModal = false;
         $this->selectedPayoutId = null;
@@ -173,21 +186,16 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
         $this->dispatch('payout-approved');
     }
 
-    public function disburseViaDokuApi(string $payoutId, DokuPaymentService $dokuService): void
+    public function disburseViaDokuApi(string $payoutId, WalletService $walletService): void
     {
         $payout = PayoutRequest::find($payoutId);
         if (! $payout || $payout->status !== PayoutStatus::Pending) {
             return;
         }
 
-        $res = $dokuService->disbursePayout($payout);
+        $res = $walletService->disbursePayout($payout, 'DOKU BI-FAST (admin)');
+        $this->audit('payout.sent_to_bank', $payout, ['amount' => (float) $payout->amount, 'success' => $res['success'], 'reference' => $res['reference']]);
         if ($res['success']) {
-            $payout->update([
-                'status' => PayoutStatus::Completed,
-                'processed_by' => 'DOKU BI-FAST API (Admin Trigger)',
-                'processed_at' => now(),
-                'notes' => ($payout->notes ? $payout->notes.' | ' : '').$res['message'].' [Ref: '.$res['reference'].']',
-            ]);
             session()->flash('success', __('Sent payout :ref to their bank.', ['ref' => $payout->reference_number]));
         } else {
             session()->flash('error', __('Could not send this payout. Check the bank account details.'));
@@ -207,7 +215,12 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
             'rejectionReason' => ['required', 'string', 'min:5', 'max:255'],
         ]);
 
-        $walletService->rejectPayout($payout, $this->rejectionReason, auth()->id());
+        try {
+            $walletService->rejectPayout($payout, $this->rejectionReason, auth()->id());
+            $this->audit('payout.rejected', $payout, ['amount' => (float) $payout->amount, 'reason' => $this->rejectionReason]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            session()->flash('error', (string) $e->validator->errors()->first());
+        }
 
         $this->showRejectModal = false;
         $this->selectedPayoutId = null;

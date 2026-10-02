@@ -80,9 +80,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
             return $empty;
         }
 
-        $unitPrice = (float) $bookable->price;
-        $subtotal = $unitPrice * $pax;
-        $serviceFee = \App\Models\PlatformSetting::current()->calculateGuestServiceFee($subtotal, $this->currentOperator);
+        $quote = app(\App\Services\BookingPricingService::class)->quote($bookable, $pax, $this->currentOperator);
         $remaining = null;
 
         if ($this->createRequestedDate !== '') {
@@ -90,12 +88,12 @@ new #[Title('Bookings & Reservations')] class extends Component {
         }
 
         return [
-            'title' => $bookable instanceof \App\Models\Package ? $bookable->title : $bookable->name,
-            'unit' => $unitPrice,
-            'pax' => $pax,
-            'subtotal' => $subtotal,
-            'fee' => $serviceFee,
-            'total' => $subtotal + $serviceFee,
+            'title' => $bookable->getTitle(),
+            'unit' => $quote->unitPrice,
+            'pax' => $quote->pax,
+            'subtotal' => $quote->subtotal,
+            'fee' => $quote->serviceFee,
+            'total' => $quote->total,
             'remaining' => $remaining,
         ];
     }
@@ -301,33 +299,19 @@ new #[Title('Bookings & Reservations')] class extends Component {
     #[Computed]
     public function createBookableBlackoutDates(): array
     {
-        if (!$this->currentOperator || empty($this->createExperienceSelection)) {
-            return [];
-        }
-
-        if (str_contains($this->createExperienceSelection, ':')) {
-            [$type, $id] = explode(':', $this->createExperienceSelection, 2);
-            $bookable = $type === 'package'
-                ? $this->currentOperator->packages()->find($id)
-                : $this->currentOperator->products()->find($id);
-
-            if ($bookable && method_exists($bookable, 'getBlackoutDates')) {
-                return $bookable->getBlackoutDates();
-            }
-        }
-
-        return [];
+        return $this->resolveCreateBookable()?->getBlackoutDates() ?? [];
     }
 
     /**
      * Generate reservation, 30-min hold session, and WhatsApp payment invitation.
      */
-    public function generateBookingLink(\App\Services\DokuPaymentService $paymentService, \App\Services\WhatsAppDispatchService $waService): void
+    public function generateBookingLink(\App\Services\ReservationBookingService $bookings, \App\Services\WhatsAppDispatchService $waService): void
     {
         if (!$this->currentOperator) {
             return;
         }
 
+        $this->authorizeAbility('manageReservations');
         $this->currentOperator->assertCheckoutAllowed();
 
         if ($this->createExperienceSelection && str_contains($this->createExperienceSelection, ':')) {
@@ -347,77 +331,47 @@ new #[Title('Bookings & Reservations')] class extends Component {
             'createNotes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        /** @var \App\Models\Package|\App\Models\Product|null $bookable */
-        $bookable = $this->createBookableType === 'package' ? $this->currentOperator->packages()->find($this->createBookableId) : $this->currentOperator->products()->find($this->createBookableId);
+        $bookable = $this->resolveCreateBookable();
 
         if (!$bookable) {
             $this->addError('createBookableId', __('Please select a valid experience.'));
             return;
         }
 
-        if (method_exists($bookable, 'isBlackedOutOn') && $bookable->isBlackedOutOn($this->createRequestedDate)) {
-            $this->addError('createRequestedDate', __('The selected date (:date) is blocked by an active blackout block for this experience.', ['date' => $this->createRequestedDate]));
-            return;
-        }
-
-        $unitPrice = (float) ($bookable->price ?? 0);
-        $subtotal = $unitPrice * $this->createPaxCount;
-        $platform = \App\Models\PlatformSetting::current();
-        $serviceFeeRate = $platform->getGuestServiceFeeRate();
-        $serviceFee = $platform->calculateGuestServiceFee($subtotal, $this->currentOperator);
-        $totalPrice = $subtotal + $serviceFee;
-
-        $termsSnapshot = $bookable->generateTermsSnapshot();
-        $termsSnapshot['unit_price'] = $unitPrice;
-        $termsSnapshot['pax_count'] = $this->createPaxCount;
-        $termsSnapshot['subtotal'] = $subtotal;
-        $termsSnapshot['service_fee'] = $serviceFee;
-        $termsSnapshot['service_fee_rate'] = $serviceFeeRate;
-        $termsSnapshot['total_price'] = $totalPrice;
-
         try {
-            /** @var Reservation $reservation */
-            $reservation = app(\App\Services\CapacityService::class)->reserve(
-                $bookable,
-                $this->createRequestedDate,
-                $this->createPaxCount,
-                fn (): Reservation => Reservation::query()->create([
-                    'bookable_type' => $this->createBookableType,
-                    'bookable_id' => $bookable->id,
-                    'operator_id' => $this->currentOperator->id,
-                    'guest_name' => $this->createGuestName,
-                    'guest_contact' => $this->createGuestContact,
-                    'guest_email' => $this->createGuestEmail ?: null,
-                    'requested_date' => $this->createRequestedDate,
-                    'pax_count' => $this->createPaxCount,
-                    'notes' => $this->createNotes ?: null,
-                    'terms_snapshot' => $termsSnapshot,
-                    'status' => ReservationStatus::PaymentPending,
-                    'hold_expires_at' => now()->addMinutes(30),
-                ]),
+            $hold = $bookings->createHold(
+                bookable: $bookable,
+                operator: $this->currentOperator,
+                requestedDate: $this->createRequestedDate,
+                pax: $this->createPaxCount,
+                guest: [
+                    'name' => $this->createGuestName,
+                    'contact' => $this->createGuestContact,
+                    'email' => $this->createGuestEmail,
+                    'notes' => $this->createNotes,
+                ],
+                notifyGuest: false,
             );
         } catch (\App\Exceptions\CapacityUnavailableException $e) {
             $this->addError('createRequestedDate', $e->getMessage());
 
             return;
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $errors = $e->errors();
+            $field = isset($errors['bookable']) ? 'createBookableId' : 'createRequestedDate';
+            $this->addError($field, (string) collect($errors)->flatten()->first());
+
+            return;
         }
 
-        $session = $paymentService->createPaymentSession($reservation, $totalPrice);
-        $this->generatedPaymentUrl = $session['checkout_url'];
-        $this->generatedReservationCode = $reservation->code ?? 'RSV-' . strtoupper(substr($reservation->id, -8));
-
-        $itemTitle = $bookable instanceof \App\Models\Package ? $bookable->title : $bookable->name;
-        $dateFormatted = Carbon::parse($this->createRequestedDate)->format('d M Y');
-        $this->generatedWhatsAppUrl = null;
-
-        if ($this->currentOperator->hasFeature('whatsapp_dispatch')) {
-            $waText = "Halo Kak {$this->createGuestName}, berikut link pesanan & pembayaran untuk *{$itemTitle}* tanggal *{$dateFormatted}* ({$this->createPaxCount} pax).\n\nTotal: Rp " . number_format($totalPrice, 0, ',', '.') . "\n\nSilakan cek detail dan selesaikan pembayaran sebelum slot hold 30 menit berakhir:\n{$this->generatedPaymentUrl}";
-            $this->generatedWhatsAppUrl = $waService->buildWhatsAppUrl($this->createGuestContact, $waText);
-        }
+        $reservation = $hold['reservation'];
+        $this->generatedPaymentUrl = $hold['checkout_url'];
+        $this->generatedReservationCode = $reservation->code;
+        $this->generatedWhatsAppUrl = $this->currentOperator->hasFeature('whatsapp_dispatch')
+            ? $waService->getNewPayLinkUrl($reservation, $hold['checkout_url'], $hold['quote']->total)
+            : null;
 
         $this->linkCreatedSuccessfully = true;
-        $this->actionSuccess = true;
-        $this->actionMessage = __('Booking link created successfully.');
         session(['operator.create_link.experience' => $this->createExperienceSelection]);
         $this->dispatch('reservation-updated');
     }
@@ -449,7 +403,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
         $completed = (clone $base)->where('status', ReservationStatus::Completed->value)->count();
 
         // Calculate revenue from paid payments attached to this operator's reservations
-        $revenue = (float) \App\Models\Payment::query()->whereHas('reservation', fn(Builder $q) => $q->where('operator_id', $this->currentOperator->id))->where('status', PaymentStatus::Paid->value)->sum('amount');
+        $revenue = $this->currentOperator->paidGuestPaymentsTotal();
 
         return [
             'total' => $total,
@@ -633,10 +587,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                     $bookable = $res->bookable;
                     $latestPayment = $res->latestPayment;
                     $resCode = $res->code ?? 'RSV-' . strtoupper(substr($res->id, -8));
-                    $cleanPhone = preg_replace('/[^0-9]/', '', $res->guest_contact);
-                    if (str_starts_with($cleanPhone, '0')) {
-                        $cleanPhone = '62' . substr($cleanPhone, 1);
-                    }
+                    $cleanPhone = \App\Services\PhoneNumber::normalize($res->guest_contact);
                     $waUrl = 'https://wa.me/' . $cleanPhone . '?text=' . urlencode(__('Hello :name, reaching out regarding your reservation (:code) with :agent', ['name' => $res->guest_name, 'code' => $resCode, 'agent' => $this->currentOperator->name]));
                 @endphp
                 <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 space-y-3">
@@ -723,10 +674,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                             $bookable = $res->bookable;
                             $latestPayment = $res->latestPayment;
                             $resCode = $res->code ?? 'RSV-' . strtoupper(substr($res->id, -8));
-                            $cleanPhone = preg_replace('/[^0-9]/', '', $res->guest_contact);
-                            if (str_starts_with($cleanPhone, '0')) {
-                                $cleanPhone = '62' . substr($cleanPhone, 1);
-                            }
+                            $cleanPhone = \App\Services\PhoneNumber::normalize($res->guest_contact);
                             $waUrl =
                                 'https://wa.me/' .
                                 $cleanPhone .

@@ -67,10 +67,7 @@
                                 @endif
                                 @if ($operator->phone)
                                     @php
-                                        $waDigits = preg_replace('/[^0-9]/', '', (string) $operator->phone);
-                                        if (str_starts_with($waDigits, '0')) {
-                                            $waDigits = '62' . substr($waDigits, 1);
-                                        }
+                                        $waDigits = \App\Services\PhoneNumber::normalize((string) $operator->phone);
                                         $waUrl = 'https://wa.me/' . $waDigits;
                                     @endphp
                                     <tr>
@@ -130,10 +127,7 @@
                             <p style="margin: 0; font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5;">
                                 @if ($operator->phone)
                                     @php
-                                        $waDigits = preg_replace('/[^0-9]/', '', (string) $operator->phone);
-                                        if (str_starts_with($waDigits, '0')) {
-                                            $waDigits = '62' . substr($waDigits, 1);
-                                        }
+                                        $waDigits = \App\Services\PhoneNumber::normalize((string) $operator->phone);
                                         $waUrl = 'https://wa.me/' . $waDigits;
                                     @endphp
                                     {{ __('This is an automated notification. For questions, adjustments, or coordination regarding this booking, please contact :operator directly on WhatsApp at', ['operator' => $operator->name]) }}

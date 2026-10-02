@@ -46,6 +46,16 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 - **Streamlined Navigation & Sidebar**:
     - Clean hierarchy: *Dashboard, Reservations, Calendar, Tour Packages, Single Activities, Coupons & Discounts, Storefront Settings, Subscription & Billing*.
     - Storefront Settings tabs are **Brand & Identity**, **Storefront & Policies**, and **Reviews**. Reviews is not a sidebar item and not a desk page.
+- **Coupons & Dedicated Performance Reports (`/coupons`, `/coupons/{coupon}/report`)**:
+    - Manage storefront promotional discounts with scope isolation (`PlatformCoupon::forGuest()`) preventing interference from platform subscription discounts.
+    - Dedicated analytics report page with 5 financial KPIs (Total Uses, Discounts Given, Gross Volume, Net Revenue, AOV), status/search filters, itemized bookings table, and CSV download.
+- **Guest CRM Profile Hub (`/guests/{guest}`)**:
+    - CRM customer card with initials avatar, repeat guest badges, one-click WhatsApp/Email/Call actions, staff notes, custom tags, lifetime spend KPIs, and reservation history.
+- **Billing Portal & Clean Invoice Printing (`/settings/billing`)**:
+    - Operational tab order: *Payment History & Invoices*, *Payouts & Disbursements*, and *Subscription Plan & Tier*.
+    - Real gateway label resolution (DOKU, Admin Complimentary) and clean printable invoice modal via `#invoice-print-portal`.
+- **Operator Subdomain Handoff**:
+    - Authenticating on apex domain seamlessly signs the operator into their branded subdomain desk (`{slug}.travelengine.id/auth/login-handoff`).
 - **Native Mobile Navigation Bar & Mobile Card Lists (`md:hidden`)**:
     - Sticky glassmorphism mobile bottom navigation bar (`lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16`) for 1-thumb operations.
     - All data tables convert into responsive mobile cards on smartphone screens (`< 768px`).

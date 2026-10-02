@@ -366,3 +366,57 @@ test('operator can export filtered guests as csv', function () {
         ->call('exportCsv')
         ->assertFileDownloaded('guests-'.now()->format('Y-m-d').'.csv');
 });
+
+test('guest profile shows comprehensive contact identity tags notes and rich transaction cards', function () {
+    $this->actingAs($this->user);
+
+    $package = Package::factory()->create([
+        'operator_id' => $this->operator->id,
+        'title' => 'Mount Rinjani 3D2N Summit Expedition',
+    ]);
+
+    $guest = Guest::factory()->create([
+        'operator_id' => $this->operator->id,
+        'name' => 'Sophia Alexander',
+        'email' => 'sophia@example.com',
+        'phone' => '081298765432',
+        'notes' => 'Prefers vegetarian menu on treks, celebrated birthday on last trip.',
+        'tags' => ['VIP', 'Adventurer', 'Vegetarian'],
+    ]);
+
+    $res = Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'guest_id' => $guest->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'code' => 'RSV-SUMMIT-2026',
+        'guest_name' => $guest->name,
+        'guest_email' => $guest->email,
+        'pax_count' => 3,
+        'requested_date' => now()->addDays(14)->toDateString(),
+        'terms_snapshot' => [
+            'subtotal' => 4500000.0,
+            'coupon_code' => 'SUMMERVIP',
+            'discount_amount' => 500000.0,
+            'total_price' => 4000000.0,
+        ],
+    ]);
+
+    Payment::factory()->paid()->create([
+        'reservation_id' => $res->id,
+        'amount' => 4000000.0,
+    ]);
+
+    Livewire::test('pages::guests.show', ['guest' => $guest])
+        ->assertSee('Sophia Alexander')
+        ->assertSee('sophia@example.com')
+        ->assertSee('081298765432')
+        ->assertSee('Mount Rinjani 3D2N Summit Expedition')
+        ->assertSee('#RSV-SUMMIT-2026')
+        ->assertSee('3 Guests')
+        ->assertSee('VIP')
+        ->assertSee('Vegetarian')
+        ->assertSee('Prefers vegetarian menu on treks')
+        ->assertSee('SUMMERVIP')
+        ->assertSee('Rp 4.000.000');
+});

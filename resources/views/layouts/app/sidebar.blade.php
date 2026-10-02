@@ -42,7 +42,7 @@
         $productsCount = $currentOperator?->products_count ?? 0;
         $vendorsCount = $currentOperator?->vendors_count ?? 0;
         $couponsCount = $currentOperator
-            ? \App\Models\PlatformCoupon::where('operator_id', $currentOperator->id)->active()->count()
+            ? \App\Models\PlatformCoupon::forGuest()->where('operator_id', $currentOperator->id)->active()->count()
             : 0;
         $reservationsCount = $currentOperator?->open_reservations_count ?? 0;
         $operatorSupportEmail = \App\Models\PlatformSetting::current()->getOperatorSupportEmail();
@@ -195,7 +195,7 @@
                         {{ __('Storefront') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('settings.plan')" icon="fa-crown" :active="request()->routeIs('settings.plan', 'settings.plan.checkout', 'settings.billing', 'payments.edit')" :title="__('Subscription & Billing')">
+                    <x-nav-link :href="route('settings.billing')" icon="fa-file-invoice-dollar" :active="request()->routeIs('settings.billing', 'payments.edit', 'settings.plan', 'settings.plan.checkout')" :title="__('Subscription & Billing')">
                         {{ __('Billing') }}
                     </x-nav-link>
                 </x-nav-section>
@@ -682,7 +682,7 @@
                         </a>
 
                         <!-- Subscription & Billing Link -->
-                        <a href="{{ route('settings.plan') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                        <a href="{{ route('settings.billing') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                             class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
                             <div class="flex items-center gap-2.5">
                                 <span

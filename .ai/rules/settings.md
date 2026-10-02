@@ -4,6 +4,7 @@ paths:
   - resources/views/pages/settings/⚡brand.blade.php
   - resources/views/pages/settings/⚡reviews.blade.php
   - 'resources/views/pages/settings/**'
+  - resources/views/pages/settings/⚡billing.blade.php
 ---
 
 # Settings
@@ -61,3 +62,9 @@ Never put card border/bg classes on the same element as x-setup-needed when need
 
 ## Setup rings clear only after save
 Yellow x-setup-needed rings stay while the operator types or uploads. Clear them only after a successful save (or immediate actions like logo remove / Google listing connect). Do not sync highlights from updated* live hooks. Badge copy is Needed for bookings — save to confirm.
+
+## Subscription payment gateway label resolution and underpayment security
+Payment gateways on billing and invoices must be resolved via SubscriptionPayment::getGatewayLabel() and getGatewayIcon(). Real DOKU checkout payments (gateway 'doku') and admin complimentary upgrades ('admin_complimentary') must never fall into an unrecognized sandbox fallback. Underpayment checks in DokuPaymentService must reject any paid amount less than expected, including zero.
+
+## Invoice print modal teleportation and print media styles
+Invoice printable modal must teleport directly to body inside an #invoice-print-portal container. Do not use global 'body * { visibility: hidden }' print styles as it blanks the document across browsers. Instead, style #invoice-print-portal specifically with @media print { display: block; position: absolute; top: 0; left: 0; width: 100%; } and ensure html, body background and colors are reset to white/black.

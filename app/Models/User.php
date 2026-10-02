@@ -36,6 +36,15 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
+    public const IMPERSONATION_SESSION_KEY = 'admin_impersonated_operator_id';
+
+    public const IMPERSONATION_STARTED_KEY = 'admin_impersonation_started_at';
+
+    /**
+     * Managing an operator's desk ends automatically after this many minutes.
+     */
+    public const IMPERSONATION_TTL_MINUTES = 120;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasUlids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
@@ -58,10 +67,9 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function isAdmin(): bool
     {
-        return (bool) ($this->is_admin ?? false) || in_array($this->email, [
-            'admin@travelengine.id',
-            'admin@emvi.dev',
-        ], true);
+        // Admin rights come only from the is_admin flag. Never infer them from an email
+        // address: emails are self-declared at sign-up and team invite.
+        return (bool) ($this->is_admin ?? false);
     }
 
     /**
@@ -93,14 +101,41 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function currentOperator(): ?Operator
     {
-        if ($this->isAdmin() && session()->has('admin_impersonated_operator_id')) {
-            $operator = Operator::whereKey(session('admin_impersonated_operator_id'))->first();
-            if ($operator) {
-                return $operator;
-            }
+        if ($this->isAdmin()) {
+            return $this->impersonatedOperator();
         }
 
-        return $this->operators()->first() ?? ($this->isAdmin() ? Operator::query()->first() : null);
+        return $this->operators()->first();
+    }
+
+    /**
+     * The operator a platform admin is currently managing, if the session is still valid.
+     *
+     * Admins never fall back to an arbitrary operator: no active session means no desk.
+     */
+    public function impersonatedOperator(): ?Operator
+    {
+        if (! $this->isAdmin() || ! session()->has(self::IMPERSONATION_SESSION_KEY)) {
+            return null;
+        }
+
+        $startedAt = (int) session(self::IMPERSONATION_STARTED_KEY, 0);
+
+        if ($startedAt <= 0 || now()->getTimestamp() - $startedAt > self::IMPERSONATION_TTL_MINUTES * 60) {
+            session()->forget([self::IMPERSONATION_SESSION_KEY, self::IMPERSONATION_STARTED_KEY]);
+
+            return null;
+        }
+
+        return Operator::query()->whereKey(session(self::IMPERSONATION_SESSION_KEY))->first();
+    }
+
+    /**
+     * Whether this admin is currently managing an operator's desk.
+     */
+    public function isImpersonating(): bool
+    {
+        return $this->impersonatedOperator() !== null;
     }
 
     /**

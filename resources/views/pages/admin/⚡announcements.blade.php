@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\RecordsAdminActions;
 use App\Models\Plan;
 use App\Models\PlatformAnnouncement;
 use Carbon\Carbon;
@@ -9,6 +10,8 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
+    use RecordsAdminActions;
+
     public bool $show_modal = false;
     public ?string $editing_id = null;
 
@@ -116,9 +119,10 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
 
         if ($this->editing_id) {
             PlatformAnnouncement::where('id', $this->editing_id)->update($attributes);
+            $this->audit('announcement.updated', PlatformAnnouncement::find($this->editing_id), ['title' => $this->title]);
             session()->flash('success', __('Announcement updated successfully!'));
         } else {
-            PlatformAnnouncement::create($attributes);
+            $this->audit('announcement.created', PlatformAnnouncement::create($attributes), ['title' => $this->title]);
             session()->flash('success', __('New announcement broadcasted successfully!'));
         }
 
@@ -151,6 +155,7 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
         $announcement = PlatformAnnouncement::find($id);
         if ($announcement) {
             $announcement->update(['is_active' => ! $announcement->is_active]);
+            $this->audit('announcement.toggled', $announcement, ['is_active' => $announcement->is_active]);
             $status = $announcement->is_active ? __('activated and live') : __('deactivated');
             session()->flash('success', __('Broadcast :title :status.', ['title' => $announcement->title, 'status' => $status]));
         }
@@ -179,6 +184,7 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
 
     public function deleteAnnouncement(string $id): void
     {
+        $this->audit('announcement.deleted', null, ['announcement_id' => $id, 'title' => PlatformAnnouncement::find($id)?->title]);
         PlatformAnnouncement::where('id', $id)->delete();
         session()->flash('success', __('Announcement removed successfully.'));
     }

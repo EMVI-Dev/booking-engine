@@ -63,6 +63,8 @@ new #[Title('Tour Packages & Combos')] class extends Component {
 
     public function deletePackage(string $id): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $package = $this->currentOperator?->packages()->findOrFail($id);
 
         if ($package) {

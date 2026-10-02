@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
+use App\Services\PhoneNumber;
 use Database\Factories\GuestFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -115,12 +116,7 @@ class Guest extends Model
      */
     public function getCleanPhone(): string
     {
-        $phone = preg_replace('/[^0-9]/', '', (string) $this->phone) ?? '';
-        if ($phone !== '' && str_starts_with($phone, '0')) {
-            $phone = '62'.substr($phone, 1);
-        }
-
-        return $phone;
+        return PhoneNumber::normalize($this->phone);
     }
 
     /**
@@ -128,12 +124,32 @@ class Guest extends Model
      */
     public static function normalizePhone(?string $phone): string
     {
-        $digits = preg_replace('/[^0-9]/', '', (string) $phone) ?? '';
-        if ($digits !== '' && str_starts_with($digits, '0')) {
-            $digits = '62'.substr($digits, 1);
-        }
+        return PhoneNumber::normalize($phone);
+    }
 
-        return $digits;
+    /**
+     * The operator's CRM record for a booker: matched by email, else by phone, else created.
+     */
+    public static function matchOrCreateForBooking(string $operatorId, string $name, ?string $email, ?string $phone): self
+    {
+        $email = trim((string) $email);
+        $normalizedEmail = $email !== '' ? strtolower($email) : null;
+        $phone = trim((string) $phone);
+
+        $query = static::query()->where('operator_id', $operatorId);
+
+        $existing = match (true) {
+            $normalizedEmail !== null => $query->where('email', $normalizedEmail)->first(),
+            $phone !== '' => $query->where('phone', $phone)->first(),
+            default => null,
+        };
+
+        return $existing ?? static::create([
+            'operator_id' => $operatorId,
+            'name' => $name,
+            'email' => $normalizedEmail,
+            'phone' => $phone !== '' ? $phone : null,
+        ]);
     }
 
     /**

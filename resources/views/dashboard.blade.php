@@ -47,11 +47,7 @@
                 ->get()
             : collect();
 
-        $totalRevenue = $operator
-            ? (float) \App\Models\Payment::where('status', \App\Enums\PaymentStatus::Paid)
-                ->whereHas('reservation', fn ($q) => $q->where('operator_id', $operator->id))
-                ->sum('amount')
-            : 0.0;
+        $totalRevenue = $operator ? $operator->paidGuestPaymentsTotal() : 0.0;
 
         $totalPaxServed = $operator
             ? (int) $operator

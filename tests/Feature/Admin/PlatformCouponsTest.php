@@ -2,7 +2,9 @@
 
 use App\Models\Operator;
 use App\Models\Package;
+use App\Models\Plan;
 use App\Models\PlatformCoupon;
+use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -110,4 +112,55 @@ test('coupon rejects when minimum spend is not met', function () {
         ->assertSet('appliedCouponCode', null)
         ->assertSet('couponValid', false)
         ->assertSee('Minimum booking spend');
+});
+
+test('admin can view subscription coupon usage report modal', function () {
+    $coupon = PlatformCoupon::create([
+        'code' => 'ADMINREPORT20',
+        'scope' => 'subscription',
+        'discount_type' => 'percentage',
+        'discount_value' => 20,
+        'min_spend' => 0,
+        'used_count' => 1,
+        'is_active' => true,
+    ]);
+
+    $plan = Plan::create([
+        'name' => 'Growth Plan',
+        'slug' => 'growth',
+        'monthly_price' => 500000,
+        'yearly_price' => 5000000,
+        'is_active' => true,
+    ]);
+
+    SubscriptionPayment::create([
+        'operator_id' => $this->operator->id,
+        'plan_id' => $plan->id,
+        'invoice_number' => 'SUB-REPORT-INV-1',
+        'type' => 'subscription_upgrade',
+        'billing_interval' => 'monthly',
+        'gross_amount' => 500000,
+        'prorated_credit' => 0,
+        'net_amount_paid' => 400000,
+        'status' => 'paid',
+        'gateway' => 'xendit',
+        'gateway_ref' => 'SUB-REPORT-INV-1',
+        'breakdown' => [
+            'coupon_code' => 'ADMINREPORT20',
+            'discount_amount' => 100000,
+            'net_amount_paid' => 400000,
+        ],
+        'paid_at' => now(),
+    ]);
+
+    Livewire::actingAs($this->admin)
+        ->test('pages::admin.coupons')
+        ->assertSee('ADMINREPORT20')
+        ->call('viewUsageReport', $coupon->id)
+        ->assertSet('show_usage_modal', true)
+        ->assertSee('Subscription Coupon Redemption Report')
+        ->assertSee('SUB-REPORT-INV-1')
+        ->assertSee('Lombok Trekking Co')
+        ->call('closeUsageReport')
+        ->assertSet('show_usage_modal', false);
 });

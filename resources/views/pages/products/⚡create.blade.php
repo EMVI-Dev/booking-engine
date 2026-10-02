@@ -86,6 +86,8 @@ new #[Title('Create Activity Item')] class extends Component {
 
     public function quickCreateVendor(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (!$this->currentOperator) {
             return;
         }
@@ -165,6 +167,8 @@ new #[Title('Create Activity Item')] class extends Component {
 
     public function save(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (!$this->isProfileComplete) {
             $this->addError('profile', __('You must complete your business profile, WhatsApp contact, payout reference, and terms & conditions in settings before creating items.'));
             return;
@@ -188,7 +192,7 @@ new #[Title('Create Activity Item')] class extends Component {
 
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'vendor_id' => ['nullable', 'string', 'exists:vendors,id'],
+            'vendor_id' => ['nullable', 'string', \Illuminate\Validation\Rule::exists('vendors', 'id')->where('operator_id', $this->currentOperator->id)],
             'category' => ['nullable', 'string', 'max:100'],
             'capacity_per_day' => ['required', 'integer', 'min:1', 'max:10000'],
             'sellable_standalone' => ['boolean'],

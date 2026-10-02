@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\RecordsAdminActions;
 use App\Enums\ListingStatus;
 use App\Enums\OperatorStatus;
 use App\Enums\PaymentStatus;
@@ -9,10 +10,10 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Reservation;
 use App\Services\DomainResolverService;
-use App\Services\OperatorActivitySlackNotifier;
+use App\Services\OperatorAccountService;
+use App\Services\ReservationLifecycleService;
 use App\Services\SubscriptionProrationService;
 use App\Services\WalletService;
-use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -20,6 +21,8 @@ use Livewire\Component;
 
 new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class extends Component
 {
+    use RecordsAdminActions;
+
     public Operator $operator;
 
     public string $selected_plan_id = '';
@@ -27,6 +30,10 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     public string $complimentary_term = 'forever';
 
     public bool $confirming_plan_change = false;
+
+    public string $adjustmentAmount = '';
+
+    public string $adjustmentReason = '';
 
     public function mount(Operator $operator): void
     {
@@ -39,7 +46,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
      */
     public function manageOperator(): void
     {
-        session(['admin_impersonated_operator_id' => $this->operator->id]);
+        app(OperatorAccountService::class)->startManaging($this->operator);
         $this->redirect(route('dashboard'), navigate: true);
     }
 
@@ -48,20 +55,10 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
      */
     public function updateStatus(string $status): void
     {
-        $operatorStatus = match ($status) {
-            'approved' => OperatorStatus::Approved,
-            'suspended' => OperatorStatus::Suspended,
-            default => OperatorStatus::Pending,
-        };
+        $operatorStatus = OperatorAccountService::statusFromInput($status);
 
-        $fromStatus = $this->operator->status->label();
-        $this->operator->update(['status' => $operatorStatus]);
-        $domainResolver = app(DomainResolverService::class);
-        $domainResolver->clearOperatorDomainCache($this->operator);
-        Cache::forget('operator_settings_'.$this->operator->id);
-        Cache::forget('operator_plan_'.$this->operator->id);
+        app(OperatorAccountService::class)->changeStatus($this->operator, $operatorStatus);
         $this->operator->refresh();
-        app(OperatorActivitySlackNotifier::class)->statusChanged($this->operator, $fromStatus, $operatorStatus->label());
         $this->dispatch('operator-status-updated', ['name' => $this->operator->name, 'status' => $operatorStatus->label()]);
     }
 
@@ -121,10 +118,8 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         }
 
         app(SubscriptionProrationService::class)->grantComplimentaryPlan($this->operator, $plan, $days);
-        $domainResolver = app(DomainResolverService::class);
-        $domainResolver->clearOperatorDomainCache($this->operator);
-        Cache::forget('operator_settings_'.$this->operator->id);
-        Cache::forget('operator_plan_'.$this->operator->id);
+        $this->audit('plan.complimentary_granted', $this->operator, ['plan' => $plan->slug, 'days' => $days]);
+        app(OperatorAccountService::class)->forgetCachedLookups($this->operator);
         $this->operator->refresh();
         $this->operator->unsetRelation('plan');
         $this->selected_plan_id = (string) $this->operator->plan_id;
@@ -142,15 +137,15 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
             return;
         }
 
-        $payment = $reservation->latestPayment;
+        $hold = app(WalletService::class)->openCardDispute($reservation);
 
-        if ($payment === null || $payment->status !== PaymentStatus::Paid) {
+        if (! $hold) {
             session()->flash('error', __('This booking has no paid guest payment to hold.'));
 
             return;
         }
 
-        app(WalletService::class)->holdDispute($reservation, (float) $payment->amount);
+        $this->audit('dispute.hold_opened', $reservation, ['amount' => abs((float) $hold->net_amount)]);
         unset($this->recentReservations);
         session()->flash('success', __('Money held until the card fight is finished.'));
     }
@@ -167,8 +162,79 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
         }
 
         app(WalletService::class)->releaseDispute($reservation);
+        $this->audit('dispute.hold_released', $reservation);
         unset($this->recentReservations);
         session()->flash('success', __('Held money is back in the operator wallet.'));
+    }
+
+    /**
+     * The card dispute was lost: keep the held money as a final deduction and cancel the booking.
+     */
+    public function markDisputeLost(string $reservationId): void
+    {
+        $reservation = $this->operator->reservations()->find($reservationId);
+
+        if (! $reservation) {
+            return;
+        }
+
+        try {
+            app(ReservationLifecycleService::class)->resolveCardDispute($reservation, won: false);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            session()->flash('error', (string) collect($e->errors())->flatten()->first());
+
+            return;
+        }
+
+        $this->audit('dispute.lost', $reservation);
+        unset($this->recentReservations);
+        session()->flash('success', __('Dispute closed as lost. The held money stays deducted.'));
+    }
+
+    /**
+     * Cancel a booking on the platform's side (refunds the guest if paid).
+     */
+    public function cancelBooking(string $reservationId): void
+    {
+        $reservation = $this->operator->reservations()->find($reservationId);
+
+        if (! $reservation) {
+            return;
+        }
+
+        try {
+            $result = app(ReservationLifecycleService::class)->cancel($reservation, 'Cancelled by platform admin');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            session()->flash('error', (string) collect($e->errors())->flatten()->first());
+
+            return;
+        }
+
+        $this->audit('reservation.cancelled_by_admin', $reservation, $result);
+        unset($this->recentReservations);
+        session()->flash('success', __('Booking cancelled.'));
+    }
+
+    /**
+     * Credit or debit the operator wallet with a written reason.
+     */
+    public function adjustWallet(): void
+    {
+        $this->validate([
+            'adjustmentAmount' => ['required', 'numeric', 'not_in:0', 'between:-100000000,100000000'],
+            'adjustmentReason' => ['required', 'string', 'min:5', 'max:255'],
+        ]);
+
+        $entry = app(WalletService::class)->recordManualAdjustment(
+            $this->operator,
+            (float) $this->adjustmentAmount,
+            $this->adjustmentReason,
+            auth()->user()?->email,
+        );
+
+        $this->audit('wallet.adjusted', $this->operator, ['amount' => (float) $entry->net_amount, 'reason' => $this->adjustmentReason, 'entry' => $entry->id]);
+        $this->reset('adjustmentAmount', 'adjustmentReason');
+        session()->flash('success', __('Wallet adjustment recorded.'));
     }
 
     public function heldMoneyFor(Reservation $reservation): float
@@ -179,7 +245,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     #[Computed]
     public function totalRevenue(): float
     {
-        return (float) Payment::where('status', PaymentStatus::Paid)->whereHas('reservation', fn ($q) => $q->where('operator_id', $this->operator->id))->sum('amount');
+        return $this->operator->paidGuestPaymentsTotal();
     }
 
     #[Computed]
@@ -226,7 +292,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
     #[Computed]
     public function allPlans()
     {
-        return Plan::where('is_active', true)->orderBy('sort_order')->get();
+        return Plan::catalog();
     }
 
     /**
@@ -675,7 +741,7 @@ new #[Title('Operator Details & Insights')] #[Layout('layouts.admin')] class ext
                                 @foreach ($this->recentReservations as $res)
                                     @php
                                         $heldMoney = $this->heldMoneyFor($res);
-                                        $paidAmount = (float) ($res->latestPayment?->amount ?? $res->getTotalAmount());
+                                        $paidAmount = $res->getChargedAmount();
                                     @endphp
                                     <tr wire:key="recent-reservation-{{ $res->id }}" class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
                                         <td class="py-3.5 px-4">

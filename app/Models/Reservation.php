@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Contracts\Bookable;
 use App\Enums\ReservationStatus;
+use App\Services\CancellationPolicy;
 use Carbon\CarbonInterface;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -80,31 +81,12 @@ class Reservation extends Model
             }
 
             if (empty($reservation->guest_id) && ! empty($reservation->operator_id)) {
-                $email = trim((string) $reservation->guest_email);
-                $normalizedEmail = $email !== '' ? strtolower($email) : null;
-                $phone = trim((string) $reservation->guest_contact);
-
-                $guestQuery = Guest::query()->where('operator_id', $reservation->operator_id);
-                if ($normalizedEmail !== null) {
-                    $guestQuery->where('email', $normalizedEmail);
-                } elseif ($phone !== '') {
-                    $guestQuery->where('phone', $phone);
-                } else {
-                    $guestQuery = null;
-                }
-
-                $guest = $guestQuery?->first();
-
-                if (! $guest) {
-                    $guest = Guest::create([
-                        'operator_id' => $reservation->operator_id,
-                        'name' => $reservation->guest_name,
-                        'email' => $normalizedEmail,
-                        'phone' => $phone !== '' ? $phone : null,
-                    ]);
-                }
-
-                $reservation->guest_id = $guest->id;
+                $reservation->guest_id = Guest::matchOrCreateForBooking(
+                    (string) $reservation->operator_id,
+                    (string) $reservation->guest_name,
+                    $reservation->guest_email,
+                    $reservation->guest_contact,
+                )->id;
             }
         });
     }
@@ -272,6 +254,41 @@ class Reservation extends Model
     }
 
     /**
+     * What the guest was quoted at checkout (incl. service fee, minus promo).
+     */
+    public function getQuotedTotal(): float
+    {
+        $snapshot = $this->terms_snapshot ?? [];
+
+        if (isset($snapshot['total_price'])) {
+            return (float) $snapshot['total_price'];
+        }
+
+        return $this->latestPayment !== null
+            ? (float) $this->latestPayment->amount
+            : $this->getTotalAmount();
+    }
+
+    /**
+     * What was actually charged on the latest payment, falling back to the quote.
+     */
+    public function getChargedAmount(): float
+    {
+        return $this->latestPayment !== null
+            ? (float) $this->latestPayment->amount
+            : $this->getQuotedTotal();
+    }
+
+    /**
+     * Paid and still a live booking (the guest holds a valid ticket).
+     */
+    public function hasValidTicket(): bool
+    {
+        return (bool) $this->latestPayment?->isPaid()
+            && in_array($this->status, [ReservationStatus::Confirmed, ReservationStatus::PendingConfirmation], true);
+    }
+
+    /**
      * Get the exact cutoff datetime before which cancellation is free.
      */
     public function getCancellationCutoffTime(): ?Carbon
@@ -280,9 +297,7 @@ class Reservation extends Model
             return null;
         }
 
-        $freeHours = $this->getFrozenFreeCancellationHours();
-
-        return Carbon::parse($this->requested_date)->startOfDay()->subHours($freeHours);
+        return CancellationPolicy::cutoff($this->requested_date, $this->getFrozenFreeCancellationHours());
     }
 
     /**
@@ -297,9 +312,7 @@ class Reservation extends Model
             return false;
         }
 
-        $now = $atTime ? Carbon::parse($atTime) : now();
-
-        return $now->lte($cutoff);
+        return ($atTime ? Carbon::parse($atTime) : now())->lte($cutoff);
     }
 
     /**

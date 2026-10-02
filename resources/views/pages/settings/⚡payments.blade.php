@@ -66,6 +66,14 @@ new #[Title('Payout bank account')] class extends Component {
     {
         $this->authorizeAbility('manageBilling');
 
+        try {
+            $this->currentOperator?->assertRealMoneyMovementAllowed();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->addError('bank_account_number', (string) $e->validator->errors()->first());
+
+            return;
+        }
+
         $isCustom = $this->payment_mode === 'custom';
 
         if ($isCustom) {

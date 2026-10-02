@@ -1,10 +1,11 @@
 <?php
 
+use App\Concerns\RecordsAdminActions;
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\Reservation;
 use App\Services\DomainResolverService;
-use Illuminate\Support\Facades\Cache;
+use App\Services\OperatorAccountService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -15,6 +16,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
 {
+    use RecordsAdminActions;
+
     use WithPagination;
 
     #[Url]
@@ -41,13 +44,15 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
      */
     public function manageOperator(string $operatorId): void
     {
-        session(['admin_impersonated_operator_id' => $operatorId]);
+        app(OperatorAccountService::class)->startManaging(Operator::query()->findOrFail($operatorId));
         $this->redirect(route('dashboard'), navigate: true);
     }
 
     public function exportCsv(): StreamedResponse
     {
         $fileName = 'operators-'.now()->format('Y-m-d').'.csv';
+
+        $this->audit('export.operators', null, ['status' => $this->status_filter, 'search' => $this->search]);
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');
@@ -134,17 +139,8 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
     {
         $operator = Operator::find($operatorId);
         if ($operator) {
-            $operatorStatus = match ($status) {
-                'approved' => OperatorStatus::Approved,
-                'suspended' => OperatorStatus::Suspended,
-                default => OperatorStatus::Pending,
-            };
-
-            $operator->update(['status' => $operatorStatus]);
-            $domainResolver = app(DomainResolverService::class);
-            $domainResolver->clearOperatorDomainCache($operator);
-            Cache::forget('operator_settings_'.$operator->id);
-            Cache::forget('operator_plan_'.$operator->id);
+            $operatorStatus = OperatorAccountService::statusFromInput($status);
+            app(OperatorAccountService::class)->changeStatus($operator, $operatorStatus);
             $this->dispatch('operator-status-updated', ['name' => $operator->name, 'status' => $operatorStatus->label()]);
         }
     }

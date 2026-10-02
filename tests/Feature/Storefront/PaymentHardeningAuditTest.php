@@ -278,3 +278,159 @@ test('subscription checkout forbids simulation when simulator is disabled', func
 
     expect($subscriptionPayment->fresh()->status)->toBe('pending');
 });
+
+test('doku webhook rejects zero-amount payload as underpayment for subscription', function () {
+    $growthPlan = Plan::where('slug', 'growth')->firstOrFail();
+
+    $subscriptionPayment = SubscriptionPayment::create([
+        'operator_id' => $this->operator->id,
+        'plan_id' => $growthPlan->id,
+        'invoice_number' => 'INV-SUB-ZERO-AUDIT',
+        'billing_interval' => 'monthly',
+        'gross_amount' => 299000.00,
+        'net_amount_paid' => 299000.00,
+        'status' => 'pending',
+        'gateway' => 'doku',
+        'breakdown' => ['auto_renew' => true],
+    ]);
+
+    $dokuService = app(DokuPaymentService::class);
+
+    $zeroPayload = [
+        'order' => [
+            'invoice_number' => 'INV-SUB-ZERO-AUDIT',
+            'amount' => 0.00,
+        ],
+        'transaction' => [
+            'status' => 'SUCCESS',
+        ],
+    ];
+
+    $processed = $dokuService->processNotification($zeroPayload);
+
+    expect($processed)->toBeFalse()
+        ->and($subscriptionPayment->fresh()->status)->toBe('pending');
+});
+
+test('doku webhook rejects zero-amount payload as underpayment for guest booking', function () {
+    $dokuService = app(DokuPaymentService::class);
+
+    $zeroPayload = [
+        'order' => [
+            'invoice_number' => 'INV-AUDIT-GUEST-1',
+            'amount' => 0.00,
+        ],
+        'transaction' => [
+            'status' => 'SUCCESS',
+        ],
+    ];
+
+    $processed = $dokuService->processNotification($zeroPayload);
+
+    expect($processed)->toBeFalse()
+        ->and($this->payment->fresh()->status)->toBe(PaymentStatus::Pending)
+        ->and($this->reservation->fresh()->status)->toBe(ReservationStatus::PaymentPending);
+});
+
+test('doku service sanitizes customer phone numbers to numeric digits only', function () {
+    $service = app(DokuPaymentService::class);
+
+    expect($service->sanitizePhoneNumber('+62 812-3456-7890'))->toBe('6281234567890')
+        ->and($service->sanitizePhoneNumber('0812 9988 7766'))->toBe('081299887766')
+        ->and($service->sanitizePhoneNumber(''))->toBe('081234567890')
+        ->and($service->sanitizePhoneNumber('123'))->toBe('081234567890');
+});
+
+test('doku service normalizes bank provider codes for BI-FAST disbursement', function () {
+    $service = app(DokuPaymentService::class);
+
+    expect($service->normalizeBankCode('BCA'))->toBe('BCA')
+        ->and($service->normalizeBankCode('BCA (Bank Central Asia)'))->toBe('BCA')
+        ->and($service->normalizeBankCode('Mandiri'))->toBe('MANDIRI')
+        ->and($service->normalizeBankCode('Bank Mandiri'))->toBe('MANDIRI')
+        ->and($service->normalizeBankCode('CIMB Niaga'))->toBe('CIMB')
+        ->and($service->normalizeBankCode('Bank Jago'))->toBe('JAGO')
+        ->and($service->normalizeBankCode('BSI (Bank Syariah Indonesia)'))->toBe('BSI')
+        ->and($service->normalizeBankCode('SeaBank'))->toBe('SEABANK');
+});
+
+test('doku webhook captures payment channel into subscription breakdown and booking split details', function () {
+    $growthPlan = Plan::where('slug', 'growth')->firstOrFail();
+
+    $subscriptionPayment = SubscriptionPayment::create([
+        'operator_id' => $this->operator->id,
+        'plan_id' => $growthPlan->id,
+        'invoice_number' => 'INV-SUB-CHANNEL-1',
+        'billing_interval' => 'monthly',
+        'gross_amount' => 299000.00,
+        'net_amount_paid' => 299000.00,
+        'status' => 'pending',
+        'gateway' => 'doku',
+        'breakdown' => ['auto_renew' => true],
+    ]);
+
+    $dokuService = app(DokuPaymentService::class);
+
+    $subPayload = [
+        'order' => [
+            'invoice_number' => 'INV-SUB-CHANNEL-1',
+            'amount' => 299000.00,
+        ],
+        'transaction' => [
+            'status' => 'SUCCESS',
+        ],
+        'channel' => [
+            'id' => 'VIRTUAL_ACCOUNT_BCA',
+        ],
+    ];
+
+    $processedSub = $dokuService->processNotification($subPayload);
+    expect($processedSub)->toBeTrue();
+
+    $freshSub = $subscriptionPayment->fresh();
+    expect($freshSub->breakdown['channel'])->toBe('VIRTUAL_ACCOUNT_BCA')
+        ->and($freshSub->getGatewayLabel())->toBe('Virtual Account Bca');
+
+    // Test guest booking channel capture
+    $guestPayload = [
+        'order' => [
+            'invoice_number' => 'INV-AUDIT-GUEST-1',
+            'amount' => 1000000.00,
+        ],
+        'transaction' => [
+            'status' => 'SUCCESS',
+        ],
+        'channel' => [
+            'id' => 'QRIS',
+        ],
+    ];
+
+    $processedGuest = $dokuService->processNotification($guestPayload);
+    expect($processedGuest)->toBeTrue();
+
+    $freshPayment = $this->payment->fresh();
+    expect($freshPayment->split_details['channel'])->toBe('QRIS');
+});
+
+test('subscription payment helper methods format gateway labels correctly without sandbox misclassification', function () {
+    $plan = Plan::where('slug', 'growth')->firstOrFail();
+
+    $dokuPayment = new SubscriptionPayment([
+        'gateway' => 'doku',
+        'breakdown' => ['channel' => null],
+    ]);
+    expect($dokuPayment->getGatewayLabel())->toBe('DOKU Checkout')
+        ->and($dokuPayment->getGatewayIcon())->toContain('fa-shield-halved');
+
+    $adminPayment = new SubscriptionPayment([
+        'gateway' => 'admin_complimentary',
+    ]);
+    expect($adminPayment->getGatewayLabel())->toBe('Complimentary (Admin)')
+        ->and($adminPayment->getGatewayIcon())->toContain('fa-star');
+
+    $simPayment = new SubscriptionPayment([
+        'gateway' => 'simulation',
+    ]);
+    expect($simPayment->getGatewayLabel())->toBe('Sandbox Simulation')
+        ->and($simPayment->getGatewayIcon())->toContain('fa-bolt');
+});

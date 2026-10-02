@@ -1,17 +1,17 @@
 <?php
 
 use App\Contracts\Bookable;
-use App\Enums\ReservationStatus;
 use App\Exceptions\CapacityUnavailableException;
 use App\Models\Operator;
-use App\Models\Package;
 use App\Models\PlatformCoupon;
-use App\Models\Product;
-use App\Models\Reservation;
+use App\Models\PlatformSetting;
+use App\Services\BookingPricingService;
+use App\Services\BookingQuote;
 use App\Services\CapacityService;
-use App\Services\DokuPaymentService;
-use Illuminate\Support\Carbon;
+use App\Services\ReservationBookingService;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component {
@@ -27,9 +27,11 @@ new class extends Component {
     public string $notes = '';
     public bool $agreed_terms = false;
 
-    // Coupon Engine State
+    // Coupon Engine State (applied code and discount are server-owned; the browser may not set them)
     public string $couponCode = '';
+    #[Locked]
     public ?string $appliedCouponCode = null;
+    #[Locked]
     public float $discountAmount = 0.0;
     public string $couponMessage = '';
     public bool $couponValid = false;
@@ -40,7 +42,7 @@ new class extends Component {
     public function mount(Bookable $bookable, Operator|null $operator = null, Operator|null $agent = null): void
     {
         $this->bookable = $bookable;
-        $resolved = $operator ?? $agent ?? ($bookable instanceof \App\Contracts\Bookable ? $bookable->getOperator() : null);
+        $resolved = $operator ?? $agent ?? $bookable->getOperator();
         $this->operator = $resolved;
         $this->agent = $resolved;
 
@@ -48,34 +50,43 @@ new class extends Component {
         $this->requested_date = now()->addDays(2)->format('Y-m-d');
     }
 
+    /**
+     * Live price breakdown for the current party size and applied promo (BookingPricingService).
+     */
+    #[Computed]
+    public function quote(): BookingQuote
+    {
+        return app(BookingPricingService::class)->quote($this->bookable, $this->pax_count, $this->operator, $this->appliedCouponCode);
+    }
+
     #[Computed]
     public function unitPrice(): float
     {
-        return (float) $this->bookable->price;
+        return $this->quote->unitPrice;
     }
 
     #[Computed]
     public function subtotal(): float
     {
-        return $this->unitPrice * $this->pax_count;
+        return $this->quote->subtotal;
     }
 
     #[Computed]
     public function serviceFeeRate(): float
     {
-        return \App\Models\PlatformSetting::current()->getGuestServiceFeeRate();
+        return $this->quote->serviceFeeRate;
     }
 
     #[Computed]
     public function serviceFee(): float
     {
-        return \App\Models\PlatformSetting::current()->calculateGuestServiceFee($this->subtotal, $this->operator);
+        return $this->quote->serviceFee;
     }
 
     #[Computed]
     public function totalPrice(): float
     {
-        return max(0, $this->subtotal + $this->serviceFee - $this->discountAmount);
+        return $this->quote->total;
     }
 
     public function incrementPax(): void
@@ -102,7 +113,7 @@ new class extends Component {
      */
     public function getHasActiveCouponsProperty(): bool
     {
-        return PlatformCoupon::where('operator_id', $this->operator->id)->active()->exists();
+        return PlatformCoupon::forGuest()->where('operator_id', $this->operator->id)->active()->exists();
     }
 
     /**
@@ -110,7 +121,7 @@ new class extends Component {
      */
     public function applyCoupon(): void
     {
-        \App\Models\PlatformSetting::current()->assertStorefrontTransactionsAllowed();
+        PlatformSetting::current()->assertStorefrontTransactionsAllowed();
 
         $cleanCode = strtoupper(trim($this->couponCode));
 
@@ -121,33 +132,18 @@ new class extends Component {
             return;
         }
 
-        $coupon = PlatformCoupon::where('operator_id', $this->operator->id)
-            ->where('code', $cleanCode)
-            ->first();
+        $quote = app(BookingPricingService::class)->quote($this->bookable, $this->pax_count, $this->operator, $cleanCode);
 
-        if (! $coupon) {
-            $this->couponMessage = __('Invalid promo code.');
-            $this->couponValid = false;
+        if ($quote->hasCouponError()) {
             $this->removeCoupon();
+            $this->couponMessage = (string) $quote->couponError;
 
             return;
         }
 
-        $result = $coupon->validateFor($this->subtotal, $this->operator->id);
-
-        if (! $result['valid'] || ($result['discount'] ?? 0) <= 0) {
-            $this->couponMessage = $result['reason'] ?? __('Promo code cannot be applied.');
-            $this->couponValid = false;
-            $this->removeCoupon();
-
-            return;
-        }
-
-        $this->appliedCouponCode = $coupon->code;
-        $this->discountAmount = (float) $result['discount'];
-        $this->couponValid = true;
+        $this->applyQuoteCoupon($quote);
         $this->couponMessage = __('Code :code applied! Saved Rp :amount', [
-            'code' => $coupon->code,
+            'code' => $quote->couponCode,
             'amount' => number_format($this->discountAmount, 0, ',', '.'),
         ]);
     }
@@ -161,28 +157,38 @@ new class extends Component {
         $this->discountAmount = 0.0;
         $this->couponCode = '';
         $this->couponValid = false;
+        unset($this->quote);
     }
 
+    /**
+     * Re-price the applied promo for the current party size; drop it if it no longer applies.
+     */
     protected function revalidateAppliedCoupon(): void
     {
-        if ($this->appliedCouponCode) {
-            $coupon = PlatformCoupon::where('operator_id', $this->operator->id)
-                ->where('code', $this->appliedCouponCode)
-                ->first();
-            if ($coupon) {
-                $result = $coupon->validateFor($this->subtotal, $this->operator->id);
-                if ($result['valid'] && ($result['discount'] ?? 0) > 0) {
-                    $this->discountAmount = (float) $result['discount'];
-                } else {
-                    $reason = $result['reason'] ?? __('Promo code is no longer applicable.');
-                    $this->removeCoupon();
-                    $this->couponMessage = $reason;
-                    $this->couponValid = false;
-                }
-            } else {
-                $this->removeCoupon();
-            }
+        unset($this->quote);
+
+        if ($this->appliedCouponCode === null) {
+            return;
         }
+
+        $quote = $this->quote;
+
+        if ($quote->hasCouponError()) {
+            $this->removeCoupon();
+            $this->couponMessage = (string) $quote->couponError;
+
+            return;
+        }
+
+        $this->applyQuoteCoupon($quote);
+    }
+
+    protected function applyQuoteCoupon(BookingQuote $quote): void
+    {
+        $this->appliedCouponCode = $quote->couponCode;
+        $this->discountAmount = $quote->discount;
+        $this->couponValid = true;
+        unset($this->quote);
     }
 
     /**
@@ -219,25 +225,26 @@ new class extends Component {
         }
     }
 
+    public function updatedPaxCount(): void
+    {
+        $this->revalidateAppliedCoupon();
+    }
+
     #[Computed]
     public function blackoutDates(): array
     {
-        if (method_exists($this->bookable, 'getBlackoutDates')) {
-            return $this->bookable->getBlackoutDates();
-        }
-
-        return [];
+        return $this->bookable->getBlackoutDates();
     }
 
     /**
      * Submit reservation and initiate DOKU checkout.
      */
-    public function submitBooking(DokuPaymentService $paymentService): void
+    public function submitBooking(ReservationBookingService $bookings): void
     {
-        \App\Models\PlatformSetting::current()->assertStorefrontTransactionsAllowed();
+        PlatformSetting::current()->assertStorefrontTransactionsAllowed();
         $this->operator->assertCheckoutAllowed();
 
-        $minDate = now()->startOfDay()->addHours($this->bookable->advance_booking_hours ?? 0);
+        $minDate = now()->startOfDay()->addHours($this->bookable->getAdvanceBookingHours());
 
         $this->validate([
             'requested_date' => ['required', 'date', 'after_or_equal:' . $minDate->toDateString()],
@@ -249,74 +256,49 @@ new class extends Component {
             'agreed_terms' => ['accepted'],
         ], [
             'agreed_terms.accepted' => __('You must agree to the booking and cancellation policy to proceed.'),
-            'requested_date.after_or_equal' => __('Please choose a date at least :hours hours in advance.', ['hours' => $this->bookable->advance_booking_hours ?? 0]),
+            'requested_date.after_or_equal' => __('Please choose a date at least :hours hours in advance.', ['hours' => $this->bookable->getAdvanceBookingHours()]),
         ]);
 
-        if (method_exists($this->bookable, 'isBlackedOutOn') && $this->bookable->isBlackedOutOn($this->requested_date)) {
-            $this->addError('requested_date', __('The selected date (:date) is unavailable for booking due to scheduled maintenance or operator blackout.', ['date' => $this->requested_date]));
+        if (! $this->bookable->isSellable()) {
+            $this->addError('requested_date', __('This experience is not open for booking right now.'));
 
             return;
         }
 
-        $termsSnapshot = $this->bookable->generateTermsSnapshot();
-        $termsSnapshot['unit_price'] = $this->unitPrice;
-        $termsSnapshot['pax_count'] = $this->pax_count;
-        $termsSnapshot['subtotal'] = $this->subtotal;
-        $termsSnapshot['service_fee'] = $this->serviceFee;
-        $termsSnapshot['service_fee_rate'] = $this->serviceFeeRate;
-        $termsSnapshot['coupon_code'] = $this->appliedCouponCode;
-        $termsSnapshot['discount_amount'] = $this->discountAmount;
-        $termsSnapshot['total_price'] = $this->totalPrice;
-
         try {
-            /** @var Reservation $reservation */
-            $reservation = app(CapacityService::class)->reserve(
-                $this->bookable,
-                $this->requested_date,
-                $this->pax_count,
-                fn (): Reservation => Reservation::query()->create([
-                    'bookable_type' => $this->bookable instanceof Package ? 'package' : 'product',
-                    'bookable_id' => $this->bookable->id,
-                    'operator_id' => $this->operator->id,
-                    'guest_name' => $this->guest_name,
-                    'guest_contact' => $this->guest_contact,
-                    'guest_email' => $this->guest_email ?: null,
-                    'requested_date' => $this->requested_date,
-                    'pax_count' => $this->pax_count,
-                    'notes' => $this->notes ?: null,
-                    'terms_snapshot' => $termsSnapshot,
-                    'status' => ReservationStatus::PaymentPending,
-                    'hold_expires_at' => now()->addMinutes(30),
-                ]),
+            $hold = $bookings->createHold(
+                bookable: $this->bookable,
+                operator: $this->operator,
+                requestedDate: $this->requested_date,
+                pax: $this->pax_count,
+                guest: [
+                    'name' => $this->guest_name,
+                    'contact' => $this->guest_contact,
+                    'email' => $this->guest_email,
+                    'notes' => $this->notes,
+                ],
+                couponCode: $this->appliedCouponCode,
             );
         } catch (CapacityUnavailableException $e) {
             $this->addError('requested_date', $e->getMessage());
             unset($this->remainingCapacity);
 
             return;
-        }
+        } catch (ValidationException $e) {
+            $errors = $e->errors();
 
-        // Increment coupon usage count if applied
-        if ($this->appliedCouponCode) {
-            PlatformCoupon::where('operator_id', $this->operator->id)
-                ->where('code', $this->appliedCouponCode)
-                ->first()
-                ?->incrementUsage();
-        }
-
-        $session = $paymentService->createPaymentSession($reservation, $this->totalPrice);
-
-        // Send initial booking hold and pay link email if email provided
-        if (! empty($reservation->guest_email)) {
-            try {
-                \Illuminate\Support\Facades\Mail::to($reservation->guest_email)
-                    ->send(new \App\Mail\GuestBookingCreatedMail($reservation));
-            } catch (\Throwable $e) {
-                report($e);
+            if (isset($errors['coupon_code'])) {
+                $this->removeCoupon();
+                $this->couponMessage = (string) $errors['coupon_code'][0];
+                $this->addError('couponCode', $this->couponMessage);
+            } else {
+                $this->addError('requested_date', (string) collect($errors)->flatten()->first());
             }
+
+            return;
         }
 
-        $this->checkoutUrl = $session['checkout_url'];
+        $this->checkoutUrl = $hold['checkout_url'];
         $this->showSuccess = true;
 
         $this->redirect($this->checkoutUrl);

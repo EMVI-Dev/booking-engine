@@ -119,7 +119,7 @@
 
                         @if ($agent->contact_whatsapp)
                             @php
-                                $waNumber = preg_replace('/[^0-9]/', '', $agent->contact_whatsapp);
+                                $waNumber = \App\Services\PhoneNumber::normalize($agent->contact_whatsapp);
                             @endphp
                             <div class="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-2">
                                 <p class="text-[11px] text-slate-500 dark:text-slate-400">

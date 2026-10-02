@@ -476,19 +476,8 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                                     <td class="py-3.5 px-4 whitespace-nowrap">
                                         <span
                                             class="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-medium">
-                                            @if ($payment->gateway === 'credit_card' || $payment->gateway === 'cc')
-                                                <i class="fa-solid fa-credit-card text-indigo-500"></i>
-                                                <span>Credit Card</span>
-                                            @elseif ($payment->gateway === 'qris')
-                                                <i class="fa-solid fa-qrcode text-indigo-500"></i>
-                                                <span>QRIS</span>
-                                            @elseif ($payment->gateway === 'va')
-                                                <i class="fa-solid fa-building-columns text-indigo-500"></i>
-                                                <span>Virtual Account</span>
-                                            @else
-                                                <i class="fa-solid fa-bolt text-amber-500"></i>
-                                                <span>Sandbox Simulation</span>
-                                            @endif
+                                            <i class="{{ $payment->getGatewayIcon() }}"></i>
+                                            <span>{{ $payment->getGatewayLabel() }}</span>
                                         </span>
                                     </td>
 
@@ -560,165 +549,311 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
             $inv = $this->selectedInvoice;
             $breakdown = $inv->breakdown ?? [];
         @endphp
-        <div
-            class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in">
-            <!-- Modal Backdrop -->
-            <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity"
-                wire:click="closeInvoiceModal"></div>
+        @teleport('body')
+            <style>
+                @media print {
+                    @page {
+                        size: A4 portrait;
+                        margin: 12mm 15mm;
+                    }
 
-            <!-- Invoice Modal Content -->
+                    /* 1. Reset root HTML & BODY elements to pure white canvas */
+                    html,
+                    html.dark,
+                    body,
+                    body.dark,
+                    body.op-shell {
+                        background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        color: #0f172a !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        min-height: auto !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+
+                    /* 2. Hide everything under body EXCEPT the invoice print portal */
+                    body > *:not(#invoice-print-portal) {
+                        display: none !important;
+                    }
+
+                    /* 3. Unwrap the modal portal into a plain, full-width document */
+                    #invoice-print-portal {
+                        display: block !important;
+                        position: static !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        overflow: visible !important;
+                        z-index: 1 !important;
+                    }
+
+                    /* 4. Completely eliminate backdrop, buttons, and navigation elements */
+                    #invoice-print-portal .no-print,
+                    .no-print {
+                        display: none !important;
+                    }
+
+                    /* 5. Format printable invoice card to fit 100% of printable area */
+                    #printable-invoice {
+                        display: block !important;
+                        position: static !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        color: #0f172a !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                        overflow: visible !important;
+                    }
+
+                    /* 6. Enforce crisp light mode contrast for all text & backgrounds in dark mode */
+                    #printable-invoice,
+                    #printable-invoice * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+
+                    #printable-invoice .dark\:text-white,
+                    #printable-invoice .text-white {
+                        color: #0f172a !important;
+                    }
+
+                    #printable-invoice .dark\:text-slate-200,
+                    #printable-invoice .text-slate-800,
+                    #printable-invoice .dark\:text-slate-300 {
+                        color: #1e293b !important;
+                    }
+
+                    #printable-invoice .dark\:text-slate-400,
+                    #printable-invoice .text-slate-500 {
+                        color: #475569 !important;
+                    }
+
+                    #printable-invoice .dark\:bg-\[\#0C0E13\],
+                    #printable-invoice .dark\:bg-\[\#141821\] {
+                        background-color: #ffffff !important;
+                    }
+
+                    #printable-invoice .dark\:bg-\[\#10141d\],
+                    #printable-invoice .bg-slate-50 {
+                        background-color: #f8fafc !important;
+                    }
+
+                    #printable-invoice .dark\:border-\[\#1e2433\],
+                    #printable-invoice .border-slate-200\/80,
+                    #printable-invoice .border-slate-100 {
+                        border-color: #e2e8f0 !important;
+                    }
+
+                    #printable-invoice .dark\:text-emerald-300,
+                    #printable-invoice .dark\:text-emerald-400,
+                    #printable-invoice .text-emerald-700,
+                    #printable-invoice .text-emerald-800 {
+                        color: #047857 !important;
+                    }
+
+                    #printable-invoice .dark\:bg-emerald-950\/60,
+                    #printable-invoice .dark\:bg-emerald-950,
+                    #printable-invoice .bg-emerald-100 {
+                        background-color: #d1fae5 !important;
+                        border-color: #a7f3d0 !important;
+                    }
+
+                    #printable-invoice .dark\:text-purple-300,
+                    #printable-invoice .dark\:text-purple-400,
+                    #printable-invoice .text-purple-700 {
+                        color: #6b21a8 !important;
+                    }
+                }
+            </style>
+
             <div
-                class="relative w-full max-w-xl rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 z-10">
-                <!-- Modal Top Header -->
+                id="invoice-print-portal"
+                class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in print:p-0 print:static print:block"
+                wire:keydown.escape.window="closeInvoiceModal"
+            >
+                <!-- Modal Backdrop -->
+                <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity no-print"
+                    wire:click="closeInvoiceModal"></div>
+
+                <!-- Invoice Modal Content -->
                 <div
-                    class="flex items-start justify-between gap-4 pb-5 border-b border-slate-100 dark:border-[#1e2433]">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-lg font-black shadow-xs">
-                            <i class="fa-solid fa-receipt"></i>
+                    id="printable-invoice"
+                    class="relative w-full max-w-xl rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 z-10 print:border-none print:shadow-none print:p-0 print:space-y-5 print:bg-white print:text-slate-900 print:overflow-visible">
+                    <!-- Modal Top Header -->
+                    <div
+                        class="flex items-start justify-between gap-4 pb-5 border-b border-slate-100 dark:border-[#1e2433] print:border-slate-200">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-lg font-black shadow-xs print:border print:border-slate-300">
+                                <i class="fa-solid fa-receipt"></i>
+                            </div>
+                            <div>
+                                <span
+                                    class="text-[10px] font-black uppercase tracking-wider text-slate-400 print:text-slate-500 block">{{ __('Official Subscription Receipt') }}</span>
+                                <h3 class="text-lg font-black font-mono text-slate-900 dark:text-white print:text-slate-900">
+                                    {{ $inv->invoice_number }}
+                                </h3>
+                            </div>
                         </div>
+
+                        <div class="flex items-center gap-2 no-print">
+                            <button type="button" onclick="window.print()"
+                                class="h-8 px-3 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] font-bold text-xs flex items-center gap-1.5 transition cursor-pointer">
+                                <i class="fa-solid fa-print text-xs"></i>
+                                <span>{{ __('Print') }}</span>
+                            </button>
+
+                            <button type="button" wire:click="closeInvoiceModal"
+                                class="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-[#1e2433] flex items-center justify-center transition cursor-pointer">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Meta & Customer Details -->
+                    <div class="grid grid-cols-2 gap-4 text-xs">
                         <div>
                             <span
-                                class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">{{ __('Official Subscription Receipt') }}</span>
-                            <h3 class="text-lg font-black font-mono text-slate-900 dark:text-white">
-                                {{ $inv->invoice_number }}
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="window.print()"
-                            class="h-8 px-3 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] font-bold text-xs flex items-center gap-1.5 transition cursor-pointer">
-                            <i class="fa-solid fa-print text-xs"></i>
-                            <span>{{ __('Print') }}</span>
-                        </button>
-
-                        <button type="button" wire:click="closeInvoiceModal"
-                            class="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-[#1e2433] flex items-center justify-center transition cursor-pointer">
-                            <i class="fa-solid fa-xmark text-xs"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Invoice Meta & Customer Details -->
-                <div class="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                        <span
-                            class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Billed To') }}</span>
-                        <p class="font-extrabold text-slate-900 dark:text-white mt-1">
-                            {{ $company_legal_name ?: $operator->name ?? 'Valued Operator' }}</p>
-                        <p class="text-slate-500 dark:text-slate-400 text-[11px]">
-                            {{ $billing_email ?: auth()->user()->email ?? '' }}</p>
-                        @if ($tax_id)
-                            <p class="text-slate-500 dark:text-slate-400 text-[11px] font-mono">
-                                {{ __('NPWP: :id', ['id' => $tax_id]) }}</p>
-                        @endif
-                    </div>
-
-                    <div class="text-right">
-                        <span
-                            class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{{ __('Payment Details') }}</span>
-                        <p class="font-bold text-slate-900 dark:text-white mt-1">
-                            {{ $inv->paid_at ? Carbon::parse($inv->paid_at)->format('d M Y, H:i') : Carbon::parse($inv->created_at)->format('d M Y') }}
-                        </p>
-                        <p class="text-slate-500 dark:text-slate-400 text-[11px]">
-                            {{ __('Gateway Ref: :ref', ['ref' => $inv->gateway_ref ?: 'SIM-INSTANT']) }}
-                        </p>
-                        <div class="mt-1">
-                            @if ($inv->status === 'completed')
-                                <span
-                                    class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
-                                    {{ __('Paid in Full') }}
-                                </span>
-                            @else
-                                <span
-                                    class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
-                                    {{ ucfirst($inv->status) }}
-                                </span>
+                                class="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-500 block">{{ __('Billed To') }}</span>
+                            <p class="font-extrabold text-slate-900 dark:text-white print:text-slate-900 mt-1">
+                                {{ $company_legal_name ?: $operator->name ?? 'Valued Operator' }}</p>
+                            <p class="text-slate-500 dark:text-slate-400 print:text-slate-600 text-[11px]">
+                                {{ $billing_email ?: auth()->user()->email ?? '' }}</p>
+                            @if ($tax_id)
+                                <p class="text-slate-500 dark:text-slate-400 print:text-slate-600 text-[11px] font-mono">
+                                    {{ __('NPWP: :id', ['id' => $tax_id]) }}</p>
                             @endif
                         </div>
-                    </div>
-                </div>
 
-                <!-- Itemized Breakdown -->
-                <div
-                    class="p-4 rounded-2xl bg-slate-50 dark:bg-[#10141d] border border-slate-200/80 dark:border-[#1e2433] space-y-3 text-xs">
+                        <div class="text-right">
+                            <span
+                                class="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-500 block">{{ __('Payment Details') }}</span>
+                            <p class="font-bold text-slate-900 dark:text-white print:text-slate-900 mt-1">
+                                {{ $inv->paid_at ? Carbon::parse($inv->paid_at)->format('d M Y, H:i') : Carbon::parse($inv->created_at)->format('d M Y') }}
+                            </p>
+                            <p class="text-slate-600 dark:text-slate-300 print:text-slate-700 text-[11px] font-medium flex items-center justify-end gap-1.5 mt-0.5">
+                                <i class="{{ $inv->getGatewayIcon() }} text-[10px]"></i>
+                                <span>{{ $inv->getGatewayLabel() }}</span>
+                            </p>
+                            @if ($inv->gateway_ref && $inv->gateway_ref !== 'SIM-INSTANT')
+                                <p class="text-slate-400 dark:text-slate-500 print:text-slate-600 text-[10px] font-mono mt-0.5">
+                                    {{ __('Ref: :ref', ['ref' => $inv->gateway_ref]) }}
+                                </p>
+                            @endif
+                            <div class="mt-1">
+                                @if ($inv->status === 'completed')
+                                    <span
+                                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 print:bg-emerald-50 print:text-emerald-800 print:border-emerald-300">
+                                        {{ __('Paid in Full') }}
+                                    </span>
+                                @else
+                                    <span
+                                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 print:bg-amber-50 print:text-amber-800 print:border-amber-300">
+                                        {{ ucfirst($inv->status) }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Itemized Breakdown -->
                     <div
-                        class="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-[#1e2433] text-slate-500 dark:text-slate-400 font-bold">
-                        <span>{{ __('Description') }}</span>
-                        <span>{{ __('Amount') }}</span>
-                    </div>
-
-                    <div class="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
-                        <div>
-                            <span>{{ __(':plan Subscription Tier (:interval)', ['plan' => $inv->plan?->name ?? 'Growth Plan', 'interval' => ucfirst($inv->billing_interval)]) }}</span>
-                            <span
-                                class="text-[10px] text-slate-400 font-normal block">{{ ucfirst($inv->type ?: 'Upgrade') }}
-                                subscription term</span>
-                        </div>
-                        <span class="font-mono font-bold">
-                            Rp {{ number_format((float) $inv->gross_amount, 0, ',', '.') }}
-                        </span>
-                    </div>
-
-                    @if ((float) $inv->prorated_credit > 0)
+                        class="p-4 rounded-2xl bg-slate-50 dark:bg-[#10141d] border border-slate-200/80 dark:border-[#1e2433] print:bg-slate-50 print:border-slate-200 space-y-3 text-xs">
                         <div
-                            class="flex items-center justify-between text-emerald-700 dark:text-emerald-400 font-bold">
+                            class="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-[#1e2433] print:border-slate-200 text-slate-500 dark:text-slate-400 print:text-slate-500 font-bold">
+                            <span>{{ __('Description') }}</span>
+                            <span>{{ __('Amount') }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200 print:text-slate-900">
                             <div>
-                                <span>{{ __('Prorated Unused Credit Applied') }}</span>
+                                <span>{{ __(':plan Subscription Tier (:interval)', ['plan' => $inv->plan?->name ?? 'Growth Plan', 'interval' => ucfirst($inv->billing_interval)]) }}</span>
                                 <span
-                                    class="text-[10px] opacity-80 font-normal block">{{ __('Credit from remaining days on previous plan') }}</span>
+                                    class="text-[10px] text-slate-400 print:text-slate-500 font-normal block">{{ ucfirst($inv->type ?: 'Upgrade') }}
+                                    subscription term</span>
                             </div>
-                            <span class="font-mono">
-                                - Rp {{ number_format((float) $inv->prorated_credit, 0, ',', '.') }}
+                            <span class="font-mono font-bold">
+                                Rp {{ number_format((float) $inv->gross_amount, 0, ',', '.') }}
                             </span>
                         </div>
-                    @endif
 
-                    @if ((float) ($breakdown['discount_amount'] ?? 0) > 0)
-                        <div class="flex items-center justify-between text-purple-700 dark:text-purple-400 font-bold">
-                            <div>
-                                <span class="flex items-center gap-1.5">
-                                    <i class="fa-solid fa-ticket text-xs"></i>
-                                    {{ __('Promo Code Discount (:code)', ['code' => $breakdown['coupon_code'] ?? 'PROMO']) }}
+                        @if ((float) $inv->prorated_credit > 0)
+                            <div
+                                class="flex items-center justify-between text-emerald-700 dark:text-emerald-400 print:text-emerald-700 font-bold">
+                                <div>
+                                    <span>{{ __('Prorated Unused Credit Applied') }}</span>
+                                    <span
+                                        class="text-[10px] opacity-80 font-normal block">{{ __('Credit from remaining days on previous plan') }}</span>
+                                </div>
+                                <span class="font-mono">
+                                    - Rp {{ number_format((float) $inv->prorated_credit, 0, ',', '.') }}
                                 </span>
-                                <span
-                                    class="text-[10px] opacity-80 font-normal block">{{ __('Platform subscription discount applied') }}</span>
                             </div>
-                            <span class="font-mono">
-                                - Rp {{ number_format((float) $breakdown['discount_amount'], 0, ',', '.') }}
+                        @endif
+
+                        @if ((float) ($breakdown['discount_amount'] ?? 0) > 0)
+                            <div class="flex items-center justify-between text-purple-700 dark:text-purple-400 print:text-purple-700 font-bold">
+                                <div>
+                                    <span class="flex items-center gap-1.5">
+                                        <i class="fa-solid fa-ticket text-xs"></i>
+                                        {{ __('Promo Code Discount (:code)', ['code' => $breakdown['coupon_code'] ?? 'PROMO']) }}
+                                    </span>
+                                    <span
+                                        class="text-[10px] opacity-80 font-normal block">{{ __('Platform subscription discount applied') }}</span>
+                                </div>
+                                <span class="font-mono">
+                                    - Rp {{ number_format((float) $breakdown['discount_amount'], 0, ',', '.') }}
+                                </span>
+                            </div>
+                        @endif
+
+                        <div class="pt-3 border-t border-slate-200 dark:border-[#1e2433] print:border-slate-200 flex items-center justify-between">
+                            <div>
+                                <span
+                                    class="font-black text-sm text-slate-900 dark:text-white print:text-slate-900 block">{{ __('Total Net Paid') }}</span>
+                                <span
+                                    class="text-[10px] text-slate-400 print:text-slate-500">{{ __('Includes all platform services & licensing') }}</span>
+                            </div>
+                            <span class="text-xl font-black font-mono text-slate-900 dark:text-white print:text-slate-900">
+                                Rp {{ number_format((float) $inv->net_amount_paid, 0, ',', '.') }}
                             </span>
                         </div>
-                    @endif
-
-                    <div class="pt-3 border-t border-slate-200 dark:border-[#1e2433] flex items-center justify-between">
-                        <div>
-                            <span
-                                class="font-black text-sm text-slate-900 dark:text-white block">{{ __('Total Net Paid') }}</span>
-                            <span
-                                class="text-[10px] text-slate-400">{{ __('Includes all platform services & licensing') }}</span>
-                        </div>
-                        <span class="text-xl font-black font-mono text-slate-900 dark:text-white">
-                            Rp {{ number_format((float) $inv->net_amount_paid, 0, ',', '.') }}
-                        </span>
                     </div>
-                </div>
 
-                <!-- Footer Actions -->
-                <div class="flex items-center justify-end gap-3 pt-2">
-                    <button type="button" wire:click="closeInvoiceModal"
-                        class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] font-bold text-xs transition cursor-pointer">
-                        {{ __('Close') }}
-                    </button>
+                    <!-- Clean Print-Only Official Footer -->
+                    <div class="hidden print:block pt-5 border-t border-slate-200 text-center text-[10px] text-slate-500 space-y-1">
+                        <p class="font-bold text-slate-700">{{ __('Thank you for choosing :name for your tourism operations.', ['name' => config('app.name', 'TravelEngine')]) }}</p>
+                        <p>{{ __('This is an electronically generated subscription receipt. No signature is required.') }} &bull; {{ now()->format('d M Y, H:i') }}</p>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="flex items-center justify-end gap-3 pt-2 no-print">
+                        <button type="button" wire:click="closeInvoiceModal"
+                            class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] font-bold text-xs transition cursor-pointer">
+                            {{ __('Close') }}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        @endteleport
     @endif
 
     <!-- Edit Billing Information Modal -->
     @if ($show_billing_info_modal)
         <div
-            class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in">
+            class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in no-print">
             <!-- Modal Backdrop -->
             <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity"
                 wire:click="$set('show_billing_info_modal', false)"></div>

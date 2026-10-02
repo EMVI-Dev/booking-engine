@@ -9,11 +9,13 @@ use App\Enums\ReservationStatus;
 use App\Exceptions\CapacityUnavailableException;
 use App\Models\Operator;
 use App\Models\Payment;
+use App\Models\PlatformSetting;
 use App\Models\Reservation;
 use App\Services\CapacityService;
 use App\Services\DokuPaymentService;
 use App\Services\DomainResolverService;
-use App\Services\GuestCancellationService;
+use App\Services\PlatformSeoService;
+use App\Services\ReservationLifecycleService;
 use App\Services\VendorDispatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -414,13 +416,7 @@ class StorefrontController extends Controller
 
         $reservation->load(['agent', 'bookable', 'latestPayment']);
 
-        $isPaid = $reservation->latestPayment?->isPaid()
-            && in_array($reservation->status, [
-                ReservationStatus::Confirmed,
-                ReservationStatus::PendingConfirmation,
-            ], true);
-
-        if (! $isPaid) {
+        if (! $reservation->hasValidTicket()) {
             return redirect()->route('storefront.reservation.receipt', $reservation);
         }
 
@@ -445,20 +441,27 @@ class StorefrontController extends Controller
             return redirect()->route('storefront.reservation.receipt', $reservation);
         }
 
+        // Only an open hold can be paid. Cancelled, declined, expired or finished bookings
+        // must never be reopened from a stale pay link.
+        if ($reservation->status !== ReservationStatus::PaymentPending) {
+            return redirect()
+                ->route('storefront.reservation.receipt', $reservation)
+                ->with('error', __('This booking can no longer be paid. Please make a new booking.'));
+        }
+
         // If hold has expired, redirect with error
         if ($reservation->hold_expires_at && $reservation->hold_expires_at->isPast()) {
             return redirect()->route('home')->with('error', __('This booking hold has expired. Please create a new reservation.'));
         }
 
-        $latestPayment = $reservation->latestPayment;
-        $unitPrice = $reservation->bookable instanceof Bookable ? $reservation->bookable->getPrice() : 0.0;
-        $termsSnapshot = $reservation->terms_snapshot ?? [];
-        $totalAmount = isset($termsSnapshot['total_price'])
-            ? (float) $termsSnapshot['total_price']
-            : ($latestPayment ? (float) $latestPayment->amount : ($reservation->pax_count * $unitPrice));
+        $totalAmount = $reservation->getQuotedTotal();
 
-        // Extending a hold re-claims inventory, so the date must still have room for this party
+        // Extending a hold re-claims inventory, so the date must still be open and have room for this party
         if ($reservation->bookable instanceof Bookable) {
+            if ($reservation->bookable->isBlackedOutOn($reservation->requested_date)) {
+                return redirect()->route('home')->with('error', __('This date is no longer available. Please choose another date.'));
+            }
+
             try {
                 app(CapacityService::class)->assertCanAccommodate(
                     $reservation->bookable,
@@ -471,13 +474,10 @@ class StorefrontController extends Controller
             }
         }
 
-        // When guest retries payment, ensure status is PaymentPending and hold is active
-        if ($reservation->status !== ReservationStatus::Confirmed) {
-            $reservation->update([
-                'status' => ReservationStatus::PaymentPending,
-                'hold_expires_at' => now()->addMinutes(30),
-            ]);
-        }
+        // Guest is retrying payment: refresh the hold window
+        $reservation->update([
+            'hold_expires_at' => now()->addMinutes(PlatformSetting::current()->getBookingHoldMinutes()),
+        ]);
 
         $session = $paymentService->createPaymentSession($reservation, $totalAmount);
 
@@ -487,12 +487,12 @@ class StorefrontController extends Controller
     /**
      * Let a guest cancel from the public receipt while payment is unpaid or still inside the free-cancel window.
      */
-    public function cancelReservation(Request $request, Reservation $reservation, GuestCancellationService $cancellations): RedirectResponse
+    public function cancelReservation(Request $request, Reservation $reservation, ReservationLifecycleService $lifecycle): RedirectResponse
     {
         $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
 
         try {
-            $cancellations->cancel($reservation);
+            $lifecycle->cancelByGuest($reservation);
         } catch (ValidationException $exception) {
             return redirect()
                 ->route('storefront.reservation.receipt', $reservation)
@@ -719,9 +719,7 @@ class StorefrontController extends Controller
             $content .= "- **0% Ticket Commission**: Operators keep 100% of their listed ticket price. Transparent 5% platform fee added at checkout.\n";
             $content .= "- **WhatsApp E-Tickets**: Automatic vouchers with digital QR check-in passes delivered to guests.\n\n";
             $content .= "## Plans & Pricing\n";
-            $content .= "- **Starter Plan**: Free forever. 2 listings, 2 team seats, tour website + 24/7 direct booking.\n";
-            $content .= "- **Growth Plan**: Rp 299.000 / month. 10 listings, unlimited seats, WhatsApp tickets, daily guest manifests, calendar sync.\n";
-            $content .= "- **Agency Plan**: Rp 799.000 / month. 30 listings, custom domain (yourbrand.com), remove branding, AI discovery.\n\n";
+            $content .= implode("\n", app(PlatformSeoService::class)->planSummaryLines())."\n\n";
             $content .= "## Navigation & Documentation\n";
             $content .= "- [Homepage]({$baseUrl})\n";
             $content .= "- [How It Works]({$baseUrl}#how-it-works)\n";
@@ -826,9 +824,7 @@ class StorefrontController extends Controller
             $content .= "- **Daily Dispatch Manifests**: Digital and printable passenger lists showing guest names, party sizes, pickup hotels, times, and payment status for drivers and guides.\n";
             $content .= "- **Calendar Sync**: Departures sync automatically to Google Calendar, Apple Calendar, and Outlook.\n\n";
             $content .= "## Pricing & Subscription Tiers\n";
-            $content .= "- **Starter Plan**: Free forever. 2 listings, 2 team seats, tour website + 24/7 direct booking.\n";
-            $content .= "- **Growth Plan**: Rp 299.000 / month. 10 listings, unlimited seats, WhatsApp tickets, daily guest manifests, calendar sync.\n";
-            $content .= "- **Agency Plan**: Rp 799.000 / month. 30 listings, custom domain (yourbrand.com), remove branding, AI discovery.\n";
+            $content .= implode("\n", app(PlatformSeoService::class)->planSummaryLines())."\n";
 
             return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
         }

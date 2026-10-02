@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\DomainStatus;
 use App\Enums\DomainType;
 use App\Enums\OperatorStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\PayoutStatus;
 use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
@@ -278,6 +279,30 @@ class Operator extends Model
         throw ValidationException::withMessages([
             'checkout' => __('Checkout is off on the sample shop so nothing is charged.'),
         ]);
+    }
+
+    /**
+     * Payouts and payout-bank changes are refused on the public demo desk and while a
+     * platform admin is managing the shop (only the operator's own team may move money).
+     *
+     * @throws ValidationException
+     */
+    public function assertRealMoneyMovementAllowed(): void
+    {
+        if ($this->isDemo()) {
+            throw ValidationException::withMessages([
+                'demo' => __('Payouts and bank changes are off on the sample shop.'),
+            ]);
+        }
+
+        /** @var User|null $actor */
+        $actor = auth()->user();
+
+        if ($actor !== null && $actor->isImpersonating()) {
+            throw ValidationException::withMessages([
+                'demo' => __('Payouts and bank changes are off while the platform team is managing this shop.'),
+            ]);
+        }
     }
 
     public function getDisplayNameAttribute(): string
@@ -773,13 +798,55 @@ class Operator extends Model
      */
     public function outboundMailReplyToAddress(): ?string
     {
-        $address = $this->booking_notification_email ?: $this->users()->first()?->email;
+        return $this->bookingNotificationRecipient();
+    }
 
-        if (! is_string($address) || $address === '') {
-            return null;
+    /**
+     * Inbox for new-booking alerts: the booking address, else the first team member.
+     */
+    public function bookingNotificationRecipient(): ?string
+    {
+        return $this->firstFilledEmail($this->booking_notification_email, fn (): ?string => $this->firstTeamEmail());
+    }
+
+    /**
+     * Inbox for invoices and plan reminders: the billing address, else the booking inbox.
+     */
+    public function billingRecipient(): ?string
+    {
+        return $this->firstFilledEmail($this->billing_email, fn (): ?string => $this->bookingNotificationRecipient());
+    }
+
+    /**
+     * Inbox for account notices (inactivity, suspension): booking, then billing, then team.
+     */
+    public function accountRecipient(): ?string
+    {
+        return $this->firstFilledEmail(
+            $this->booking_notification_email,
+            fn (): ?string => $this->firstFilledEmail($this->billing_email, fn (): ?string => $this->firstTeamEmail()),
+        );
+    }
+
+    private function firstTeamEmail(): ?string
+    {
+        $user = $this->relationLoaded('users') ? $this->users->first() : $this->users()->first();
+
+        return $user?->email;
+    }
+
+    /**
+     * @param  callable(): ?string  $fallback
+     */
+    private function firstFilledEmail(?string $email, callable $fallback): ?string
+    {
+        if (is_string($email) && trim($email) !== '') {
+            return $email;
         }
 
-        return $address;
+        $resolved = $fallback();
+
+        return is_string($resolved) && trim($resolved) !== '' ? $resolved : null;
     }
 
     /**
@@ -888,6 +955,18 @@ class Operator extends Model
     public function payoutRequests(): HasMany
     {
         return $this->hasMany(PayoutRequest::class);
+    }
+
+    /**
+     * Total of paid guest payments (incl. guest service fee) on this operator's bookings.
+     */
+    public function paidGuestPaymentsTotal(?\DateTimeInterface $since = null): float
+    {
+        return (float) Payment::query()
+            ->where('status', PaymentStatus::Paid)
+            ->whereHas('reservation', fn ($query) => $query->where('operator_id', $this->id))
+            ->when($since !== null, fn ($query) => $query->where('created_at', '>=', $since))
+            ->sum('amount');
     }
 
     /**

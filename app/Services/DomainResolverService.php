@@ -120,19 +120,18 @@ class DomainResolverService
      */
     public function knownPlatformRoots(): array
     {
-        return array_values(array_unique([
+        $roots = [
             $this->getPlatformDomain(),
-            'localhost',
-            '127.0.0.1',
-            'booking.test',
-            'www.booking.test',
-            'booking.emvi',
-            'www.booking.emvi',
-            'travelengine.emvi',
-            'www.travelengine.emvi',
             'travelengine.id',
             'www.travelengine.id',
-        ]));
+        ];
+
+        // Local and staging hosts are never treated as the platform on production.
+        if (! app()->isProduction()) {
+            array_push($roots, 'localhost', '127.0.0.1', 'booking.test', 'www.booking.test', 'booking.emvi', 'www.booking.emvi', 'travelengine.emvi', 'www.travelengine.emvi');
+        }
+
+        return array_values(array_unique($roots));
     }
 
     /**

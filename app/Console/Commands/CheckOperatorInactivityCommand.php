@@ -6,7 +6,7 @@ use App\Enums\OperatorStatus;
 use App\Mail\OperatorAccountSuspendedInactivityMail;
 use App\Mail\OperatorInactivityReminderMail;
 use App\Models\Operator;
-use App\Services\OperatorActivitySlackNotifier;
+use App\Services\OperatorAccountService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -30,7 +30,7 @@ class CheckOperatorInactivityCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(OperatorActivitySlackNotifier $slack): int
+    public function handle(OperatorAccountService $accounts): int
     {
         $operators = Operator::query()
             ->where('status', OperatorStatus::Approved)
@@ -50,13 +50,11 @@ class CheckOperatorInactivityCommand extends Command
 
             $inactiveDays = (int) $lastActive->diffInDays(now());
 
-            $recipient = $operator->booking_notification_email
-                ?: $operator->billing_email
-                ?: $operator->users->first()?->email;
+            $recipient = $operator->accountRecipient();
 
             // 1. Suspend operators inactive for 90+ days (3 months)
             if ($inactiveDays >= 90) {
-                $operator->update(['status' => OperatorStatus::Suspended]);
+                $accounts->changeStatus($operator, OperatorStatus::Suspended);
                 $suspendedCount++;
 
                 if ($recipient) {
@@ -67,7 +65,6 @@ class CheckOperatorInactivityCommand extends Command
                     }
                 }
 
-                $slack->statusChanged($operator, 'approved', 'suspended');
                 $this->warn("Operator {$operator->name} ({$operator->slug}) suspended due to {$inactiveDays} days of inactivity.");
 
                 continue;

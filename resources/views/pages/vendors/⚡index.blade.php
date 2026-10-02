@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\ResolvesCurrentOperator;
 use App\Models\Operator;
 use App\Models\Vendor;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Portal')] class extends Component {
+    use ResolvesCurrentOperator;
     use WithPagination;
 
     #[Url]
@@ -113,6 +115,8 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
      */
     public function save(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $this->validate();
         $operator = $this->operator;
 
@@ -156,6 +160,8 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
      */
     public function toggleStatus(string $id): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $operator = $this->operator;
         if (!$operator) {
             return;
@@ -187,6 +193,8 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
      */
     public function deleteVendor(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (!$this->confirming_delete_id) {
             return;
         }

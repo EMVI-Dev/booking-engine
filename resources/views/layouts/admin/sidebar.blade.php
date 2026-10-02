@@ -22,7 +22,7 @@
     @php
         $platform = \App\Models\PlatformSetting::current();
         $totalOperators = \App\Models\Operator::count();
-        $pendingPayouts = \App\Models\PayoutRequest::where('status', \App\Enums\PayoutStatus::Pending)->count();
+        $pendingPayouts = app(\App\Services\AdminMetricsService::class)->payoutTotals(\App\Enums\PayoutStatus::Pending)['count'];
         $activeAnnouncements = \App\Models\PlatformAnnouncement::active()->count();
     @endphp
 
@@ -87,6 +87,10 @@
 
                 <x-nav-link :href="route('admin.admins.index')" icon="fa-shield-halved" :active="request()->routeIs('admin.admins.*')">
                     {{ __('Administrators') }}
+                </x-nav-link>
+
+                <x-nav-link :href="route('admin.audit-log.index')" icon="fa-clipboard-list" :active="request()->routeIs('admin.audit-log.*')">
+                    {{ __('Audit log') }}
                 </x-nav-link>
 
                 <x-nav-link :href="route('admin.platform.edit')" icon="fa-sliders" :active="request()->routeIs('admin.platform.*')">

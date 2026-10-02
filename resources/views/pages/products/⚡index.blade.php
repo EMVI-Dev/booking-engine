@@ -61,6 +61,8 @@ new #[Title('Activities & Inventory')] class extends Component {
 
     public function deleteProduct(string $id): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $product = $this->currentOperator?->products()->findOrFail($id);
 
         if ($product) {

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Bookable;
+use App\Models\PlatformSetting;
 use App\Models\Reservation;
 
 class WhatsAppDispatchService
@@ -13,19 +14,7 @@ class WhatsAppDispatchService
      */
     public function normalizePhoneNumber(?string $phone): string
     {
-        if (! $phone) {
-            return '';
-        }
-
-        // Remove all non-numeric characters
-        $cleaned = (string) preg_replace('/[^0-9]/', '', $phone);
-
-        // Convert Indonesian leading 0 to 62
-        if (str_starts_with($cleaned, '0')) {
-            $cleaned = '62'.substr($cleaned, 1);
-        }
-
-        return $cleaned;
+        return PhoneNumber::normalize($phone);
     }
 
     /**
@@ -144,10 +133,7 @@ class WhatsAppDispatchService
 
         $payUrl = route('storefront.reservation.pay', $reservation);
 
-        $latestPayment = $reservation->latestPayment;
-        $amountFormatted = $latestPayment
-            ? 'Rp '.number_format((float) $latestPayment->amount, 0, ',', '.')
-            : 'Rp '.number_format($pax * ($reservation->bookable->price ?? 0), 0, ',', '.');
+        $amountFormatted = 'Rp '.number_format($reservation->getQuotedTotal(), 0, ',', '.');
 
         $msg = "*Payment Required: Reservation #{$code} on Hold*\n\n"
             ."Hello {$reservation->guest_name},\n\n"
@@ -160,6 +146,24 @@ class WhatsAppDispatchService
             ."*Click here to complete payment online:*\n"
             ."{$payUrl}\n\n"
             .'_Please complete payment before your hold window expires. Reply directly if you have any questions!_';
+
+        return $this->buildWhatsAppUrl($reservation->guest_contact, $msg);
+    }
+
+    /**
+     * WhatsApp message an operator sends right after creating a pay link for a guest.
+     */
+    public function getNewPayLinkUrl(Reservation $reservation, string $checkoutUrl, float $total): string
+    {
+        $itemTitle = $reservation->bookable instanceof Bookable
+            ? $reservation->bookable->getTitle()
+            : 'Tour Experience';
+        $dateFormatted = $reservation->requested_date->format('d M Y');
+        $holdMinutes = PlatformSetting::current()->getBookingHoldMinutes();
+
+        $msg = "Halo Kak {$reservation->guest_name}, berikut link pesanan & pembayaran untuk *{$itemTitle}* tanggal *{$dateFormatted}* ({$reservation->pax_count} pax).\n\n"
+            .'Total: Rp '.number_format($total, 0, ',', '.')."\n\n"
+            ."Silakan cek detail dan selesaikan pembayaran sebelum slot hold {$holdMinutes} menit berakhir:\n{$checkoutUrl}";
 
         return $this->buildWhatsAppUrl($reservation->guest_contact, $msg);
     }

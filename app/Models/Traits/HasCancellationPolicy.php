@@ -2,6 +2,7 @@
 
 namespace App\Models\Traits;
 
+use App\Services\CancellationPolicy;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 
@@ -12,10 +13,7 @@ trait HasCancellationPolicy
      */
     public function canCancelForFree(CarbonInterface $requestedDate, ?CarbonInterface $fromTime = null): bool
     {
-        $now = $fromTime ? Carbon::instance($fromTime) : now();
-        $cutoff = Carbon::instance($requestedDate)->startOfDay()->subHours($this->getFreeCancellationHours());
-
-        return $now->lte($cutoff);
+        return CancellationPolicy::isFree($requestedDate, $this->getFreeCancellationHours(), $fromTime);
     }
 
     /**

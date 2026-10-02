@@ -6,6 +6,7 @@ use App\Models\SubscriptionPayment;
 use App\Services\DokuPaymentService;
 use App\Services\SubscriptionProrationService;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -41,8 +42,10 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
     // Platform Subscription Promo Code
     public string $couponCode = '';
 
+    #[Locked]
     public ?string $appliedCouponCode = null;
 
+    #[Locked]
     public float $discountAmount = 0.0;
 
     public string $couponMessage = '';
@@ -60,12 +63,12 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             abort(403, __('Unauthorized subscription payment.'));
         }
 
-        if ($payment->status === 'pending') {
+        if ($payment->status === SubscriptionPayment::STATUS_PENDING) {
             app(DokuPaymentService::class)->syncSubscriptionPaymentStatus($payment);
             $payment->refresh();
         }
 
-        if ($payment->status === 'completed') {
+        if ($payment->status === SubscriptionPayment::STATUS_COMPLETED) {
             session()->flash('success', __('This subscription invoice has already been paid and activated.'));
             $this->redirectRoute('settings.plan', navigate: true);
 
@@ -98,6 +101,10 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function applyCoupon(): void
     {
+        if ($this->payment->status !== SubscriptionPayment::STATUS_PENDING) {
+            return;
+        }
+
         $cleanCode = strtoupper(trim($this->couponCode));
 
         if (empty($cleanCode)) {
@@ -111,15 +118,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
 
         // Match platform-wide subscription coupons (operator_id = null)
         // or coupons targeted specifically to this operator.
-        $coupon = PlatformCoupon::forSubscription()
-            ->where('code', $cleanCode)
-            ->where(function ($q) use ($operator) {
-                $q->whereNull('operator_id');
-                if ($operator) {
-                    $q->orWhere('operator_id', $operator->id);
-                }
-            })
-            ->first();
+        $coupon = PlatformCoupon::findForSubscription($cleanCode, $operator);
 
         if (! $coupon) {
             $this->couponMessage = __('Invalid subscription promo code.');
@@ -165,6 +164,10 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function removeCoupon(): void
     {
+        if ($this->payment->status !== SubscriptionPayment::STATUS_PENDING) {
+            return;
+        }
+
         $this->appliedCouponCode = null;
         $this->discountAmount = 0.0;
         $this->couponCode = '';
@@ -213,29 +216,6 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
     }
 
     /**
-     * Increment usage for the applied subscription promo (platform-wide or operator-targeted).
-     */
-    protected function incrementAppliedCouponUsage(): void
-    {
-        if (! $this->appliedCouponCode) {
-            return;
-        }
-
-        $operator = auth()->user()?->currentOperator();
-
-        PlatformCoupon::forSubscription()
-            ->where('code', $this->appliedCouponCode)
-            ->where(function ($q) use ($operator) {
-                $q->whereNull('operator_id');
-                if ($operator) {
-                    $q->orWhere('operator_id', $operator->id);
-                }
-            })
-            ->first()
-            ?->incrementUsage();
-    }
-
-    /**
      * Activate a zero-amount subscription invoice covered entirely by credits or coupons.
      */
     public function completeZeroAmountPayment(SubscriptionProrationService $prorationService): void
@@ -247,8 +227,6 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
         $this->is_processing = true;
 
         try {
-            $this->incrementAppliedCouponUsage();
-
             $prorationService->completePendingPayment(
                 payment: $this->payment,
                 gatewayRef: 'FREE-ACTIVATION-'.strtoupper(bin2hex(random_bytes(4))),
@@ -302,8 +280,6 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
         try {
             $gatewayRef = 'CC-AUTH-'.strtoupper(bin2hex(random_bytes(4)));
 
-            $this->incrementAppliedCouponUsage();
-
             $prorationService->completePendingPayment(
                 payment: $this->payment,
                 gatewayRef: $gatewayRef,
@@ -336,8 +312,6 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
 
         try {
             $gatewayRef = strtoupper($this->payment_method).'-SIM-'.strtoupper(bin2hex(random_bytes(4)));
-
-            $this->incrementAppliedCouponUsage();
 
             $prorationService->completePendingPayment(
                 payment: $this->payment,

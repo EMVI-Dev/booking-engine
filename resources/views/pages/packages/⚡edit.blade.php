@@ -115,6 +115,8 @@ new #[Title('Edit Tour Package')] class extends Component {
 
     public function removeExistingCoverPhoto(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if ($this->existingCoverPhoto) {
             $this->media()->delete($this->existingCoverPhoto);
             $this->package->update(['cover_photo' => null]);
@@ -129,6 +131,8 @@ new #[Title('Edit Tour Package')] class extends Component {
 
     public function removeExistingGalleryImage(int $index): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $pathToDelete = $this->pullExistingGalleryImage($index);
 
         if ($pathToDelete === null) {
@@ -152,6 +156,8 @@ new #[Title('Edit Tour Package')] class extends Component {
 
     public function save(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (!$this->currentOperator || $this->package->operator_id !== $this->currentOperator->id) {
             abort(403);
         }
@@ -174,6 +180,12 @@ new #[Title('Edit Tour Package')] class extends Component {
             'coverPhoto' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
             'galleryFiles.*' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
         ]);
+
+        if ($this->status === 'published' && ! app(\App\Services\PlanLimitService::class)->canPublish($this->currentOperator, $this->package)) {
+            $this->addError('status', __('Your plan allows :count live listings. Unpublish another listing or upgrade to publish this one.', ['count' => $this->currentOperator->getPlan()->package_limit]));
+
+            return;
+        }
 
         $previousCover = $this->package->cover_photo;
         $coverPath = $this->existingCoverPhoto;
@@ -233,6 +245,8 @@ new #[Title('Edit Tour Package')] class extends Component {
 
     public function delete(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (!$this->currentOperator || $this->package->operator_id !== $this->currentOperator->id) {
             abort(403);
         }

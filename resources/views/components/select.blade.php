@@ -96,7 +96,7 @@
             type="button"
             x-on:click="if (!{{ $disabled ? 'true' : 'false' }}) { open = !open; if (open && {{ $showSearchBox ? 'true' : 'false' }}) $nextTick(() => $refs.searchInput?.focus()); }"
             {{ $disabled ? 'disabled' : '' }}
-            {{ $attributes->except('wire:model')->merge(['class' => $classes . ' px-3.5 flex items-center justify-between gap-2 text-left cursor-pointer select-none']) }}
+            {{ $attributes->whereDoesntStartWith('wire:model')->merge(['class' => $classes . ' px-3.5 flex items-center justify-between gap-2 text-left cursor-pointer select-none']) }}
             :class="{ 'ring-2 ring-brand-400/30 border-brand-500': open }"
         >
             <span class="flex min-w-0 flex-1 items-center gap-2">

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\EnsureOnPlatformDomain;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\Package;
 use App\Models\Product;
 use Carbon\CarbonImmutable;
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,6 +36,13 @@ class AppServiceProvider extends ServiceProvider
 
         $this->ensureSqliteDatabaseExists();
         $this->configureDefaults();
+
+        // Livewire re-runs only "persistent" middleware on component actions. Without this,
+        // admin-only and platform-only checks ran on page load but not on later button clicks.
+        Livewire::addPersistentMiddleware([
+            EnsureUserIsAdmin::class,
+            EnsureOnPlatformDomain::class,
+        ]);
     }
 
     /**

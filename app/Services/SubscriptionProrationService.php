@@ -7,13 +7,16 @@ use App\Models\Plan;
 use App\Models\PlatformCoupon;
 use App\Models\SubscriptionPayment;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class SubscriptionProrationService
 {
     public function __construct(
         protected OperatorActivitySlackNotifier $slack,
+        protected PlanLimitService $planLimits,
     ) {}
 
     /**
@@ -35,7 +38,8 @@ class SubscriptionProrationService
      *     target_price: float,
      *     unused_credit: float,
      *     prorated_target_cost: float,
-     *     net_amount_due: float
+     *     net_amount_due: float,
+     *     is_prorated: bool
      * }
      */
     public function calculateSwitch(
@@ -86,11 +90,14 @@ class SubscriptionProrationService
         $isDowngrade = ($targetRank < $currentRank)
             || ($targetRank === $currentRank && $targetInterval === 'monthly' && $currentInterval === 'yearly');
 
+        $isProrated = false;
+
         if ($isUpgrade) {
             if ($isFreeCurrent || $daysRemaining <= 0 || ($targetInterval === 'yearly' && $currentInterval === 'monthly')) {
                 $proratedTargetCost = $targetPrice;
             } else {
                 $proratedTargetCost = round($targetPrice * $remainingRatio, 2);
+                $isProrated = true;
             }
             $netAmountDue = max(0.0, round($proratedTargetCost - $unusedCredit, 2));
         } elseif ($isDowngrade) {
@@ -118,6 +125,7 @@ class SubscriptionProrationService
             'unused_credit' => $unusedCredit,
             'prorated_target_cost' => $proratedTargetCost,
             'net_amount_due' => $netAmountDue,
+            'is_prorated' => $isProrated,
         ];
     }
 
@@ -134,11 +142,9 @@ class SubscriptionProrationService
         float $discountAmount = 0.0
     ): SubscriptionPayment {
         $proration = $this->calculateSwitch($operator, $targetPlan, $interval, true);
-        $previousPlanId = $operator->plan_id;
-
         $netDue = max(0.0, (float) $proration['net_amount_due'] - $discountAmount);
 
-        // If net amount is zero (e.g. 100% coupon or credits covered), execute upgrade immediately
+        // Fully covered by unused credit or a promo: activate straight away.
         if ($netDue <= 0) {
             $payment = $this->executeUpgrade(
                 operator: $operator,
@@ -150,14 +156,7 @@ class SubscriptionProrationService
             );
 
             if ($couponCode) {
-                PlatformCoupon::forSubscription()
-                    ->where('code', $couponCode)
-                    ->where(function ($q) use ($operator) {
-                        $q->whereNull('operator_id')
-                            ->orWhere('operator_id', $operator->id);
-                    })
-                    ->first()
-                    ?->incrementUsage();
+                PlatformCoupon::findForSubscription($couponCode, $operator)?->incrementUsage();
 
                 $breakdown = $payment->breakdown ?? [];
                 $breakdown['coupon_code'] = $couponCode;
@@ -168,37 +167,21 @@ class SubscriptionProrationService
             return $payment;
         }
 
-        $invoiceNumber = 'SUB-'.strtoupper(Str::random(6)).'-'.time();
-
-        /** @var SubscriptionPayment $payment */
-        $payment = SubscriptionPayment::create([
-            'operator_id' => $operator->id,
-            'plan_id' => $targetPlan->id,
-            'previous_plan_id' => $previousPlanId,
-            'invoice_number' => $invoiceNumber,
-            'type' => $previousPlanId ? 'subscription_upgrade' : 'subscription_new',
-            'billing_interval' => $interval,
-            'gross_amount' => $proration['prorated_target_cost'],
-            'prorated_credit' => $proration['unused_credit'],
-            'net_amount_paid' => $netDue,
-            'status' => 'pending',
-            'gateway' => $gateway,
-            'gateway_ref' => $invoiceNumber,
-            'breakdown' => [
-                'current_plan_name' => $proration['current_plan']->name,
-                'target_plan_name' => $targetPlan->name,
-                'days_remaining' => $proration['days_remaining'],
-                'unused_credit' => $proration['unused_credit'],
-                'prorated_charge' => $proration['prorated_target_cost'],
+        return $this->recordInvoice(
+            operator: $operator,
+            targetPlan: $targetPlan,
+            interval: $interval,
+            status: SubscriptionPayment::STATUS_PENDING,
+            type: $operator->plan_id ? 'subscription_upgrade' : 'subscription_new',
+            grossAmount: (float) $proration['prorated_target_cost'],
+            proratedCredit: (float) $proration['unused_credit'],
+            netAmount: $netDue,
+            gateway: $gateway,
+            breakdown: $this->upgradeBreakdown($proration, $targetPlan, $netDue, $autoRenew) + [
                 'discount_amount' => $discountAmount,
                 'coupon_code' => $couponCode,
-                'net_amount_paid' => $netDue,
-                'auto_renew' => $autoRenew,
             ],
-            'paid_at' => null,
-        ]);
-
-        return $payment;
+        );
     }
 
     /**
@@ -217,38 +200,35 @@ class SubscriptionProrationService
             /** @var SubscriptionPayment|null $lockedPayment */
             $lockedPayment = SubscriptionPayment::query()->whereKey($payment->id)->lockForUpdate()->first();
 
-            if (! $lockedPayment || $lockedPayment->status === 'completed') {
+            if (! $lockedPayment || $lockedPayment->status === SubscriptionPayment::STATUS_COMPLETED) {
                 return;
             }
 
             $lockedPayment->update([
-                'status' => 'completed',
+                'status' => SubscriptionPayment::STATUS_COMPLETED,
                 'gateway' => $gateway ?: $lockedPayment->gateway,
                 'gateway_ref' => $gatewayRef ?: $lockedPayment->gateway_ref,
                 'paid_at' => now(),
             ]);
 
             $operator = $lockedPayment->operator;
-            $targetPlan = $lockedPayment->plan;
+            $breakdown = $lockedPayment->breakdown ?? [];
+
+            // Count the promo exactly once, when the invoice is actually paid (any gateway path).
+            $couponCode = $breakdown['coupon_code'] ?? null;
+            if (is_string($couponCode) && $couponCode !== '') {
+                PlatformCoupon::findForSubscription($couponCode, $operator)?->incrementUsage();
+            }
+
             $fromPlanName = $lockedPayment->previousPlan?->name ?? $operator->getPlan()->name;
-            $interval = $lockedPayment->billing_interval;
-            $autoRenew = (bool) ($lockedPayment->breakdown['auto_renew'] ?? true);
 
-            $now = now();
-            $expiresAt = ($interval === 'yearly') ? $now->copy()->addYear() : $now->copy()->addMonth();
-
-            $operator->update([
-                'plan_id' => $targetPlan->id,
-                'subscription_interval' => $interval,
-                'subscription_auto_renew' => $autoRenew,
-                'subscribed_at' => $now,
-                'plan_expires_at' => $targetPlan->isFree() ? null : $expiresAt,
-                'pending_plan_id' => null,
-                'pending_plan_action_at' => null,
-            ]);
-
-            $operator->unsetRelation('plan');
-            $operator->unsetRelation('pendingPlan');
+            $this->activatePlan(
+                operator: $operator,
+                plan: $lockedPayment->plan,
+                interval: $lockedPayment->billing_interval,
+                autoRenew: (bool) ($breakdown['auto_renew'] ?? true),
+                keepCurrentPeriod: (bool) ($breakdown['keeps_current_period'] ?? false),
+            );
 
             $shouldNotify = true;
             $operatorForNotification = $operator;
@@ -275,51 +255,22 @@ class SubscriptionProrationService
         ?string $gatewayRef = null
     ): SubscriptionPayment {
         $proration = $this->calculateSwitch($operator, $targetPlan, $interval, true);
-        $previousPlanId = $operator->plan_id;
 
-        $invoiceNumber = 'SUB-'.strtoupper(Str::random(6)).'-'.time();
+        $payment = $this->recordInvoice(
+            operator: $operator,
+            targetPlan: $targetPlan,
+            interval: $interval,
+            status: SubscriptionPayment::STATUS_COMPLETED,
+            type: $operator->plan_id ? 'subscription_upgrade' : 'subscription_new',
+            grossAmount: (float) $proration['prorated_target_cost'],
+            proratedCredit: (float) $proration['unused_credit'],
+            netAmount: (float) $proration['net_amount_due'],
+            gateway: $gateway,
+            breakdown: $this->upgradeBreakdown($proration, $targetPlan, (float) $proration['net_amount_due'], $autoRenew),
+            gatewayRef: $gatewayRef,
+        );
 
-        /** @var SubscriptionPayment $payment */
-        $payment = SubscriptionPayment::create([
-            'operator_id' => $operator->id,
-            'plan_id' => $targetPlan->id,
-            'previous_plan_id' => $previousPlanId,
-            'invoice_number' => $invoiceNumber,
-            'type' => $previousPlanId ? 'subscription_upgrade' : 'subscription_new',
-            'billing_interval' => $interval,
-            'gross_amount' => $proration['prorated_target_cost'],
-            'prorated_credit' => $proration['unused_credit'],
-            'net_amount_paid' => $proration['net_amount_due'],
-            'status' => 'completed',
-            'gateway' => $gateway,
-            'gateway_ref' => $gatewayRef ?: $invoiceNumber,
-            'breakdown' => [
-                'current_plan_name' => $proration['current_plan']->name,
-                'target_plan_name' => $targetPlan->name,
-                'days_remaining' => $proration['days_remaining'],
-                'unused_credit' => $proration['unused_credit'],
-                'prorated_charge' => $proration['prorated_target_cost'],
-                'net_amount_paid' => $proration['net_amount_due'],
-                'auto_renew' => $autoRenew,
-            ],
-            'paid_at' => now(),
-        ]);
-
-        $now = now();
-        $expiresAt = ($interval === 'yearly') ? $now->copy()->addYear() : $now->copy()->addMonth();
-
-        $operator->update([
-            'plan_id' => $targetPlan->id,
-            'subscription_interval' => $interval,
-            'subscription_auto_renew' => $autoRenew,
-            'subscribed_at' => $now,
-            'plan_expires_at' => $targetPlan->isFree() ? null : $expiresAt,
-            'pending_plan_id' => null,
-            'pending_plan_action_at' => null,
-        ]);
-
-        $operator->unsetRelation('plan');
-        $operator->unsetRelation('pendingPlan');
+        $this->activatePlan($operator, $targetPlan, $interval, $autoRenew, keepCurrentPeriod: $proration['is_prorated']);
 
         $this->slack->subscriptionPaid(
             $operator->fresh() ?? $operator,
@@ -363,47 +314,27 @@ class SubscriptionProrationService
         string $interval = 'monthly'
     ): SubscriptionPayment {
         $proration = $this->calculateSwitch($operator, $targetPlan, $interval, true);
-        $previousPlanId = $operator->plan_id;
 
-        $invoiceNumber = 'SUB-DOWN-'.strtoupper(Str::random(6)).'-'.time();
-
-        /** @var SubscriptionPayment $payment */
-        $payment = SubscriptionPayment::create([
-            'operator_id' => $operator->id,
-            'plan_id' => $targetPlan->id,
-            'previous_plan_id' => $previousPlanId,
-            'invoice_number' => $invoiceNumber,
-            'type' => 'subscription_downgrade',
-            'billing_interval' => $interval,
-            'gross_amount' => 0,
-            'prorated_credit' => $proration['unused_credit'],
-            'net_amount_paid' => 0,
-            'status' => 'completed',
-            'gateway' => 'wallet_credit',
-            'gateway_ref' => $invoiceNumber,
-            'breakdown' => [
+        $payment = $this->recordInvoice(
+            operator: $operator,
+            targetPlan: $targetPlan,
+            interval: $interval,
+            status: SubscriptionPayment::STATUS_COMPLETED,
+            type: 'subscription_downgrade',
+            grossAmount: 0.0,
+            proratedCredit: (float) $proration['unused_credit'],
+            netAmount: 0.0,
+            gateway: 'wallet_credit',
+            breakdown: [
                 'current_plan_name' => $proration['current_plan']->name,
                 'target_plan_name' => $targetPlan->name,
                 'unused_credit_forfeited_or_credited' => $proration['unused_credit'],
                 'mode' => 'immediate',
             ],
-            'paid_at' => now(),
-        ]);
+            invoicePrefix: 'SUB-DOWN-',
+        );
 
-        $now = now();
-        $expiresAt = $targetPlan->isFree() ? null : (($interval === 'yearly') ? $now->copy()->addYear() : $now->copy()->addMonth());
-
-        $operator->update([
-            'plan_id' => $targetPlan->id,
-            'subscription_interval' => $interval,
-            'subscribed_at' => $now,
-            'plan_expires_at' => $expiresAt,
-            'pending_plan_id' => null,
-            'pending_plan_action_at' => null,
-        ]);
-
-        $operator->unsetRelation('plan');
-        $operator->unsetRelation('pendingPlan');
+        $this->activatePlan($operator, $targetPlan, $interval, autoRenew: null);
 
         $this->slack->subscriptionPaid(
             $operator->fresh() ?? $operator,
@@ -420,58 +351,41 @@ class SubscriptionProrationService
     public function grantComplimentaryPlan(Operator $operator, Plan $targetPlan, ?int $days = null): SubscriptionPayment
     {
         $proration = $this->calculateSwitch($operator, $targetPlan, 'monthly', true);
-        $previousPlanId = $operator->plan_id;
         $fromPlanName = $proration['current_plan']->name;
 
         $type = 'subscription_new';
 
-        if ($previousPlanId) {
+        if ($operator->plan_id) {
             $type = $proration['is_downgrade'] ? 'subscription_downgrade' : 'subscription_upgrade';
         }
 
-        $expiresAt = null;
-
-        if (! $targetPlan->isFree() && $days !== null && $days > 0) {
-            $expiresAt = now()->addDays($days);
-        }
-
-        $invoiceNumber = 'SUB-COMP-'.strtoupper(Str::random(6)).'-'.time();
-
-        /** @var SubscriptionPayment $payment */
-        $payment = SubscriptionPayment::create([
-            'operator_id' => $operator->id,
-            'plan_id' => $targetPlan->id,
-            'previous_plan_id' => $previousPlanId,
-            'invoice_number' => $invoiceNumber,
-            'type' => $type,
-            'billing_interval' => 'monthly',
-            'gross_amount' => 0,
-            'prorated_credit' => 0,
-            'net_amount_paid' => 0,
-            'status' => 'completed',
-            'gateway' => 'admin_complimentary',
-            'gateway_ref' => $invoiceNumber,
-            'breakdown' => [
+        $payment = $this->recordInvoice(
+            operator: $operator,
+            targetPlan: $targetPlan,
+            interval: 'monthly',
+            status: SubscriptionPayment::STATUS_COMPLETED,
+            type: $type,
+            grossAmount: 0.0,
+            proratedCredit: 0.0,
+            netAmount: 0.0,
+            gateway: 'admin_complimentary',
+            breakdown: [
                 'mode' => 'complimentary',
                 'days' => $days,
                 'current_plan_name' => $fromPlanName,
                 'target_plan_name' => $targetPlan->name,
             ],
-            'paid_at' => now(),
-        ]);
+            invoicePrefix: 'SUB-COMP-',
+        );
 
-        $operator->update([
-            'plan_id' => $targetPlan->id,
-            'subscription_interval' => 'monthly',
-            'subscription_auto_renew' => false,
-            'subscribed_at' => now(),
-            'plan_expires_at' => $expiresAt,
-            'pending_plan_id' => null,
-            'pending_plan_action_at' => null,
-        ]);
-
-        $operator->unsetRelation('plan');
-        $operator->unsetRelation('pendingPlan');
+        $this->activatePlan(
+            operator: $operator,
+            plan: $targetPlan,
+            interval: 'monthly',
+            autoRenew: false,
+            expiresAt: $days !== null && $days > 0 ? now()->addDays($days) : null,
+            fixedExpiry: true,
+        );
 
         $this->slack->planChanged(
             $operator->fresh() ?? $operator,
@@ -481,6 +395,168 @@ class SubscriptionProrationService
         );
 
         return $payment;
+    }
+
+    /**
+     * Switch the operator onto a plan and re-apply that plan's limits.
+     *
+     * The one place plan, interval, billing period and pending-change fields are written.
+     * A prorated upgrade keeps the current period end (the operator paid only for the days left).
+     */
+    private function activatePlan(
+        Operator $operator,
+        Plan $plan,
+        string $interval,
+        ?bool $autoRenew,
+        bool $keepCurrentPeriod = false,
+        ?CarbonInterface $expiresAt = null,
+        bool $fixedExpiry = false,
+    ): void {
+        $now = now();
+        $keepPeriod = $keepCurrentPeriod && $operator->plan_expires_at?->isFuture();
+
+        $periodEnd = match (true) {
+            $plan->isFree() => null,
+            $fixedExpiry => $expiresAt,
+            $keepPeriod => $operator->plan_expires_at,
+            default => $interval === 'yearly' ? $now->copy()->addYear() : $now->copy()->addMonth(),
+        };
+
+        $attributes = [
+            'plan_id' => $plan->id,
+            'subscription_interval' => $interval,
+            'subscribed_at' => $keepPeriod ? ($operator->subscribed_at ?? $now) : $now,
+            'plan_expires_at' => $periodEnd,
+            'pending_plan_id' => null,
+            'pending_plan_action_at' => null,
+        ];
+
+        if ($autoRenew !== null) {
+            $attributes['subscription_auto_renew'] = $autoRenew;
+        }
+
+        $operator->update($attributes);
+        $operator->unsetRelation('plan');
+        $operator->unsetRelation('pendingPlan');
+
+        $this->planLimits->enforce($operator);
+    }
+
+    /**
+     * Write a subscription invoice row. The only place invoice numbers are minted.
+     *
+     * @param  array<string, mixed>  $breakdown
+     */
+    private function recordInvoice(
+        Operator $operator,
+        Plan $targetPlan,
+        string $interval,
+        string $status,
+        string $type,
+        float $grossAmount,
+        float $proratedCredit,
+        float $netAmount,
+        string $gateway,
+        array $breakdown,
+        ?string $gatewayRef = null,
+        string $invoicePrefix = 'SUB-',
+    ): SubscriptionPayment {
+        $invoiceNumber = $invoicePrefix.strtoupper(Str::random(6)).'-'.time();
+
+        /** @var SubscriptionPayment $payment */
+        $payment = SubscriptionPayment::create([
+            'operator_id' => $operator->id,
+            'plan_id' => $targetPlan->id,
+            'previous_plan_id' => $operator->plan_id,
+            'invoice_number' => $invoiceNumber,
+            'type' => $type,
+            'billing_interval' => $interval,
+            'gross_amount' => $grossAmount,
+            'prorated_credit' => $proratedCredit,
+            'net_amount_paid' => $netAmount,
+            'status' => $status,
+            'gateway' => $gateway,
+            'gateway_ref' => $gatewayRef ?: $invoiceNumber,
+            'breakdown' => $breakdown,
+            'paid_at' => $status === SubscriptionPayment::STATUS_COMPLETED ? now() : null,
+        ]);
+
+        return $payment;
+    }
+
+    /**
+     * @param  array<string, mixed>  $proration
+     * @return array<string, mixed>
+     */
+    private function upgradeBreakdown(array $proration, Plan $targetPlan, float $netAmount, bool $autoRenew): array
+    {
+        return [
+            'current_plan_name' => $proration['current_plan']->name,
+            'target_plan_name' => $targetPlan->name,
+            'days_remaining' => $proration['days_remaining'],
+            'unused_credit' => $proration['unused_credit'],
+            'prorated_charge' => $proration['prorated_target_cost'],
+            'net_amount_paid' => $netAmount,
+            'auto_renew' => $autoRenew,
+            'keeps_current_period' => (bool) $proration['is_prorated'],
+        ];
+    }
+
+    /**
+     * Add free days to an operator's current paid period (admin goodwill). Recorded as a Rp 0 invoice.
+     *
+     * @throws ValidationException
+     */
+    public function extendPeriod(Operator $operator, int $days): SubscriptionPayment
+    {
+        if ($days < 1 || $days > 366) {
+            throw ValidationException::withMessages(['days' => __('Extend by 1 to 366 days.')]);
+        }
+
+        $plan = $operator->getPlan();
+
+        if ($plan->isFree()) {
+            throw ValidationException::withMessages(['days' => __('The free plan has no billing period to extend.')]);
+        }
+
+        $previousExpiry = $operator->plan_expires_at;
+        $base = $previousExpiry !== null && $previousExpiry->isFuture() ? $previousExpiry : now();
+        $newExpiry = $base->copy()->addDays($days);
+
+        $payment = $this->recordInvoice(
+            operator: $operator,
+            targetPlan: $plan,
+            interval: (string) ($operator->subscription_interval ?: 'monthly'),
+            status: SubscriptionPayment::STATUS_COMPLETED,
+            type: 'subscription_renewal',
+            grossAmount: 0.0,
+            proratedCredit: 0.0,
+            netAmount: 0.0,
+            gateway: 'admin_extension',
+            breakdown: [
+                'mode' => 'extension',
+                'days' => $days,
+                'previous_expires_at' => $previousExpiry?->toIso8601String(),
+                'new_expires_at' => $newExpiry->toIso8601String(),
+            ],
+            invoicePrefix: 'SUB-EXT-',
+        );
+
+        $operator->update(['plan_expires_at' => $newExpiry]);
+
+        $this->slack->subscriptionExtended($operator->fresh() ?? $operator, $days, $newExpiry->format('d M Y'));
+
+        return $payment;
+    }
+
+    /**
+     * Turn recurring renewal on or off (operator settings and admin desk share this).
+     */
+    public function setAutoRenew(Operator $operator, bool $enabled): void
+    {
+        $operator->update(['subscription_auto_renew' => $enabled]);
+
+        $this->slack->autoRenewChanged($operator->fresh() ?? $operator, $enabled);
     }
 
     /**

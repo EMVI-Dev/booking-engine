@@ -150,6 +150,50 @@ class PlatformCoupon extends Model
         $query->whereNotNull('eligibility_rule');
     }
 
+    // ── Lookups ────────────────────────────────────────────────────────────────
+
+    /**
+     * Find a subscription promo this operator may use (platform-wide or targeted at them).
+     */
+    public static function findForSubscription(?string $code, ?Operator $operator): ?self
+    {
+        $code = strtoupper(trim((string) $code));
+
+        if ($code === '') {
+            return null;
+        }
+
+        return static::query()
+            ->forSubscription()
+            ->where('code', $code)
+            ->where(function (Builder $query) use ($operator): void {
+                $query->whereNull('operator_id');
+
+                if ($operator) {
+                    $query->orWhere('operator_id', $operator->id);
+                }
+            })
+            ->first();
+    }
+
+    /**
+     * Find one of the operator's own storefront promo codes.
+     */
+    public static function findForGuest(?string $code, Operator $operator): ?self
+    {
+        $code = strtoupper(trim((string) $code));
+
+        if ($code === '') {
+            return null;
+        }
+
+        return static::query()
+            ->forGuest()
+            ->where('operator_id', $operator->id)
+            ->where('code', $code)
+            ->first();
+    }
+
     // ── Business Logic ─────────────────────────────────────────────────────────
 
     /**
@@ -275,12 +319,7 @@ class PlatformCoupon extends Model
         $threshold = (float) ($rule['threshold'] ?? 0);
         $lookback = (int) ($rule['lookback_months'] ?? 1);
 
-        $revenue = Payment::whereHas('reservation', function (Builder $q) use ($operator) {
-            $q->where('operator_id', $operator->id);
-        })
-            ->where('status', 'completed')
-            ->where('created_at', '>=', now()->subMonths($lookback)->startOfDay())
-            ->sum('amount');
+        $revenue = $operator->paidGuestPaymentsTotal(now()->subMonths($lookback)->startOfDay());
 
         return $revenue >= $threshold;
     }

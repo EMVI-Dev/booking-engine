@@ -70,8 +70,15 @@ test('non-admin user accessing admin settings directly receives 403 forbidden', 
         ->assertForbidden();
 });
 
+test('admin profile asks for the password again before it opens', function () {
+    $this->actingAs($this->adminUser)
+        ->get(route('admin.profile.edit'))
+        ->assertRedirect(route('password.confirm'));
+});
+
 test('platform admin can access dedicated admin profile and security page', function () {
     $this->actingAs($this->adminUser)
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('admin.profile.edit'))
         ->assertOk()
         ->assertSee('Your profile')

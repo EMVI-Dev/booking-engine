@@ -1,9 +1,13 @@
 <?php
 
+use App\Enums\PaymentStatus;
 use App\Models\Operator;
 use App\Models\Package;
+use App\Models\Payment;
 use App\Models\PlatformCoupon;
+use App\Models\Reservation;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -217,4 +221,139 @@ test('guest cannot apply a promo code from a different operator', function () {
         ->call('applyCoupon')
         ->assertSet('appliedCouponCode', null)
         ->assertSet('discountAmount', 0.0);
+});
+
+test('platform subscription coupons are never displayed in operator coupon list', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->create();
+    $operator->users()->attach($user, ['role' => 'owner']);
+
+    // Platform subscription coupon targeted to this operator
+    PlatformCoupon::create([
+        'code' => 'PLATFORMSUB50',
+        'description' => 'Platform billing discount for operator subscription',
+        'scope' => 'subscription',
+        'operator_id' => $operator->id,
+        'discount_type' => 'percentage',
+        'discount_value' => 50.0,
+        'is_active' => true,
+    ]);
+
+    // Storefront guest promo code
+    PlatformCoupon::create([
+        'code' => 'GUESTPROMO10',
+        'description' => 'Guest storefront checkout promo',
+        'scope' => 'guest',
+        'operator_id' => $operator->id,
+        'discount_type' => 'percentage',
+        'discount_value' => 10.0,
+        'is_active' => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::coupons.index')
+        ->assertSee('GUESTPROMO10')
+        ->assertDontSee('PLATFORMSUB50');
+});
+
+test('operator can access dedicated coupon report page and view performance metrics and transactions', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->create();
+    $operator->users()->attach($user, ['role' => 'owner']);
+
+    $coupon = PlatformCoupon::create([
+        'code' => 'REPORTTEST',
+        'scope' => 'guest',
+        'operator_id' => $operator->id,
+        'discount_type' => 'percentage',
+        'discount_value' => 15.0,
+        'used_count' => 1,
+        'is_active' => true,
+    ]);
+
+    Model::preventLazyLoading();
+
+    $res = Reservation::factory()->create([
+        'operator_id' => $operator->id,
+        'code' => 'RSV-COUPON-REPORT-1',
+        'guest_name' => 'Sarah Traveler',
+        'terms_snapshot' => [
+            'subtotal' => 1000000.0,
+            'coupon_code' => 'REPORTTEST',
+            'discount_amount' => 150000.0,
+            'total_price' => 850000.0,
+        ],
+    ]);
+
+    Payment::factory()->create([
+        'reservation_id' => $res->id,
+        'amount' => 850000.0,
+        'status' => PaymentStatus::Paid,
+    ]);
+
+    // Operator index displays report link
+    Livewire::actingAs($user)
+        ->test('pages::coupons.index')
+        ->assertSee('REPORTTEST')
+        ->assertSee(route('coupons.report', $coupon));
+
+    // Operator visits dedicated report page
+    $this->actingAs($user)
+        ->get(route('coupons.report', $coupon))
+        ->assertOk()
+        ->assertSee('REPORTTEST')
+        ->assertSee('15% OFF')
+        ->assertSee('RSV-COUPON-REPORT-1')
+        ->assertSee('Sarah Traveler');
+
+    // Livewire component test on dedicated report
+    Livewire::actingAs($user)
+        ->test('pages::coupons.report', ['coupon' => $coupon])
+        ->assertSee('REPORTTEST')
+        ->assertSee('RSV-COUPON-REPORT-1')
+        ->assertSee('Sarah Traveler')
+        ->assertSee('150.000')
+        ->assertSee('Newest First')
+        ->set('sort', 'discount_high')
+        ->assertSet('sort', 'discount_high')
+        ->set('status', 'confirmed')
+        ->assertSet('status', 'confirmed')
+        ->call('exportCsv')
+        ->assertFileDownloaded('coupon-report-reporttest-'.now()->format('Y-m-d').'.csv');
+});
+
+test('operator cannot access report of subscription coupons or other operators coupons', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->create();
+    $operator->users()->attach($user, ['role' => 'owner']);
+
+    $otherOperator = Operator::factory()->create();
+
+    // Subscription coupon
+    $subCoupon = PlatformCoupon::create([
+        'code' => 'SUBCOUPON',
+        'scope' => 'subscription',
+        'operator_id' => $operator->id,
+        'discount_type' => 'percentage',
+        'discount_value' => 20.0,
+        'is_active' => true,
+    ]);
+
+    // Other operator coupon
+    $otherCoupon = PlatformCoupon::create([
+        'code' => 'OTHEROPCOUPON',
+        'scope' => 'guest',
+        'operator_id' => $otherOperator->id,
+        'discount_type' => 'percentage',
+        'discount_value' => 20.0,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('coupons.report', $subCoupon))
+        ->assertNotFound();
+
+    $this->actingAs($user)
+        ->get(route('coupons.report', $otherCoupon))
+        ->assertNotFound();
 });

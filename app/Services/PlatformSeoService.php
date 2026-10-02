@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Plan;
+
 class PlatformSeoService
 {
     /**
@@ -299,5 +301,26 @@ class PlatformSeoService
         }
 
         return $clean;
+    }
+
+    /**
+     * Plan bullets for llms.txt files, read from the live plans so they never drift from pricing.
+     *
+     * @return list<string>
+     */
+    public function planSummaryLines(): array
+    {
+        $lines = Plan::catalog()
+            ->map(function (Plan $plan): string {
+                $price = $plan->isFree()
+                    ? __('Free forever')
+                    : 'Rp '.number_format((float) $plan->price_monthly, 0, ',', '.').' / '.__('month');
+
+                return "- **{$plan->name} Plan**: {$price}. {$plan->listingLimitLabel()}, {$plan->teamSeatLabel()}.";
+            })
+            ->values()
+            ->all();
+
+        return array_values($lines);
     }
 }

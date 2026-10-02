@@ -161,3 +161,86 @@ test('operators cannot authenticate on another shop login', function () {
 
     $this->assertGuest();
 });
+
+test('operators logging in on platform host are redirected to their own slug desk', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'slug' => 'blue-reef',
+        'status' => OperatorStatus::Approved,
+    ]);
+
+    OperatorDomain::factory()->create([
+        'operator_id' => $operator->id,
+        'domain' => 'blue-reef.booking.test',
+        'type' => DomainType::Subdomain,
+        'status' => DomainStatus::Active,
+    ]);
+
+    $owner = User::factory()->create();
+    $operator->users()->attach($owner->id, ['role' => OperatorUserRole::Owner]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $owner->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertSessionHasNoErrors();
+    $response->assertRedirect();
+
+    $location = $response->headers->get('Location');
+    expect($location)->toBeString()
+        ->and($location)->toContain('://blue-reef.')
+        ->and($location)->toContain('/auth/login-handoff');
+
+    $parts = parse_url($location);
+    $handoffPath = ($parts['path'] ?? '').(isset($parts['query']) ? '?'.$parts['query'] : '');
+
+    $this->withServerVariables([
+        'HTTP_HOST' => $parts['host'] ?? 'blue-reef.booking.test',
+    ])->get($handoffPath)
+        ->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs($owner);
+});
+
+test('operator login handoff preserves remember me', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create([
+        'slug' => 'coral-bay',
+        'status' => OperatorStatus::Approved,
+    ]);
+
+    $owner = User::factory()->create();
+    $operator->users()->attach($owner->id, ['role' => OperatorUserRole::Owner]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $owner->email,
+        'password' => 'password',
+        'remember' => 'on',
+    ]);
+
+    $response->assertRedirect();
+    $location = $response->headers->get('Location');
+    expect($location)->toContain('remember=1');
+
+    $parts = parse_url($location);
+    $handoffPath = ($parts['path'] ?? '').(isset($parts['query']) ? '?'.$parts['query'] : '');
+
+    $this->withServerVariables([
+        'HTTP_HOST' => $parts['host'] ?? 'coral-bay.booking.test',
+    ])->get($handoffPath)
+        ->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs($owner);
+});
+
+test('tampered login handoff url is rejected', function () {
+    $operator = Operator::factory()->create(['slug' => 'coral-bay']);
+    $owner = User::factory()->create();
+    $operator->users()->attach($owner->id, ['role' => OperatorUserRole::Owner]);
+
+    $response = $this->get('/auth/login-handoff?user='.$owner->id.'&signature=invalid');
+    $response->assertForbidden();
+});

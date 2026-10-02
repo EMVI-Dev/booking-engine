@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\RecordsAdminActions;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,8 @@ use Livewire\WithPagination;
 
 new #[Title('Administrators')] #[Layout('layouts.admin')] class extends Component
 {
+    use RecordsAdminActions;
+
     use WithPagination;
 
     public string $search = '';
@@ -100,13 +103,15 @@ new #[Title('Administrators')] #[Layout('layouts.admin')] class extends Componen
             'password' => ['required', 'string', Password::default(), 'confirmed'],
         ]);
 
-        User::create([
+        $admin = User::create([
             'name' => $validated['name'],
             'email' => strtolower($validated['email']),
             'password' => Hash::make($validated['password']),
             'email_verified_at' => now(),
             'is_admin' => true,
         ]);
+
+        $this->audit('admin.created', $admin, ['email' => $admin->email]);
 
         $this->closeCreateModal();
         $this->dispatch('toast', message: __('Platform administrator created successfully.'), type: 'success');
@@ -156,6 +161,7 @@ new #[Title('Administrators')] #[Layout('layouts.admin')] class extends Componen
 
         if ($user) {
             $user->update(['is_admin' => false]);
+            $this->audit('admin.revoked', $user, ['email' => $user->email]);
             $this->dispatch('toast', message: __(':name has been removed from platform administrators.', ['name' => $user->name]), type: 'success');
         }
 

@@ -40,7 +40,7 @@ class PreventDemoIndexing
         }
 
         $user = $request->user();
-        if ($user && (! $user->isAdmin() || session()->has('admin_impersonated_operator_id'))) {
+        if ($user && (! $user->isAdmin() || $user->isImpersonating())) {
             $portalOperator = $user->currentOperator();
             if ($portalOperator instanceof Operator && $portalOperator->isDemo()) {
                 return true;

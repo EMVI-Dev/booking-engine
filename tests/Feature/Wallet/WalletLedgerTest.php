@@ -436,7 +436,7 @@ test('new earnings bring a negative wallet back toward zero', function () {
 
     $walletService->creditBookingPayment($payment);
 
-    expect($this->operator->getAvailableBalance())->toBe(100000.00)
+    expect($this->operator->getAvailableBalance())->toBe(75000.00)
         ->and(WalletTransaction::query()->where('reservation_id', $reservation->id)->where('type', WalletTransactionType::PlatformCommission)->count())->toBe(1);
 });
 

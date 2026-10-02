@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\RecordsAdminActions;
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\PlatformSetting;
@@ -14,6 +15,8 @@ use Livewire\Component;
 
 new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
 {
+    use RecordsAdminActions;
+
     // Global Platform Parameters
     public string $platform_name = '';
 
@@ -26,6 +29,8 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
     public float $guest_service_fee_percentage = 5.0; // 5% guest service fee
 
     public int $booking_hold_minutes = 30;
+
+    public float $guest_service_fee_cap = 250000.0;
 
     public string $currency_code = 'IDR';
 
@@ -62,6 +67,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
         $this->commission_percentage = (float) (($settings['commission_rate'] ?? 0.0) * 100);
         $this->guest_service_fee_percentage = (float) (($settings['guest_service_fee_rate'] ?? 0.05) * 100);
         $this->booking_hold_minutes = (int) ($settings['booking_hold_minutes'] ?? 30);
+        $this->guest_service_fee_cap = $platform->getGuestServiceFeeCap();
         $this->currency_code = (string) ($settings['currency_code'] ?? 'IDR');
         $this->currency_symbol = (string) ($settings['currency_symbol'] ?? 'Rp');
         $this->platform_maintenance = $platform->isPlatformMaintenance();
@@ -121,6 +127,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
     public function retryFailedJobs(): void
     {
         Artisan::call('queue:retry all');
+        $this->audit('system.failed_jobs_retried');
         $this->loadSystemHealth();
         $this->dispatch('failed-jobs-retried');
     }
@@ -128,6 +135,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
     public function clearFailedJobs(): void
     {
         Artisan::call('queue:flush');
+        $this->audit('system.failed_jobs_flushed');
         $this->loadSystemHealth();
         $this->dispatch('failed-jobs-cleared');
     }
@@ -140,11 +148,12 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
         $validated = $this->validate([
             'platform_name' => ['required', 'string', 'max:255'],
             'support_email' => ['required', 'email', 'max:255'],
-            'slack_webhook_url' => ['nullable', 'string', 'max:500'],
+            'slack_webhook_url' => ['nullable', 'url', 'starts_with:https://hooks.slack.com/', 'max:500'],
             'commission_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'guest_service_fee_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'booking_hold_minutes' => ['required', 'integer', 'min:5', 'max:1440'],
-            'currency_code' => ['required', 'string', 'max:10'],
+            'guest_service_fee_cap' => ['required', 'numeric', 'min:0'],
+            'currency_code' => ['required', 'string', 'in:IDR'],
             'currency_symbol' => ['required', 'string', 'max:10'],
         ]);
 
@@ -160,11 +169,15 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
             : null;
         $settings['commission_rate'] = round($validated['commission_percentage'] / 100, 4);
         $settings['guest_service_fee_rate'] = round($validated['guest_service_fee_percentage'] / 100, 4);
+        $settings['guest_service_fee_cap'] = (float) $validated['guest_service_fee_cap'];
         $settings['booking_hold_minutes'] = $validated['booking_hold_minutes'];
         $settings['currency_code'] = strtoupper($validated['currency_code']);
         $settings['currency_symbol'] = $validated['currency_symbol'];
 
+        $changes = collect($settings)->except('unmatched_payments')->filter(fn ($value, $key) => ($platform->settings[$key] ?? null) !== $value)->all();
+
         $platform->update(['settings' => $settings]);
+        $this->audit('platform.settings_updated', $platform, ['changed' => $changes]);
         $this->loadSystemHealth();
 
         $this->saved = true;
@@ -201,6 +214,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
 
         $this->platform_maintenance = $this->pending_maintenance;
         PlatformSetting::current()->setPlatformMaintenance($this->platform_maintenance);
+        $this->audit('platform.maintenance_toggled', null, ['on' => $this->platform_maintenance]);
         $this->confirming_maintenance = false;
         $this->dispatch('close-modal', 'confirm-platform-maintenance');
         $this->dispatch('platform-maintenance-toggled');

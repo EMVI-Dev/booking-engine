@@ -2,9 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\ReservationStatus;
-use App\Models\Reservation;
-use App\Services\WalletService;
+use App\Services\ReservationLifecycleService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -27,35 +25,21 @@ class MarkCompletedTripsCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(ReservationLifecycleService $lifecycle): int
     {
         $this->info('Scanning for concluded trips to mark as completed...');
 
-        $concludedReservations = Reservation::query()
-            ->where('status', ReservationStatus::Confirmed)
-            ->whereDate('requested_date', '<', today())
-            ->get();
+        $completed = $lifecycle->completeFinishedTrips();
 
-        $completedCount = 0;
-
-        $walletService = app(WalletService::class);
-
-        foreach ($concludedReservations as $reservation) {
-            $reservation->update([
-                'status' => ReservationStatus::Completed,
-            ]);
-
-            $walletService->releaseReservationEscrow($reservation);
-
-            $completedCount++;
-            $this->line("Marked trip #{$reservation->code} as completed.");
+        foreach ($completed as $code) {
+            $this->line("Marked trip #{$code} as completed.");
         }
 
-        if ($completedCount > 0) {
-            Log::info("Marked {$completedCount} concluded trip(s) as completed.");
+        if ($completed !== []) {
+            Log::info('Marked '.count($completed).' concluded trip(s) as completed.');
         }
 
-        $this->info("Completed: {$completedCount} reservation(s) marked as completed.");
+        $this->info('Completed: '.count($completed).' reservation(s) marked as completed.');
 
         return self::SUCCESS;
     }

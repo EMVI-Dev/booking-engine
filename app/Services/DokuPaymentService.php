@@ -3,9 +3,6 @@
 namespace App\Services;
 
 use App\Enums\PaymentStatus;
-use App\Enums\ReservationStatus;
-use App\Mail\GuestBookingConfirmedMail;
-use App\Mail\OperatorNewBookingNotificationMail;
 use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\PayoutRequest;
@@ -16,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class DokuPaymentService
@@ -86,9 +82,9 @@ class DokuPaymentService
      *
      * @return array<string, string>
      */
-    protected function signedHeaders(string $targetPath, ?string $jsonBody = null): array
+    protected function signedHeaders(string $targetPath, ?string $jsonBody = null, ?Operator $operator = null): array
     {
-        $credentials = $this->gatewayCredentials();
+        $credentials = $this->gatewayCredentials($operator);
         $requestId = (string) Str::uuid();
         $requestTimestamp = gmdate('Y-m-d\TH:i:s\Z');
 
@@ -178,10 +174,10 @@ class DokuPaymentService
             $agentShare = min(round($discountedSubtotal, 2), max(0.0, round($totalAmount - $platformCommission, 2)));
             $commissionRate = (float) ($serviceFeeRate ?? 0.05);
         } else {
-            // Fallback for direct bookings or legacy reservations
-            $commissionRate = $agent ? $agent->getEffectiveCommissionRate() : $platform->getCommissionRate();
-            $platformCommission = round($totalAmount * $commissionRate, 2);
-            $agentShare = round($totalAmount - $platformCommission, 2);
+            // Legacy reservations without a price snapshot: operators keep 100% (no operator commission, spec §5).
+            $commissionRate = 0.0;
+            $platformCommission = 0.0;
+            $agentShare = round($totalAmount, 2);
         }
 
         $invoiceNumber = 'INV-'.strtoupper(Str::random(6)).'-'.time();
@@ -270,14 +266,14 @@ class DokuPaymentService
             'customer' => [
                 'name' => $reservation->guest_name,
                 'email' => $reservation->guest_email ?: 'guest@travelengine.id',
-                'phone' => $reservation->guest_contact ?: '081234567890',
+                'phone' => $this->sanitizePhoneNumber($reservation->guest_contact),
             ],
         ];
 
         $jsonBody = (string) json_encode($body);
 
         try {
-            $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody))
+            $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody, $operator))
                 ->timeout(10)
                 ->connectTimeout(3)
                 ->post($credentials['base_url'].$targetPath, $body);
@@ -287,6 +283,12 @@ class DokuPaymentService
                 if (! empty($paymentUrl) && is_string($paymentUrl)) {
                     return $paymentUrl;
                 }
+            } else {
+                Log::error('DOKU checkout session creation failed', [
+                    'status' => $response->status(),
+                    'invoice_number' => $invoiceNumber,
+                    'error' => $response->json() ?? $response->body(),
+                ]);
             }
         } catch (\Throwable $e) {
             report($e);
@@ -324,14 +326,14 @@ class DokuPaymentService
             'customer' => [
                 'name' => $owner?->name ?: ($operator?->name ?: 'Tour Operator'),
                 'email' => $operator?->billing_email ?: ($owner?->email ?: 'billing@travelengine.id'),
-                'phone' => $operator?->contact_whatsapp ?: '081234567890',
+                'phone' => $this->sanitizePhoneNumber($operator?->contact_whatsapp),
             ],
         ];
 
         $jsonBody = (string) json_encode($body);
 
         try {
-            $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody))
+            $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody, $operator))
                 ->timeout(10)
                 ->connectTimeout(3)
                 ->post($credentials['base_url'].$targetPath, $body);
@@ -341,6 +343,12 @@ class DokuPaymentService
                 if (! empty($paymentUrl) && is_string($paymentUrl)) {
                     return $paymentUrl;
                 }
+            } else {
+                Log::error('DOKU subscription checkout session creation failed', [
+                    'status' => $response->status(),
+                    'invoice_number' => (string) $payment->invoice_number,
+                    'error' => $response->json() ?? $response->body(),
+                ]);
             }
         } catch (\Throwable $e) {
             report($e);
@@ -352,9 +360,9 @@ class DokuPaymentService
     /**
      * Query live payment transaction status from DOKU API.
      */
-    public function queryPaymentStatus(string $invoiceNumber): ?string
+    public function queryPaymentStatus(string $invoiceNumber, ?Operator $operator = null): ?string
     {
-        $credentials = $this->gatewayCredentials();
+        $credentials = $this->gatewayCredentials($operator);
 
         if (trim($credentials['client_id']) === '' || trim($credentials['secret_key']) === '' || trim($invoiceNumber) === '') {
             return null;
@@ -363,7 +371,7 @@ class DokuPaymentService
         $targetPath = "/orders/v1/status/{$invoiceNumber}";
 
         try {
-            $response = Http::withHeaders($this->signedHeaders($targetPath))
+            $response = Http::withHeaders($this->signedHeaders($targetPath, null, $operator))
                 ->timeout(10)
                 ->connectTimeout(3)
                 ->get($credentials['base_url'].$targetPath);
@@ -390,7 +398,7 @@ class DokuPaymentService
             return false;
         }
 
-        $status = $this->queryPaymentStatus($payment->gateway_ref);
+        $status = $this->queryPaymentStatus($payment->gateway_ref, $payment->reservation?->operator);
 
         if ($status) {
             return $this->processNotification([
@@ -407,7 +415,7 @@ class DokuPaymentService
      */
     public function syncSubscriptionPaymentStatus(SubscriptionPayment $payment): bool
     {
-        if ($payment->status !== 'pending') {
+        if ($payment->status !== SubscriptionPayment::STATUS_PENDING) {
             return false;
         }
 
@@ -417,7 +425,7 @@ class DokuPaymentService
             return false;
         }
 
-        $status = $this->queryPaymentStatus($invoiceNumber);
+        $status = $this->queryPaymentStatus($invoiceNumber, $payment->operator);
 
         if ($status) {
             return $this->processNotification([
@@ -488,6 +496,13 @@ class DokuPaymentService
             ?? $payload['amount']
             ?? null;
         $paidAmount = is_numeric($rawAmount) ? (float) $rawAmount : null;
+        $channelId = (string) (
+            $payload['channel']['id']
+            ?? $payload['payment']['payment_method_type']
+            ?? $payload['service']['id']
+            ?? $payload['additional_info']['channel']
+            ?? ''
+        );
 
         if ($invoiceNumber === '') {
             return false;
@@ -509,14 +524,22 @@ class DokuPaymentService
                 $normalizedSubscriptionStatus = strtoupper($transactionStatus);
 
                 if (in_array($normalizedSubscriptionStatus, ['SUCCESS', 'PAID', '00'], true)) {
-                    if ($paidAmount !== null && $paidAmount > 0 && $paidAmount < (float) $subscriptionPayment->net_amount_paid) {
+                    $expectedAmount = (float) $subscriptionPayment->net_amount_paid;
+
+                    if ($paidAmount !== null && $expectedAmount > 0 && $paidAmount < $expectedAmount) {
                         Log::warning('DOKU notification rejected: paid amount is less than subscription invoice net amount', [
                             'invoice_number' => $invoiceNumber,
-                            'expected' => (float) $subscriptionPayment->net_amount_paid,
+                            'expected' => $expectedAmount,
                             'received' => $paidAmount,
                         ]);
 
                         return false;
+                    }
+
+                    if ($channelId !== '') {
+                        $breakdown = $subscriptionPayment->breakdown ?? [];
+                        $breakdown['channel'] = $channelId;
+                        $subscriptionPayment->update(['breakdown' => $breakdown]);
                     }
 
                     app(SubscriptionProrationService::class)->completePendingPayment($subscriptionPayment, $invoiceNumber, 'doku');
@@ -524,9 +547,9 @@ class DokuPaymentService
                     return true;
                 }
 
-                if ($subscriptionPayment->status === 'pending' && in_array($normalizedSubscriptionStatus, ['FAILED', 'EXPIRED', 'CANCELLED', 'DENIED'], true)) {
+                if ($subscriptionPayment->status === SubscriptionPayment::STATUS_PENDING && in_array($normalizedSubscriptionStatus, ['FAILED', 'EXPIRED', 'CANCELLED', 'DENIED'], true)) {
                     $subscriptionPayment->update([
-                        'status' => 'failed',
+                        'status' => SubscriptionPayment::STATUS_FAILED,
                         'gateway_ref' => $invoiceNumber,
                     ]);
 
@@ -551,12 +574,8 @@ class DokuPaymentService
         if (in_array($normalizedStatus, ['DISPUTE', 'DISPUTE_OPENED', 'CHARGEBACK'], true)) {
             $reservation = $payment->reservation;
 
-            if ($reservation && app(WalletService::class)->outstandingDisputeHold($reservation) <= 0) {
-                app(WalletService::class)->holdDispute(
-                    $reservation,
-                    (float) $payment->amount + WalletService::DISPUTE_ADMIN_FEE,
-                    'Card payment disputed'
-                );
+            if ($reservation) {
+                app(WalletService::class)->openCardDispute($reservation);
             }
 
             return true;
@@ -569,10 +588,12 @@ class DokuPaymentService
         }
 
         if ($normalizedStatus === 'SUCCESS' || $normalizedStatus === 'PAID' || $normalizedStatus === '00') {
-            if ($paidAmount !== null && $paidAmount > 0 && $paidAmount < (float) $payment->amount) {
+            $expectedAmount = (float) $payment->amount;
+
+            if ($paidAmount !== null && $expectedAmount > 0 && $paidAmount < $expectedAmount) {
                 Log::warning('DOKU notification rejected: paid amount is less than booking payment amount', [
                     'invoice_number' => $invoiceNumber,
-                    'expected' => (float) $payment->amount,
+                    'expected' => $expectedAmount,
                     'received' => $paidAmount,
                 ]);
 
@@ -581,34 +602,38 @@ class DokuPaymentService
 
             $confirmedReservation = null;
             $shouldNotify = false;
+            $mustRefund = false;
+            $lifecycle = app(ReservationLifecycleService::class);
 
-            DB::transaction(function () use ($payment, &$confirmedReservation, &$shouldNotify): void {
+            DB::transaction(function () use ($payment, $channelId, $lifecycle, &$confirmedReservation, &$shouldNotify, &$mustRefund): void {
                 /** @var Payment|null $lockedPayment */
                 $lockedPayment = Payment::query()->whereKey($payment->id)->lockForUpdate()->first();
 
-                if (! $lockedPayment || $lockedPayment->status === PaymentStatus::Paid) {
+                // Only an open (or previously failed) invoice can become paid. A replayed
+                // success must never re-open a refunded payment.
+                if (! $lockedPayment || ! in_array($lockedPayment->status, [PaymentStatus::Pending, PaymentStatus::Failed], true)) {
                     return;
                 }
 
-                $lockedPayment->update([
-                    'status' => PaymentStatus::Paid,
-                ]);
+                $updates = ['status' => PaymentStatus::Paid];
+                if ($channelId !== '') {
+                    $splitDetails = $lockedPayment->split_details ?? [];
+                    $splitDetails['channel'] = $channelId;
+                    $updates['split_details'] = $splitDetails;
+                }
 
-                $reservation = $lockedPayment->reservation;
-                $agent = $reservation?->agent;
-                $isManual = $agent?->isManualConfirmationEnabled() ?? false;
+                $lockedPayment->update($updates);
 
-                $reservation?->update([
-                    'status' => $isManual ? ReservationStatus::PendingConfirmation : ReservationStatus::Confirmed,
-                    'hold_expires_at' => null,
-                ]);
-
-                // Credit operator wallet ledger
-                app(WalletService::class)->creditBookingPayment($lockedPayment);
-
-                $confirmedReservation = $reservation;
-                $shouldNotify = true;
+                $confirmedReservation = $lifecycle->applyPaidPayment($lockedPayment);
+                $shouldNotify = $confirmedReservation !== null;
+                $mustRefund = $confirmedReservation === null;
             });
+
+            if ($mustRefund) {
+                $this->refundPayment($payment->fresh() ?? $payment);
+
+                return true;
+            }
 
             if (! $shouldNotify) {
                 Log::info('DOKU notification ignored for already-settled payment', ['invoice_number' => $invoiceNumber]);
@@ -616,54 +641,13 @@ class DokuPaymentService
                 return true;
             }
 
-            // Dispatch confirmation and alert emails
-            if ($confirmedReservation) {
-                if (! empty($confirmedReservation->guest_email)) {
-                    try {
-                        Mail::to($confirmedReservation->guest_email)
-                            ->send(new GuestBookingConfirmedMail($confirmedReservation));
-                    } catch (\Throwable $e) {
-                        report($e);
-                    }
-                }
-
-                $agent = $confirmedReservation->agent;
-                $agentEmail = $agent ? ($agent->booking_notification_email ?: $agent->users()->first()?->email) : null;
-                if (! empty($agentEmail)) {
-                    try {
-                        Mail::to($agentEmail)
-                            ->send(new OperatorNewBookingNotificationMail($confirmedReservation));
-                    } catch (\Throwable $e) {
-                        report($e);
-                    }
-                }
-
-                // Dispatch vendor booking notifications
-                try {
-                    app(VendorDispatchService::class)->dispatchBookingConfirmation($confirmedReservation);
-                } catch (\Throwable $e) {
-                    report($e);
-                }
-            }
+            $lifecycle->announcePaidBooking($confirmedReservation);
 
             return true;
         }
 
         if ($normalizedStatus === 'FAILED' || $normalizedStatus === 'EXPIRED') {
-            $payment->update([
-                'status' => PaymentStatus::Failed,
-            ]);
-
-            // Only mark reservation as Declined if hold is expired; otherwise keep PaymentPending so guest can retry payment
-            if ($payment->reservation && $payment->reservation->hold_expires_at && $payment->reservation->hold_expires_at->isPast()) {
-                $payment->reservation->update([
-                    'status' => ReservationStatus::Declined,
-                ]);
-            } else {
-                $payment->reservation?->update([
-                    'status' => ReservationStatus::PaymentPending,
-                ]);
-            }
+            app(ReservationLifecycleService::class)->applyFailedPayment($payment);
 
             return true;
         }
@@ -687,9 +671,18 @@ class DokuPaymentService
             return true;
         }
 
-        $credentials = $this->gatewayCredentials();
+        $operator = $payment->reservation?->operator;
+
+        // Demo bookings are sample data; never send them to a real gateway.
+        if ($operator?->isDemo()) {
+            $this->markPaymentRefunded($payment);
+
+            return true;
+        }
+
+        $credentials = $this->gatewayCredentials($operator);
         $invoiceNumber = (string) $payment->gateway_ref;
-        $hasCredentials = $this->hasGatewayCredentials();
+        $hasCredentials = $this->hasGatewayCredentials($operator);
 
         if ($hasCredentials && $invoiceNumber !== '') {
             $targetPath = '/orders/v1/refund';
@@ -702,7 +695,7 @@ class DokuPaymentService
             $jsonBody = (string) json_encode($body);
 
             try {
-                $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody))
+                $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody, $operator))
                     ->timeout(10)
                     ->connectTimeout(3)
                     ->post($credentials['base_url'].$targetPath, $body);
@@ -716,6 +709,7 @@ class DokuPaymentService
                 Log::warning('DOKU refund was rejected', [
                     'invoice_number' => $invoiceNumber,
                     'status' => $response->status(),
+                    'error' => $response->json() ?? $response->body(),
                 ]);
             } catch (\Throwable $e) {
                 report($e);
@@ -747,40 +741,10 @@ class DokuPaymentService
      */
     protected function applyExternalRefund(Payment $payment): void
     {
-        if ($payment->status === PaymentStatus::Refunded || $payment->refund_status === 'refunded') {
-            return;
-        }
-
-        $this->markPaymentRefunded($payment);
-
-        $reservation = $payment->reservation;
-
-        if (! $reservation) {
-            return;
-        }
-
-        if (! in_array($reservation->status, [
-            ReservationStatus::Confirmed,
-            ReservationStatus::PendingConfirmation,
-        ], true)) {
-            return;
-        }
-
-        $reservation->update([
-            'status' => ReservationStatus::Cancelled,
-            'hold_expires_at' => null,
-        ]);
-
-        app(WalletService::class)->cancelBookingEarning(
-            $reservation,
-            'Refunded via DOKU notification'
+        app(ReservationLifecycleService::class)->applyGatewayRefund(
+            $payment,
+            fn (Payment $refunded) => $this->markPaymentRefunded($refunded),
         );
-
-        try {
-            app(VendorDispatchService::class)->dispatchBookingCancellation($reservation);
-        } catch (\Throwable $e) {
-            report($e);
-        }
     }
 
     /**
@@ -790,8 +754,20 @@ class DokuPaymentService
      */
     public function disbursePayout(PayoutRequest $payoutRequest): array
     {
-        $credentials = $this->gatewayCredentials();
-        $reference = 'PO-DISB-'.strtoupper(Str::random(6)).'-'.time();
+        $operator = $payoutRequest->operator;
+
+        // Stable per payout so a retried call can be de-duplicated by DOKU instead of paying twice.
+        $reference = 'PO-DISB-'.$payoutRequest->reference_number;
+
+        if ($operator?->isDemo()) {
+            return [
+                'success' => false,
+                'reference' => $reference,
+                'message' => __('Payouts are off on the sample shop.'),
+            ];
+        }
+
+        $credentials = $this->gatewayCredentials($operator);
 
         if (trim($credentials['client_id']) !== '' && trim($credentials['secret_key']) !== '') {
             $targetPath = '/disbursement/v1/transfer';
@@ -801,7 +777,7 @@ class DokuPaymentService
                     'value' => number_format((float) $payoutRequest->amount, 2, '.', ''),
                     'currency' => 'IDR',
                 ],
-                'beneficiary_bank_code' => strtoupper((string) $payoutRequest->bank_provider),
+                'beneficiary_bank_code' => $this->normalizeBankCode((string) $payoutRequest->bank_provider),
                 'beneficiary_account_number' => (string) $payoutRequest->bank_account_number,
                 'beneficiary_name' => (string) $payoutRequest->bank_account_name,
                 'remark' => 'Payout for '.($payoutRequest->operator?->name ?? 'Merchant'),
@@ -809,7 +785,7 @@ class DokuPaymentService
             $jsonBody = (string) json_encode($body);
 
             try {
-                $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody))
+                $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody, $operator))
                     ->timeout(10)
                     ->connectTimeout(3)
                     ->post($credentials['base_url'].$targetPath, $body);
@@ -825,6 +801,7 @@ class DokuPaymentService
                 Log::warning('DOKU payout was rejected', [
                     'reference' => $reference,
                     'status' => $response->status(),
+                    'error' => $response->json() ?? $response->body(),
                 ]);
             } catch (\Throwable $e) {
                 report($e);
@@ -851,5 +828,47 @@ class DokuPaymentService
             'reference' => 'SIM-BIFAST-'.strtoupper(Str::random(8)),
             'message' => __('Disbursed via DOKU Simulated BI-FAST Gateway'),
         ];
+    }
+
+    /**
+     * Sanitize phone number for DOKU Jokul Checkout API (numeric digits only).
+     */
+    public function sanitizePhoneNumber(?string $phone): string
+    {
+        if (empty($phone)) {
+            return '081234567890';
+        }
+
+        $digits = PhoneNumber::digits($phone);
+
+        if (strlen($digits) < 9) {
+            return '081234567890';
+        }
+
+        return $digits;
+    }
+
+    /**
+     * Normalize bank provider string to DOKU Jokul BI-FAST / disbursement bank code.
+     */
+    public function normalizeBankCode(string $bank): string
+    {
+        $cleaned = strtoupper(trim($bank));
+
+        return match (true) {
+            str_contains($cleaned, 'BCA') => 'BCA',
+            str_contains($cleaned, 'MANDIRI') => 'MANDIRI',
+            str_contains($cleaned, 'BRI') => 'BRI',
+            str_contains($cleaned, 'BNI') => 'BNI',
+            str_contains($cleaned, 'BSI') || str_contains($cleaned, 'SYARIAH INDONESIA') => 'BSI',
+            str_contains($cleaned, 'CIMB') => 'CIMB',
+            str_contains($cleaned, 'PERMATA') => 'PERMATA',
+            str_contains($cleaned, 'DANAMON') => 'DANAMON',
+            str_contains($cleaned, 'JAGO') => 'JAGO',
+            str_contains($cleaned, 'BTN') => 'BTN',
+            str_contains($cleaned, 'SEABANK') => 'SEABANK',
+            str_contains($cleaned, 'BNC') || str_contains($cleaned, 'NEO') => 'BNC',
+            default => preg_replace('/[^A-Z0-9]/', '', $cleaned) ?: 'BCA',
+        };
     }
 }

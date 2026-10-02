@@ -2,8 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\ReservationStatus;
-use App\Models\Reservation;
+use App\Services\ReservationLifecycleService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -26,32 +25,21 @@ class ExpireStaleHoldsCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(ReservationLifecycleService $lifecycle): int
     {
         $this->info('Checking for expired reservation holds...');
 
-        $staleReservations = Reservation::query()
-            ->where('status', ReservationStatus::PaymentPending)
-            ->whereNotNull('hold_expires_at')
-            ->where('hold_expires_at', '<=', now())
-            ->get();
+        $expired = $lifecycle->expireStaleHolds();
 
-        $expiredCount = 0;
-
-        foreach ($staleReservations as $reservation) {
-            $reservation->update([
-                'status' => ReservationStatus::Expired,
-            ]);
-
-            $expiredCount++;
-            $this->line("Expired hold for #{$reservation->code}");
+        foreach ($expired as $code) {
+            $this->line("Expired hold for #{$code}");
         }
 
-        if ($expiredCount > 0) {
-            Log::info("Expired {$expiredCount} stale reservation hold(s).");
+        if ($expired !== []) {
+            Log::info('Expired '.count($expired).' stale reservation hold(s).');
         }
 
-        $this->info("Completed: {$expiredCount} reservation hold(s) expired.");
+        $this->info('Completed: '.count($expired).' reservation hold(s) expired.');
 
         return self::SUCCESS;
     }

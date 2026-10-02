@@ -22,6 +22,11 @@ test('platform admin can view administrators management page', function () {
 
     $this->actingAs($this->adminUser)
         ->get(route('admin.admins.index'))
+        ->assertRedirect(route('password.confirm'));
+
+    $this->actingAs($this->adminUser)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('admin.admins.index'))
         ->assertOk()
         ->assertSee('Platform Administrators')
         ->assertSee('Chief Admin')

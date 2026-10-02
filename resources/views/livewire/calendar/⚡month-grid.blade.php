@@ -819,7 +819,7 @@ new class extends Component {
                                                 Pax</span>
                                             <span>&bull;</span>
                                             @if ($res->guest_contact)
-                                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $res->guest_contact) }}"
+                                                <a href="https://wa.me/{{ \App\Services\PhoneNumber::normalize($res->guest_contact) }}"
                                                     target="_blank"
                                                     class="text-emerald-600 hover:underline flex items-center gap-1 font-semibold">
                                                     <i class="fa-brands fa-whatsapp text-[10px]"></i>

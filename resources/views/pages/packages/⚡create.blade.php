@@ -145,6 +145,8 @@ new #[Title('Create Tour Package')] class extends Component {
 
     public function save(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (!$this->isProfileComplete) {
             $this->addError('profile', __('You must complete your business profile, WhatsApp contact, payout reference, and terms & conditions in settings before creating packages.'));
             return;

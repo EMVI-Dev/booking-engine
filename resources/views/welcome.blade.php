@@ -10,10 +10,10 @@
     class="min-h-screen bg-[#09090b] font-sans text-zinc-100 antialiased selection:bg-[#FFEF4D] selection:text-[#090d16]">
     @php
         $registrationOpen = !\App\Models\PlatformSetting::current()->isPlatformMaintenance();
-        $plans = \App\Models\Plan::where('is_active', true)->orderBy('sort_order')->get();
+        $plans = \App\Models\Plan::catalog();
         if ($plans->isEmpty()) {
             \App\Models\Plan::seedDefaultPlans();
-            $plans = \App\Models\Plan::where('is_active', true)->orderBy('sort_order')->get();
+            $plans = \App\Models\Plan::catalog();
         }
         $platformDomain = app(\App\Services\DomainResolverService::class)->getPlatformDomain();
         $demoStorefrontUrl = request()->getScheme() . '://' . config('demo.slug', 'demo') . '.' . $platformDomain;

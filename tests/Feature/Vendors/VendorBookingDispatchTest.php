@@ -10,7 +10,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Reservation;
 use App\Models\Vendor;
-use App\Services\GuestCancellationService;
+use App\Services\ReservationLifecycleService;
 use App\Services\VendorDispatchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -180,7 +180,7 @@ test('vendor receives cancellation email when paid booking is cancelled', functi
         '*' => Http::response(['status' => 'SUCCESS'], 200),
     ]);
 
-    app(GuestCancellationService::class)->cancel($reservation);
+    app(ReservationLifecycleService::class)->cancelByGuest($reservation);
 
     Mail::assertQueued(VendorBookingCancelledMail::class, function (VendorBookingCancelledMail $mail) {
         return $mail->hasTo('info@baturjeep.com')

@@ -4,6 +4,7 @@ namespace App\Contracts;
 
 use App\Models\Operator;
 use App\Models\Product;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 interface Bookable
@@ -48,6 +49,16 @@ interface Bookable
     public function getRequiredProducts(): Collection;
 
     public function isSellable(): bool;
+
+    /**
+     * Whether an operator-wide, listing or underlying-activity blackout covers the date.
+     */
+    public function isBlackedOutOn(Carbon|string $date): bool;
+
+    /**
+     * @return array<string, string> Key is Y-m-d, value is the blackout reason
+     */
+    public function getBlackoutDates(?Carbon $start = null, ?Carbon $end = null): array;
 
     public function isPublished(): bool;
 

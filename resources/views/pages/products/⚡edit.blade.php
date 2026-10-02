@@ -92,6 +92,8 @@ new #[Title('Edit Activity Item')] class extends Component {
 
     public function quickCreateVendor(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (! $this->currentOperator) {
             return;
         }
@@ -170,6 +172,8 @@ new #[Title('Edit Activity Item')] class extends Component {
 
     public function removeExistingCoverPhoto(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if ($this->existingCoverPhoto) {
             $this->media()->delete($this->existingCoverPhoto);
             $this->product->update(['cover_photo' => null]);
@@ -184,6 +188,8 @@ new #[Title('Edit Activity Item')] class extends Component {
 
     public function removeExistingGalleryImage(int $index): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (isset($this->existingGallery[$index])) {
             $pathToDelete = $this->existingGallery[$index];
             $this->media()->delete($pathToDelete);
@@ -206,13 +212,15 @@ new #[Title('Edit Activity Item')] class extends Component {
 
     public function save(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (!$this->currentOperator || $this->product->operator_id !== $this->currentOperator->id) {
             abort(403);
         }
 
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'vendor_id' => ['nullable', 'string', 'exists:vendors,id'],
+            'vendor_id' => ['nullable', 'string', \Illuminate\Validation\Rule::exists('vendors', 'id')->where('operator_id', $this->currentOperator->id)],
             'category' => ['nullable', 'string', 'max:100'],
             'capacity_per_day' => ['required', 'integer', 'min:1', 'max:10000'],
             'sellable_standalone' => ['boolean'],
@@ -228,6 +236,12 @@ new #[Title('Edit Activity Item')] class extends Component {
             'coverPhoto' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
             'galleryFiles.*' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
         ]);
+
+        if ($this->status === 'published' && ! app(\App\Services\PlanLimitService::class)->canPublish($this->currentOperator, $this->product)) {
+            $this->addError('status', __('Your plan allows :count live listings. Unpublish another listing or upgrade to publish this one.', ['count' => $this->currentOperator->getPlan()->package_limit]));
+
+            return;
+        }
 
         $coverPath = $this->existingCoverPhoto;
         if ($this->coverPhoto) {
@@ -277,6 +291,8 @@ new #[Title('Edit Activity Item')] class extends Component {
 
     public function delete(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         if (!$this->currentOperator || $this->product->operator_id !== $this->currentOperator->id) {
             abort(403);
         }

@@ -12,12 +12,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @php
         $latestPayment = $reservation->latestPayment;
-        $isPaid = $latestPayment && $latestPayment->isPaid() && in_array($reservation->status, [\App\Enums\ReservationStatus::Confirmed, \App\Enums\ReservationStatus::PendingConfirmation]);
+        $isPaid = $reservation->hasValidTicket();
         $reservationCode = $reservation->code ?? ('RSV-' . strtoupper(substr($reservation->id, -8)));
         $termsSnapshot = $reservation->terms_snapshot ?? [];
-        $totalAmount = isset($termsSnapshot['total_price'])
-            ? (float) $termsSnapshot['total_price']
-            : ($latestPayment ? (float) $latestPayment->amount : 0);
+        $totalAmount = $reservation->getQuotedTotal();
     @endphp
     @include('storefront.partials.tracking-scripts', [
         'agent' => $agent,

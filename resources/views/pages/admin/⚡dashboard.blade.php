@@ -21,31 +21,63 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
     #[Computed]
     public function currentMrr(): float
     {
-        $plans = Plan::all()->keyBy('id');
-        $mrr = 0.0;
-
-        $operators = Operator::where('status', OperatorStatus::Approved)
-            ->whereNotNull('plan_id')
-            ->get();
-
-        foreach ($operators as $operator) {
-            $plan = $plans->get($operator->plan_id);
-            if ($plan && ! $plan->isFree()) {
-                if ($operator->subscription_interval === 'yearly') {
-                    $mrr += ((float) $plan->price_yearly) / 12;
-                } else {
-                    $mrr += (float) $plan->price_monthly;
-                }
-            }
-        }
-
-        return $mrr;
+        return $this->metrics()->monthlyRecurringRevenue();
     }
 
     #[Computed]
     public function totalSubscriptionRevenue(): float
     {
-        return (float) SubscriptionPayment::where('status', 'completed')->sum('net_amount_paid');
+        return $this->metrics()->subscriptionRevenue();
+    }
+
+    /**
+     * Platform income from the guest service fee.
+     */
+    #[Computed]
+    public function guestFeeRevenue(): float
+    {
+        return $this->metrics()->guestFeeRevenue();
+    }
+
+    /**
+     * Paid guest checkout value (GMV).
+     */
+    #[Computed]
+    public function grossBookingValue(): float
+    {
+        return $this->metrics()->grossBookingValue();
+    }
+
+    /**
+     * Operator money held until trip day.
+     */
+    #[Computed]
+    public function escrowLiability(): float
+    {
+        return $this->metrics()->escrowLiability();
+    }
+
+    /**
+     * Cleared operator balances not yet paid out.
+     */
+    #[Computed]
+    public function clearedOperatorBalances(): float
+    {
+        return $this->metrics()->clearedOperatorBalances();
+    }
+
+    /**
+     * Money held on open card disputes.
+     */
+    #[Computed]
+    public function openDisputeHolds(): float
+    {
+        return $this->metrics()->openDisputeHolds();
+    }
+
+    protected function metrics(): \App\Services\AdminMetricsService
+    {
+        return app(\App\Services\AdminMetricsService::class);
     }
 
     #[Computed]
@@ -69,13 +101,13 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
     #[Computed]
     public function pendingPayoutsCount(): int
     {
-        return PayoutRequest::where('status', PayoutStatus::Pending)->count();
+        return $this->metrics()->payoutTotals(PayoutStatus::Pending)['count'];
     }
 
     #[Computed]
     public function pendingPayoutsAmount(): float
     {
-        return (float) PayoutRequest::where('status', PayoutStatus::Pending)->sum('amount');
+        return $this->metrics()->payoutTotals(PayoutStatus::Pending)['amount'];
     }
 
     #[Computed]
@@ -96,18 +128,7 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
         $rangeStart = now()->subMonths($monthsCount - 1)->startOfMonth();
         $rangeEnd = now()->endOfMonth();
 
-        // Driver-aware month grouping: MySQL uses DATE_FORMAT, SQLite uses strftime.
-        $isSqlite = DB::getDriverName() === 'sqlite';
-        $monthExpr = $isSqlite
-            ? "strftime('%Y-%m', created_at) as month_key"
-            : "DATE_FORMAT(created_at, '%Y-%m') as month_key";
-
-        $subRevByMonth = DB::table('subscription_payments')
-            ->where('status', 'completed')
-            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
-            ->groupBy('month_key')
-            ->selectRaw("{$monthExpr}, SUM(net_amount_paid) as total")
-            ->pluck('total', 'month_key');
+        $subRevByMonth = $this->metrics()->subscriptionRevenueByMonth($rangeStart, $rangeEnd);
 
         $months = [];
         $maxRevenue = 1.0;

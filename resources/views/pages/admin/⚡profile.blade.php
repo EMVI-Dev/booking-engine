@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\RecordsAdminActions;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,8 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component {
+    use RecordsAdminActions;
+
     use PasswordValidationRules;
     use ProfileValidationRules;
 
@@ -86,8 +89,13 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
         $validated = $this->validate($this->profileRules($user->id));
 
+        $previousEmail = $user->email;
         $user->fill($validated);
         $user->save();
+
+        if ($previousEmail !== $user->email) {
+            $this->audit('admin.email_changed', $user, ['from' => $previousEmail, 'to' => $user->email]);
+        }
 
         $this->profileSaved = true;
         session()->flash('success_profile', __('Admin profile details updated successfully.'));
@@ -111,6 +119,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
         Auth::user()->update([
             'password' => Hash::make($validated['password']),
         ]);
+        $this->audit('admin.password_changed', Auth::user());
 
         $this->reset('current_password', 'password', 'password_confirmation');
         $this->passwordSaved = true;
@@ -157,6 +166,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
         $passkey = Auth::user()->passkeys()->findOrFail($this->deletingPasskeyId);
 
         $deletePasskey(Auth::user(), $passkey);
+        $this->audit('admin.passkey_removed', Auth::user(), ['name' => $passkey->name]);
 
         $this->showDeleteModal = false;
         $this->reset('deletingPasskeyId', 'deletingPasskeyName');
@@ -193,6 +203,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
     public function disableTwoFactor(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
     {
         $disableTwoFactorAuthentication(Auth::user());
+        $this->audit('admin.two_factor_disabled', Auth::user());
         $this->twoFactorEnabled = false;
         session()->flash('success_2fa', __('Two-factor authentication has been disabled.'));
     }

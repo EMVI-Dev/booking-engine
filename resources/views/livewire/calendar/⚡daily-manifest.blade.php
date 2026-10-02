@@ -235,7 +235,7 @@ new class extends Component {
                         @php
                             $waUrl =
                                 'https://wa.me/' .
-                                preg_replace('/[^0-9]/', '', (string) $res->guest_contact) .
+                                \App\Services\PhoneNumber::normalize((string) $res->guest_contact) .
                                 '?text=' .
                                 urlencode(
                                     "Halo {$res->guest_name}, mengonfirmasi keberangkatan tur Anda hari ini #{$res->code}.",

@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\ResolvesCurrentOperator;
 use App\Models\Operator;
 use App\Models\PlatformCoupon;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Portal')] class extends Component {
+    use ResolvesCurrentOperator;
     use WithPagination;
 
     #[Url]
@@ -114,7 +116,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
             return;
         }
 
-        $coupon = PlatformCoupon::where('operator_id', $operator->id)->find($id);
+        $coupon = PlatformCoupon::forGuest()->where('operator_id', $operator->id)->find($id);
 
         if (! $coupon) {
             session()->flash('error', __('Coupon not found.'));
@@ -141,6 +143,8 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
      */
     public function saveCoupon(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $operator = $this->operator;
 
         if (! $operator) {
@@ -152,8 +156,9 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         $this->code = strtoupper(trim($this->code));
         $validated = $this->validate();
 
-        // Check unique code per operator
-        $duplicate = PlatformCoupon::where('operator_id', $operator->id)
+        // Check unique code per operator for guest coupons
+        $duplicate = PlatformCoupon::forGuest()
+            ->where('operator_id', $operator->id)
             ->where('code', $this->code)
             ->when($this->editing_id, fn ($q) => $q->where('id', '!=', $this->editing_id))
             ->exists();
@@ -167,6 +172,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         $payload = [
             'code' => $this->code,
             'description' => $this->description ?: null,
+            'scope' => 'guest',
             'discount_type' => $this->discount_type,
             'discount_value' => $this->discount_value,
             'min_spend' => $this->min_spend,
@@ -179,7 +185,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         ];
 
         if ($this->editing_id) {
-            $coupon = PlatformCoupon::where('operator_id', $operator->id)->find($this->editing_id);
+            $coupon = PlatformCoupon::forGuest()->where('operator_id', $operator->id)->find($this->editing_id);
             if ($coupon) {
                 $coupon->update($payload);
                 session()->flash('success', __('Promo code :code updated successfully.', ['code' => $this->code]));
@@ -228,12 +234,14 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
      */
     public function toggleActive(string $id): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $operator = $this->operator;
         if (! $operator) {
             return;
         }
 
-        $coupon = PlatformCoupon::where('operator_id', $operator->id)->find($id);
+        $coupon = PlatformCoupon::forGuest()->where('operator_id', $operator->id)->find($id);
 
         if ($coupon) {
             $coupon->update(['is_active' => ! $coupon->is_active]);
@@ -275,12 +283,14 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
      */
     public function deleteCoupon(string $id): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $operator = $this->operator;
         if (! $operator) {
             return;
         }
 
-        $coupon = PlatformCoupon::where('operator_id', $operator->id)->find($id);
+        $coupon = PlatformCoupon::forGuest()->where('operator_id', $operator->id)->find($id);
 
         if ($coupon) {
             $code = $coupon->code;
@@ -305,7 +315,8 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
     {
         $operator = $this->operator;
 
-        $query = PlatformCoupon::where('operator_id', $operator?->id ?? 'none')
+        $query = PlatformCoupon::forGuest()
+            ->where('operator_id', $operator?->id ?? 'none')
             ->latest();
 
         if (! empty($this->search)) {
@@ -331,9 +342,9 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         $coupons = $query->paginate(12);
 
         // Summary metrics
-        $totalCoupons = PlatformCoupon::where('operator_id', $operator?->id)->count();
-        $activeCoupons = PlatformCoupon::where('operator_id', $operator?->id)->active()->count();
-        $totalRedemptions = PlatformCoupon::where('operator_id', $operator?->id)->sum('used_count');
+        $totalCoupons = PlatformCoupon::forGuest()->where('operator_id', $operator?->id)->count();
+        $activeCoupons = PlatformCoupon::forGuest()->where('operator_id', $operator?->id)->active()->count();
+        $totalRedemptions = PlatformCoupon::forGuest()->where('operator_id', $operator?->id)->sum('used_count');
 
         return view('pages.coupons.⚡index', [
             'coupons' => $coupons,
@@ -373,7 +384,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         </div>
     @endif
 
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4">
         <x-metric-card
             :label="__('Total Codes')"
             :value="$totalCoupons"
@@ -389,6 +400,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
             tone="success"
         />
         <x-metric-card
+            class="col-span-2 sm:col-span-1"
             :label="__('Guest Redemptions')"
             :value="$totalRedemptions"
             :hint="__('Total bookings with discounts')"
@@ -397,14 +409,14 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         />
     </div>
 
-    <x-toolbar class="flex flex-col items-center justify-between gap-3 sm:flex-row">
+    <x-toolbar class="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div class="w-full sm:w-80">
             <x-search-input
                 wire:model.live.debounce.300ms="search"
                 :placeholder="__('Search by code or description...')"
             />
         </div>
-        <x-filter-tabs>
+        <x-filter-tabs class="w-full sm:w-auto">
             @foreach (['all' => __('All Codes'), 'active' => __('Active'), 'expired' => __('Inactive / Expired')] as $k => $label)
                 <x-filter-tab :active="$filter === $k" wire:click="$set('filter', '{{ $k }}')">
                     {{ $label }}
@@ -415,7 +427,130 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
 
     <!-- Coupons Table Card -->
     <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Mobile Responsive Card List (md:hidden) -->
+        <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
+            @forelse ($coupons as $c)
+                @php
+                    $isExpired = $c->expires_at && $c->expires_at->isPast();
+                    $isFuture = $c->starts_at && $c->starts_at->isFuture();
+                    $isLimitReached = $c->max_uses !== null && $c->used_count >= $c->max_uses;
+                @endphp
+                <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
+                    <!-- Top Row: Code Badge + Discount Amount & Status Toggle -->
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#FFEF4D]/10 text-slate-800 dark:text-[#FFEF4D] border border-slate-200 dark:border-[#FFEF4D]/30 font-mono font-bold text-xs">
+                                {{ $c->code }}
+                            </span>
+                            <span class="font-extrabold text-xs text-slate-900 dark:text-white font-mono shrink-0">
+                                @if ($c->discount_type === 'percentage')
+                                    {{ (float) $c->discount_value }}% OFF
+                                @else
+                                    Rp {{ number_format((float) $c->discount_value, 0, ',', '.') }} OFF
+                                @endif
+                            </span>
+                        </div>
+
+                        <!-- Status Badge / Toggle -->
+                        <div class="shrink-0">
+                            <button
+                                type="button"
+                                wire:click="promptToggleActive('{{ $c->id }}', '{{ $c->code }}', {{ $c->is_active && ! $isExpired ? 'true' : 'false' }})"
+                                class="h-6 px-2.5 rounded-full inline-flex items-center gap-1.5 text-[10px] font-bold transition cursor-pointer {{ $c->is_active && ! $isExpired ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60' : 'bg-slate-100 text-slate-700 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]' }}"
+                                title="{{ __('Click to change active status') }}"
+                            >
+                                <span class="h-1.5 w-1.5 rounded-full {{ $c->is_active && ! $isExpired ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
+                                <span>{{ $c->is_active && ! $isExpired ? __('Active') : __('Inactive') }}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    @if ($c->description)
+                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                            {{ $c->description }}
+                        </p>
+                    @endif
+
+                    <!-- Middle 2-Column Grid: Usage / Limits & Validity -->
+                    <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-[#1e2433]">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Usage & Quota') }}</span>
+                            <a
+                                href="{{ route('coupons.report', $c) }}"
+                                wire:navigate
+                                class="font-mono font-bold text-slate-900 dark:text-white hover:text-amber-500 dark:hover:text-[#FFEF4D] transition inline-flex items-center gap-1 group cursor-pointer"
+                                title="{{ __('View redemptions report') }}"
+                            >
+                                <span>{{ $c->used_count }} / {{ $c->max_uses ?? '∞' }} {{ __('used') }}</span>
+                                <i class="fa-solid fa-chart-pie text-[9px] text-amber-500 opacity-60 group-hover:opacity-100 transition"></i>
+                            </a>
+                            @if ($c->min_spend > 0)
+                                <span class="text-[10px] text-slate-400 block truncate">{{ __('Min: Rp :val', ['val' => number_format((float) $c->min_spend, 0, ',', '.')]) }}</span>
+                            @endif
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Validity') }}</span>
+                            @if ($c->expires_at)
+                                <span class="font-semibold block {{ $isExpired ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-800 dark:text-slate-200' }}">
+                                    {{ $c->expires_at->format('M j, Y') }}
+                                </span>
+                            @else
+                                <span class="text-slate-400 font-medium block">{{ __('Never expires') }}</span>
+                            @endif
+                            @if ($isLimitReached)
+                                <span class="text-[9px] text-rose-500 font-bold uppercase block">{{ __('Limit reached') }}</span>
+                            @elseif ($isExpired)
+                                <span class="text-[9px] text-rose-500 font-bold uppercase block">{{ __('Expired') }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Bottom Action Bar: Report link + Edit + Delete -->
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
+                        <a
+                            href="{{ route('coupons.report', $c) }}"
+                            wire:navigate
+                            class="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-[#FFEF4D] hover:underline"
+                        >
+                            <i class="fa-solid fa-chart-line text-[10px]"></i>
+                            <span>{{ __('Report') }}</span>
+                        </a>
+
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button
+                                type="button"
+                                wire:click="editCoupon('{{ $c->id }}')"
+                                class="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-[#141721] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#262d3d] inline-flex items-center gap-1 text-xs font-bold transition cursor-pointer shadow-2xs"
+                                title="{{ __('Edit Promo Code') }}"
+                            >
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                                <span>{{ __('Edit') }}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                wire:click="promptDelete('{{ $c->id }}', '{{ $c->code }}')"
+                                class="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#141721] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-[#262d3d] inline-flex items-center justify-center transition cursor-pointer shadow-2xs"
+                                title="{{ __('Delete Code') }}"
+                            >
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-xs text-slate-400">
+                    <div class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-[#141821] text-slate-400 border border-slate-200 dark:border-[#1e2433] flex items-center justify-center mx-auto text-base mb-2">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 dark:text-slate-300 text-sm">{{ __('No promo codes found') }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ __('Create marketing discount codes to incentivize direct guest bookings on your storefront.') }}</p>
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Desktop Table View (hidden md:block) -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -475,9 +610,15 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                             <!-- Usage & Limits -->
                             <td class="py-3.5 px-4">
                                 <div class="space-y-0.5 font-mono text-xs">
-                                    <span class="font-bold text-slate-900 dark:text-white">
-                                        {{ $c->used_count }} / {{ $c->max_uses ?? '∞' }} {{ __('uses') }}
-                                    </span>
+                                    <a
+                                        href="{{ route('coupons.report', $c) }}"
+                                        wire:navigate
+                                        class="font-bold text-slate-900 dark:text-white hover:text-amber-500 dark:hover:text-[#FFEF4D] transition inline-flex items-center gap-1 group cursor-pointer"
+                                        title="{{ __('View redemptions report') }}"
+                                    >
+                                        <span>{{ $c->used_count }} / {{ $c->max_uses ?? '∞' }} {{ __('uses') }}</span>
+                                        <i class="fa-solid fa-chart-pie text-[10px] text-amber-500 opacity-60 group-hover:opacity-100 transition"></i>
+                                    </a>
                                     @if ($isLimitReached)
                                         <span class="block text-[10px] text-rose-500 font-bold uppercase">{{ __('Limit Reached') }}</span>
                                     @endif
@@ -517,6 +658,15 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                             <!-- Actions -->
                             <td class="py-3.5 px-4 sm:px-6 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
+                                    <a
+                                        href="{{ route('coupons.report', $c) }}"
+                                        wire:navigate
+                                        class="h-8 px-3 rounded-xl bg-slate-100 dark:bg-[#141721] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#262d3d] font-bold text-xs transition inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        title="{{ __('View Performance Report') }}"
+                                    >
+                                        <i class="fa-solid fa-chart-pie text-[10px] text-amber-500"></i>
+                                        <span>{{ __('Report') }}</span>
+                                    </a>
                                     <button
                                         type="button"
                                         wire:click="editCoupon('{{ $c->id }}')"

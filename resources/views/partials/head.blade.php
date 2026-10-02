@@ -10,7 +10,7 @@
     $blockIndexing =
         $portalOperator?->isDemo() &&
         $portalUser &&
-        (!$portalUser->isAdmin() || session()->has('admin_impersonated_operator_id'));
+        (!$portalUser->isAdmin() || $portalUser->isImpersonating());
 @endphp
 @if ($isPlatformMarketing)
     @php

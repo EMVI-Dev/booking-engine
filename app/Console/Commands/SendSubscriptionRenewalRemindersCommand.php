@@ -3,12 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Enums\OperatorStatus;
-use App\Mail\SubscriptionRenewalReminderMail;
 use App\Models\Operator;
-use App\Services\OperatorActivitySlackNotifier;
+use App\Services\SubscriptionReminderService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 
 class SendSubscriptionRenewalRemindersCommand extends Command
 {
@@ -70,19 +68,12 @@ class SendSubscriptionRenewalRemindersCommand extends Command
                 continue;
             }
 
-            $recipientEmail = $operator->billing_email
-                ?: ($operator->booking_notification_email ?: $operator->users->first()?->email);
-
-            if (empty($recipientEmail)) {
-                continue;
-            }
-
             try {
-                Mail::to($recipientEmail)->send(
-                    new SubscriptionRenewalReminderMail($operator, $plan, $matchedDays)
-                );
+                $recipientEmail = app(SubscriptionReminderService::class)->sendRenewalReminder($operator, $matchedDays);
 
-                app(OperatorActivitySlackNotifier::class)->renewalReminderSent($operator, $matchedDays);
+                if ($recipientEmail === null) {
+                    continue;
+                }
 
                 $sentCount++;
                 $this->info("Sent {$matchedDays}-day renewal reminder to {$operator->name} ({$recipientEmail})");

@@ -365,3 +365,30 @@ test('pending subscription upgrade activates plan when DOKU status sync reports 
         ->and($payment->fresh()->status)->toBe('completed')
         ->and($this->operator->fresh()->plan_id)->toBe($this->proPlan->id);
 });
+
+test('billing page displays doku checkout and does not label real payments as sandbox simulation', function () {
+    $this->actingAs($this->user);
+
+    $payment = SubscriptionPayment::create([
+        'operator_id' => $this->operator->id,
+        'plan_id' => $this->proPlan->id,
+        'invoice_number' => 'SUB-DOKU-LIVE-1',
+        'type' => 'upgrade',
+        'billing_interval' => 'monthly',
+        'gross_amount' => 499000,
+        'prorated_credit' => 0,
+        'net_amount_paid' => 499000,
+        'status' => 'completed',
+        'gateway' => 'doku',
+        'gateway_ref' => 'SUB-DOKU-LIVE-1',
+        'paid_at' => now(),
+    ]);
+
+    Livewire::test('pages::settings.billing')
+        ->assertSee('SUB-DOKU-LIVE-1')
+        ->assertSee('DOKU Checkout')
+        ->assertDontSee('Sandbox Simulation')
+        ->call('viewInvoice', $payment->id)
+        ->assertSee('DOKU Checkout')
+        ->assertDontSee('SIM-INSTANT');
+});

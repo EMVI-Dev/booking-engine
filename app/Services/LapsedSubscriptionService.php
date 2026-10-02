@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\DomainStatus;
-use App\Enums\DomainType;
-use App\Enums\ListingStatus;
 use App\Models\Operator;
 use App\Models\Plan;
 
@@ -38,25 +35,7 @@ class LapsedSubscriptionService
             'pending_plan_action_at' => null,
         ]);
 
-        $limit = $starter->package_limit ?? 5;
-
-        $listings = $operator->packages()
-            ->where('status', ListingStatus::Published)
-            ->get()
-            ->concat($operator->products()->where('status', ListingStatus::Published)->get())
-            ->sortByDesc(fn ($listing): int => $listing->created_at?->getTimestamp() ?? 0)
-            ->values();
-
-        $listings->skip($limit)->each(function ($listing): void {
-            $listing->update(['status' => ListingStatus::Draft]);
-        });
-
-        $operator->domains()
-            ->where('type', DomainType::Custom)
-            ->update([
-                'status' => DomainStatus::Pending,
-                'ssl_issued_at' => null,
-            ]);
+        app(PlanLimitService::class)->enforce($operator);
 
         $this->slack->subscriptionLapsed(
             $operator->fresh() ?? $operator,

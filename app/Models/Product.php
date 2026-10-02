@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Contracts\Bookable;
 use App\Enums\ListingStatus;
 use App\Models\Traits\HasCancellationPolicy;
-use App\Services\MediaStore;
+use App\Models\Traits\InteractsWithBookable;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -53,6 +53,7 @@ class Product extends Model implements Bookable
     use HasFactory;
 
     use HasUlids;
+    use InteractsWithBookable;
 
     protected $fillable = [
         'operator_id',
@@ -159,96 +160,14 @@ class Product extends Model implements Bookable
 
     // --- Bookable Contract Implementation ---
 
-    public function getId(): string
-    {
-        return (string) $this->id;
-    }
-
-    public function getCoverPhotoUrlAttribute(): ?string
-    {
-        return app(MediaStore::class)->url($this->cover_photo);
-    }
-
-    /**
-     * @return array<string>
-     */
-    public function getGalleryUrlsAttribute(): array
-    {
-        if (! is_array($this->gallery)) {
-            return [];
-        }
-
-        return array_values(array_filter(array_map(
-            fn (string $path): ?string => app(MediaStore::class)->url($path),
-            $this->gallery,
-        )));
-    }
-
     public function getTitle(): string
     {
         return $this->name;
     }
 
-    public function getOperator(): Operator
-    {
-        return $this->operator;
-    }
-
-    public function getOperatorId(): string
-    {
-        return (string) $this->operator_id;
-    }
-
-    /**
-     * @deprecated Use getOperator() instead.
-     */
-    public function getAgent(): Operator
-    {
-        return $this->getOperator();
-    }
-
-    /**
-     * @deprecated Use getOperatorId() instead.
-     */
-    public function getAgentId(): string
-    {
-        return $this->getOperatorId();
-    }
-
     public function getPrice(): float
     {
         return (float) ($this->price ?? 0.00);
-    }
-
-    public function getFreeCancellationHours(): int
-    {
-        return (int) $this->free_cancellation_hours;
-    }
-
-    public function getAdvanceBookingHours(): int
-    {
-        return (int) $this->advance_booking_hours;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public function getInclusions(): array
-    {
-        return (array) ($this->inclusions ?? []);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public function getExclusions(): array
-    {
-        return (array) ($this->exclusions ?? []);
-    }
-
-    public function getTermsAndConditions(): ?string
-    {
-        return $this->terms_and_conditions;
     }
 
     /**
@@ -269,88 +188,21 @@ class Product extends Model implements Bookable
         return $collection;
     }
 
-    /**
-     * Check if this Product is blacked out on a specific date.
-     * (Evaluates operator-wide blocks and product-specific blocks)
-     */
-    public function isBlackedOutOn(Carbon|string $date): bool
-    {
-        $dateStr = $date instanceof Carbon ? $date->toDateString() : Carbon::parse($date)->toDateString();
-
-        return AvailabilityBlock::where('operator_id', $this->operator_id)
-            ->where(function ($q) {
-                $q->where(function ($sub) {
-                    $sub->whereNull('product_id')->whereNull('package_id');
-                })->orWhere('product_id', $this->id);
-            })
-            ->whereDate('date_start', '<=', $dateStr)
-            ->whereDate('date_end', '>=', $dateStr)
-            ->exists();
-    }
-
-    /**
-     * Get array of blacked out date strings for a given date range.
-     *
-     * @return array<string, string> Key is Y-m-d, value is blackout reason
-     */
-    public function getBlackoutDates(?Carbon $start = null, ?Carbon $end = null): array
-    {
-        $startDate = $start ?? now()->startOfDay();
-        $endDate = $end ?? now()->addYear()->endOfDay();
-
-        $blocks = AvailabilityBlock::where('operator_id', $this->operator_id)
-            ->where(function ($q) {
-                $q->where(function ($sub) {
-                    $sub->whereNull('product_id')->whereNull('package_id');
-                })->orWhere('product_id', $this->id);
-            })
-            ->where('date_start', '<=', $endDate->toDateString())
-            ->where('date_end', '>=', $startDate->toDateString())
-            ->get();
-
-        $dates = [];
-        foreach ($blocks as $b) {
-            $cur = Carbon::parse($b->date_start)->max($startDate);
-            $last = Carbon::parse($b->date_end)->min($endDate);
-
-            while ($cur->lte($last)) {
-                $dates[$cur->toDateString()] = $b->reason ?: __('Blackout Date');
-                $cur->addDay();
-            }
-        }
-
-        return $dates;
-    }
-
     public function isSellable(): bool
     {
         return $this->sellable_standalone && $this->price !== null && (float) $this->price > 0;
     }
 
-    public function isPublished(): bool
+    /**
+     * @return list<string>
+     */
+    protected function blackoutProductIds(): array
     {
-        return $this->status === ListingStatus::Published;
+        return [(string) $this->id];
     }
 
-    public function getCachedAvgRating(): float
+    protected function blackoutPackageId(): ?string
     {
-        return (float) $this->avg_rating;
-    }
-
-    public function generateTermsSnapshot(): array
-    {
-        return [
-            'bookable_type' => 'product',
-            'bookable_id' => $this->getId(),
-            'title' => $this->getTitle(),
-            'price' => $this->getPrice(),
-            'free_cancellation_hours' => $this->getFreeCancellationHours(),
-            'advance_booking_hours' => $this->getAdvanceBookingHours(),
-            'cancellation_terms' => $this->cancellation_terms,
-            'inclusions' => $this->getInclusions(),
-            'exclusions' => $this->getExclusions(),
-            'terms_and_conditions' => $this->getTermsAndConditions(),
-            'frozen_at' => now()->toIso8601String(),
-        ];
+        return null;
     }
 }

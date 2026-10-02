@@ -47,6 +47,27 @@ enum ReservationStatus: string
         return $this === self::Expired;
     }
 
+    /**
+     * Statuses an operator may move a booking to from this one.
+     *
+     * Expiry and payment confirmation are system-driven and are not listed here.
+     *
+     * @return list<self>
+     */
+    public function operatorTransitions(): array
+    {
+        return match ($this) {
+            self::PaymentPending, self::PendingConfirmation => [self::Confirmed, self::Declined, self::Cancelled],
+            self::Confirmed => [self::Completed, self::Cancelled],
+            self::Declined, self::Cancelled, self::Completed, self::Expired => [],
+        };
+    }
+
+    public function canOperatorTransitionTo(self $target): bool
+    {
+        return in_array($target, $this->operatorTransitions(), true);
+    }
+
     public function label(): string
     {
         return match ($this) {

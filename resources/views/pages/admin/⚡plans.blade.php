@@ -1,17 +1,18 @@
 <?php
 
-use App\Mail\SubscriptionRenewalReminderMail;
-use App\Services\OperatorActivitySlackNotifier;
+use App\Concerns\RecordsAdminActions;
+use App\Services\SubscriptionProrationService;
 use App\Models\Operator;
 use App\Models\Plan;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
+    use RecordsAdminActions;
+
     #[Url]
     public string $tab = 'plans'; // 'plans' or 'renewals'
 
@@ -152,9 +153,10 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
 
         if ($this->editing_plan_id) {
             Plan::where('id', $this->editing_plan_id)->update($attributes);
+            $this->audit('plan.updated', Plan::find($this->editing_plan_id), ['price_monthly' => $this->price_monthly, 'price_yearly' => $this->price_yearly, 'is_active' => $this->is_active]);
             session()->flash('success', __('Plan :name updated successfully!', ['name' => $this->name]));
         } else {
-            Plan::create($attributes);
+            $this->audit('plan.created', Plan::create($attributes), ['slug' => $attributes['slug']]);
             session()->flash('success', __('New Plan :name created successfully!', ['name' => $this->name]));
         }
 
@@ -167,6 +169,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
     public function resetDefaultPlans(): void
     {
         Plan::seedDefaultPlans();
+        $this->audit('plan.defaults_reset');
         session()->flash('success', __('Default platform subscription tiers have been seeded and updated!'));
     }
 
@@ -183,18 +186,16 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
             return;
         }
 
-        $recipient = $operator->billing_email ?: ($operator->booking_notification_email ?: $operator->users->first()?->email);
-
-        if (!$recipient) {
-            session()->flash('error', __('No billing email configured for :name.', ['name' => $operator->name]));
-
-            return;
-        }
-
-        $daysRemaining = $operator->plan_expires_at ? (int) now()->diffInDays($operator->plan_expires_at, false) : 30;
-
         try {
-            Mail::to($recipient)->send(new SubscriptionRenewalReminderMail($operator, $operator->plan, $daysRemaining));
+            $recipient = app(\App\Services\SubscriptionReminderService::class)->sendRenewalReminder($operator);
+            $this->audit('subscription.reminder_sent', $operator, ['recipient' => $recipient]);
+
+            if ($recipient === null) {
+                session()->flash('error', __('No billing email configured for :name.', ['name' => $operator->name]));
+
+                return;
+            }
+
             session()->flash(
                 'success',
                 __('Renewal reminder email sent successfully to :email for :name.', [
@@ -218,26 +219,23 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
             return;
         }
 
-        $currentExpires = $operator->plan_expires_at && $operator->plan_expires_at->isFuture() ? $operator->plan_expires_at : now();
+        try {
+            $invoice = app(SubscriptionProrationService::class)->extendPeriod($operator, $days);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            session()->flash('error', (string) collect($e->errors())->flatten()->first());
 
-        $newExpires = (clone $currentExpires)->addDays($days);
+            return;
+        }
 
-        $operator->update([
-            'plan_expires_at' => $newExpires,
-        ]);
-
-        app(OperatorActivitySlackNotifier::class)->subscriptionExtended(
-            $operator->fresh() ?? $operator,
-            $days,
-            $newExpires->format('d M Y'),
-        );
+        $operator->refresh();
+        $this->audit('subscription.extended', $operator, ['days' => $days, 'invoice' => $invoice->invoice_number, 'new_expires_at' => $operator->plan_expires_at?->toDateString()]);
 
         session()->flash(
             'success',
             __('Subscription extended by :days days for :name (New expiry: :date).', [
                 'days' => $days,
                 'name' => $operator->name,
-                'date' => $newExpires->format('d M Y'),
+                'date' => $operator->plan_expires_at?->format('d M Y'),
             ]),
         );
     }
@@ -254,11 +252,8 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
         }
 
         $enabled = ! (bool) $operator->subscription_auto_renew;
-        $operator->update([
-            'subscription_auto_renew' => $enabled,
-        ]);
-
-        app(OperatorActivitySlackNotifier::class)->autoRenewChanged($operator->fresh() ?? $operator, $enabled);
+        app(SubscriptionProrationService::class)->setAutoRenew($operator, $enabled);
+        $this->audit('subscription.auto_renew_changed', $operator, ['enabled' => $enabled]);
 
         session()->flash('success', __('Auto-renew updated for :name.', ['name' => $operator->name]));
     }
@@ -560,10 +555,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
                                         $op->plan_expires_at &&
                                         !$isExpired &&
                                         $op->plan_expires_at->diffInDays(now()) <= 7;
-                                    $email =
-                                        $op->billing_email ?:
-                                        ($op->booking_notification_email ?:
-                                        $op->users->first()?->email);
+                                    $email = $op->billingRecipient();
                                 @endphp
                                 <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
                                     <!-- Operator -->

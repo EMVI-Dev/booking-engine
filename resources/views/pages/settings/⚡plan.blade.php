@@ -10,6 +10,7 @@ use App\Services\OperatorActivitySlackNotifier;
 use App\Services\SubscriptionProrationService;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -30,6 +31,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
     public bool $modal_consent_checkbox = false;
 
+    #[Locked]
     public ?string $target_plan_id = null;
 
     public string $downgrade_mode = 'end_of_cycle'; // 'end_of_cycle' | 'immediate'
@@ -45,8 +47,10 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
     // Platform Subscription Promo Code
     public string $couponCode = '';
 
+    #[Locked]
     public ?string $appliedCouponCode = null;
 
+    #[Locked]
     public float $discountAmount = 0.0;
 
     public string $couponMessage = '';
@@ -75,7 +79,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
      */
     protected function reconcilePendingSubscriptionPayment(Operator $operator): void
     {
-        $pending = SubscriptionPayment::query()->where('operator_id', $operator->id)->where('status', 'pending')->latest()->first();
+        $pending = SubscriptionPayment::query()->where('operator_id', $operator->id)->where('status', SubscriptionPayment::STATUS_PENDING)->latest()->first();
 
         if (!$pending) {
             return;
@@ -89,7 +93,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
         $pending->refresh();
 
-        if ($pending->status !== 'completed') {
+        if ($pending->status !== SubscriptionPayment::STATUS_COMPLETED) {
             return;
         }
 
@@ -116,15 +120,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
         // Match platform-wide subscription coupons (operator_id = null)
         // or coupons targeted specifically to this operator.
-        $coupon = PlatformCoupon::forSubscription()
-            ->where('code', $cleanCode)
-            ->where(function ($q) use ($operator) {
-                $q->whereNull('operator_id');
-                if ($operator) {
-                    $q->orWhere('operator_id', $operator->id);
-                }
-            })
-            ->first();
+        $coupon = PlatformCoupon::findForSubscription($cleanCode, $operator);
 
         if (!$coupon) {
             $this->couponMessage = __('Invalid subscription promo code.');
@@ -201,6 +197,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
      */
     public function confirmToggleAutoRenew(): void
     {
+        $this->authorizeAbility('manageBilling');
+
         $this->resetErrorBag();
 
         $operator = auth()->user()?->currentOperator();
@@ -218,9 +216,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
             return;
         }
 
-        $operator->update(['subscription_auto_renew' => $this->target_auto_renew_state]);
+        app(SubscriptionProrationService::class)->setAutoRenew($operator, $this->target_auto_renew_state);
         $this->auto_renew = $this->target_auto_renew_state;
-        app(OperatorActivitySlackNotifier::class)->autoRenewChanged($operator->fresh() ?? $operator, $this->target_auto_renew_state);
 
         session()->flash('success', $this->target_auto_renew_state ? __('Recurring auto-renewal enabled. Your subscription will renew automatically at the end of each billing cycle.') : __('Auto-renewal turned off. Your subscription will lapse at the end of the current term unless manually renewed.'));
 
@@ -284,7 +281,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
         $this->authorizeAbility('manageBilling');
 
         $operator = auth()->user()?->currentOperator();
-        $targetPlan = $this->target_plan_id ? Plan::find($this->target_plan_id) : null;
+        $targetPlan = $this->target_plan_id ? Plan::query()->whereKey($this->target_plan_id)->where('is_active', true)->first() : null;
+        $this->billing_interval = in_array($this->billing_interval, ['monthly', 'yearly'], true) ? $this->billing_interval : 'monthly';
 
         if (!$operator || !$targetPlan) {
             $this->closeSwitchModal();
@@ -296,6 +294,25 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
 
         $proration = $prorationService->calculateSwitch($operator, $targetPlan, $this->billing_interval);
 
+        // Re-derive the promo discount from the coupon record; component state is never trusted for money.
+        $discount = 0.0;
+        if ($this->appliedCouponCode !== null) {
+            $coupon = PlatformCoupon::findForSubscription($this->appliedCouponCode, $operator);
+            $check = $coupon?->validateFor((float) $proration['prorated_target_cost']) ?? ['valid' => false];
+
+            if (! $check['valid'] || (float) ($check['discount'] ?? 0) <= 0) {
+                $this->removeCoupon();
+                $this->couponMessage = $check['reason'] ?? __('Promo code cannot be applied.');
+                $this->addError('couponCode', $this->couponMessage);
+                $this->is_processing = false;
+
+                return;
+            }
+
+            $discount = (float) $check['discount'];
+            $this->discountAmount = $discount;
+        }
+
         if ($proration['is_upgrade']) {
             if ($this->auto_renew && !$this->auto_renew_consent) {
                 $this->addError('auto_renew_consent', __('Please confirm your consent for recurring auto-renewal before proceeding.'));
@@ -304,11 +321,11 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
                 return;
             }
 
-            $payment = $prorationService->createPendingUpgrade(operator: $operator, targetPlan: $targetPlan, interval: $this->billing_interval, autoRenew: $this->auto_renew, gateway: $this->payment_method, couponCode: $this->appliedCouponCode, discountAmount: $this->discountAmount);
+            $payment = $prorationService->createPendingUpgrade(operator: $operator, targetPlan: $targetPlan, interval: $this->billing_interval, autoRenew: $this->auto_renew, gateway: 'doku', couponCode: $this->appliedCouponCode, discountAmount: $discount);
 
             $this->closeSwitchModal();
 
-            if ($payment->status === 'completed') {
+            if ($payment->status === SubscriptionPayment::STATUS_COMPLETED) {
                 $this->active_plan_id = $targetPlan->id;
                 session()->flash(
                     'success',
@@ -359,6 +376,8 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
      */
     public function confirmCancelScheduledDowngrade(SubscriptionProrationService $prorationService): void
     {
+        $this->authorizeAbility('manageBilling');
+
         $operator = auth()->user()?->currentOperator();
 
         if ($operator) {
@@ -389,7 +408,7 @@ new #[Title('Subscription & Plan')] #[Layout('layouts.app')] class extends Compo
             $operator->load(['plan', 'pendingPlan']);
         }
         $currentPlan = $operator ? $operator->getPlan() : Plan::getDefaultPlan();
-        $plans = Plan::where('is_active', true)->orderBy('sort_order')->get();
+        $plans = Plan::catalog();
 
         $selectedTargetPlan = $this->target_plan_id ? Plan::find($this->target_plan_id) : null;
         $prorationData = $operator && $selectedTargetPlan ? $prorationService->calculateSwitch($operator, $selectedTargetPlan, $this->billing_interval) : null;

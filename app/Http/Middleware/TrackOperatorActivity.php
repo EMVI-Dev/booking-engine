@@ -21,8 +21,8 @@ class TrackOperatorActivity
         $user = $request->user();
 
         if ($user) {
-            // Avoid counting admin impersonation as organic operator activity
-            if ($user->isAdmin() && session()->has('admin_impersonated_operator_id')) {
+            // Platform admins (browsing or managing a shop) never count as operator activity
+            if ($user->isAdmin()) {
                 return $response;
             }
 

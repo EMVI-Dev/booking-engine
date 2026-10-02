@@ -15,7 +15,7 @@ new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component
 
     public string $password = '';
 
-    public bool $remember = true;
+    public bool $remember = false;
 
     /**
      * Throttle key scoped to email + IP address (5 attempts / minute).
@@ -46,7 +46,12 @@ new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component
             ]);
         }
 
-        if (! Auth::attempt(['email' => $validated['email'], 'password' => $validated['password']], $this->remember)) {
+        $provider = Auth::getProvider();
+        /** @var User|null $user */
+        $user = $provider->retrieveByCredentials(['email' => $validated['email']]);
+
+        // One answer for "wrong password" and "not an admin" so this form never confirms an operator's password.
+        if (! $user || ! $provider->validateCredentials($user, ['password' => $validated['password']]) || ! $user->isAdmin()) {
             RateLimiter::hit('admin-login:'.$this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -54,22 +59,24 @@ new #[Title('Admin sign in')] #[Layout('layouts.auth')] class extends Component
             ]);
         }
 
-        /** @var User $user */
-        $user = Auth::user();
+        RateLimiter::clear('admin-login:'.$this->throttleKey());
 
-        if (! $user->isAdmin()) {
-            Auth::logout();
-            session()->invalidate();
-            session()->regenerateToken();
-            RateLimiter::hit('admin-login:'.$this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'email' => __('Access denied. This login portal is strictly reserved for platform administrators.'),
+        // Admins with two-factor enabled must pass Fortify's challenge before a session exists.
+        if ($user->hasEnabledTwoFactorAuthentication()) {
+            session()->put([
+                'login.id' => $user->getKey(),
+                'login.remember' => $this->remember,
             ]);
+
+            $this->redirectRoute('two-factor.login');
+
+            return;
         }
 
-        RateLimiter::clear('admin-login:'.$this->throttleKey());
+        Auth::login($user, $this->remember);
         session()->regenerate();
+
+        app(\App\Services\AdminAuditLogger::class)->record('admin.login', $user);
 
         $this->redirectIntended(route('admin.dashboard'), navigate: true);
     }

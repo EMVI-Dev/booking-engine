@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\StopManagingOperatorController;
 use App\Http\Controllers\Api\DokuWebhookController;
+use App\Http\Controllers\Auth\LoginHandoffController;
 use App\Http\Controllers\Auth\RegistrationHandoffController;
 use App\Http\Controllers\CaddyAskController;
 use App\Http\Controllers\CalendarFeedController;
@@ -15,6 +17,9 @@ Route::get('/', [StorefrontController::class, 'index'])->name('home');
 Route::get('/auth/registration-handoff', RegistrationHandoffController::class)
     ->middleware(['signed:relative', 'throttle:10,1'])
     ->name('auth.registration-handoff');
+Route::get('/auth/login-handoff', LoginHandoffController::class)
+    ->middleware(['signed:relative', 'throttle:10,1'])
+    ->name('auth.login-handoff');
 Route::get('/tours', [StorefrontController::class, 'allPackages'])->name('storefront.packages');
 Route::get('/services', [StorefrontController::class, 'allProducts'])->name('storefront.products');
 Route::get('/terms', [StorefrontController::class, 'showTerms'])->name('storefront.terms');
@@ -73,6 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('calendar', 'pages::calendar.index')->name('calendar.index');
     Route::livewire('wallet', 'pages::wallet.index')->name('wallet.index');
     Route::livewire('coupons', 'pages::coupons.index')->name('coupons.index');
+    Route::livewire('coupons/{coupon}/report', 'pages::coupons.report')->name('coupons.report');
     Route::livewire('vendors', 'pages::vendors.index')->name('vendors.index');
 });
 
@@ -100,8 +106,10 @@ Route::middleware('platform')->group(function () {
         Route::livewire('/coupons', 'pages::admin.coupons')->name('coupons.index');
         Route::livewire('/payouts', 'pages::admin.payouts')->name('payouts.index');
         Route::livewire('/platform', 'pages::admin.platform')->name('platform.edit');
-        Route::livewire('/admins', 'pages::admin.admins')->name('admins.index');
-        Route::livewire('/profile', 'pages::admin.profile')->name('profile.edit');
+        Route::livewire('/admins', 'pages::admin.admins')->middleware('password.confirm')->name('admins.index');
+        Route::livewire('/profile', 'pages::admin.profile')->middleware('password.confirm')->name('profile.edit');
+        Route::livewire('/audit-log', 'pages::admin.audit-log')->name('audit-log.index');
+        Route::post('/stop-managing', StopManagingOperatorController::class)->name('operators.stop-managing');
     });
 });
 
