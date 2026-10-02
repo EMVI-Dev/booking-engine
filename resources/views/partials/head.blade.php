@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
 @php
-    $isPlatformMarketing = request()->routeIs('home');
+    $isPlatformMarketing = request()->routeIs('home') || request()->routeIs('platform') || request()->routeIs('classic');
     $portalUser = auth()->user();
     $portalOperator = $isPlatformMarketing ? null : $portalUser?->currentOperator();
     $portalFavicon = $portalOperator?->logo_url;

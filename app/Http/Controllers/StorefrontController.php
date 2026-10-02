@@ -9,6 +9,7 @@ use App\Enums\ReservationStatus;
 use App\Exceptions\CapacityUnavailableException;
 use App\Models\Operator;
 use App\Models\Payment;
+use App\Models\Plan;
 use App\Models\PlatformSetting;
 use App\Models\Reservation;
 use App\Services\CapacityService;
@@ -95,7 +96,25 @@ class StorefrontController extends Controller
 
         // If no agent domain is active, render central platform landing page
         if (! $agent) {
-            return view('welcome');
+            $registrationOpen = ! PlatformSetting::current()->isPlatformMaintenance();
+            $plans = Plan::catalog();
+            if ($plans->isEmpty()) {
+                Plan::seedDefaultPlans();
+                $plans = Plan::catalog();
+            }
+            $platformDomain = $this->domainResolver->getPlatformDomain();
+            $demoStorefrontUrl = $request->getScheme().'://'.config('demo.slug', 'demo').'.'.$platformDomain;
+            $demoOperatorLoginUrl = $demoStorefrontUrl.'/login';
+            $planFeatureRows = Plan::featureCatalog();
+
+            return view('welcome', [
+                'registrationOpen' => $registrationOpen,
+                'plans' => $plans,
+                'platformDomain' => $platformDomain,
+                'demoStorefrontUrl' => $demoStorefrontUrl,
+                'demoOperatorLoginUrl' => $demoOperatorLoginUrl,
+                'planFeatureRows' => $planFeatureRows,
+            ]);
         }
 
         if ($statusResponse = $this->checkOperatorStatus($agent)) {

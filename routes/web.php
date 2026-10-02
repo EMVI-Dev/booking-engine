@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 
 // Storefront & Platform Home
 Route::get('/', [StorefrontController::class, 'index'])->name('home');
+Route::redirect('/platform', '/')->name('platform');
+Route::redirect('/classic', '/')->name('classic');
 Route::get('/auth/registration-handoff', RegistrationHandoffController::class)
     ->middleware(['signed:relative', 'throttle:10,1'])
     ->name('auth.registration-handoff');

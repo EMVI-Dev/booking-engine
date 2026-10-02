@@ -24,10 +24,49 @@ test('root platform domain serves platform welcome page', function () {
         ->assertSee('You keep the listed price.')
         ->assertDontSee('No coding')
         ->assertDontSee('Operating System')
+        ->assertDontSee('Destinations')
+        ->assertDontSee('DOKU')
+        ->assertDontSee('SNAP BI')
+        ->assertDontSee('AUTOMATED BANK RAILS')
+        ->assertDontSee('ENGINE CAPABILITIES')
+        ->assertDontSee('PLATFORM SANDBOX')
         ->assertSee('Privacy')
         ->assertSee('Terms')
+        ->assertSee('SEE HOW IT WORKS')
+        ->assertSee('WHAT’S INCLUDED')
+        ->assertSee('PLATFORM FEATURES')
+        ->assertSee('TRANSPARENT PRICING')
+        ->assertSee('ONLINE PAYMENTS & BANK PAYOUTS: ACTIVE')
+        ->assertSee('WEBSITE + BOOKING ENGINE + PAYMENTS')
+        ->assertSee('ALL IN 1 PLATFORM')
         ->assertSee('application/ld+json', false)
         ->assertSee('SoftwareApplication', false);
+});
+
+test('legacy platform and classic routes redirect to platform home', function () {
+    Cache::flush();
+    $this->get('/platform')->assertRedirect('/');
+    $this->get('/classic')->assertRedirect('/');
+});
+
+test('platform page renders complete SEO, Schema JSON-LD and mobile components', function () {
+    Cache::flush();
+    $response = $this->get('/');
+
+    $response->assertOk()
+        ->assertSee('<meta name="description"', false)
+        ->assertSee('<meta name="keywords"', false)
+        ->assertSee('<link rel="canonical"', false)
+        ->assertSee('<meta property="og:title"', false)
+        ->assertSee('<meta property="og:description"', false)
+        ->assertSee('<meta property="og:image"', false)
+        ->assertSee('<meta name="twitter:card"', false)
+        ->assertSee('application/ld+json', false)
+        ->assertSee('SoftwareApplication', false)
+        ->assertSee('FAQPage', false)
+        ->assertSee('data-mobile-hero', false)
+        ->assertSee('data-mobile-end', false)
+        ->assertSee('fixed inset-x-0 bottom-0', false);
 });
 
 test('operator subdomain serves operator storefront with published listings', function () {

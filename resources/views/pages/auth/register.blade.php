@@ -84,66 +84,67 @@
         }"
     >
         <div class="space-y-2 text-center">
-            <span class="inline-flex items-center gap-1.5 rounded-full border border-[#FFEF4D]/40 bg-[#FFEF4D]/15 px-3 py-1 text-xs font-semibold text-[#8a7808] dark:border-[#FFEF4D]/30 dark:bg-[#FFEF4D]/10 dark:text-[#FFEF4D]">
-                <i class="fa-solid fa-store text-xs"></i>
-                {{ __('New operator') }}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-white/[0.06] border border-white/[0.12] text-[#FFEF4D]">
+                <i class="fa-solid fa-store text-[10px]"></i>
+                {{ __('NEW OPERATOR') }}
             </span>
-            <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <h1 class="text-2xl font-black tracking-tight text-white">
                 {{ __('Start taking bookings') }}
             </h1>
-            <p class="text-sm text-slate-600 dark:text-slate-400">
+            <p class="text-xs text-zinc-400 max-w-sm mx-auto">
                 {{ __('A few details now. Bank account and bio can wait until after you sign in.') }}
             </p>
         </div>
 
-        <div class="relative flex items-center justify-between px-2 pt-2">
-            <div class="absolute top-6 right-6 left-6 -z-0 h-0.5 -translate-y-1/2 bg-slate-200 dark:bg-zinc-800"></div>
+        <!-- Stepper (Architectural Blueprint Style) -->
+        <div class="relative flex items-center justify-between px-6 pt-2 font-mono">
+            <div class="absolute top-6 right-8 left-8 -z-0 h-0.5 -translate-y-1/2 bg-white/[0.08]"></div>
             <div
-                class="absolute top-6 left-6 -z-0 h-0.5 -translate-y-1/2 bg-brand-400 motion-safe:transition-all motion-safe:duration-300"
-                :style="'width: ' + ((step - 1) * 100) + '%; max-width: calc(100% - 48px);'"
+                class="absolute top-6 left-8 -z-0 h-0.5 -translate-y-1/2 bg-[#FFEF4D] motion-safe:transition-all motion-safe:duration-300"
+                :style="'width: ' + ((step - 1) * 100) + '%; max-width: calc(100% - 64px);'"
             ></div>
 
             <button
                 type="button"
                 @click="goToStep(1)"
-                class="relative z-10 flex cursor-pointer flex-col items-center gap-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70"
+                class="relative z-10 flex cursor-pointer flex-col items-center gap-1.5 focus:outline-none"
                 :aria-current="step === 1 ? 'step' : false"
             >
                 <div
                     class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold motion-safe:transition-colors motion-safe:duration-200"
                     :class="step === 1
-                        ? 'bg-brand-400 text-brand-foreground shadow-sm ring-4 ring-brand-400/20'
-                        : 'bg-[#12181E] text-[#FFEF4D]'"
+                        ? 'bg-[#FFEF4D] text-[#090d16] shadow-sm ring-4 ring-[#FFEF4D]/20'
+                        : 'bg-[#FFEF4D] text-[#090d16]'"
                 >
                     1
                 </div>
                 <span
-                    class="text-xs font-medium"
-                    :class="step === 1 ? 'font-semibold text-[#8a7808] dark:text-[#FFEF4D]' : 'text-slate-500'"
+                    class="text-[11px]"
+                    :class="step === 1 ? 'font-bold text-[#FFEF4D]' : 'text-zinc-400'"
                 >
-                    {{ __('You') }}
+                    {{ __('01 · You') }}
                 </span>
             </button>
 
             <button
                 type="button"
                 @click="goToStep(2)"
-                class="relative z-10 flex cursor-pointer flex-col items-center gap-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70"
+                class="relative z-10 flex cursor-pointer flex-col items-center gap-1.5 focus:outline-none"
                 :aria-current="step === 2 ? 'step' : false"
             >
                 <div
                     class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold motion-safe:transition-colors motion-safe:duration-200"
                     :class="step === 2
-                        ? 'bg-brand-400 text-brand-foreground shadow-sm ring-4 ring-brand-400/20'
-                        : (step > 2 ? 'bg-[#12181E] text-[#FFEF4D]' : 'bg-slate-200 text-slate-500 dark:bg-zinc-800')"
+                        ? 'bg-[#FFEF4D] text-[#090d16] shadow-sm ring-4 ring-[#FFEF4D]/20'
+                        : (step > 2 ? 'bg-[#FFEF4D] text-[#090d16]' : 'bg-white/[0.06] text-zinc-500 border border-white/[0.1]')"
                 >
                     2
                 </div>
                 <span
-                    class="text-xs font-medium"
-                    :class="step === 2 ? 'font-semibold text-[#8a7808] dark:text-[#FFEF4D]' : 'text-slate-500'"
+                    class="text-[11px]"
+                    :class="step === 2 ? 'font-bold text-[#FFEF4D]' : 'text-zinc-500'"
                 >
-                    {{ __('Your business') }}
+                    {{ __('02 · Business') }}
                 </span>
             </button>
         </div>
@@ -158,6 +159,7 @@
         >
             @csrf
 
+            <!-- STEP 1: Personal Account Info -->
             <div
                 x-show="step === 1"
                 class="space-y-4 motion-safe:transition-opacity motion-safe:duration-200"
@@ -166,7 +168,7 @@
                 x-transition:enter-end="opacity-100"
             >
                 <div>
-                    <x-label for="name" :value="__('Your name')" required />
+                    <x-label for="name" :value="__('Your name')" required class="text-zinc-300 font-mono text-xs" />
                     <x-input
                         id="name"
                         name="name"
@@ -182,7 +184,7 @@
                 </div>
 
                 <div>
-                    <x-label for="email" :value="__('Work email')" required />
+                    <x-label for="email" :value="__('Work email')" required class="text-zinc-300 font-mono text-xs" />
                     <x-input
                         id="email"
                         name="email"
@@ -197,7 +199,7 @@
                 </div>
 
                 <div>
-                    <x-label for="password" :value="__('Password')" required />
+                    <x-label for="password" :value="__('Password')" required class="text-zinc-300 font-mono text-xs" />
                     <x-input
                         id="password"
                         name="password"
@@ -207,14 +209,14 @@
                         placeholder="••••••••"
                         :error="$errors->has('password')"
                     />
-                    <p class="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
+                    <p class="mt-1 text-[11px] text-zinc-500 font-mono">
                         {{ __('At least 8 characters.') }}
                     </p>
                     <x-input-error :messages="$errors->get('password')" />
                 </div>
 
                 <div>
-                    <x-label for="password_confirmation" :value="__('Type the password again')" required />
+                    <x-label for="password_confirmation" :value="__('Type the password again')" required class="text-zinc-300 font-mono text-xs" />
                     <x-input
                         id="password_confirmation"
                         name="password_confirmation"
@@ -228,13 +230,14 @@
                 </div>
 
                 <div class="pt-2">
-                    <x-button type="button" variant="primary" class="w-full" size="lg" @click="continueToBusiness()">
-                        {{ __('Continue') }}
-                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    <x-button type="button" variant="primary" class="w-full h-11 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs transition shadow-sm cursor-pointer flex items-center justify-center gap-2" @click="continueToBusiness()">
+                        <span>{{ __('Continue to Business Details') }}</span>
+                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </x-button>
                 </div>
             </div>
 
+            <!-- STEP 2: Business & Storefront Info -->
             <div
                 x-show="step === 2"
                 x-cloak
@@ -245,7 +248,7 @@
                 x-transition:enter-end="opacity-100"
             >
                 <div>
-                    <x-label for="agency_name" :value="__('Your business name')" required />
+                    <x-label for="agency_name" :value="__('Your business name')" required class="text-zinc-300 font-mono text-xs" />
                     <x-input
                         id="agency_name"
                         name="agency_name"
@@ -261,7 +264,7 @@
                 </div>
 
                 <div>
-                    <x-label for="slug" :value="__('Your page address')" />
+                    <x-label for="slug" :value="__('Your page address')" class="text-zinc-300 font-mono text-xs" />
                     <x-input
                         id="slug"
                         name="slug"
@@ -272,10 +275,10 @@
                         placeholder="{{ __('your-page') }}"
                         :error="$errors->has('slug')"
                     />
-                    <p class="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+                    <p class="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-zinc-400">
                         <span>{{ __('Guests will open:') }}</span>
                         <span
-                            class="font-mono font-medium text-[#8a7808] dark:text-[#FFEF4D]"
+                            class="font-mono font-bold text-[#FFEF4D]"
                             x-text="(slug || 'your-name') + '.' + platformDomain"
                         ></span>
                     </p>
@@ -283,7 +286,7 @@
                 </div>
 
                 <div>
-                    <x-label for="contact_whatsapp" :value="__('WhatsApp number')" />
+                    <x-label for="contact_whatsapp" :value="__('WhatsApp number')" class="text-zinc-300 font-mono text-xs" />
                     <x-input
                         id="contact_whatsapp"
                         name="contact_whatsapp"
@@ -293,25 +296,25 @@
                         placeholder="{{ __('Your WhatsApp number') }}"
                         :error="$errors->has('contact_whatsapp')"
                     />
-                    <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                    <p class="mt-1 text-[11px] text-zinc-500 font-mono">
                         {{ __('Optional. Guests can message you from your page.') }}
                     </p>
                     <x-input-error :messages="$errors->get('contact_whatsapp')" />
                 </div>
 
-                <div class="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
-                    <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                <div class="space-y-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+                    <p class="text-xs leading-relaxed text-zinc-400">
                         {{ __('You can add your payout bank account later. We hold guest money until the trip, then send the listed price to you.') }}
                     </p>
 
-                    <div class="border-t border-slate-200 pt-2 dark:border-zinc-700/60">
+                    <div class="border-t border-white/[0.08] pt-2">
                         <x-checkbox id="terms" name="terms" value="1" x-model="agreedTerms" required>
-                            <span class="select-none text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            <span class="select-none text-xs font-medium text-zinc-300">
                                 {{ __('I agree to the') }}
-                                <a href="{{ route('legal.terms') }}" target="_blank" class="underline">{{ __('platform terms') }}</a>
+                                <a href="{{ route('legal.terms') }}" target="_blank" class="underline hover:text-white">{{ __('platform terms') }}</a>
                                 {{ __('and') }}
-                                <a href="{{ route('legal.privacy') }}" target="_blank" class="underline">{{ __('privacy') }}</a>
-                                <span class="text-rose-500">*</span>
+                                <a href="{{ route('legal.privacy') }}" target="_blank" class="underline hover:text-white">{{ __('privacy') }}</a>
+                                <span class="text-rose-400">*</span>
                             </span>
                         </x-checkbox>
                         <x-input-error :messages="$errors->get('terms')" />
@@ -319,14 +322,13 @@
                 </div>
 
                 <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-                    <x-button type="button" variant="outline" class="w-full sm:w-1/3" @click="goToStep(1)">
+                    <x-button type="button" variant="outline" class="w-full sm:w-1/3 h-11 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border border-white/[0.1] font-mono text-xs cursor-pointer" @click="goToStep(1)">
                         {{ __('Back') }}
                     </x-button>
                     <x-button
                         type="submit"
                         variant="primary"
-                        size="lg"
-                        class="w-full sm:w-2/3 font-semibold shadow-sm"
+                        class="w-full sm:w-2/3 h-11 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs transition shadow-sm flex items-center justify-center gap-2"
                         x-bind:disabled="!agreedTerms || submitting"
                         x-bind:class="(!agreedTerms || submitting) ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'"
                         data-test="register-user-button"
@@ -344,11 +346,11 @@
             </div>
         </form>
 
-        <div class="pt-1 text-center text-sm text-slate-600 dark:text-slate-400">
+        <div class="pt-1 text-center text-xs text-zinc-400 font-mono">
             <span>{{ __('Already have an account?') }}</span>
             <a
                 href="{{ route('login') }}"
-                class="font-semibold text-[#8a7808] underline hover:text-[#6b5d06] dark:text-[#FFEF4D] dark:hover:text-[#fae639]"
+                class="font-bold text-[#FFEF4D] hover:underline"
                 wire:navigate
             >{{ __('Log in') }}</a>
         </div>
