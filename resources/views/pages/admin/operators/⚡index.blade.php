@@ -189,17 +189,13 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
 }; ?>
 
 <div class="space-y-6">
-    <div class="op-hero flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-1">
-        <div>
-            <h1 class="text-[20px] font-medium leading-[1.6] text-[#1C2024] dark:text-white">
-                {{ __('Operators') }}
-            </h1>
-            <p class="text-[14px] font-normal leading-[1.43] text-[#60646C] dark:text-slate-400">
-                {{ __('Who is on the platform, and whether they can sell.') }}
-            </p>
-        </div>
-
-        <div class="flex items-center gap-2">
+    <x-page-header
+        class="op-hero"
+        :title="__('Operators')"
+        :subtitle="__('Who is on the platform, and whether they can sell.')"
+        icon="fa-building"
+    >
+        <x-slot:actions>
             <button
                 type="button"
                 wire:click="exportCsv"
@@ -208,8 +204,8 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
                 <i class="fa-solid fa-download text-[11px] text-[#8B8D98]"></i>
                 <span>{{ __('Export CSV') }}</span>
             </button>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     {{-- Top 4 KPI Metrics --}}
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">

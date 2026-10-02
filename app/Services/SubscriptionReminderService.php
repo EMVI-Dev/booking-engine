@@ -31,7 +31,7 @@ class SubscriptionReminderService
             ? (int) now()->diffInDays($operator->plan_expires_at, false)
             : 30;
 
-        Mail::to($recipient)->send(new SubscriptionRenewalReminderMail($operator, $plan, $daysRemaining));
+        Mail::to($recipient)->queue(new SubscriptionRenewalReminderMail($operator, $plan, $daysRemaining));
 
         $this->slack->renewalReminderSent($operator, $daysRemaining);
 

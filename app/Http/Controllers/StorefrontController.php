@@ -540,22 +540,14 @@ class StorefrontController extends Controller
             'contact' => ['required', 'string', 'max:255'],
         ]);
 
-        $code = strtoupper(trim($validated['code']));
-        $contact = strtolower(trim($validated['contact']));
-        $digits = preg_replace('/\D+/', '', $contact) ?? '';
-
         $reservation = Reservation::query()
             ->where('operator_id', $agent->id)
-            ->where('code', $code)
-            ->where(function ($query) use ($contact, $digits): void {
-                $query->whereRaw('LOWER(guest_email) = ?', [$contact])
-                    ->orWhereRaw('LOWER(guest_name) = ?', [$contact]);
-
-                if ($digits !== '') {
-                    $query->orWhere('guest_contact', 'like', '%'.$digits.'%');
-                }
-            })
+            ->where('code', strtoupper(trim($validated['code'])))
             ->first();
+
+        if ($reservation && ! $reservation->matchesGuestContact($validated['contact'])) {
+            $reservation = null;
+        }
 
         if (! $reservation) {
             return back()

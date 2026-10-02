@@ -34,7 +34,7 @@ class VendorDispatchService
             if (! empty($vendor->reservation_email)) {
                 try {
                     Mail::to($vendor->reservation_email)
-                        ->send(new VendorBookingNotificationMail($reservation, $vendor, $activities));
+                        ->queue(new VendorBookingNotificationMail($reservation, $vendor, $activities));
                 } catch (Throwable $e) {
                     report($e);
                 }
@@ -58,7 +58,7 @@ class VendorDispatchService
             if (! empty($vendor->reservation_email)) {
                 try {
                     Mail::to($vendor->reservation_email)
-                        ->send(new VendorBookingCancelledMail($reservation, $vendor, $activities));
+                        ->queue(new VendorBookingCancelledMail($reservation, $vendor, $activities));
                 } catch (Throwable $e) {
                     report($e);
                 }

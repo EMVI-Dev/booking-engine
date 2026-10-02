@@ -268,31 +268,29 @@ new #[Title('Create Activity Item')] class extends Component {
             </div>
         @else
             <!-- Breadcrumb & Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <div class="mb-2">
-                        <x-back-link :href="route('products.index')">
-                            {{ __('Back to activities') }}
-                        </x-back-link>
-                    </div>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Create Activity / Inventory Item') }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                        {{ __('Add an activity session, day admission, guide service, or single-day inventory item.') }}
-                    </p>
-                </div>
+            <div class="space-y-2">
+                <x-back-link :href="route('products.index')">
+                    {{ __('Back to activities') }}
+                </x-back-link>
 
-                <div class="hidden sm:flex flex-wrap items-center gap-2">
-                    <x-button :href="route('products.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
-                        {{ __('Cancel') }}
-                    </x-button>
-                    <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs"
-                        :disabled="!$this->isProfileComplete">
-                        <i class="fa-solid fa-check mr-1.5 text-xs"></i>
-                        {{ __('Save & Publish') }}
-                    </x-button>
-                </div>
+                <x-page-header
+                    :title="__('Create Activity / Inventory Item')"
+                    :subtitle="__('Add an activity session, day admission, guide service, or single-day inventory item.')"
+                    icon="fa-compass"
+                >
+                    <x-slot:actions>
+                        <div class="hidden sm:flex flex-wrap items-center gap-2">
+                            <x-button :href="route('products.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
+                                {{ __('Cancel') }}
+                            </x-button>
+                            <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs"
+                                :disabled="!$this->isProfileComplete">
+                                <i class="fa-solid fa-check mr-1.5 text-xs"></i>
+                                {{ __('Save & Publish') }}
+                            </x-button>
+                        </div>
+                    </x-slot:actions>
+                </x-page-header>
             </div>
 
             <!-- Main Create Form -->

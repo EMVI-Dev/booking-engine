@@ -24,6 +24,7 @@ use App\Models\WalletTransaction;
 use App\Services\DomainResolverService;
 use App\Services\MediaStore;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -676,13 +677,17 @@ class DemoOperatorSeeder extends Seeder
         $directory = $media->directoryFor($operator, $within);
 
         if ($this->shouldDownloadDemoImages()) {
-            $response = Http::timeout(20)
-                ->connectTimeout(5)
-                ->withUserAgent('TravelEngine Demo Seeder')
-                ->get($url);
+            try {
+                $response = Http::timeout(20)
+                    ->connectTimeout(5)
+                    ->withUserAgent('TravelEngine Demo Seeder')
+                    ->get($url);
 
-            if ($response->successful() && str_starts_with(strtolower((string) $response->header('Content-Type')), 'image/')) {
-                return $media->storeImageContents($response->body(), $directory, $maxWidth);
+                if ($response->successful() && str_starts_with(strtolower((string) $response->header('Content-Type')), 'image/')) {
+                    return $media->storeImageContents($response->body(), $directory, $maxWidth);
+                }
+            } catch (ConnectionException) {
+                // No outbound access (firewalled server): fall back to the placeholder so seeding never fails.
             }
         }
 

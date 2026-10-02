@@ -11,9 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('vendors', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();
+            $table->string('name');
+            $table->string('contact_person')->nullable();
+            $table->string('reservation_email');
+            $table->string('phone')->nullable();
+            $table->json('payout_details')->nullable();
+            $table->json('metadata')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            $table->index(['operator_id', 'is_active']);
+        });
+
         Schema::create('products', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();
+            $table->foreignUlid('vendor_id')->nullable()->constrained('vendors')->nullOnDelete();
             $table->string('name');
             $table->string('slug');
             $table->text('description')->nullable();
@@ -85,5 +101,6 @@ return new class extends Migration
         Schema::dropIfExists('package_products');
         Schema::dropIfExists('packages');
         Schema::dropIfExists('products');
+        Schema::dropIfExists('vendors');
     }
 };

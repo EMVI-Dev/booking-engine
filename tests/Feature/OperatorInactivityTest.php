@@ -1,10 +1,13 @@
 <?php
 
 use App\Enums\OperatorStatus;
+use App\Enums\ReservationStatus;
 use App\Http\Middleware\TrackOperatorActivity;
 use App\Mail\OperatorAccountSuspendedInactivityMail;
 use App\Mail\OperatorInactivityReminderMail;
 use App\Models\Operator;
+use App\Models\Plan;
+use App\Models\Reservation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -130,4 +133,36 @@ test('check-inactivity command suspends operators inactive for 90 days (3 months
 
     Http::assertSent(fn ($request) => str_contains($request['text'], 'Operator status:')
         && str_contains($request['text'], 'Abandoned Charters'));
+});
+
+test('check-inactivity only reminds operators who are still paying or have upcoming bookings', function () {
+    Mail::fake();
+    Http::fake();
+    Plan::seedDefaultPlans();
+
+    $paying = Operator::factory()->create([
+        'status' => OperatorStatus::Approved,
+        'plan_id' => Plan::where('slug', 'growth')->value('id'),
+        'plan_expires_at' => now()->addDays(20),
+        'last_active_at' => now()->subDays(95),
+    ]);
+
+    $booked = Operator::factory()->create([
+        'status' => OperatorStatus::Approved,
+        'last_active_at' => now()->subDays(95),
+    ]);
+    Reservation::factory()->create([
+        'operator_id' => $booked->id,
+        'status' => ReservationStatus::Confirmed,
+        'requested_date' => now()->addWeek()->toDateString(),
+    ]);
+
+    $this->artisan('operators:check-inactivity')
+        ->expectsOutputToContain('Reminded: 2, Suspended: 0')
+        ->assertSuccessful();
+
+    expect($paying->fresh()->status)->toBe(OperatorStatus::Approved)
+        ->and($booked->fresh()->status)->toBe(OperatorStatus::Approved);
+
+    Mail::assertQueued(OperatorInactivityReminderMail::class, 2);
 });

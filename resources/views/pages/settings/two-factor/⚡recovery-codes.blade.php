@@ -46,23 +46,24 @@ new class extends Component {
 }; ?>
 
 <div
-    class="py-5 space-y-4 border rounded-xl border-zinc-200 dark:border-zinc-800 p-5"
+    class="p-4 sm:p-5 space-y-4 border rounded-[8px] border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d]"
     wire:cloak
     x-data="{ showRecoveryCodes: false }"
 >
     <div class="space-y-1">
-        <h4 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ __('2FA recovery codes') }}</h4>
-        <p class="text-xs text-zinc-500 dark:text-zinc-400">
+        <h4 class="text-xs sm:text-sm font-semibold text-[#12181E] dark:text-[#F4F5F7]">{{ __('2FA recovery codes') }}</h4>
+        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2]">
             {{ __('Recovery codes let you regain access if you lose your 2FA device. Store them in a secure password manager.') }}
         </p>
     </div>
 
     <div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
             <x-button
                 x-show="!showRecoveryCodes"
                 variant="outline"
                 size="sm"
+                class="rounded-[6px]"
                 @click="showRecoveryCodes = true;"
             >
                 {{ __('View recovery codes') }}
@@ -72,6 +73,7 @@ new class extends Component {
                 x-show="showRecoveryCodes"
                 variant="outline"
                 size="sm"
+                class="rounded-[6px]"
                 @click="showRecoveryCodes = false"
             >
                 {{ __('Hide recovery codes') }}
@@ -82,6 +84,7 @@ new class extends Component {
                     x-show="showRecoveryCodes"
                     variant="ghost"
                     size="sm"
+                    class="rounded-[6px]"
                     wire:click="regenerateRecoveryCodes"
                 >
                     {{ __('Regenerate codes') }}
@@ -92,18 +95,18 @@ new class extends Component {
         <div
             x-show="showRecoveryCodes"
             x-transition
-            class="mt-4 space-y-3"
+            class="mt-4 space-y-2.5"
             style="display: none;"
         >
             @if (filled($recoveryCodes))
-                <div class="grid grid-cols-2 gap-2 p-3 font-mono text-xs rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 font-mono text-xs rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] text-[#12181E] dark:text-[#F4F5F7]">
                     @foreach($recoveryCodes as $code)
-                        <div class="select-text py-1">
+                        <div class="select-text py-1 px-1.5">
                             {{ $code }}
                         </div>
                     @endforeach
                 </div>
-                <p class="text-xs text-zinc-500">
+                <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                     {{ __('Each recovery code can be used once to access your account and will be removed after use.') }}
                 </p>
             @endif

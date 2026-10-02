@@ -156,7 +156,7 @@ class SubscriptionProrationService
             );
 
             if ($couponCode) {
-                PlatformCoupon::findForSubscription($couponCode, $operator)?->incrementUsage();
+                PlatformCoupon::findForSubscription($couponCode, $operator)?->recordRedemptionBy($operator);
 
                 $breakdown = $payment->breakdown ?? [];
                 $breakdown['coupon_code'] = $couponCode;
@@ -217,7 +217,7 @@ class SubscriptionProrationService
             // Count the promo exactly once, when the invoice is actually paid (any gateway path).
             $couponCode = $breakdown['coupon_code'] ?? null;
             if (is_string($couponCode) && $couponCode !== '') {
-                PlatformCoupon::findForSubscription($couponCode, $operator)?->incrementUsage();
+                PlatformCoupon::findForSubscription($couponCode, $operator)?->recordRedemptionBy($operator);
             }
 
             $fromPlanName = $lockedPayment->previousPlan?->name ?? $operator->getPlan()->name;

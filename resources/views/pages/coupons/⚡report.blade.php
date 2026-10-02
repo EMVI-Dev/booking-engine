@@ -220,17 +220,17 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                 {{ __('All Promo Codes') }}
             </x-back-link>
 
-            <div class="flex items-start gap-3.5 min-w-0">
-                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-[#FFEF4D] font-mono font-bold text-lg flex items-center justify-center shrink-0 border border-amber-500/20">
+            <div class="flex items-start gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-[8px] bg-[#FFEF4D]/20 text-[#8a7808] dark:text-[#FFEF4D] font-mono font-semibold text-sm flex items-center justify-center shrink-0 border border-[#FFEF4D]/40">
                     <i class="fa-solid fa-ticket"></i>
                 </div>
 
                 <div class="min-w-0 space-y-1">
-                    <div class="flex flex-wrap items-center gap-2.5">
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono break-all">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="text-xl font-semibold tracking-tight text-[#12181E] dark:text-white font-mono break-all">
                             {{ $coupon->code }}
                         </h1>
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 dark:bg-[#141821] dark:text-slate-200 border border-slate-200 dark:border-[#1e2433]">
+                        <span class="px-2 py-0.5 rounded-[4px] text-xs font-medium bg-[#F8F9FA] text-[#12181E] dark:bg-[#151a26] dark:text-slate-200 border border-[#E4E5E9] dark:border-[#1E2433]">
                             @if ($coupon->discount_type === 'percentage')
                                 {{ (float) $coupon->discount_value }}% {{ __('OFF') }}
                             @else
@@ -238,25 +238,25 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                             @endif
                         </span>
                         @if ($isExpired)
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50">
+                            <span class="px-2 py-0.5 rounded-[4px] text-xs font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40">
                                 {{ __('Expired') }}
                             </span>
                         @elseif ($isLimitReached)
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50">
+                            <span class="px-2 py-0.5 rounded-[4px] text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40">
                                 {{ __('Limit Reached') }}
                             </span>
                         @elseif (! $coupon->is_active)
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                            <span class="px-2 py-0.5 rounded-[4px] text-xs font-medium bg-[#F8F9FA] text-[#5A6578] dark:bg-[#151a26] dark:text-zinc-300 border border-[#E4E5E9] dark:border-[#1E2433]">
                                 {{ __('Inactive') }}
                             </span>
                         @else
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
+                            <span class="px-2 py-0.5 rounded-[4px] text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40">
                                 {{ __('Active on Storefront') }}
                             </span>
                         @endif
                     </div>
 
-                    <p class="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] flex flex-wrap items-center gap-x-2.5 gap-y-1">
                         @if ($coupon->description)
                             <span>{{ $coupon->description }}</span>
                             <span>&bull;</span>
@@ -282,7 +282,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                 wire:loading.attr="disabled"
                 variant="secondary"
                 size="sm"
-                class="w-full sm:w-auto justify-center"
+                class="w-full sm:w-auto justify-center rounded-[6px] text-xs font-medium shadow-none"
             >
                 <span wire:loading.remove wire:target="exportCsv">
                     <i class="fa-solid fa-file-arrow-down mr-1.5 text-xs"></i>
@@ -354,6 +354,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
             <div class="w-full sm:w-56">
                 <x-select
                     wire:model.live="sort"
+                    class="h-9 rounded-[6px] text-xs font-medium"
                     :options="[
                         'latest' => __('Newest First'),
                         'oldest' => __('Oldest First'),
@@ -380,17 +381,17 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
     </x-toolbar>
 
     <!-- Itemized Redemptions Table & Mobile Card List -->
-    <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
-        <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-[#1e2433] flex items-center justify-between gap-4 bg-slate-50/50 dark:bg-[#10141d]/50">
+    <div class="rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden">
+        <div class="p-3.5 sm:p-4 border-b border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-between gap-4">
             <div>
-                <h3 class="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+                <h3 class="text-sm font-semibold tracking-tight text-[#12181E] dark:text-white">
                     {{ __('Itemized Redemption Transactions') }}
                 </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-0.5">
                     {{ __('Every booking checkout where code :code was redeemed.', ['code' => $coupon->code]) }}
                 </p>
             </div>
-            <span class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+            <span class="text-xs font-mono font-medium text-[#5A6578] dark:text-[#9DA4B2]">
                 {{ $this->redemptions->total() }} {{ __('records') }}
             </span>
         </div>
@@ -405,11 +406,11 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                     $net = $res->getChargedAmount();
                     $waUrl = \App\Services\PhoneNumber::whatsAppLink($res->guest_contact);
                 @endphp
-                <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] space-y-3 shadow-2xs">
+                <div class="p-3.5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] space-y-2.5 shadow-none">
                     <!-- Top row: Ref + Status -->
                     <div class="flex items-center justify-between gap-2">
                         <a href="{{ route('reservations.show', $res->code) }}" wire:navigate
-                            class="font-mono font-bold text-xs text-slate-900 dark:text-[#FFEF4D] hover:underline inline-flex items-center gap-1">
+                            class="font-mono font-semibold text-xs text-[#12181E] dark:text-[#FFEF4D] hover:underline inline-flex items-center gap-1">
                             <span>#{{ $res->code }}</span>
                             <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70"></i>
                         </a>
@@ -419,20 +420,20 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                     <!-- Middle: Guest & Experience -->
                     <div class="space-y-1 text-xs">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="font-bold text-slate-900 dark:text-white truncate">
+                            <span class="font-semibold text-xs text-[#12181E] dark:text-white truncate">
                                 {{ $res->guest_name }}
                             </span>
                             @if ($res->guest_contact && $waUrl)
                                 <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="text-emerald-600 hover:text-emerald-700 text-xs shrink-0 flex items-center gap-1" title="{{ __('WhatsApp') }}">
                                     <i class="fa-brands fa-whatsapp text-sm"></i>
-                                    <span class="text-[10px] font-semibold">{{ __('Chat') }}</span>
+                                    <span class="text-[10px] font-medium">{{ __('Chat') }}</span>
                                 </a>
                             @endif
                         </div>
-                        <div class="text-slate-500 dark:text-slate-400 text-[11px] truncate">
+                        <div class="text-[#5A6578] dark:text-[#9DA4B2] text-[11px] truncate">
                             {{ $res->bookable?->name ?? ($res->bookable?->title ?? __('Direct Experience')) }}
                         </div>
-                        <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                        <div class="flex items-center gap-2 text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                             <span><i class="fa-solid fa-users text-[9px] mr-1"></i>{{ $res->pax_count }} {{ __('pax') }}</span>
                             <span>&bull;</span>
                             <span><i class="fa-regular fa-calendar text-[9px] mr-1"></i>{{ $res->requested_date?->format('d M Y') }}</span>
@@ -440,32 +441,32 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                     </div>
 
                     <!-- Bottom: Pricing & View Button -->
-                    <div class="pt-2.5 border-t border-slate-100 dark:border-[#1e2433] flex items-center justify-between gap-2">
+                    <div class="pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-between gap-2">
                         <div class="space-y-0.5 font-mono">
-                            <div class="text-[11px] text-slate-400">
+                            <div class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                                 <span>{{ __('Subtotal:') }} Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                                 @if ($discount > 0)
-                                    <span class="text-amber-600 dark:text-amber-400 font-semibold ml-1">-Rp {{ number_format($discount, 0, ',', '.') }}</span>
+                                    <span class="text-amber-600 dark:text-amber-400 font-medium ml-1">-Rp {{ number_format($discount, 0, ',', '.') }}</span>
                                 @endif
                             </div>
-                            <div class="font-black text-sm text-slate-900 dark:text-white">
+                            <div class="font-semibold text-xs text-[#12181E] dark:text-white">
                                 Rp {{ number_format($net, 0, ',', '.') }}
                             </div>
                         </div>
 
-                        <x-button :href="route('reservations.show', $res->code)" variant="secondary" size="xs" wire:navigate class="shrink-0 font-bold">
+                        <x-button :href="route('reservations.show', $res->code)" variant="secondary" size="xs" wire:navigate class="shrink-0 font-medium text-xs rounded-[6px] shadow-none">
                             <span>{{ __('View') }}</span>
                             <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
                         </x-button>
                     </div>
                 </div>
             @empty
-                <div class="p-8 text-center text-slate-400 dark:text-slate-500">
-                    <div class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-[#141821] text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-[#1e2433] flex items-center justify-center mx-auto text-base mb-2">
+                <div class="p-8 text-center text-[#5A6578] dark:text-[#9DA4B2]">
+                    <div class="w-10 h-10 rounded-[8px] bg-[#F8F9FA] dark:bg-[#151a26] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center mx-auto text-base mb-2">
                         <i class="fa-solid fa-ticket"></i>
                     </div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-200 text-xs">{{ __('No redemptions found') }}</h4>
-                    <p class="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
+                    <h4 class="font-semibold text-[#12181E] dark:text-white text-xs">{{ __('No redemptions found') }}</h4>
+                    <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1 max-w-xs mx-auto">
                         @if ($search || $status !== 'all')
                             {{ __('No transactions matched your search or status filter.') }}
                         @else
@@ -480,18 +481,18 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead>
-                    <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        <th class="py-3.5 px-4 sm:px-6">{{ __('Booking Ref') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Guest Details') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Experience & Pax') }}</th>
-                        <th class="py-3.5 px-4 text-right">{{ __('Subtotal') }}</th>
-                        <th class="py-3.5 px-4 text-right">{{ __('Discount') }}</th>
-                        <th class="py-3.5 px-4 text-right">{{ __('Net Paid') }}</th>
-                        <th class="py-3.5 px-4 text-center">{{ __('Status') }}</th>
-                        <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
+                    <tr class="bg-[#F8F9FA] dark:bg-[#10141d] border-b border-[#E4E5E9] dark:border-[#1E2433] text-[11px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
+                        <th class="py-3 px-4 sm:px-6">{{ __('Booking Ref') }}</th>
+                        <th class="py-3 px-4">{{ __('Guest Details') }}</th>
+                        <th class="py-3 px-4">{{ __('Experience & Pax') }}</th>
+                        <th class="py-3 px-4 text-right">{{ __('Subtotal') }}</th>
+                        <th class="py-3 px-4 text-right">{{ __('Discount') }}</th>
+                        <th class="py-3 px-4 text-right">{{ __('Net Paid') }}</th>
+                        <th class="py-3 px-4 text-center">{{ __('Status') }}</th>
+                        <th class="py-3 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
+                <tbody class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                     @forelse ($this->redemptions as $res)
                         @php
                             $snap = $res->terms_snapshot ?? [];
@@ -500,35 +501,35 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                             $net = $res->getChargedAmount();
                             $waUrl = \App\Services\PhoneNumber::whatsAppLink($res->guest_contact);
                         @endphp
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
+                        <tr class="hover:bg-[#F8F9FA] dark:hover:bg-[#151a26]/60 transition">
                             <!-- Booking Ref -->
-                            <td class="py-3.5 px-4 sm:px-6">
+                            <td class="py-3 px-4 sm:px-6">
                                 <div class="space-y-0.5">
                                     <a
                                         href="{{ route('reservations.show', $res->code) }}"
                                         wire:navigate
-                                        class="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-[#FFEF4D] transition inline-flex items-center gap-1"
+                                        class="font-mono font-semibold text-xs sm:text-sm text-[#12181E] dark:text-white hover:text-amber-600 dark:hover:text-[#FFEF4D] transition inline-flex items-center gap-1"
                                     >
                                         <span>#{{ $res->code }}</span>
                                         <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70 group-hover:opacity-100"></i>
                                     </a>
-                                    <div class="text-[11px] text-slate-400 font-mono">
+                                    <div class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] font-mono">
                                         {{ $res->created_at?->format('d M Y, H:i') }}
                                     </div>
                                 </div>
                             </td>
 
                             <!-- Guest Details -->
-                            <td class="py-3.5 px-4">
+                            <td class="py-3 px-4">
                                 <div class="space-y-0.5">
-                                    <div class="font-bold text-slate-900 dark:text-white truncate max-w-[180px]">
+                                    <div class="font-semibold text-xs text-[#12181E] dark:text-white truncate max-w-[180px]">
                                         {{ $res->guest_name }}
                                     </div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[180px]">
+                                    <div class="text-xs text-[#5A6578] dark:text-[#9DA4B2] truncate max-w-[180px]">
                                         {{ $res->guest_email ?: __('No email') }}
                                     </div>
                                     @if ($res->guest_contact)
-                                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 pt-0.5">
+                                        <div class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] flex items-center gap-1.5 pt-0.5">
                                             <span>{{ $res->guest_contact }}</span>
                                             @if ($waUrl)
                                                 <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="text-emerald-600 hover:text-emerald-700" title="{{ __('Chat on WhatsApp') }}">
@@ -541,45 +542,46 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                             </td>
 
                             <!-- Experience & Pax -->
-                            <td class="py-3.5 px-4">
+                            <td class="py-3 px-4">
                                 <div class="space-y-0.5">
-                                    <div class="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[200px]" title="{{ $res->bookable?->name ?? ($res->bookable?->title ?? __('Direct Experience')) }}">
+                                    <div class="font-medium text-xs text-[#12181E] dark:text-slate-200 truncate max-w-[200px]" title="{{ $res->bookable?->name ?? ($res->bookable?->title ?? __('Direct Experience')) }}">
                                         {{ $res->bookable?->name ?? ($res->bookable?->title ?? __('Direct Experience')) }}
                                     </div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                        <span><i class="fa-solid fa-users text-[10px] text-slate-400"></i> {{ $res->pax_count }} {{ __('pax') }}</span>
+                                    <div class="text-xs text-[#5A6578] dark:text-[#9DA4B2] flex items-center gap-2">
+                                        <span><i class="fa-solid fa-users text-[10px] text-[#5A6578] dark:text-[#9DA4B2]"></i> {{ $res->pax_count }} {{ __('pax') }}</span>
                                         <span>&bull;</span>
-                                        <span><i class="fa-regular fa-calendar text-[10px] text-slate-400"></i> {{ $res->requested_date?->format('d M Y') }}</span>
+                                        <span><i class="fa-regular fa-calendar text-[10px] text-[#5A6578] dark:text-[#9DA4B2]"></i> {{ $res->requested_date?->format('d M Y') }}</span>
                                     </div>
                                 </div>
                             </td>
 
                             <!-- Subtotal -->
-                            <td class="py-3.5 px-4 text-right font-mono text-slate-600 dark:text-slate-400">
+                            <td class="py-3 px-4 text-right font-mono text-[#5A6578] dark:text-[#9DA4B2]">
                                 Rp {{ number_format($subtotal, 0, ',', '.') }}
                             </td>
 
                             <!-- Discount Given -->
-                            <td class="py-3.5 px-4 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                            <td class="py-3 px-4 text-right font-mono font-medium text-amber-600 dark:text-amber-400">
                                 - Rp {{ number_format($discount, 0, ',', '.') }}
                             </td>
 
                             <!-- Net Paid -->
-                            <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
+                            <td class="py-3 px-4 text-right font-mono font-semibold text-[#12181E] dark:text-white">
                                 Rp {{ number_format($net, 0, ',', '.') }}
                             </td>
 
                             <!-- Status Badge -->
-                            <td class="py-3.5 px-4 text-center">
+                            <td class="py-3 px-4 text-center">
                                 <x-status-badge :status="$res->status" />
                             </td>
 
                             <!-- Action -->
-                            <td class="py-3.5 px-4 sm:px-6 text-right">
+                            <td class="py-3 px-4 sm:px-6 text-right">
                                 <x-button
                                     :href="route('reservations.show', $res->code)"
                                     variant="secondary"
                                     size="xs"
+                                    class="rounded-[6px] font-medium text-xs shadow-none"
                                 >
                                     <span>{{ __('View') }}</span>
                                     <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
@@ -588,12 +590,12 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="p-16 text-center text-slate-400 dark:text-slate-500">
-                                <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-[#141821] text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-[#1e2433] flex items-center justify-center mx-auto text-xl mb-3">
+                            <td colspan="8" class="p-16 text-center text-[#5A6578] dark:text-[#9DA4B2]">
+                                <div class="w-10 h-10 rounded-[8px] bg-[#F8F9FA] dark:bg-[#151a26] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center mx-auto text-base mb-2">
                                     <i class="fa-solid fa-ticket"></i>
                                 </div>
-                                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">{{ __('No redemptions found') }}</h4>
-                                <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                                <h4 class="font-semibold text-[#12181E] dark:text-white text-sm">{{ __('No redemptions found') }}</h4>
+                                <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-1 max-w-sm mx-auto">
                                     @if ($search || $status !== 'all')
                                         {{ __('No transactions matched your search or status filter. Try clearing your filters.') }}
                                     @else
@@ -608,9 +610,10 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
         </div>
 
         @if ($this->redemptions->hasPages())
-            <div class="p-4 border-t border-slate-100 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#10141d]">
+            <div class="p-3 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                 {{ $this->redemptions->links() }}
             </div>
         @endif
+    </div>
     </div>
 </div>

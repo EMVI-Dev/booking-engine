@@ -58,15 +58,22 @@ class OperatorCouponRedemption extends Model
     }
 
     /**
-     * Record a redemption for the given operator and coupon.
-     * Billing cycle is the current month key (e.g. "2026-08").
+     * The billing cycle key used for once_per_period promos (e.g. "2026-08").
+     */
+    public static function currentBillingCycle(): string
+    {
+        return now()->format('Y-m');
+    }
+
+    /**
+     * Record a redemption for the given operator and coupon in the current billing cycle.
      */
     public static function record(PlatformCoupon $coupon, Operator $operator): self
     {
         return self::create([
             'platform_coupon_id' => $coupon->id,
             'operator_id' => $operator->id,
-            'billing_cycle' => now()->format('Y-m'),
+            'billing_cycle' => self::currentBillingCycle(),
             'redeemed_at' => now(),
         ]);
     }

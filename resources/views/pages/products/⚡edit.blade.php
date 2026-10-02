@@ -312,38 +312,38 @@ new #[Title('Edit Activity Item')] class extends Component {
     <div class="space-y-6">
 
         <!-- Breadcrumb & Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <div class="mb-2 flex min-w-0 flex-wrap items-center gap-2">
-                    <x-back-link :href="route('products.index')">
-                        {{ __('Back to activities') }}
-                    </x-back-link>
-                    <span class="hidden text-op-subtle sm:inline" aria-hidden="true">&bull;</span>
-                    <span class="hidden min-w-0 truncate text-sm font-semibold text-op-subtle sm:inline">{{ $product->name }}</span>
-                </div>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Edit Activity / Inventory Item') }}
-                </h1>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    {{ __('Update details, pricing, capacities, and photo assets.') }}
-                </p>
+        <div class="space-y-2">
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+                <x-back-link :href="route('products.index')">
+                    {{ __('Back to activities') }}
+                </x-back-link>
+                <span class="hidden text-op-subtle sm:inline" aria-hidden="true">&bull;</span>
+                <span class="hidden min-w-0 truncate text-sm font-semibold text-op-subtle sm:inline">{{ $product->name }}</span>
             </div>
 
-            <div class="hidden sm:flex flex-wrap items-center gap-2">
-                <x-button type="button" variant="danger" x-data=""
-                    x-on:click.prevent="$dispatch('open-modal', 'confirm-product-deletion')"
-                    class="font-semibold text-xs shadow-xs" title="{{ __('Delete Item') }}">
-                    <i class="fa-solid fa-trash mr-1.5 text-xs"></i>
-                    {{ __('Delete') }}
-                </x-button>
-                <x-button :href="route('products.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
-                    {{ __('Cancel') }}
-                </x-button>
-                <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs">
-                    <i class="fa-solid fa-check mr-1.5 text-xs"></i>
-                    {{ __('Save Changes') }}
-                </x-button>
-            </div>
+            <x-page-header
+                :title="__('Edit Activity / Inventory Item')"
+                :subtitle="__('Update details, pricing, capacities, and photo assets.')"
+                icon="fa-compass"
+            >
+                <x-slot:actions>
+                    <div class="hidden sm:flex flex-wrap items-center gap-2">
+                        <x-button type="button" variant="danger" x-data=""
+                            x-on:click.prevent="$dispatch('open-modal', 'confirm-product-deletion')"
+                            class="font-semibold text-xs shadow-xs" title="{{ __('Delete Item') }}">
+                            <i class="fa-solid fa-trash mr-1.5 text-xs"></i>
+                            {{ __('Delete') }}
+                        </x-button>
+                        <x-button :href="route('products.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
+                            {{ __('Cancel') }}
+                        </x-button>
+                        <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs">
+                            <i class="fa-solid fa-check mr-1.5 text-xs"></i>
+                            {{ __('Save Changes') }}
+                        </x-button>
+                    </div>
+                </x-slot:actions>
+            </x-page-header>
         </div>
 
         <!-- Main Edit Form -->

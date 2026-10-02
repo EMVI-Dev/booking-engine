@@ -266,12 +266,12 @@ new #[Title('Guest CRM')] class extends Component {
             icon="fa-address-book"
         >
             <x-slot:actions>
-                <x-button type="button" wire:click="exportCsv" variant="secondary">
-                    <i class="fa-solid fa-file-csv text-xs"></i>
+                <x-button type="button" wire:click="exportCsv" variant="secondary" class="rounded-[6px] text-xs font-medium shadow-none">
+                    <i class="fa-solid fa-file-csv text-xs mr-1"></i>
                     <span>{{ __('Export CSV') }}</span>
                 </x-button>
-                <x-button :href="route('reservations.index')" variant="secondary" wire:navigate>
-                    <i class="fa-solid fa-calendar-check text-xs"></i>
+                <x-button :href="route('reservations.index')" variant="secondary" wire:navigate class="rounded-[6px] text-xs font-medium shadow-none">
+                    <i class="fa-solid fa-calendar-check text-xs mr-1"></i>
                     <span>{{ __('All Bookings') }}</span>
                 </x-button>
             </x-slot:actions>
@@ -324,7 +324,7 @@ new #[Title('Guest CRM')] class extends Component {
                     @endif
                 </div>
                 <div class="w-full sm:w-56">
-                    <x-select wire:model.live="sortBy" :options="[
+                    <x-select wire:model.live="sortBy" class="h-9 rounded-[6px] text-xs font-medium" :options="[
                         'recent' => __('Recently Active'),
                         'spent' => __('Highest Lifetime Spend'),
                         'bookings' => __('Most Bookings Count'),
@@ -353,92 +353,107 @@ new #[Title('Guest CRM')] class extends Component {
             </x-filter-tabs>
         </x-toolbar>
 
-        <div
-            class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
-            <div class="md:hidden space-y-3 p-3" wire:loading.class="opacity-60">
-                @forelse ($this->guests as $guest)
-                    @php
-                        $initials = strtoupper(substr($guest->name, 0, 2));
-                        $totalSpent = (float) ($guest->lifetime_spent ?? $guest->total_spent);
-                        $isRepeat = $guest->reservations_count > 1;
-                        $isDuplicate = isset($this->duplicateGuestIds[$guest->id]);
-                        $lastTrip = $guest->last_trip_at ? \Illuminate\Support\Carbon::parse($guest->last_trip_at) : null;
-                        $nextTrip = $guest->next_trip_at ? \Illuminate\Support\Carbon::parse($guest->next_trip_at) : null;
-                    @endphp
-                    <div
-                        class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black text-xs flex items-center justify-center shrink-0">
-                                {{ $initials }}
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <span class="font-extrabold text-xs text-slate-900 dark:text-white block truncate">
-                                    {{ $guest->name }}
-                                </span>
-                                <div class="flex flex-wrap gap-1 mt-0.5">
-                                    @if ($isRepeat)
-                                        <span
-                                            class="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
-                                            {{ __('Repeat') }}
-                                        </span>
-                                    @endif
-                                    @if ($isDuplicate)
-                                        <span
-                                            class="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
-                                            {{ __('Duplicate?') }}
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
+        <!-- Mobile Card List (md:hidden) -->
+        <div class="space-y-3 md:hidden" wire:loading.class="opacity-60">
+            @forelse ($this->guests as $guest)
+                @php
+                    $initials = strtoupper(substr($guest->name, 0, 2));
+                    $totalSpent = (float) ($guest->lifetime_spent ?? $guest->total_spent);
+                    $isRepeat = $guest->reservations_count > 1;
+                    $isDuplicate = isset($this->duplicateGuestIds[$guest->id]);
+                    $lastTrip = $guest->last_trip_at ? \Illuminate\Support\Carbon::parse($guest->last_trip_at) : null;
+                    $nextTrip = $guest->next_trip_at ? \Illuminate\Support\Carbon::parse($guest->next_trip_at) : null;
+                @endphp
+                <div
+                    class="p-3.5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-2.5">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div
+                            class="w-8 h-8 rounded-[6px] bg-[#F4F5F7] dark:bg-[#141821] text-slate-700 dark:text-slate-200 border border-[#E4E5E9] dark:border-[#1E2433] font-semibold text-xs flex items-center justify-center shrink-0">
+                            {{ $initials }}
+                        </div>
+                        <div class="min-w-0 flex-1">
                             <a href="{{ route('guests.show', $guest) }}" wire:navigate
-                                class="h-8 w-8 rounded-xl inline-flex items-center justify-center bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-[#1e2433] text-xs transition cursor-pointer shrink-0"
-                                title="{{ __('View guest') }}"
-                                aria-label="{{ __('View guest') }}">
-                                <i class="fa-solid fa-eye"></i>
+                                class="font-semibold text-xs text-[#12181E] dark:text-white block truncate hover:underline">
+                                {{ $guest->name }}
                             </a>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-[#1e2433]">
-                            <div>
-                                <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Last trip') }}</span>
-                                <span class="font-semibold text-slate-800 dark:text-slate-200">
-                                    {{ $lastTrip?->format('M j, Y') ?? '—' }}
-                                </span>
+                            <div class="flex flex-wrap gap-1 mt-0.5">
+                                @if ($isRepeat)
+                                    <span
+                                        class="px-1.5 py-0.5 rounded-[4px] text-[9px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                                        {{ __('Repeat') }}
+                                    </span>
+                                @endif
+                                @if ($isDuplicate)
+                                    <span
+                                        class="px-1.5 py-0.5 rounded-[4px] text-[9px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                                        {{ __('Duplicate?') }}
+                                    </span>
+                                @endif
                             </div>
-                            <div class="text-right">
-                                <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Next trip') }}</span>
-                                <span class="font-semibold text-slate-800 dark:text-slate-200">
-                                    {{ $nextTrip?->format('M j, Y') ?? '—' }}
-                                </span>
-                            </div>
                         </div>
-                        <p class="font-mono font-black text-xs text-slate-900 dark:text-white">
+                        <a href="{{ route('guests.show', $guest) }}" wire:navigate
+                            class="h-8 w-8 rounded-[6px] inline-flex items-center justify-center bg-[#F8F9FA] dark:bg-[#141821] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433] text-xs transition cursor-pointer shrink-0"
+                            title="{{ __('View guest') }}"
+                            aria-label="{{ __('View guest') }}">
+                            <i class="fa-solid fa-eye text-xs"></i>
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                        <div>
+                            <span class="text-[10px] uppercase font-semibold text-[#5A6578] dark:text-[#9DA4B2] block">{{ __('Last trip') }}</span>
+                            <span class="font-medium text-[#12181E] dark:text-slate-200">
+                                {{ $lastTrip?->format('M j, Y') ?? '—' }}
+                            </span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] uppercase font-semibold text-[#5A6578] dark:text-[#9DA4B2] block">{{ __('Next trip') }}</span>
+                            <span class="font-medium text-[#12181E] dark:text-slate-200">
+                                {{ $nextTrip?->format('M j, Y') ?? '—' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433] text-xs">
+                        <span class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] truncate max-w-[180px]">
+                            {{ $guest->email ?: ($guest->phone ?: '—') }}
+                        </span>
+                        <p class="font-mono font-semibold text-xs text-[#12181E] dark:text-white shrink-0">
                             Rp {{ number_format($totalSpent, 0, ',', '.') }}
                         </p>
                     </div>
-                @empty
-                    <div class="p-8 text-center text-xs text-slate-400">
-                        {{ __('No guests found') }}
-                    </div>
-                @endforelse
-            </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-xs text-[#5A6578] dark:text-[#9DA4B2] rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433]">
+                    {{ __('No guests found') }}
+                </div>
+            @endforelse
 
-            <div class="hidden md:block overflow-x-auto">
+            @if ($this->guests->hasPages())
+                <div class="pt-2">
+                    {{ $this->guests->links() }}
+                </div>
+            @endif
+        </div>
+
+        <!-- Desktop Guests Table Container (hidden on mobile) -->
+        <div class="hidden md:block overflow-hidden rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none">
+            <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs sm:text-sm">
                     <thead
-                        class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        class="bg-[#F8F9FA] dark:bg-[#141821] border-b border-[#E4E5E9] dark:border-[#1E2433] text-[11px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                         <tr>
-                            <th class="px-5 py-3.5">{{ __('Guest') }}</th>
-                            <th class="px-4 py-3.5">{{ __('Contact') }}</th>
-                            <th class="px-4 py-3.5 text-center">{{ __('Bookings') }}</th>
-                            <th class="px-4 py-3.5">{{ __('Lifetime Spend') }}</th>
-                            <th class="px-4 py-3.5">{{ __('Last trip') }}</th>
-                            <th class="px-4 py-3.5">{{ __('Next trip') }}</th>
-                            <th class="px-5 py-3.5">{{ __('Notes') }}</th>
-                            <th class="px-4 py-3.5 text-right"><span class="sr-only">{{ __('Actions') }}</span></th>
+                            <th class="px-4 py-3">{{ __('Guest') }}</th>
+                            <th class="px-4 py-3">{{ __('Contact') }}</th>
+                            <th class="px-4 py-3 text-center">{{ __('Bookings') }}</th>
+                            <th class="px-4 py-3">{{ __('Lifetime Spend') }}</th>
+                            <th class="px-4 py-3">{{ __('Last trip') }}</th>
+                            <th class="px-4 py-3">{{ __('Next trip') }}</th>
+                            <th class="px-4 py-3">{{ __('Notes') }}</th>
+                            <th class="px-4 py-3 text-right"><span class="sr-only">{{ __('Actions') }}</span></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
+                    <tbody class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                         @forelse ($this->guests as $guest)
                             @php
                                 $initials = strtoupper(substr($guest->name, 0, 2));
@@ -448,27 +463,28 @@ new #[Title('Guest CRM')] class extends Component {
                                 $lastTrip = $guest->last_trip_at ? \Illuminate\Support\Carbon::parse($guest->last_trip_at) : null;
                                 $nextTrip = $guest->next_trip_at ? \Illuminate\Support\Carbon::parse($guest->next_trip_at) : null;
                             @endphp
-                            <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition">
-                                <td class="px-5 py-4">
-                                    <div class="flex items-center gap-3">
+                            <tr class="hover:bg-[#F8F9FA] dark:hover:bg-[#141821]/60 transition" wire:key="guest-{{ $guest->id }}">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2.5">
                                         <div
-                                            class="w-9 h-9 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                            class="w-8 h-8 rounded-[6px] bg-[#F4F5F7] dark:bg-[#141821] text-slate-700 dark:text-slate-200 border border-[#E4E5E9] dark:border-[#1E2433] font-semibold text-xs flex items-center justify-center shrink-0">
                                             {{ $initials }}
                                         </div>
-                                        <div class="space-y-1 min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="font-bold text-slate-900 dark:text-white truncate">
+                                        <div class="space-y-0.5 min-w-0">
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                <a href="{{ route('guests.show', $guest) }}" wire:navigate
+                                                    class="font-semibold text-xs text-[#12181E] dark:text-white hover:underline truncate">
                                                     {{ $guest->name }}
-                                                </span>
+                                                </a>
                                                 @if ($isRepeat)
                                                     <span
-                                                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/60 shrink-0">
+                                                        class="px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 shrink-0">
                                                         {{ __('Repeat') }}
                                                     </span>
                                                 @endif
                                                 @if ($isDuplicate)
                                                     <span
-                                                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 shrink-0">
+                                                        class="px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 shrink-0">
                                                         {{ __('Duplicate?') }}
                                                     </span>
                                                 @endif
@@ -477,7 +493,7 @@ new #[Title('Guest CRM')] class extends Component {
                                                 <div class="flex flex-wrap items-center gap-1">
                                                     @foreach ($guest->tags as $tag)
                                                         <span
-                                                            class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
+                                                            class="px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium bg-[#F8F9FA] dark:bg-[#141821] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433]">
                                                             {{ $tag }}
                                                         </span>
                                                     @endforeach
@@ -486,52 +502,52 @@ new #[Title('Guest CRM')] class extends Component {
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4">
-                                    <div class="space-y-1 text-xs text-slate-700 dark:text-slate-300">
+                                <td class="px-4 py-3">
+                                    <div class="space-y-0.5 text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                                         <p class="truncate max-w-[200px]">{{ $guest->email ?: __('No email') }}</p>
-                                        <p class="font-semibold {{ $guest->phone ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400' }}">
+                                        <p class="font-medium text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                                             {{ $guest->phone ?: __('No phone') }}
                                         </p>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 text-center whitespace-nowrap">
-                                    <span class="font-extrabold text-xs text-slate-900 dark:text-white">
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <span class="font-semibold text-xs text-[#12181E] dark:text-white">
                                         {{ $guest->reservations_count }}
                                     </span>
-                                    <p class="text-[11px] text-slate-500">
+                                    <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                                         {{ __(':count pax', ['count' => $guest->total_pax]) }}
                                     </p>
                                 </td>
-                                <td class="px-4 py-4 whitespace-nowrap">
-                                    <p class="font-bold text-xs text-slate-900 dark:text-white">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <p class="font-mono font-semibold text-xs text-[#12181E] dark:text-white">
                                         Rp {{ number_format($totalSpent, 0, ',', '.') }}
                                     </p>
                                 </td>
-                                <td class="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                <td class="px-4 py-3 whitespace-nowrap text-xs font-medium text-[#12181E] dark:text-slate-200">
                                     {{ $lastTrip?->format('M j, Y') ?? '—' }}
                                 </td>
-                                <td class="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                <td class="px-4 py-3 whitespace-nowrap text-xs font-medium text-[#12181E] dark:text-slate-200">
                                     {{ $nextTrip?->format('M j, Y') ?? '—' }}
                                 </td>
-                                <td class="px-5 py-4 max-w-[180px] text-xs text-slate-600 dark:text-slate-300">
+                                <td class="px-4 py-3 max-w-[180px] text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                                     @if ($guest->notes)
                                         <span class="line-clamp-2" title="{{ $guest->notes }}">{{ $guest->notes }}</span>
                                     @else
                                         <span class="text-slate-400 italic">—</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-4 text-right whitespace-nowrap">
+                                <td class="px-4 py-3 text-right whitespace-nowrap">
                                     <a href="{{ route('guests.show', $guest) }}" wire:navigate
-                                        class="h-8 w-8 rounded-xl inline-flex items-center justify-center bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-[#1e2433] text-xs transition cursor-pointer"
-                                        title="{{ __('View guest') }}"
-                                        aria-label="{{ __('View guest') }}">
-                                        <i class="fa-solid fa-eye"></i>
+                                        class="h-7 w-7 rounded-[6px] inline-flex items-center justify-center bg-[#F8F9FA] dark:bg-[#141821] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433] text-xs transition cursor-pointer"
+                                        title="{{ __('View guest profile') }}"
+                                        aria-label="{{ __('View guest profile') }}">
+                                        <i class="fa-solid fa-eye text-xs"></i>
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="p-12 text-center text-slate-400 text-xs">
+                                <td colspan="8" class="p-12 text-center text-[#5A6578] dark:text-[#9DA4B2] text-xs">
                                     {{ __('No guests found') }}
                                 </td>
                             </tr>
@@ -541,7 +557,7 @@ new #[Title('Guest CRM')] class extends Component {
             </div>
 
             @if ($this->guests->hasPages())
-                <div class="border-t border-slate-100 px-4 py-3 dark:border-[#1e2433]">
+                <div class="border-t border-[#E4E5E9] px-4 py-3 dark:border-[#1E2433]">
                     {{ $this->guests->links() }}
                 </div>
             @endif

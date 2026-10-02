@@ -171,21 +171,13 @@ new #[Title('Administrators')] #[Layout('layouts.admin')] class extends Componen
 
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
-        <div class="flex items-center gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] text-sm">
-                <i class="fa-solid fa-shield-halved"></i>
-            </span>
-            <div>
-                <h1 class="text-[20px] font-medium leading-[1.6] text-[#1C2024] dark:text-white">
-                    {{ __('Platform Administrators') }}
-                </h1>
-                <p class="text-[13px] text-[#60646C] dark:text-zinc-400">
-                    {{ __('Manage platform staff and credentials with full administrative access.') }}
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2">
+    <x-page-header
+        :title="__('Platform Administrators')"
+        :subtitle="__('Manage platform staff and credentials with full administrative access.')"
+        icon="fa-shield-halved"
+        class="pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]"
+    >
+        <x-slot:actions>
             <button
                 type="button"
                 wire:click="openCreateModal"
@@ -194,8 +186,8 @@ new #[Title('Administrators')] #[Layout('layouts.admin')] class extends Componen
                 <i class="fa-solid fa-user-plus text-xs"></i>
                 <span>{{ __('Add administrator') }}</span>
             </button>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     {{-- Security Metrics Strip --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -266,38 +266,38 @@ new #[Title('Edit Tour Package')] class extends Component {
     <div class="space-y-6">
 
         <!-- Breadcrumb & Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <div class="mb-2 flex min-w-0 flex-wrap items-center gap-2">
-                    <x-back-link :href="route('packages.index')">
-                        {{ __('Back to packages') }}
-                    </x-back-link>
-                    <span class="hidden text-op-subtle sm:inline" aria-hidden="true">&bull;</span>
-                    <span class="hidden min-w-0 truncate text-sm font-semibold text-op-subtle sm:inline">{{ $package->title }}</span>
-                </div>
-                <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-op-ink">
-                    {{ __('Edit Tour Package / Expedition') }}
-                </h1>
-                <p class="text-xs sm:text-sm text-op-subtle mt-0.5 max-w-2xl">
-                    {{ __('Update itineraries, bundled items, pricing, and photo gallery.') }}
-                </p>
+        <div class="space-y-2">
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+                <x-back-link :href="route('packages.index')">
+                    {{ __('Back to packages') }}
+                </x-back-link>
+                <span class="hidden text-op-subtle sm:inline" aria-hidden="true">&bull;</span>
+                <span class="hidden min-w-0 truncate text-sm font-semibold text-op-subtle sm:inline">{{ $package->title }}</span>
             </div>
 
-            <div class="hidden sm:flex flex-wrap items-center gap-2">
-                <x-button type="button" variant="danger" x-data=""
-                    x-on:click.prevent="$dispatch('open-modal', 'confirm-package-deletion')"
-                    class="font-semibold text-xs shadow-xs" title="{{ __('Delete Package') }}">
-                    <i class="fa-solid fa-trash mr-1.5 text-xs"></i>
-                    {{ __('Delete') }}
-                </x-button>
-                <x-button :href="route('packages.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
-                    {{ __('Cancel') }}
-                </x-button>
-                <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs">
-                    <i class="fa-solid fa-check mr-1.5 text-xs"></i>
-                    {{ __('Save Changes') }}
-                </x-button>
-            </div>
+            <x-page-header
+                :title="__('Edit Tour Package / Expedition')"
+                :subtitle="__('Update itineraries, bundled items, pricing, and photo gallery.')"
+                icon="fa-cubes"
+            >
+                <x-slot:actions>
+                    <div class="hidden sm:flex flex-wrap items-center gap-2">
+                        <x-button type="button" variant="danger" x-data=""
+                            x-on:click.prevent="$dispatch('open-modal', 'confirm-package-deletion')"
+                            class="font-semibold text-xs shadow-xs" title="{{ __('Delete Package') }}">
+                            <i class="fa-solid fa-trash mr-1.5 text-xs"></i>
+                            {{ __('Delete') }}
+                        </x-button>
+                        <x-button :href="route('packages.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
+                            {{ __('Cancel') }}
+                        </x-button>
+                        <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs">
+                            <i class="fa-solid fa-check mr-1.5 text-xs"></i>
+                            {{ __('Save Changes') }}
+                        </x-button>
+                    </div>
+                </x-slot:actions>
+            </x-page-header>
         </div>
 
         <!-- Main Edit Form -->

@@ -144,13 +144,13 @@ new class extends Component {
 <div class="space-y-6">
     <!-- Timeline Week Controls -->
     <div
-        class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs">
+        class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none">
         <div class="flex items-center gap-3">
-            <span class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-sm">
+            <span class="w-9 h-9 rounded-[8px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-sm shrink-0">
                 <i class="fa-solid fa-bars-staggered"></i>
             </span>
             <div>
-                <h3 class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
+                <h3 class="text-[16px] sm:text-[18px] font-medium text-[#12181E] dark:text-white leading-tight">
                     {{ __('Resource & Experience Timeline') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
@@ -162,18 +162,18 @@ new class extends Component {
 
         <div class="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
             <button type="button" wire:click="currentWeek"
-                class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 transition cursor-pointer">
+                class="h-9 px-3 rounded-[6px] text-xs font-medium bg-[#F9FAFB] dark:bg-[#151a26] hover:bg-[#F3F4F6] dark:hover:bg-[#1E2433] text-slate-700 dark:text-slate-300 border border-[#E4E5E9] dark:border-[#1E2433] transition cursor-pointer">
                 {{ __('Current Week') }}
             </button>
 
-            <div class="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
+            <div class="flex items-center gap-1 bg-[#F9FAFB] dark:bg-[#151a26] p-1 rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433]">
                 <button type="button" wire:click="prevWeek"
-                    class="h-8 w-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-700 shadow-2xs transition cursor-pointer"
+                    class="h-7 w-7 rounded-[4px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#10141d] transition cursor-pointer"
                     title="{{ __('Previous Week') }}">
                     <i class="fa-solid fa-chevron-left text-xs"></i>
                 </button>
                 <button type="button" wire:click="nextWeek"
-                    class="h-8 w-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-700 shadow-2xs transition cursor-pointer"
+                    class="h-7 w-7 rounded-[4px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#10141d] transition cursor-pointer"
                     title="{{ __('Next Week') }}">
                     <i class="fa-solid fa-chevron-right text-xs"></i>
                 </button>
@@ -183,46 +183,46 @@ new class extends Component {
 
     <!-- Timeline Gantt Matrix Table -->
     <div
-        class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+        class="rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse min-w-[760px]">
                 <thead>
                     <tr
-                        class="border-b border-slate-200/80 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-800/40 text-slate-500 dark:text-slate-400">
-                        <th class="py-3.5 px-4 font-extrabold uppercase tracking-wider text-[11px] w-1/4">
+                        class="border-b border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#151a26] text-slate-500 dark:text-slate-400">
+                        <th class="py-3 px-4 font-medium uppercase tracking-wider text-[11px] w-1/4">
                             {{ __('Resource / Experience') }}
                         </th>
                         @foreach ($this->timelineDays as $d)
                             <th
-                                class="py-3.5 px-3 text-center font-bold text-xs {{ $d['isToday'] ? 'bg-[#FFEF4D] dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-t-2 border-t-indigo-600 dark:border-t-indigo-400' : '' }}">
+                                class="py-3 px-3 text-center font-medium text-xs {{ $d['isToday'] ? 'bg-[#FFEF4D]/15 dark:bg-[#FFEF4D]/10 text-[#12181E] dark:text-[#FFEF4D] border-t-2 border-t-[#FFEF4D]' : '' }}">
                                 <span
-                                    class="block text-[10px] uppercase font-extrabold {{ $d['isToday'] ? 'text-[#090d16] dark:text-indigo-400' : 'opacity-75' }}">{{ $d['dayName'] }}</span>
+                                    class="block text-[10px] uppercase font-medium {{ $d['isToday'] ? 'text-[#12181E] dark:text-[#FFEF4D]' : 'opacity-75' }}">{{ $d['dayName'] }}</span>
                                 @if ($d['isToday'])
                                     <span
-                                        class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 font-black shadow-2xs mt-0.5">{{ $d['dayNumber'] }}</span>
+                                        class="inline-flex items-center justify-center h-5 w-5 rounded-[4px] bg-[#FFEF4D] text-[#12181E] font-medium text-xs mt-0.5">{{ $d['dayNumber'] }}</span>
                                 @else
-                                    <span class="text-xs font-black">{{ $d['dayNumber'] }}</span>
+                                    <span class="text-xs font-medium">{{ $d['dayNumber'] }}</span>
                                 @endif
                             </th>
                         @endforeach
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/60">
+                <tbody class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                     @forelse ($this->timelineMatrix as $row)
                         @php
                             $product = $row['product'];
                         @endphp
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 transition">
+                        <tr class="hover:bg-[#F9FAFB] dark:hover:bg-[#151a26] transition">
                             <!-- Product Column -->
-                            <td class="py-4 px-4 font-bold text-slate-900 dark:text-white">
+                            <td class="py-3.5 px-4 font-medium text-[#12181E] dark:text-white">
                                 <div class="flex items-center gap-2.5">
                                     <span
-                                        class="w-7 h-7 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 flex items-center justify-center text-xs shrink-0">
+                                        class="w-7 h-7 rounded-[6px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-xs shrink-0">
                                         <i class="fa-solid fa-layer-group"></i>
                                     </span>
                                     <div class="min-w-0">
                                         <p
-                                            class="truncate text-xs font-extrabold text-slate-900 dark:text-white leading-tight">
+                                            class="truncate text-xs font-medium text-[#12181E] dark:text-white leading-tight">
                                             {{ $product->name }}
                                         </p>
                                         <span class="text-[10px] text-slate-400 block mt-0.5">
@@ -235,31 +235,31 @@ new class extends Component {
 
                             <!-- 7 Day Matrix Cells -->
                             @foreach ($row['days'] as $cell)
-                                <td class="py-3 px-2 text-center align-middle">
+                                <td class="py-2.5 px-2 text-center align-middle">
                                     @if ($cell['isBlocked'])
                                         <div
-                                            class="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 text-[10px] font-bold">
+                                            class="p-2 rounded-[6px] bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 text-[10px] font-medium">
                                             <i class="fa-solid fa-lock text-[9px] mr-1"></i>{{ __('Blocked') }}
                                         </div>
                                     @elseif ($cell['totalPax'] > 0)
                                         <div
-                                            class="p-2 rounded-xl {{ $cell['occupancyRate'] >= 90 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : ($cell['occupancyRate'] >= 50 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300') }} text-center space-y-1 shadow-2xs">
-                                            <div class="font-extrabold text-[11px]">
+                                            class="p-2 rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#151a26] text-center space-y-1 shadow-none">
+                                            <div class="font-medium text-[11px] text-[#12181E] dark:text-white">
                                                 {{ $cell['totalPax'] }} Pax
                                             </div>
                                             <!-- Mini Progress Bar -->
                                             <div
-                                                class="w-full bg-black/10 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                                <div class="h-full rounded-full {{ $cell['occupancyRate'] >= 90 ? 'bg-rose-600' : ($cell['occupancyRate'] >= 50 ? 'bg-amber-500' : 'bg-indigo-600') }}"
+                                                class="w-full bg-[#E4E5E9] dark:bg-[#1E2433] h-1.5 rounded-[2px] overflow-hidden">
+                                                <div class="h-full rounded-[2px] {{ $cell['occupancyRate'] >= 90 ? 'bg-rose-500' : ($cell['occupancyRate'] >= 50 ? 'bg-amber-400' : 'bg-[#FFEF4D]') }}"
                                                     style="width: {{ $cell['occupancyRate'] }}%;"></div>
                                             </div>
-                                            <span class="text-[9px] opacity-75 font-semibold block">
+                                            <span class="text-[9px] text-slate-400 font-medium block">
                                                 {{ $cell['occupancyRate'] }}% {{ __('Cap') }}
                                             </span>
                                         </div>
                                     @else
                                         <div
-                                            class="p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/30 text-slate-300 dark:text-zinc-600 text-[10px] font-medium border border-dashed border-slate-200 dark:border-zinc-800">
+                                            class="p-2 rounded-[6px] bg-transparent text-slate-300 dark:text-zinc-600 text-[10px] font-medium border border-dashed border-[#E4E5E9] dark:border-[#1E2433]">
                                             {{ __('Open') }}
                                         </div>
                                     @endif

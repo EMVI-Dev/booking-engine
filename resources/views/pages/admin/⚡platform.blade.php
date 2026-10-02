@@ -231,26 +231,18 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
 
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
-        <div class="flex items-center gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] text-sm">
-                <i class="fa-solid fa-sliders"></i>
-            </span>
-            <div>
-                <h1 class="text-[20px] font-medium leading-[1.6] text-[#1C2024] dark:text-white">
-                    {{ __('Settings') }}
-                </h1>
-                <p class="text-[13px] text-[#60646C] dark:text-zinc-400">
-                    {{ __('Platform name, guest fee, and how long we hold an unpaid spot.') }}
-                </p>
-            </div>
-        </div>
-        <div>
+    <x-page-header
+        :title="__('Settings')"
+        :subtitle="__('Platform name, guest fee, and how long we hold an unpaid spot.')"
+        icon="fa-sliders"
+        class="pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]"
+    >
+        <x-slot:actions>
             <span class="text-xs font-medium text-[#60646C] dark:text-zinc-400 px-2.5 py-1 rounded-[6px] bg-[#EFEFF0] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433]">
                 {{ $approved_operators }}/{{ $total_operators }} {{ __('operators active') }}
             </span>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     {{-- Platform Maintenance Card --}}
     <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none">

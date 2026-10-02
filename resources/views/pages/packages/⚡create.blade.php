@@ -253,31 +253,29 @@ new #[Title('Create Tour Package')] class extends Component {
             </div>
         @else
             <!-- Breadcrumb & Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <div class="mb-2">
-                        <x-back-link :href="route('packages.index')">
-                            {{ __('Back to packages') }}
-                        </x-back-link>
-                    </div>
-                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-op-ink">
-                        {{ __('Create Tour Package / Experience') }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-op-subtle mt-0.5 max-w-2xl">
-                        {{ __('Bundle activities, transport, guide hire, and equipment into an all-inclusive public package.') }}
-                    </p>
-                </div>
+            <div class="space-y-2">
+                <x-back-link :href="route('packages.index')">
+                    {{ __('Back to packages') }}
+                </x-back-link>
 
-                <div class="hidden sm:flex flex-wrap items-center gap-2">
-                    <x-button :href="route('packages.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
-                        {{ __('Cancel') }}
-                    </x-button>
-                    <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs"
-                        :disabled="!$this->isProfileComplete">
-                        <i class="fa-solid fa-check mr-1.5 text-xs"></i>
-                        {{ __('Save & Publish') }}
-                    </x-button>
-                </div>
+                <x-page-header
+                    :title="__('Create Tour Package / Experience')"
+                    :subtitle="__('Bundle activities, transport, guide hire, and equipment into an all-inclusive public package.')"
+                    icon="fa-cubes"
+                >
+                    <x-slot:actions>
+                        <div class="hidden sm:flex flex-wrap items-center gap-2">
+                            <x-button :href="route('packages.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
+                                {{ __('Cancel') }}
+                            </x-button>
+                            <x-button wire:click="save" variant="primary" class="font-semibold text-xs shadow-xs"
+                                :disabled="!$this->isProfileComplete">
+                                <i class="fa-solid fa-check mr-1.5 text-xs"></i>
+                                {{ __('Save & Publish') }}
+                            </x-button>
+                        </div>
+                    </x-slot:actions>
+                </x-page-header>
             </div>
 
             <!-- Main Create Form -->

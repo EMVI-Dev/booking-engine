@@ -39,6 +39,8 @@ return new class extends Migration
             $table->string('banner_path')->nullable();
             $table->json('settings')->nullable(); // sellable_standalone_default, brand_color, display_name, payment_gateway, whatsapp_schedule, social_links, tracking, marketing
             $table->timestamps();
+            $table->timestamp('last_active_at')->nullable()->index();
+            $table->timestamp('inactivity_reminder_sent_at')->nullable();
 
             $table->index('status');
             $table->index('plan_id');

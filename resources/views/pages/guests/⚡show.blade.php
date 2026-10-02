@@ -172,31 +172,31 @@ new #[Title('Guest Profile')] class extends Component {
 
             <div class="flex items-start gap-3.5 min-w-0">
                 <div
-                    class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-[#FFEF4D] font-mono font-bold text-lg flex items-center justify-center shrink-0 border border-amber-500/20">
+                    class="w-12 h-12 rounded-[8px] bg-[#FFEF4D]/20 text-[#12181E] dark:text-[#FFEF4D] font-mono font-semibold text-lg flex items-center justify-center shrink-0 border border-[#FFEF4D]/40">
                     <i class="fa-solid fa-user"></i>
                 </div>
 
                 <div class="min-w-0 space-y-1">
                     <div class="flex flex-wrap items-center gap-2.5">
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
+                        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
                             {{ $guest->name }}
                         </h1>
                         @if ($isRepeat)
                             <span
-                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
+                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
                                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                                 {{ __('Repeat Guest') }}
                             </span>
                         @else
                             <span
-                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] text-xs font-semibold bg-[#F4F5F7] text-slate-600 dark:bg-[#1E2433] dark:text-zinc-300 border border-[#E4E5E9] dark:border-[#1E2433]">
                                 <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
                                 {{ __('First-time Guest') }}
                             </span>
                         @endif
                     </div>
 
-                    <p class="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span class="font-mono">{{ __('ID: :id', ['id' => substr($guest->id, -8)]) }}</span>
                         <span>&bull;</span>
                         <span>{{ __('Customer since :date', ['date' => $firstTripDate ? $firstTripDate->format('M Y') : $guest->created_at->format('M Y')]) }}</span>
@@ -221,7 +221,7 @@ new #[Title('Guest Profile')] class extends Component {
 
             @if ($guest->phone && $waUrl !== '#')
                 <a href="{{ $waUrl }}" target="_blank" rel="noopener"
-                    class="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer flex-1 sm:flex-none"
+                    class="h-9 px-3.5 rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-none cursor-pointer flex-1 sm:flex-none"
                     title="{{ __('Chat on WhatsApp') }}">
                     <i class="fa-brands fa-whatsapp text-sm"></i>
                     <span>{{ __('WhatsApp') }}</span>
@@ -236,13 +236,13 @@ new #[Title('Guest Profile')] class extends Component {
         <div class="lg:col-span-4 xl:col-span-4 space-y-5">
             <!-- Guest Contact & Identity Card -->
             <div
-                class="rounded-3xl border border-slate-200/80 bg-white p-5 dark:border-[#1e2433] dark:bg-[#0C0E13] shadow-xs space-y-4">
+                class="rounded-[12px] border border-[#E4E5E9] bg-white p-5 dark:border-[#1E2433] dark:bg-[#10141d] shadow-none space-y-4">
                 <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                         {{ __('Contact & Identity') }}
                     </span>
                     <button type="button" wire:click="openEdit"
-                        class="text-xs font-bold text-amber-600 dark:text-[#FFEF4D] hover:underline cursor-pointer">
+                        class="text-xs font-semibold text-[#12181E] dark:text-[#FFEF4D] hover:underline cursor-pointer">
                         {{ __('Edit') }}
                     </button>
                 </div>
@@ -251,29 +251,29 @@ new #[Title('Guest Profile')] class extends Component {
                 <div class="space-y-3 text-xs">
                     <!-- Email Row -->
                     <div
-                        class="flex items-start justify-between gap-2 p-2.5 rounded-2xl bg-slate-50/70 dark:bg-[#141821]/60 border border-slate-100 dark:border-[#1e2433] transition group">
+                        class="flex items-start justify-between gap-2 p-2.5 rounded-[8px] bg-[#F4F5F7]/70 dark:bg-[#141821]/70 border border-[#E4E5E9] dark:border-[#1E2433] transition group">
                         <div class="min-w-0 flex items-start gap-2.5">
                             <div
-                                class="w-7 h-7 rounded-xl bg-slate-100 dark:bg-[#10141d] text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
+                                class="w-7 h-7 rounded-[6px] bg-white dark:bg-[#10141d] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center shrink-0 mt-0.5">
                                 <i class="fa-solid fa-envelope text-[11px]"></i>
                             </div>
                             <div class="min-w-0">
                                 <span
-                                    class="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">{{ __('Email Address') }}</span>
+                                    class="text-[10px] font-semibold uppercase text-[#5A6578] dark:text-[#9DA4B2] tracking-wider block">{{ __('Email Address') }}</span>
                                 @if ($guest->email)
                                     <a href="mailto:{{ $guest->email }}"
                                         class="font-medium text-slate-800 dark:text-slate-200 hover:underline break-all">
                                         {{ $guest->email }}
                                     </a>
                                 @else
-                                    <span class="text-slate-400 italic">{{ __('Not provided') }}</span>
+                                    <span class="text-[#5A6578] dark:text-[#9DA4B2] italic">{{ __('Not provided') }}</span>
                                 @endif
                             </div>
                         </div>
                         @if ($guest->email)
                             <button type="button" x-data="{ copied: false }"
                                 @click="navigator.clipboard.writeText('{{ $guest->email }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md transition cursor-pointer"
+                                class="text-[#5A6578] hover:text-slate-900 dark:text-[#9DA4B2] dark:hover:text-white p-1 rounded-[4px] transition cursor-pointer"
                                 title="{{ __('Copy email') }}">
                                 <i
                                     :class="copied ? 'fa-solid fa-check text-emerald-500' : 'fa-regular fa-clone text-[11px]'"></i>
@@ -283,28 +283,28 @@ new #[Title('Guest Profile')] class extends Component {
 
                     <!-- Phone / WhatsApp Row -->
                     <div
-                        class="flex items-start justify-between gap-2 p-2.5 rounded-2xl bg-slate-50/70 dark:bg-[#141821]/60 border border-slate-100 dark:border-[#1e2433] transition group">
+                        class="flex items-start justify-between gap-2 p-2.5 rounded-[8px] bg-[#F4F5F7]/70 dark:bg-[#141821]/70 border border-[#E4E5E9] dark:border-[#1E2433] transition group">
                         <div class="min-w-0 flex items-start gap-2.5">
                             <div
-                                class="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                                class="w-7 h-7 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/50 flex items-center justify-center shrink-0 mt-0.5">
                                 <i class="fa-brands fa-whatsapp text-xs"></i>
                             </div>
                             <div class="min-w-0">
                                 <span
-                                    class="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">{{ __('WhatsApp / Phone') }}</span>
+                                    class="text-[10px] font-semibold uppercase text-[#5A6578] dark:text-[#9DA4B2] tracking-wider block">{{ __('WhatsApp / Phone') }}</span>
                                 @if ($guest->phone)
                                     <span class="font-semibold text-slate-800 dark:text-slate-200">
                                         {{ $guest->phone }}
                                     </span>
                                 @else
-                                    <span class="text-slate-400 italic">{{ __('Not provided') }}</span>
+                                    <span class="text-[#5A6578] dark:text-[#9DA4B2] italic">{{ __('Not provided') }}</span>
                                 @endif
                             </div>
                         </div>
                         @if ($guest->phone)
                             <button type="button" x-data="{ copied: false }"
                                 @click="navigator.clipboard.writeText('{{ $guest->phone }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md transition cursor-pointer"
+                                class="text-[#5A6578] hover:text-slate-900 dark:text-[#9DA4B2] dark:hover:text-white p-1 rounded-[4px] transition cursor-pointer"
                                 title="{{ __('Copy phone') }}">
                                 <i
                                     :class="copied ? 'fa-solid fa-check text-emerald-500' : 'fa-regular fa-clone text-[11px]'"></i>
@@ -314,15 +314,15 @@ new #[Title('Guest Profile')] class extends Component {
 
                     <!-- Last Trip Date -->
                     <div
-                        class="flex items-start justify-between gap-2 p-2.5 rounded-2xl bg-slate-50/70 dark:bg-[#141821]/60 border border-slate-100 dark:border-[#1e2433] transition">
+                        class="flex items-start justify-between gap-2 p-2.5 rounded-[8px] bg-[#F4F5F7]/70 dark:bg-[#141821]/70 border border-[#E4E5E9] dark:border-[#1E2433] transition">
                         <div class="flex items-start gap-2.5">
                             <div
-                                class="w-7 h-7 rounded-xl bg-slate-100 dark:bg-[#10141d] text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
+                                class="w-7 h-7 rounded-[6px] bg-white dark:bg-[#10141d] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center shrink-0 mt-0.5">
                                 <i class="fa-solid fa-clock-rotate-left text-[11px]"></i>
                             </div>
                             <div>
                                 <span
-                                    class="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">{{ __('Last Trip') }}</span>
+                                    class="text-[10px] font-semibold uppercase text-[#5A6578] dark:text-[#9DA4B2] tracking-wider block">{{ __('Last Trip') }}</span>
                                 <span class="font-medium text-slate-700 dark:text-slate-300">
                                     {{ $lastTrip ? $lastTrip->format('d M Y') : __('No trips yet') }}
                                 </span>
@@ -332,15 +332,15 @@ new #[Title('Guest Profile')] class extends Component {
 
                     <!-- Next Trip Date -->
                     <div
-                        class="flex items-start justify-between gap-2 p-2.5 rounded-2xl bg-slate-50/70 dark:bg-[#141821]/60 border border-slate-100 dark:border-[#1e2433] transition">
+                        class="flex items-start justify-between gap-2 p-2.5 rounded-[8px] bg-[#F4F5F7]/70 dark:bg-[#141821]/70 border border-[#E4E5E9] dark:border-[#1E2433] transition">
                         <div class="flex items-start gap-2.5">
                             <div
-                                class="w-7 h-7 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                                class="w-7 h-7 rounded-[6px] bg-[#FFEF4D]/20 text-[#12181E] dark:text-[#FFEF4D] border border-[#FFEF4D]/40 flex items-center justify-center shrink-0 mt-0.5">
                                 <i class="fa-solid fa-plane-departure text-[11px]"></i>
                             </div>
                             <div>
                                 <span
-                                    class="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">{{ __('Next Upcoming') }}</span>
+                                    class="text-[10px] font-semibold uppercase text-[#5A6578] dark:text-[#9DA4B2] tracking-wider block">{{ __('Next Upcoming') }}</span>
                                 <span class="font-medium text-slate-700 dark:text-slate-300">
                                     {{ $nextTrip ? $nextTrip->format('d M Y') : __('None scheduled') }}
                                 </span>
@@ -350,16 +350,16 @@ new #[Title('Guest Profile')] class extends Component {
                 </div>
 
                 <!-- Divider -->
-                <div class="h-px bg-slate-100 dark:bg-[#1e2433]"></div>
+                <div class="h-px bg-[#E4E5E9] dark:bg-[#1E2433]"></div>
 
                 <!-- Tags Section -->
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                             {{ __('Profile Tags') }}
                         </span>
                         <button type="button" wire:click="openEdit"
-                            class="text-[11px] font-bold text-amber-600 dark:text-[#FFEF4D] hover:underline cursor-pointer">
+                            class="text-[11px] font-semibold text-[#12181E] dark:text-[#FFEF4D] hover:underline cursor-pointer">
                             {{ __('Edit') }}
                         </button>
                     </div>
@@ -367,13 +367,13 @@ new #[Title('Guest Profile')] class extends Component {
                         @if (is_array($guest->tags) && count($guest->tags) > 0)
                             @foreach ($guest->tags as $tag)
                                 <span
-                                    class="px-2 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] inline-flex items-center gap-1">
+                                    class="px-2 py-0.5 rounded-[6px] text-xs font-medium bg-[#F4F5F7] dark:bg-[#141821] text-slate-700 dark:text-slate-300 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center gap-1">
                                     <i class="fa-solid fa-tag text-[9px] opacity-50"></i>
                                     <span>{{ $tag }}</span>
                                 </span>
                             @endforeach
                         @else
-                            <span class="text-xs text-slate-400 italic">{{ __('No tags assigned yet.') }}</span>
+                            <span class="text-xs text-[#5A6578] dark:text-[#9DA4B2] italic">{{ __('No tags assigned yet.') }}</span>
                         @endif
                     </div>
                 </div>
@@ -381,30 +381,30 @@ new #[Title('Guest Profile')] class extends Component {
 
             <!-- CRM Private Notes Card -->
             <div
-                class="rounded-3xl border border-slate-200/80 bg-white p-5 dark:border-[#1e2433] dark:bg-[#0C0E13] shadow-xs space-y-3">
+                class="rounded-[12px] border border-[#E4E5E9] bg-white p-5 dark:border-[#1E2433] dark:bg-[#10141d] shadow-none space-y-3">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <div
-                            class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-[#FFEF4D] flex items-center justify-center text-xs">
+                            class="w-6 h-6 rounded-[6px] bg-[#FFEF4D]/20 text-[#12181E] dark:text-[#FFEF4D] flex items-center justify-center text-xs">
                             <i class="fa-solid fa-note-sticky"></i>
                         </div>
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                             {{ __('CRM Notes') }}
                         </h3>
                     </div>
                     <button type="button" wire:click="openEdit"
-                        class="text-xs font-bold text-amber-600 dark:text-[#FFEF4D] hover:underline cursor-pointer">
+                        class="text-xs font-semibold text-[#12181E] dark:text-[#FFEF4D] hover:underline cursor-pointer">
                         {{ __('Edit') }}
                     </button>
                 </div>
 
                 @if ($guest->notes)
                     <div
-                        class="p-3.5 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/40 text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        class="p-3.5 rounded-[8px] bg-[#F4F5F7]/70 dark:bg-[#141821]/70 border border-[#E4E5E9] dark:border-[#1E2433] text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                         {{ $guest->notes }}
                     </div>
                 @else
-                    <p class="text-xs text-slate-400 italic">
+                    <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] italic">
                         {{ __('No notes recorded yet. Add internal remarks regarding guest preferences, VIP handling, or special requirements.') }}
                     </p>
                 @endif
@@ -412,11 +412,11 @@ new #[Title('Guest Profile')] class extends Component {
 
             <!-- Possible Duplicates Section -->
             @if ($this->duplicates->isNotEmpty())
-                <div class="rounded-3xl border border-amber-300/80 bg-amber-50/70 p-5 dark:border-amber-800/60 dark:bg-amber-950/30 space-y-3"
+                <div class="rounded-[12px] border border-amber-300/80 bg-amber-50/70 p-5 dark:border-amber-900/50 dark:bg-amber-950/30 space-y-3 shadow-none"
                     role="status">
                     <div class="flex items-center gap-2 text-amber-800 dark:text-amber-200">
                         <i class="fa-solid fa-triangle-exclamation text-sm text-amber-600 dark:text-amber-400"></i>
-                        <h4 class="text-xs font-bold uppercase tracking-wider">
+                        <h4 class="text-xs font-semibold uppercase tracking-wider">
                             {{ __('Possible duplicates') }}
                         </h4>
                     </div>
@@ -426,11 +426,11 @@ new #[Title('Guest Profile')] class extends Component {
                     <ul class="space-y-2">
                         @foreach ($this->duplicates as $duplicate)
                             <li
-                                class="flex flex-col gap-2 rounded-2xl border border-amber-200/80 bg-white/80 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-[#0C0E13]/80">
+                                class="flex flex-col gap-2 rounded-[8px] border border-amber-200/80 bg-white/80 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-[#10141d]/80 shadow-none">
                                 <div class="min-w-0 text-xs">
-                                    <p class="font-bold text-slate-900 dark:text-white truncate">
+                                    <p class="font-semibold text-slate-900 dark:text-white truncate">
                                         {{ $duplicate->name }}</p>
-                                    <p class="text-slate-500 truncate text-[11px] mt-0.5">
+                                    <p class="text-[#5A6578] dark:text-[#9DA4B2] truncate text-[11px] mt-0.5">
                                         {{ $duplicate->email ?: ($duplicate->phone ?: __('No contact')) }}
                                         &bull; {{ __(':count bookings', ['count' => $duplicate->reservations_count]) }}
                                     </p>
@@ -438,7 +438,7 @@ new #[Title('Guest Profile')] class extends Component {
                                 <x-button type="button" size="xs" variant="secondary"
                                     wire:click="mergeDuplicate('{{ $duplicate->id }}')"
                                     wire:confirm="{{ __('Merge this guest into :name? Their bookings move here and the duplicate is removed.', ['name' => $guest->name]) }}"
-                                    class="shrink-0 font-bold w-full sm:w-auto justify-center">
+                                    class="shrink-0 font-semibold w-full sm:w-auto justify-center">
                                     {{ __('Merge into this guest') }}
                                 </x-button>
                             </li>
@@ -463,26 +463,26 @@ new #[Title('Guest Profile')] class extends Component {
 
             <!-- Transactions & Trip History Hub -->
             <div
-                class="rounded-3xl border border-slate-200/80 bg-white dark:border-[#1e2433] dark:bg-[#0C0E13] shadow-xs overflow-hidden">
+                class="rounded-[12px] border border-[#E4E5E9] bg-white dark:border-[#1E2433] dark:bg-[#10141d] shadow-none overflow-hidden">
                 <!-- Header with Tabs -->
                 <div
-                    class="p-4 sm:p-5 border-b border-slate-100 dark:border-[#1e2433] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/50 dark:bg-[#10141d]/50">
+                    class="p-4 sm:p-5 border-b border-[#E4E5E9] dark:border-[#1E2433] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#F4F5F7]/50 dark:bg-[#141821]/50">
                     <div class="flex items-center gap-3">
                         <div
-                            class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-[#FFEF4D] flex items-center justify-center text-sm font-bold border border-amber-500/20">
+                            class="w-9 h-9 rounded-[8px] bg-[#FFEF4D]/20 text-[#12181E] dark:text-[#FFEF4D] flex items-center justify-center text-sm font-semibold border border-[#FFEF4D]/40">
                             <i class="fa-solid fa-receipt"></i>
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-white">
                                     {{ __('Trip history') }}
                                 </h2>
                                 <span
-                                    class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-100 dark:bg-[#141821] text-slate-600 dark:text-slate-300">
+                                    class="px-2 py-0.5 rounded-[4px] text-xs font-mono font-semibold bg-[#E4E5E9] dark:bg-[#1E2433] text-slate-700 dark:text-slate-300">
                                     {{ $this->reservations->total() }}
                                 </span>
                             </div>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-0.5">
                                 {{ __('Transactions, bookings & itinerary details') }}
                             </p>
                         </div>
@@ -499,7 +499,7 @@ new #[Title('Guest Profile')] class extends Component {
                 </div>
 
                 <!-- Streamlined Trip History List -->
-                <div class="divide-y divide-slate-100 dark:divide-[#1e2433]">
+                <div class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                     @forelse ($this->reservations as $res)
                         @php
                             $bookable = $res->bookable;
@@ -513,11 +513,11 @@ new #[Title('Guest Profile')] class extends Component {
                             $paidAmount = (float) $res->payments->where('status', PaymentStatus::Paid)->sum('amount');
                             $isPaid = $paidAmount >= $totalAmount && $totalAmount > 0;
                         @endphp
-                        <div class="p-4 sm:p-4.5 hover:bg-slate-50/60 dark:hover:bg-[#141821]/60 transition flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 group">
+                        <div class="p-4 sm:p-4.5 hover:bg-[#F4F5F7]/60 dark:hover:bg-[#141821]/60 transition flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 group">
                             <!-- Left: Date Badge & Trip Details -->
                             <div class="flex items-start gap-3.5 min-w-0">
                                 <!-- Calendar Date Block -->
-                                <div class="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-700 dark:text-[#FFEF4D] border border-amber-500/20 flex flex-col items-center justify-center shrink-0 font-mono text-[10px] leading-tight">
+                                <div class="w-11 h-11 rounded-[8px] bg-[#FFEF4D]/15 text-[#12181E] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 flex flex-col items-center justify-center shrink-0 font-mono text-[10px] leading-tight">
                                     <span class="font-bold text-xs">{{ $res->requested_date?->format('d') }}</span>
                                     <span class="text-[9px] uppercase font-semibold opacity-70">{{ $res->requested_date?->format('M') }}</span>
                                 </div>
@@ -526,19 +526,19 @@ new #[Title('Guest Profile')] class extends Component {
                                 <div class="min-w-0 space-y-1">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <a href="{{ route('reservations.show', $res) }}" wire:navigate
-                                            class="font-mono text-xs font-bold text-slate-900 dark:text-[#FFEF4D] hover:underline">
+                                            class="font-mono text-xs font-semibold text-slate-900 dark:text-[#FFEF4D] hover:underline">
                                             #{{ $resCode }}
                                         </a>
                                         <span class="text-slate-300 dark:text-zinc-600">&bull;</span>
                                         <a href="{{ route('reservations.show', $res) }}" wire:navigate
-                                            class="font-bold text-sm text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-[#FFEF4D] transition truncate max-w-xs sm:max-w-md"
+                                            class="font-semibold text-sm text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-[#FFEF4D] transition truncate max-w-xs sm:max-w-md"
                                             title="{{ $bookable->name ?? ($bookable->title ?? __('Direct Booking')) }}">
                                             {{ $bookable->name ?? ($bookable->title ?? __('Direct Booking')) }}
                                         </a>
                                     </div>
 
-                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                        <span><i class="fa-solid fa-users text-[10px] mr-1 text-slate-400"></i>{{ __(':count Guests', ['count' => $res->pax_count]) }}</span>
+                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[#5A6578] dark:text-[#9DA4B2]">
+                                        <span><i class="fa-solid fa-users text-[10px] mr-1 text-[#5A6578] dark:text-[#9DA4B2]"></i>{{ __(':count Guests', ['count' => $res->pax_count]) }}</span>
                                         <span>&bull;</span>
                                         <span>{{ __('Booked :date', ['date' => $res->created_at->format('d M Y')]) }}</span>
                                         @if ($couponCode)
@@ -553,12 +553,12 @@ new #[Title('Guest Profile')] class extends Component {
                             </div>
 
                             <!-- Right: Pricing, Status Badge & Action -->
-                            <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-[#1e2433]">
+                            <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-[#E4E5E9] dark:border-[#1E2433]">
                                 <div class="text-left sm:text-right font-mono min-w-0">
-                                    <div class="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                                    <div class="font-bold text-sm text-slate-900 dark:text-white truncate">
                                         Rp {{ number_format($totalAmount, 0, ',', '.') }}
                                     </div>
-                                    <div class="text-[11px] text-slate-400 flex items-center gap-1">
+                                    <div class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] flex items-center gap-1">
                                         @if ($discountAmount > 0)
                                             <span class="text-amber-600 dark:text-amber-400 font-semibold">-Rp {{ number_format($discountAmount, 0, ',', '.') }}</span>
                                             <span>&bull;</span>
@@ -572,7 +572,7 @@ new #[Title('Guest Profile')] class extends Component {
                                 <div class="flex items-center gap-2 shrink-0">
                                     <x-status-badge :status="$res->status" />
 
-                                    <x-button size="xs" variant="secondary" :href="route('reservations.show', $res)" wire:navigate class="shrink-0 font-bold">
+                                    <x-button size="xs" variant="secondary" :href="route('reservations.show', $res)" wire:navigate class="shrink-0 font-semibold">
                                         <span>{{ __('View') }}</span>
                                         <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
                                     </x-button>
@@ -580,11 +580,11 @@ new #[Title('Guest Profile')] class extends Component {
                             </div>
                         </div>
                     @empty
-                        <div class="p-12 text-center text-xs text-slate-400">
+                        <div class="p-12 text-center text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                             <i class="fa-solid fa-calendar-xmark text-3xl mb-2 block opacity-40"></i>
                             <span
-                                class="font-bold text-sm text-slate-700 dark:text-slate-300 block">{{ __('No trips in this filter.') }}</span>
-                            <p class="text-slate-500 mt-0.5">{{ __('No bookings match the selected status filter.') }}
+                                class="font-semibold text-sm text-slate-700 dark:text-slate-300 block">{{ __('No trips in this filter.') }}</span>
+                            <p class="text-[#5A6578] dark:text-[#9DA4B2] mt-0.5">{{ __('No bookings match the selected status filter.') }}
                             </p>
                         </div>
                     @endforelse
@@ -592,7 +592,7 @@ new #[Title('Guest Profile')] class extends Component {
 
                 @if ($this->reservations->hasPages())
                     <div
-                        class="border-t border-slate-100 px-5 py-3.5 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#10141d]/50">
+                        class="border-t border-[#E4E5E9] px-5 py-3.5 dark:border-[#1E2433] bg-[#F4F5F7]/50 dark:bg-[#141821]/50">
                         {{ $this->reservations->links() }}
                     </div>
                 @endif
@@ -602,47 +602,50 @@ new #[Title('Guest Profile')] class extends Component {
 
     @if ($showEditModal)
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
+            <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs">
                 <div @click.away="$wire.closeEdit()"
-                    class="w-full max-w-lg rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+                    class="w-full max-w-lg rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+                    <!-- Mobile drawer top bar indicator -->
+                    <div class="mx-auto my-1 h-1 w-10 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden"></div>
+
                     <div class="flex items-center justify-between gap-3">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ __('Edit guest') }}</h3>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{{ __('Edit guest') }}</h3>
                         <button type="button" wire:click="closeEdit"
-                            class="h-8 w-8 rounded-xl border border-slate-200 dark:border-[#1e2433] text-slate-500 cursor-pointer">
+                            class="h-8 w-8 rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] text-[#5A6578] hover:text-slate-900 dark:text-[#9DA4B2] dark:hover:text-white flex items-center justify-center cursor-pointer transition">
                             <i class="fa-solid fa-xmark text-xs"></i>
                         </button>
                     </div>
-                    <form wire:submit="saveGuest" class="space-y-3">
+                    <form wire:submit="saveGuest" class="space-y-4">
                         <div>
                             <x-label for="editName" :value="__('Name')" required />
-                            <x-input id="editName" wire:model="editName" type="text" />
+                            <x-input id="editName" wire:model="editName" type="text" class="rounded-[6px] h-9 text-xs" />
                             <x-input-error :messages="$errors->get('editName')" />
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <x-label for="editEmail" :value="__('Email')" />
-                                <x-input id="editEmail" wire:model="editEmail" type="email" />
+                                <x-input id="editEmail" wire:model="editEmail" type="email" class="rounded-[6px] h-9 text-xs" />
                                 <x-input-error :messages="$errors->get('editEmail')" />
                             </div>
                             <div>
                                 <x-label for="editPhone" :value="__('WhatsApp / Phone')" />
-                                <x-input id="editPhone" wire:model="editPhone" type="text" />
+                                <x-input id="editPhone" wire:model="editPhone" type="text" class="rounded-[6px] h-9 text-xs" />
                                 <x-input-error :messages="$errors->get('editPhone')" />
                             </div>
                         </div>
                         <div>
                             <x-label for="editTagsInput" :value="__('Tags (comma separated)')" />
-                            <x-input id="editTagsInput" wire:model="editTagsInput" type="text"
+                            <x-input id="editTagsInput" wire:model="editTagsInput" type="text" class="rounded-[6px] h-9 text-xs"
                                 placeholder="VIP, Vegetarian" />
                         </div>
                         <div>
                             <x-label for="editNotes" :value="__('CRM Notes')" />
-                            <x-textarea id="editNotes" wire:model="editNotes" rows="4" />
+                            <x-textarea id="editNotes" wire:model="editNotes" rows="4" class="rounded-[6px] text-xs" />
                         </div>
-                        <div class="flex justify-end gap-2 pt-2">
-                            <x-button type="button" variant="secondary"
+                        <div class="flex items-center justify-end gap-2 pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                            <x-button type="button" variant="secondary" size="sm"
                                 wire:click="closeEdit">{{ __('Cancel') }}</x-button>
-                            <x-button type="submit" variant="primary">{{ __('Save') }}</x-button>
+                            <x-button type="submit" variant="primary" size="sm">{{ __('Save') }}</x-button>
                         </div>
                     </form>
                 </div>

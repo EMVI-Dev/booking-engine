@@ -134,15 +134,15 @@ new class extends Component {
 <div class="space-y-6">
     <!-- Heatmap Month Controls & Metrics Summary -->
     <div
-        class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
+        class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <span
-                    class="p-2.5 rounded-2xl bg-[#FFEF4D] dark:bg-indigo-950/70 text-[#090d16] dark:text-indigo-400 text-base">
+                    class="w-9 h-9 rounded-[8px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-sm shrink-0">
                     <i class="fa-solid fa-fire-flame-curved"></i>
                 </span>
                 <div>
-                    <h3 class="text-lg font-black text-slate-900 dark:text-white leading-tight">
+                    <h3 class="text-[16px] sm:text-[18px] font-medium text-[#12181E] dark:text-white leading-tight">
                         {{ __('Occupancy Heatmap & Capacity Density') }}
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
@@ -151,49 +151,51 @@ new class extends Component {
                 </div>
             </div>
 
-            <div class="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
+            <div class="flex items-center gap-1 bg-[#F9FAFB] dark:bg-[#151a26] p-1 rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433]">
                 <button type="button" wire:click="prevHeatmapMonth"
-                    class="h-8 w-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-700 shadow-2xs transition cursor-pointer">
+                    class="h-7 w-7 rounded-[4px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#10141d] transition cursor-pointer"
+                    title="{{ __('Previous Month') }}">
                     <i class="fa-solid fa-chevron-left text-xs"></i>
                 </button>
                 <button type="button" wire:click="nextHeatmapMonth"
-                    class="h-8 w-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-700 shadow-2xs transition cursor-pointer">
+                    class="h-7 w-7 rounded-[4px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#10141d] transition cursor-pointer"
+                    title="{{ __('Next Month') }}">
                     <i class="fa-solid fa-chevron-right text-xs"></i>
                 </button>
             </div>
         </div>
 
         <!-- Metric KPI Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
             <div
-                class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800 space-y-1">
+                class="p-3 sm:p-3.5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                 <span
-                    class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Total Month Passengers') }}</span>
-                <p class="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                    class="text-[10px] uppercase font-medium text-slate-400 block">{{ __('Total Month Passengers') }}</span>
+                <p class="text-lg sm:text-xl font-medium text-[#12181E] dark:text-white">
                     {{ $this->heatmapSummary['totalMonthPax'] }} Pax
                 </p>
             </div>
             <div
-                class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800 space-y-1">
+                class="p-3 sm:p-3.5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                 <span
-                    class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Peak Single-Day Departure') }}</span>
-                <p class="text-xl font-black text-rose-600 dark:text-rose-400">
+                    class="text-[10px] uppercase font-medium text-slate-400 block">{{ __('Peak Single-Day Departure') }}</span>
+                <p class="text-lg sm:text-xl font-medium text-rose-600 dark:text-rose-400">
                     {{ $this->heatmapSummary['peakDayPax'] }} Pax
                 </p>
             </div>
             <div
-                class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800 space-y-1">
+                class="p-3 sm:p-3.5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                 <span
-                    class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Active Booking Days') }}</span>
-                <p class="text-xl font-black text-slate-900 dark:text-white">
+                    class="text-[10px] uppercase font-medium text-slate-400 block">{{ __('Active Booking Days') }}</span>
+                <p class="text-lg sm:text-xl font-medium text-[#12181E] dark:text-white">
                     {{ $this->heatmapSummary['activeDaysCount'] }} {{ __('Days') }}
                 </p>
             </div>
             <div
-                class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800 space-y-1">
+                class="p-3 sm:p-3.5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                 <span
-                    class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Monthly Avg Capacity Load') }}</span>
-                <p class="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                    class="text-[10px] uppercase font-medium text-slate-400 block">{{ __('Monthly Avg Capacity Load') }}</span>
+                <p class="text-lg sm:text-xl font-medium text-emerald-600 dark:text-emerald-400">
                     {{ $this->heatmapSummary['avgOccupancyRate'] }}%
                 </p>
             </div>
@@ -202,10 +204,10 @@ new class extends Component {
 
     <!-- Monthly Heatmap Calendar View -->
     <div
-        class="rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+        class="rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden">
         <!-- Weekday Headers -->
         <div
-            class="grid grid-cols-7 border-b border-slate-200/80 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-800/40 text-center text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 py-3">
+            class="grid grid-cols-7 border-b border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#151a26] text-center text-xs font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500 py-2.5">
             <div>{{ __('Sun') }}</div>
             <div>{{ __('Mon') }}</div>
             <div>{{ __('Tue') }}</div>
@@ -215,36 +217,36 @@ new class extends Component {
             <div>{{ __('Sat') }}</div>
         </div>
 
-        <div class="grid grid-cols-7 divide-x divide-y divide-slate-100 dark:divide-zinc-800/60 text-xs">
+        <div class="grid grid-cols-7 divide-x divide-y divide-[#E4E5E9] dark:divide-[#1E2433] text-xs">
             @foreach ($this->heatmapDays as $cell)
                 @php
                     $rate = $cell['occupancyRate'];
-                    $colorClass = 'bg-white dark:bg-zinc-900 text-slate-400';
+                    $colorClass = 'bg-white dark:bg-[#10141d] text-slate-400';
                     if ($cell['isCurrentMonth']) {
                         if ($rate >= 80) {
-                            $colorClass = 'bg-rose-500 text-white dark:bg-rose-600 font-extrabold';
+                            $colorClass = 'bg-rose-500 text-white font-medium';
                         } elseif ($rate >= 50) {
-                            $colorClass = 'bg-amber-400 text-slate-900 dark:bg-amber-500 font-bold';
+                            $colorClass = 'bg-amber-400 text-[#12181E] font-medium';
                         } elseif ($rate > 0) {
-                            $colorClass = 'bg-[#FFEF4D] text-slate-900 dark:bg-indigo-500 font-medium';
+                            $colorClass = 'bg-[#FFEF4D] text-[#12181E] font-medium';
                         } else {
-                            $colorClass = 'bg-slate-50/70 dark:bg-zinc-800/30 text-slate-500 dark:text-slate-400';
+                            $colorClass = 'bg-white dark:bg-[#10141d] text-slate-600 dark:text-slate-400';
                         }
                     } else {
-                        $colorClass = 'bg-slate-50/30 dark:bg-zinc-950/40 text-slate-300 dark:text-zinc-600';
+                        $colorClass = 'bg-[#F9FAFB]/50 dark:bg-[#151a26]/40 text-slate-300 dark:text-zinc-600';
                     }
                 @endphp
                 <div
-                    class="min-h-[85px] sm:min-h-[95px] p-3 flex flex-col justify-between transition-all {{ $colorClass }}">
+                    class="min-h-[70px] sm:min-h-[90px] p-2 sm:p-3 flex flex-col justify-between transition-all {{ $colorClass }}">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-black">{{ $cell['dayNumber'] }}</span>
+                        <span class="text-xs font-medium">{{ $cell['dayNumber'] }}</span>
                         @if ($cell['isCurrentMonth'] && $rate > 0)
-                            <span class="text-[10px] uppercase font-bold opacity-80">{{ $rate }}%</span>
+                            <span class="text-[10px] uppercase font-medium opacity-90">{{ $rate }}%</span>
                         @endif
                     </div>
                     @if ($cell['isCurrentMonth'] && $cell['totalPax'] > 0)
                         <div class="text-right">
-                            <span class="text-sm sm:text-base font-black">{{ $cell['totalPax'] }}</span>
+                            <span class="text-sm sm:text-base font-medium">{{ $cell['totalPax'] }}</span>
                             <span class="text-[10px] opacity-80 block leading-tight">{{ __('Pax') }}</span>
                         </div>
                     @endif
@@ -254,22 +256,22 @@ new class extends Component {
     </div>
 
     <!-- Heatmap Legend -->
-    <div class="flex items-center justify-center gap-4 text-xs font-bold text-slate-500 pt-2 flex-wrap">
+    <div class="flex items-center justify-center gap-3 sm:gap-4 text-xs font-medium text-slate-500 pt-1 flex-wrap">
         <div class="flex items-center gap-1.5">
             <span
-                class="w-4 h-4 rounded-md bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700"></span>
+                class="w-3.5 h-3.5 rounded-[3px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433]"></span>
             <span>0% (Empty)</span>
         </div>
         <div class="flex items-center gap-1.5">
-            <span class="w-4 h-4 rounded-md bg-indigo-400"></span>
+            <span class="w-3.5 h-3.5 rounded-[3px] bg-[#FFEF4D]"></span>
             <span>1-49% (Moderate)</span>
         </div>
         <div class="flex items-center gap-1.5">
-            <span class="w-4 h-4 rounded-md bg-amber-400"></span>
+            <span class="w-3.5 h-3.5 rounded-[3px] bg-amber-400"></span>
             <span>50-79% (Busy)</span>
         </div>
         <div class="flex items-center gap-1.5">
-            <span class="w-4 h-4 rounded-md bg-rose-500"></span>
+            <span class="w-3.5 h-3.5 rounded-[3px] bg-rose-500"></span>
             <span>80-100% (Full / Peak)</span>
         </div>
     </div>

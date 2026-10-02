@@ -186,13 +186,13 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 || str_ends_with((string) $feedHost, '.emvi')
                 || str_ends_with((string) $feedHost, '.local');
         @endphp
-        <div class="p-6 space-y-5" x-data="{ copied: false }">
+        <div class="p-4 sm:p-6 space-y-5" x-data="{ copied: false }">
             <div class="flex items-center gap-3">
-                <span class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-lg">
+                <span class="w-9 h-9 rounded-[8px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-sm shrink-0">
                     <i class="fa-solid fa-calendar-check"></i>
                 </span>
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                    <h3 class="text-[16px] sm:text-[18px] font-medium text-[#12181E] dark:text-white">
                         {{ __('Calendar Live Sync & iCal Feed') }}
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
@@ -203,18 +203,18 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
 
             @if (! $this->hasGoogleCalendarFeature)
                 <!-- Feature Gating Notice inside modal -->
-                <div class="p-5 rounded-3xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 space-y-3 text-center">
-                    <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center text-xl mx-auto">
+                <div class="p-4 sm:p-5 rounded-[12px] bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 space-y-3 text-center shadow-none">
+                    <div class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-base mx-auto">
                         <i class="fa-solid fa-lock"></i>
                     </div>
                     <div>
-                        <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">{{ __('Growth Tier Feature') }}</h4>
+                        <h4 class="font-medium text-sm text-[#12181E] dark:text-white">{{ __('Growth Tier Feature') }}</h4>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                             {{ __('Live calendar subscriptions, automated manifest run-sheets, and WhatsApp dispatch are unlocked on Growth and Agency plans.') }}
                         </p>
                     </div>
                     <div class="pt-1">
-                        <x-button :href="route('settings.plan')" variant="primary" class="w-full justify-center">
+                        <x-button :href="route('settings.plan')" variant="primary" class="w-full justify-center rounded-[6px] font-medium shadow-none">
                             <span>{{ __('Upgrade to Growth Plan') }}</span>
                             <i class="fa-solid fa-arrow-right text-xs"></i>
                         </x-button>
@@ -227,22 +227,22 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                         href="{{ $googleSubUrl }}"
                         target="_blank"
                         rel="noopener"
-                        class="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition text-left flex flex-col justify-between group"
+                        class="p-3 rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#151a26] hover:bg-[#F3F4F6] dark:hover:bg-[#1E2433] transition text-left flex flex-col justify-between group shadow-none"
                     >
                         <i class="fa-brands fa-google text-rose-500 text-lg"></i>
                         <div class="mt-2">
-                            <span class="font-bold text-xs text-slate-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ __('Google') }}</span>
+                            <span class="font-medium text-xs text-[#12181E] dark:text-white block group-hover:text-black dark:group-hover:text-white">{{ __('Google') }}</span>
                             <span class="text-[10px] text-slate-400 block">{{ __('1-Click Add') }}</span>
                         </div>
                     </a>
 
                     <a
                         href="{{ $webcalUrl }}"
-                        class="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition text-left flex flex-col justify-between group"
+                        class="p-3 rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#151a26] hover:bg-[#F3F4F6] dark:hover:bg-[#1E2433] transition text-left flex flex-col justify-between group shadow-none"
                     >
-                        <i class="fa-brands fa-apple text-slate-800 dark:text-white text-lg"></i>
+                        <i class="fa-brands fa-apple text-[#12181E] dark:text-white text-lg"></i>
                         <div class="mt-2">
-                            <span class="font-bold text-xs text-slate-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ __('Apple / Outlook') }}</span>
+                            <span class="font-medium text-xs text-[#12181E] dark:text-white block group-hover:text-black dark:group-hover:text-white">{{ __('Apple / Outlook') }}</span>
                             <span class="text-[10px] text-slate-400 block">{{ __('Direct Webcal') }}</span>
                         </div>
                     </a>
@@ -250,11 +250,11 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                     <a
                         href="{{ $feedUrl }}"
                         download="bookings.ics"
-                        class="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition text-left flex flex-col justify-between group"
+                        class="p-3 rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#151a26] hover:bg-[#F3F4F6] dark:hover:bg-[#1E2433] transition text-left flex flex-col justify-between group shadow-none"
                     >
-                        <i class="fa-solid fa-file-arrow-down text-indigo-600 dark:text-indigo-400 text-lg"></i>
+                        <i class="fa-solid fa-file-arrow-down text-slate-700 dark:text-slate-300 text-lg"></i>
                         <div class="mt-2">
-                            <span class="font-bold text-xs text-slate-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ __('Download .ics') }}</span>
+                            <span class="font-medium text-xs text-[#12181E] dark:text-white block group-hover:text-black dark:group-hover:text-white">{{ __('Download .ics') }}</span>
                             <span class="text-[10px] text-slate-400 block">{{ __('Offline File') }}</span>
                         </div>
                     </a>
@@ -262,8 +262,8 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
 
                 @if ($isLocalHost)
                     <!-- Local environment advice -->
-                    <div class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-800 dark:text-amber-300 space-y-1">
-                        <div class="flex items-center gap-1.5 font-bold">
+                    <div class="p-3 rounded-[8px] bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                        <div class="flex items-center gap-1.5 font-medium">
                             <i class="fa-solid fa-circle-info text-amber-600"></i>
                             <span>{{ __('Local Development Host (:host)', ['host' => $feedHost]) }}</span>
                         </div>
@@ -274,8 +274,8 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 @endif
 
                 <!-- Live Feed URL Box -->
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 space-y-2">
-                    <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                <div class="p-3.5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-2">
+                    <span class="text-[10px] uppercase font-medium tracking-wider text-slate-400">
                         {{ __('Your Private Live Calendar Feed URL (iCal / .ics)') }}
                     </span>
                     <div class="flex items-center gap-2">
@@ -284,7 +284,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                             readonly
                             value="{{ $feedUrl }}"
                             id="calendarFeedUrlInput"
-                            class="h-9 w-full px-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono text-xs text-slate-700 dark:text-slate-300 select-all"
+                            class="h-9 w-full px-3 rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#10141d] font-mono text-xs text-slate-700 dark:text-slate-300 select-all"
                         />
                         <button
                             type="button"
@@ -299,7 +299,7 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                                 copied = true;
                                 setTimeout(() => copied = false, 2500)
                             "
-                            class="h-9 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-2xs transition shrink-0 flex items-center gap-1.5 cursor-pointer"
+                            class="h-9 px-3.5 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] font-medium text-xs shadow-none transition shrink-0 flex items-center gap-1.5 cursor-pointer"
                         >
                             <i class="fa-solid" :class="copied ? 'fa-check' : 'fa-copy'"></i>
                             <span x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy') }}'">{{ __('Copy') }}</span>
@@ -308,9 +308,9 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                 </div>
 
                 <!-- How to Add Steps -->
-                <div class="space-y-2.5 text-xs">
-                    <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <i class="fa-solid fa-circle-question text-indigo-500"></i>
+                <div class="space-y-2 text-xs">
+                    <h4 class="font-medium text-[#12181E] dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-circle-question text-slate-400"></i>
                         {{ __('Manual Subscription Steps:') }}
                     </h4>
                     <ol class="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-300 pl-1">
@@ -323,8 +323,8 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
             @endif
 
             <!-- Modal Actions -->
-            <div class="flex items-center justify-end pt-4 border-t border-slate-100 dark:border-zinc-800">
-                <x-button type="button" variant="secondary" x-on:click="$dispatch('close-modal', 'google-calendar-sync')">
+            <div class="flex items-center justify-end pt-4 border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                <x-button type="button" variant="secondary" size="sm" class="rounded-[6px] font-medium shadow-none" x-on:click="$dispatch('close-modal', 'google-calendar-sync')">
                     {{ __('Done') }}
                 </x-button>
             </div>

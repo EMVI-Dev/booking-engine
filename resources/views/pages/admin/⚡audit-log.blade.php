@@ -41,19 +41,12 @@ new #[Title('Audit log')] #[Layout('layouts.admin')] class extends Component
 
 <div class="space-y-6 w-full">
     {{-- Header --}}
-    <div class="flex items-center gap-3 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
-        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] text-sm">
-            <i class="fa-solid fa-clipboard-list"></i>
-        </span>
-        <div>
-            <h1 class="text-[20px] font-medium leading-[1.6] text-[#1C2024] dark:text-white">
-                {{ __('Audit log') }}
-            </h1>
-            <p class="text-[13px] text-[#60646C] dark:text-zinc-400">
-                {{ __('Every action taken by platform administrators.') }}
-            </p>
-        </div>
-    </div>
+    <x-page-header
+        :title="__('Audit log')"
+        :subtitle="__('Every action taken by platform administrators.')"
+        icon="fa-clipboard-list"
+        class="pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]"
+    />
 
     {{-- Search Toolbar --}}
     <div class="flex items-center">

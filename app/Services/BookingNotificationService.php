@@ -27,7 +27,7 @@ class BookingNotificationService
             return;
         }
 
-        $this->deliver(fn () => Mail::to($reservation->guest_email)->send(new GuestBookingCreatedMail($reservation)));
+        $this->deliver(fn () => Mail::to($reservation->guest_email)->queue(new GuestBookingCreatedMail($reservation)));
     }
 
     /**
@@ -38,14 +38,14 @@ class BookingNotificationService
     public function bookingConfirmed(Reservation $reservation, bool $notifyOperator = true): void
     {
         if (! empty($reservation->guest_email)) {
-            $this->deliver(fn () => Mail::to($reservation->guest_email)->send(new GuestBookingConfirmedMail($reservation)));
+            $this->deliver(fn () => Mail::to($reservation->guest_email)->queue(new GuestBookingConfirmedMail($reservation)));
         }
 
         if ($notifyOperator) {
             $recipient = $reservation->operator?->bookingNotificationRecipient();
 
             if ($recipient !== null) {
-                $this->deliver(fn () => Mail::to($recipient)->send(new OperatorNewBookingNotificationMail($reservation)));
+                $this->deliver(fn () => Mail::to($recipient)->queue(new OperatorNewBookingNotificationMail($reservation)));
             }
         }
 

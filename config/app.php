@@ -65,7 +65,9 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Every operator is in Bali for the MVP: "today", trip days, free-cancel cutoffs,
+    // escrow release and the scheduler all follow WITA (UTC+8).
+    'timezone' => env('APP_TIMEZONE', 'Asia/Makassar'),
 
     /*
     |--------------------------------------------------------------------------

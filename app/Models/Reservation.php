@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Contracts\Bookable;
 use App\Enums\ReservationStatus;
 use App\Services\CancellationPolicy;
+use App\Services\PhoneNumber;
 use Carbon\CarbonInterface;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -277,6 +278,28 @@ class Reservation extends Model
         return $this->latestPayment !== null
             ? (float) $this->latestPayment->amount
             : $this->getQuotedTotal();
+    }
+
+    /**
+     * Whether what a guest typed proves they made this booking: the exact booking email,
+     * or the same phone number once both are normalized. Names are never accepted (guessable).
+     */
+    public function matchesGuestContact(string $contact): bool
+    {
+        $contact = trim($contact);
+
+        if ($contact === '') {
+            return false;
+        }
+
+        if (str_contains($contact, '@')) {
+            return $this->guest_email !== null
+                && hash_equals(strtolower(trim($this->guest_email)), strtolower($contact));
+        }
+
+        $typed = PhoneNumber::normalize($contact);
+
+        return strlen($typed) >= 8 && hash_equals(PhoneNumber::normalize($this->guest_contact), $typed);
     }
 
     /**

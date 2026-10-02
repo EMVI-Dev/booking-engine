@@ -31,7 +31,7 @@
     };
 @endphp
 
-<x-badge :variant="$variant" :size="$size" {{ $attributes->merge(['class' => 'gap-1.5 font-bold whitespace-nowrap']) }}>
+<x-badge :variant="$variant" :size="$size" {{ $attributes->merge(['class' => 'gap-1.5 font-medium whitespace-nowrap']) }}>
     <span class="h-1.5 w-1.5 rounded-full {{ $dotColor }}" aria-hidden="true"></span>
     {{ $label }}
 </x-badge>

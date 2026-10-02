@@ -69,9 +69,9 @@
 
     <div class="animate-fade-in space-y-5" x-data="{ copied: false, board: '{{ $defaultBoard }}' }">
         @if ($pendingConfirmationCount > 0)
-            <div class="flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-amber-800/80 dark:bg-amber-950/40">
+            <div class="flex flex-col gap-3 rounded-[12px] border border-amber-300 bg-amber-50/60 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-amber-800/80 dark:bg-amber-950/30">
                 <div class="min-w-0">
-                    <p class="text-sm font-bold text-op-ink">
+                    <p class="text-sm font-medium text-op-ink">
                         {{ __(':count booking(s) waiting for confirmation', ['count' => $pendingConfirmationCount]) }}
                     </p>
                     <p class="mt-0.5 text-xs text-op-subtle">
@@ -119,7 +119,7 @@
                 :href="route('wallet.index')"
             >
                 <x-slot:meta>
-                    <span class="op-metric-chip inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                    <span class="op-metric-chip inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[10px] font-medium">
                         {{ __(':count bookings', ['count' => $reservationsCount]) }}
                     </span>
                 </x-slot:meta>
@@ -168,7 +168,7 @@
 
                     <a
                         href="{{ route('calendar.index') }}"
-                        class="text-xs font-semibold text-op-subtle hover:text-op-ink"
+                        class="text-xs font-medium text-op-subtle hover:text-op-ink"
                         wire:navigate
                         x-show="board === 'upcoming'"
                     >
@@ -176,7 +176,7 @@
                     </a>
                     <a
                         href="{{ route('reservations.index') }}"
-                        class="text-xs font-semibold text-op-subtle hover:text-op-ink"
+                        class="text-xs font-medium text-op-subtle hover:text-op-ink"
                         wire:navigate
                         x-show="board === 'recent'"
                         x-cloak
@@ -195,20 +195,20 @@
                         @endphp
                         <div class="flex items-center gap-3 px-4 py-3">
                             <div @class([
-                                'flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl text-center',
-                                'bg-brand-400 text-brand-foreground' => $isToday,
+                                'flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-[8px] text-center',
+                                'bg-[#FFEF4D] text-[#12181E]' => $isToday,
                                 'bg-op-muted text-op-ink' => ! $isToday,
                             ])>
-                                <span class="text-[9px] font-semibold uppercase">{{ $res->requested_date->format('M') }}</span>
-                                <span class="text-sm font-bold leading-none">{{ $res->requested_date->format('d') }}</span>
+                                <span class="text-[9px] font-medium uppercase">{{ $res->requested_date->format('M') }}</span>
+                                <span class="text-sm font-medium leading-none">{{ $res->requested_date->format('d') }}</span>
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-semibold text-op-ink">{{ $res->guest_name }}</p>
+                                <p class="truncate text-sm font-medium text-op-ink">{{ $res->guest_name }}</p>
                                 <p class="truncate text-xs text-op-subtle">
                                     #{{ $resCode }} · {{ $bookable->name ?? ($bookable->title ?? __('Tour')) }} · {{ __(':count pax', ['count' => $res->pax_count]) }}
                                 </p>
                             </div>
-                            <span class="hidden font-mono text-xs font-semibold text-op-ink sm:inline">
+                            <span class="hidden font-mono text-xs font-medium text-op-ink sm:inline">
                                 {{ $payment && $payment->isPaid() ? 'Rp '.number_format((float) $payment->amount, 0, ',', '.') : '—' }}
                             </span>
                         </div>
@@ -227,12 +227,12 @@
                         @endphp
                         <div class="flex items-center gap-3 px-4 py-3">
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-semibold text-op-ink">{{ $res->guest_name }}</p>
+                                <p class="truncate text-sm font-medium text-op-ink">{{ $res->guest_name }}</p>
                                 <p class="truncate text-xs text-op-subtle">
                                     #{{ $resCode }} · {{ $res->requested_date->format('M d, Y') }} · {{ __(':count pax', ['count' => $res->pax_count]) }}
                                 </p>
                             </div>
-                            <span class="hidden font-mono text-xs font-semibold text-op-ink sm:inline">
+                            <span class="hidden font-mono text-xs font-medium text-op-ink sm:inline">
                                 {{ $payment && $payment->isPaid() ? 'Rp '.number_format((float) $payment->amount, 0, ',', '.') : '—' }}
                             </span>
                             <x-status-badge :status="$res->status" />
@@ -247,9 +247,9 @@
 
             <div class="space-y-4 lg:col-span-4">
                 @if ($nextDeparture)
-                    <div class="op-card space-y-3 p-5">
-                        <p class="text-xs font-bold uppercase tracking-wider text-op-subtle">{{ __('Next departure') }}</p>
-                        <p class="text-lg font-bold text-op-ink">{{ $nextDeparture->requested_date->format('D, M d') }}</p>
+                    <div class="op-card space-y-3 p-4 sm:p-5">
+                        <p class="text-xs font-medium uppercase tracking-wider text-op-subtle">{{ __('Next departure') }}</p>
+                        <p class="text-lg font-medium text-op-ink">{{ $nextDeparture->requested_date->format('D, M d') }}</p>
                         <p class="text-sm text-op-subtle">
                             {{ $nextDeparture->guest_name }} · {{ __(':count pax', ['count' => $nextDeparture->pax_count]) }}
                         </p>
@@ -259,22 +259,22 @@
                     </div>
                 @endif
 
-                <div class="op-card p-5">
-                    <p class="mb-3 text-xs font-bold uppercase tracking-wider text-op-subtle">{{ __('Shortcuts') }}</p>
+                <div class="op-card p-4 sm:p-5">
+                    <p class="mb-3 text-xs font-medium uppercase tracking-wider text-op-subtle">{{ __('Shortcuts') }}</p>
                     <div class="divide-y divide-op-line">
-                        <a href="{{ route('packages.create') }}" class="flex items-center justify-between py-2.5 text-sm font-semibold text-op-ink first:pt-0" wire:navigate>
+                        <a href="{{ route('packages.create') }}" class="flex items-center justify-between py-2.5 text-sm font-medium text-op-ink first:pt-0" wire:navigate>
                             {{ __('Create package') }}
                             <i class="fa-solid fa-chevron-right text-[10px] text-op-subtle"></i>
                         </a>
-                        <a href="{{ route('products.create') }}" class="flex items-center justify-between py-2.5 text-sm font-semibold text-op-ink" wire:navigate>
+                        <a href="{{ route('products.create') }}" class="flex items-center justify-between py-2.5 text-sm font-medium text-op-ink" wire:navigate>
                             {{ __('Add activity') }}
                             <i class="fa-solid fa-chevron-right text-[10px] text-op-subtle"></i>
                         </a>
-                        <a href="{{ route('calendar.index') }}" class="flex items-center justify-between py-2.5 text-sm font-semibold text-op-ink" wire:navigate>
+                        <a href="{{ route('calendar.index') }}" class="flex items-center justify-between py-2.5 text-sm font-medium text-op-ink" wire:navigate>
                             {{ __('Availability') }}
                             <i class="fa-solid fa-chevron-right text-[10px] text-op-subtle"></i>
                         </a>
-                        <a href="{{ route('guests.index') }}" class="flex items-center justify-between py-2.5 text-sm font-semibold text-op-ink last:pb-0" wire:navigate>
+                        <a href="{{ route('guests.index') }}" class="flex items-center justify-between py-2.5 text-sm font-medium text-op-ink last:pb-0" wire:navigate>
                             {{ __('Guest CRM') }}
                             <i class="fa-solid fa-chevron-right text-[10px] text-op-subtle"></i>
                         </a>
@@ -282,17 +282,17 @@
                 </div>
 
                 @if ($operator)
-                    <div class="op-card space-y-2 p-5">
-                        <p class="text-xs font-bold uppercase tracking-wider text-op-subtle">{{ __('Your page') }}</p>
+                    <div class="op-card space-y-2 p-4 sm:p-5">
+                        <p class="text-xs font-medium uppercase tracking-wider text-op-subtle">{{ __('Your page') }}</p>
                         @if (! $storefrontIsPublic)
                             <p class="text-xs text-op-subtle">{{ __('Closed to guests until setup is finished.') }}</p>
                         @endif
-                        <div class="flex items-center gap-2 rounded-xl bg-op-muted px-2.5 py-2">
+                        <div class="flex items-center gap-2 rounded-[6px] border border-op-line bg-op-muted px-2.5 py-1.5">
                             <span class="min-w-0 flex-1 truncate font-mono text-[11px] text-op-ink select-all">{{ $storefrontUrl }}</span>
                             @if ($storefrontIsPublic)
                                 <button
                                     type="button"
-                                    class="shrink-0 cursor-pointer rounded-lg bg-brand-400 px-2.5 py-1 text-xs font-semibold text-brand-foreground"
+                                    class="shrink-0 cursor-pointer rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] px-2.5 py-1 text-xs font-medium text-[#12181E] transition"
                                     x-on:click="navigator.clipboard.writeText('{{ $storefrontUrl }}'); copied = true; setTimeout(() => copied = false, 2500)"
                                 >
                                     <span x-text="copied ? '{{ __('Copied') }}' : '{{ __('Copy') }}'"></span>

@@ -34,14 +34,14 @@ new class extends Component {
 
     @if ($operator && $remaining->isNotEmpty())
         <div
-            class="mb-4 overflow-hidden rounded-2xl border border-[#FFEF4D]/60 bg-gradient-to-br from-[#FFEF4D]/25 via-[#FFEF4D]/10 to-transparent p-4 dark:border-[#FFEF4D]/25 dark:from-[#FFEF4D]/15 dark:via-[#FFEF4D]/5 dark:to-transparent"
+            class="mb-4 overflow-hidden rounded-[12px] border border-[#E4E5E9] bg-white p-4 dark:border-[#1E2433] dark:bg-[#10141d]"
             role="status"
             aria-live="polite"
             wire:key="setup-banner-{{ $doneCount }}-{{ $remainingCount }}"
         >
             <div class="flex items-start gap-3">
                 <span
-                    class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E] shadow-xs"
+                    class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] shadow-none"
                     aria-hidden="true"
                 >
                     <i class="fa-solid fa-list-check text-sm"></i>
@@ -50,7 +50,7 @@ new class extends Component {
                 <div class="min-w-0 flex-1">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                            <p class="text-sm font-bold text-op-ink">
+                            <p class="text-sm font-medium text-op-ink">
                                 @if ($remainingCount === 1)
                                     {{ __('One step left before guests can book') }}
                                 @else
@@ -61,13 +61,13 @@ new class extends Component {
                                 {{ __('Guests cannot pay you until these are done.') }}
                             </p>
                         </div>
-                        <p class="shrink-0 rounded-lg bg-white/70 px-2 py-1 text-[11px] font-semibold tabular-nums text-op-ink dark:bg-black/20">
+                        <p class="shrink-0 rounded-[4px] border border-[#E4E5E9] bg-[#F7F8F9] px-2 py-0.5 text-[11px] font-medium tabular-nums text-op-ink dark:border-[#1E2433] dark:bg-[#151a26]">
                             {{ __(':done of :total done', ['done' => $doneCount, 'total' => $total]) }}
                         </p>
                     </div>
 
                     <div
-                        class="mt-3 h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10"
+                        class="mt-3 h-1.5 overflow-hidden rounded-[4px] bg-[#E4E5E9] dark:bg-[#1E2433]"
                         role="progressbar"
                         aria-valuemin="0"
                         aria-valuemax="{{ $total }}"
@@ -75,7 +75,7 @@ new class extends Component {
                         aria-label="{{ __('Setup progress') }}"
                     >
                         <div
-                            class="h-full rounded-full bg-[#FFEF4D] transition-[width] duration-300 ease-out"
+                            class="h-full rounded-[4px] bg-[#FFEF4D] transition-[width] duration-300 ease-out"
                             style="width: {{ $percent }}%"
                         ></div>
                     </div>
@@ -109,13 +109,13 @@ new class extends Component {
                     @endif
 
                     @if ($hasOtherSteps)
-                        <ul class="mt-3 flex flex-wrap gap-1.5 border-t border-black/5 pt-3 dark:border-white/10">
+                        <ul class="mt-3 flex flex-wrap gap-1.5 border-t border-op-line pt-3">
                             @foreach ($otherRemaining as $step)
                                 <li>
                                     <a
                                         href="{{ $step['url'] }}"
                                         wire:navigate
-                                        class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-black/5 bg-white/50 px-2.5 py-1 text-[11px] font-semibold text-op-ink transition hover:border-black/10 hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-400/60 dark:border-white/10 dark:bg-black/20 dark:hover:bg-black/30"
+                                        class="inline-flex cursor-pointer items-center gap-1.5 rounded-[6px] border border-[#E4E5E9] bg-white px-2.5 py-1 text-[11px] font-medium text-op-ink transition hover:border-[#D1D3D8] hover:bg-[#F7F8F9] focus:outline-none focus:ring-1 focus:ring-[#FFEF4D] dark:border-[#1E2433] dark:bg-[#151a26] dark:hover:border-[#2A3245] dark:hover:bg-[#1A2030]"
                                     >
                                         <span>{{ $step['label'] }}</span>
                                         <i class="fa-solid fa-arrow-right text-[9px] text-op-subtle" aria-hidden="true"></i>

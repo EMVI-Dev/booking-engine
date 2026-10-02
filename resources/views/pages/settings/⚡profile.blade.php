@@ -81,7 +81,7 @@ new #[Title('Profile settings')] class extends Component {
 
     <x-pages::settings.layout :heading="__('Profile information')" :subheading="__('Update your account\'s profile information and email address.')">
         <div class="space-y-6">
-            <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
                 <form wire:submit="updateProfileInformation" class="space-y-4">
                     <div>
                         <x-label for="name" :value="__('Name')" required />
@@ -92,6 +92,7 @@ new #[Title('Profile settings')] class extends Component {
                             required
                             autofocus
                             autocomplete="name"
+                            class="rounded-[6px] h-9 text-xs"
                             :error="$errors->has('name')"
                         />
                         <x-input-error :messages="$errors->get('name')" />
@@ -105,12 +106,13 @@ new #[Title('Profile settings')] class extends Component {
                             type="email"
                             required
                             autocomplete="email"
+                            class="rounded-[6px] h-9 text-xs"
                             :error="$errors->has('email')"
                         />
                         <x-input-error :messages="$errors->get('email')" />
 
                         @if ($this->hasUnverifiedEmail)
-                            <div class="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                            <div class="mt-2 text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                                 {{ __('Your email address is unverified.') }}
 
                                 <button
@@ -130,8 +132,8 @@ new #[Title('Profile settings')] class extends Component {
                         @endif
                     </div>
 
-                    <div class="flex items-center gap-4 pt-2">
-                        <x-button variant="primary" type="submit" data-test="update-profile-button" class="shadow-sm">
+                    <div class="flex items-center gap-3 pt-2">
+                        <x-button variant="primary" type="submit" data-test="update-profile-button" class="shadow-none font-semibold">
                             <i class="fa-solid fa-floppy-disk mr-1 text-xs"></i>
                             {{ __('Save') }}
                         </x-button>
@@ -150,7 +152,7 @@ new #[Title('Profile settings')] class extends Component {
             </div>
 
             @if ($this->showDeleteUser)
-                <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs">
+                <div class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none">
                     <livewire:pages::settings.delete-user-form />
                 </div>
             @endif

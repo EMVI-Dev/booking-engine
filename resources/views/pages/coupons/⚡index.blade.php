@@ -362,8 +362,8 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         icon="fa-ticket"
     >
         <x-slot:actions>
-            <x-button type="button" wire:click="createCoupon">
-                <i class="fa-solid fa-plus text-xs"></i>
+            <x-button type="button" wire:click="createCoupon" class="rounded-[6px] text-xs font-medium !bg-[#FFEF4D] !text-[#12181E] hover:!bg-[#F3E13A] shadow-none">
+                <i class="fa-solid fa-plus text-xs mr-1"></i>
                 <span>{{ __('New Promo Code') }}</span>
             </x-button>
         </x-slot:actions>
@@ -371,14 +371,14 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
 
     <!-- Alert Notifications -->
     @if (session()->has('success'))
-        <div class="p-4 rounded-2xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-2">
+        <div class="p-3.5 rounded-[8px] bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 text-xs font-medium flex items-center gap-2">
             <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-sm"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if (session()->has('error'))
-        <div class="p-4 rounded-2xl bg-rose-50 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-2">
+        <div class="p-3.5 rounded-[8px] bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40 text-xs font-medium flex items-center gap-2">
             <i class="fa-solid fa-circle-exclamation text-rose-600 dark:text-rose-400 text-sm"></i>
             <span>{{ session('error') }}</span>
         </div>
@@ -426,7 +426,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
     </x-toolbar>
 
     <!-- Coupons Table Card -->
-    <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
+    <div class="rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden">
         <!-- Mobile Responsive Card List (md:hidden) -->
         <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
             @forelse ($coupons as $c)
@@ -435,14 +435,14 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                     $isFuture = $c->starts_at && $c->starts_at->isFuture();
                     $isLimitReached = $c->max_uses !== null && $c->used_count >= $c->max_uses;
                 @endphp
-                <div class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
+                <div class="p-3.5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-2.5">
                     <!-- Top Row: Code Badge + Discount Amount & Status Toggle -->
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#FFEF4D]/10 text-slate-800 dark:text-[#FFEF4D] border border-slate-200 dark:border-[#FFEF4D]/30 font-mono font-bold text-xs">
+                            <span class="px-2 py-0.5 rounded-[4px] bg-[#F8F9FA] dark:bg-[#151a26] text-[#12181E] dark:text-[#FFEF4D] border border-[#E4E5E9] dark:border-[#1E2433] font-mono font-medium text-xs">
                                 {{ $c->code }}
                             </span>
-                            <span class="font-extrabold text-xs text-slate-900 dark:text-white font-mono shrink-0">
+                            <span class="font-semibold text-xs text-[#12181E] dark:text-white font-mono shrink-0">
                                 @if ($c->discount_type === 'percentage')
                                     {{ (float) $c->discount_value }}% OFF
                                 @else
@@ -456,7 +456,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                             <button
                                 type="button"
                                 wire:click="promptToggleActive('{{ $c->id }}', '{{ $c->code }}', {{ $c->is_active && ! $isExpired ? 'true' : 'false' }})"
-                                class="h-6 px-2.5 rounded-full inline-flex items-center gap-1.5 text-[10px] font-bold transition cursor-pointer {{ $c->is_active && ! $isExpired ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60' : 'bg-slate-100 text-slate-700 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]' }}"
+                                class="h-6 px-2 rounded-[4px] inline-flex items-center gap-1.5 text-[11px] font-medium transition cursor-pointer {{ $c->is_active && ! $isExpired ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40' : 'bg-[#F8F9FA] text-[#5A6578] dark:bg-[#151a26] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433]' }}"
                                 title="{{ __('Click to change active status') }}"
                             >
                                 <span class="h-1.5 w-1.5 rounded-full {{ $c->is_active && ! $isExpired ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
@@ -466,51 +466,51 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                     </div>
 
                     @if ($c->description)
-                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] line-clamp-2">
                             {{ $c->description }}
                         </p>
                     @endif
 
                     <!-- Middle 2-Column Grid: Usage / Limits & Validity -->
-                    <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-[#1e2433]">
+                    <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Usage & Quota') }}</span>
+                            <span class="text-[10px] uppercase font-semibold text-[#5A6578] dark:text-[#9DA4B2] block">{{ __('Usage & Quota') }}</span>
                             <a
                                 href="{{ route('coupons.report', $c) }}"
                                 wire:navigate
-                                class="font-mono font-bold text-slate-900 dark:text-white hover:text-amber-500 dark:hover:text-[#FFEF4D] transition inline-flex items-center gap-1 group cursor-pointer"
+                                class="font-mono font-medium text-[#12181E] dark:text-white hover:text-amber-600 dark:hover:text-[#FFEF4D] transition inline-flex items-center gap-1 group cursor-pointer"
                                 title="{{ __('View redemptions report') }}"
                             >
                                 <span>{{ $c->used_count }} / {{ $c->max_uses ?? '∞' }} {{ __('used') }}</span>
                                 <i class="fa-solid fa-chart-pie text-[9px] text-amber-500 opacity-60 group-hover:opacity-100 transition"></i>
                             </a>
                             @if ($c->min_spend > 0)
-                                <span class="text-[10px] text-slate-400 block truncate">{{ __('Min: Rp :val', ['val' => number_format((float) $c->min_spend, 0, ',', '.')]) }}</span>
+                                <span class="text-[10px] text-[#5A6578] dark:text-[#9DA4B2] block truncate">{{ __('Min: Rp :val', ['val' => number_format((float) $c->min_spend, 0, ',', '.')]) }}</span>
                             @endif
                         </div>
                         <div class="text-right">
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Validity') }}</span>
+                            <span class="text-[10px] uppercase font-semibold text-[#5A6578] dark:text-[#9DA4B2] block">{{ __('Validity') }}</span>
                             @if ($c->expires_at)
-                                <span class="font-semibold block {{ $isExpired ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-800 dark:text-slate-200' }}">
+                                <span class="font-medium block {{ $isExpired ? 'text-rose-600 dark:text-rose-400' : 'text-[#12181E] dark:text-white' }}">
                                     {{ $c->expires_at->format('M j, Y') }}
                                 </span>
                             @else
-                                <span class="text-slate-400 font-medium block">{{ __('Never expires') }}</span>
+                                <span class="text-[#5A6578] dark:text-[#9DA4B2] font-normal block">{{ __('Never expires') }}</span>
                             @endif
                             @if ($isLimitReached)
-                                <span class="text-[9px] text-rose-500 font-bold uppercase block">{{ __('Limit reached') }}</span>
+                                <span class="text-[9px] text-rose-500 font-semibold uppercase block">{{ __('Limit reached') }}</span>
                             @elseif ($isExpired)
-                                <span class="text-[9px] text-rose-500 font-bold uppercase block">{{ __('Expired') }}</span>
+                                <span class="text-[9px] text-rose-500 font-semibold uppercase block">{{ __('Expired') }}</span>
                             @endif
                         </div>
                     </div>
 
                     <!-- Bottom Action Bar: Report link + Edit + Delete -->
-                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                         <a
                             href="{{ route('coupons.report', $c) }}"
                             wire:navigate
-                            class="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-[#FFEF4D] hover:underline"
+                            class="inline-flex items-center gap-1.5 text-xs font-medium text-[#12181E] dark:text-[#FFEF4D] hover:underline"
                         >
                             <i class="fa-solid fa-chart-line text-[10px]"></i>
                             <span>{{ __('Report') }}</span>
@@ -520,7 +520,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                             <button
                                 type="button"
                                 wire:click="editCoupon('{{ $c->id }}')"
-                                class="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-[#141721] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#262d3d] inline-flex items-center gap-1 text-xs font-bold transition cursor-pointer shadow-2xs"
+                                class="h-8 px-2.5 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-zinc-200 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center gap-1.5 text-xs font-medium transition cursor-pointer shadow-none"
                                 title="{{ __('Edit Promo Code') }}"
                             >
                                 <i class="fa-solid fa-pen text-[10px]"></i>
@@ -530,7 +530,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                             <button
                                 type="button"
                                 wire:click="promptDelete('{{ $c->id }}', '{{ $c->code }}')"
-                                class="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#141721] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-[#262d3d] inline-flex items-center justify-center transition cursor-pointer shadow-2xs"
+                                class="h-8 w-8 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center transition cursor-pointer shadow-none"
                                 title="{{ __('Delete Code') }}"
                             >
                                 <i class="fa-solid fa-trash-can text-xs"></i>
@@ -539,12 +539,12 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                     </div>
                 </div>
             @empty
-                <div class="p-8 text-center text-xs text-slate-400">
-                    <div class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-[#141821] text-slate-400 border border-slate-200 dark:border-[#1e2433] flex items-center justify-center mx-auto text-base mb-2">
+                <div class="p-8 text-center text-xs text-[#5A6578] dark:text-[#9DA4B2]">
+                    <div class="w-10 h-10 rounded-[8px] bg-[#F8F9FA] dark:bg-[#151a26] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center mx-auto text-base mb-2">
                         <i class="fa-solid fa-tags"></i>
                     </div>
-                    <p class="font-bold text-slate-700 dark:text-slate-300 text-sm">{{ __('No promo codes found') }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ __('Create marketing discount codes to incentivize direct guest bookings on your storefront.') }}</p>
+                    <p class="font-semibold text-[#12181E] dark:text-white text-sm">{{ __('No promo codes found') }}</p>
+                    <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-1">{{ __('Create marketing discount codes to incentivize direct guest bookings on your storefront.') }}</p>
                 </div>
             @endforelse
         </div>
@@ -553,48 +553,48 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead>
-                    <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        <th class="py-3.5 px-4 sm:px-6">{{ __('Promo Code') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Discount') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Usage & Limits') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Validity Window') }}</th>
-                        <th class="py-3.5 px-4 text-center">{{ __('Status') }}</th>
-                        <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
+                    <tr class="bg-[#F8F9FA] dark:bg-[#10141d] border-b border-[#E4E5E9] dark:border-[#1E2433] text-[11px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
+                        <th class="py-3 px-4 sm:px-6">{{ __('Promo Code') }}</th>
+                        <th class="py-3 px-4">{{ __('Discount') }}</th>
+                        <th class="py-3 px-4">{{ __('Usage & Limits') }}</th>
+                        <th class="py-3 px-4">{{ __('Validity Window') }}</th>
+                        <th class="py-3 px-4 text-center">{{ __('Status') }}</th>
+                        <th class="py-3 px-4 sm:px-6 text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
+                <tbody class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                     @forelse ($coupons as $c)
                         @php
                             $isExpired = $c->expires_at && $c->expires_at->isPast();
                             $isFuture = $c->starts_at && $c->starts_at->isFuture();
                             $isLimitReached = $c->max_uses !== null && $c->used_count >= $c->max_uses;
                         @endphp
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
+                        <tr class="hover:bg-[#F8F9FA] dark:hover:bg-[#151a26]/60 transition">
                             <!-- Code & Description -->
-                            <td class="py-3.5 px-4 sm:px-6">
+                            <td class="py-3 px-4 sm:px-6">
                                 <div class="space-y-0.5">
                                     <div class="flex items-center gap-2">
-                                        <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#FFEF4D]/10 text-slate-800 dark:text-[#FFEF4D] border border-slate-200 dark:border-[#FFEF4D]/30 font-mono font-bold text-xs sm:text-sm">
+                                        <span class="px-2 py-0.5 rounded-[4px] bg-[#F8F9FA] dark:bg-[#151a26] text-[#12181E] dark:text-[#FFEF4D] border border-[#E4E5E9] dark:border-[#1E2433] font-mono font-medium text-xs sm:text-sm">
                                             {{ $c->code }}
                                         </span>
                                     </div>
                                     @if ($c->description)
-                                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-xs">{{ $c->description }}</p>
+                                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] truncate max-w-xs">{{ $c->description }}</p>
                                     @endif
                                 </div>
                             </td>
 
                             <!-- Discount Rate -->
-                            <td class="py-3.5 px-4">
+                            <td class="py-3 px-4">
                                 <div class="space-y-0.5">
-                                    <span class="font-extrabold text-sm text-slate-900 dark:text-white font-mono">
+                                    <span class="font-semibold text-sm text-[#12181E] dark:text-white font-mono">
                                         @if ($c->discount_type === 'percentage')
                                              {{ (float) $c->discount_value }}% OFF
                                         @else
                                             Rp {{ number_format((float) $c->discount_value, 0, ',', '.') }} OFF
                                         @endif
                                     </span>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                                         @if ($c->min_spend > 0)
                                             <span>Min: Rp {{ number_format((float) $c->min_spend, 0, ',', '.') }}</span>
                                         @else
@@ -608,60 +608,60 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                             </td>
 
                             <!-- Usage & Limits -->
-                            <td class="py-3.5 px-4">
+                            <td class="py-3 px-4">
                                 <div class="space-y-0.5 font-mono text-xs">
                                     <a
                                         href="{{ route('coupons.report', $c) }}"
                                         wire:navigate
-                                        class="font-bold text-slate-900 dark:text-white hover:text-amber-500 dark:hover:text-[#FFEF4D] transition inline-flex items-center gap-1 group cursor-pointer"
+                                        class="font-medium text-[#12181E] dark:text-white hover:text-amber-600 dark:hover:text-[#FFEF4D] transition inline-flex items-center gap-1 group cursor-pointer"
                                         title="{{ __('View redemptions report') }}"
                                     >
                                         <span>{{ $c->used_count }} / {{ $c->max_uses ?? '∞' }} {{ __('uses') }}</span>
                                         <i class="fa-solid fa-chart-pie text-[10px] text-amber-500 opacity-60 group-hover:opacity-100 transition"></i>
                                     </a>
                                     @if ($isLimitReached)
-                                        <span class="block text-[10px] text-rose-500 font-bold uppercase">{{ __('Limit Reached') }}</span>
+                                        <span class="block text-[10px] text-rose-500 font-medium uppercase">{{ __('Limit Reached') }}</span>
                                     @endif
                                 </div>
                             </td>
 
                             <!-- Validity Window -->
-                            <td class="py-3.5 px-4">
+                            <td class="py-3 px-4">
                                 <div class="space-y-0.5 text-xs">
                                     @if ($c->expires_at)
-                                        <div class="font-medium {{ $isExpired ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                        <div class="font-medium {{ $isExpired ? 'text-rose-600 dark:text-rose-400' : 'text-[#12181E] dark:text-white' }}">
                                             {{ __('Expires:') }} {{ $c->expires_at->format('d M Y, H:i') }}
                                         </div>
                                     @else
-                                        <span class="text-slate-400 font-semibold">{{ __('Never Expires') }}</span>
+                                        <span class="text-[#5A6578] dark:text-[#9DA4B2] font-normal">{{ __('Never Expires') }}</span>
                                     @endif
 
                                     @if ($isFuture)
-                                        <span class="text-[10px] text-amber-500 font-bold uppercase block">{{ __('Starts:') }} {{ $c->starts_at->format('d M Y') }}</span>
+                                        <span class="text-[10px] text-amber-500 font-semibold uppercase block">{{ __('Starts:') }} {{ $c->starts_at->format('d M Y') }}</span>
                                     @endif
                                 </div>
                             </td>
 
                             <!-- Status Toggle -->
-                            <td class="py-3.5 px-4 text-center">
+                            <td class="py-3 px-4 text-center">
                                 <button
                                     type="button"
                                     wire:click="promptToggleActive('{{ $c->id }}', '{{ $c->code }}', {{ $c->is_active && ! $isExpired ? 'true' : 'false' }})"
-                                    class="h-8 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-bold transition cursor-pointer {{ $c->is_active && ! $isExpired ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60' : 'bg-slate-100 text-slate-700 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]' }}"
+                                    class="h-7 px-2.5 rounded-[4px] inline-flex items-center gap-1.5 text-xs font-medium transition cursor-pointer {{ $c->is_active && ! $isExpired ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40' : 'bg-[#F8F9FA] text-[#5A6578] dark:bg-[#151a26] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433]' }}"
                                     title="{{ __('Click to change active status') }}"
                                 >
-                                    <span class="w-1.5 h-1.5 rounded-full {{ $c->is_active && ! $isExpired ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-slate-400' }}"></span>
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $c->is_active && ! $isExpired ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
                                     <span>{{ $c->is_active && ! $isExpired ? __('Active') : __('Inactive') }}</span>
                                 </button>
                             </td>
 
                             <!-- Actions -->
-                            <td class="py-3.5 px-4 sm:px-6 text-right">
+                            <td class="py-3 px-4 sm:px-6 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <a
                                         href="{{ route('coupons.report', $c) }}"
                                         wire:navigate
-                                        class="h-8 px-3 rounded-xl bg-slate-100 dark:bg-[#141721] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#262d3d] font-bold text-xs transition inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        class="h-7 px-2.5 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-zinc-200 border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs transition inline-flex items-center gap-1 cursor-pointer shadow-none"
                                         title="{{ __('View Performance Report') }}"
                                     >
                                         <i class="fa-solid fa-chart-pie text-[10px] text-amber-500"></i>
@@ -670,7 +670,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                                     <button
                                         type="button"
                                         wire:click="editCoupon('{{ $c->id }}')"
-                                        class="h-8 px-3 rounded-xl bg-slate-100 dark:bg-[#141721] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#262d3d] font-bold text-xs transition inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        class="h-7 px-2.5 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-zinc-200 border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs transition inline-flex items-center gap-1 cursor-pointer shadow-none"
                                         title="{{ __('Edit Code') }}"
                                     >
                                         <i class="fa-solid fa-pen text-[10px]"></i>
@@ -679,7 +679,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                                     <button
                                         type="button"
                                         wire:click="promptDelete('{{ $c->id }}', '{{ $c->code }}')"
-                                        class="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#141721] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-[#262d3d] inline-flex items-center justify-center transition cursor-pointer shadow-2xs"
+                                        class="h-7 w-7 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center transition cursor-pointer shadow-none"
                                         title="{{ __('Delete Code') }}"
                                     >
                                         <i class="fa-solid fa-trash-can text-xs"></i>
@@ -689,12 +689,12 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-12 text-center text-slate-400 dark:text-slate-500">
-                                <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-[#141821] text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-[#1e2433] flex items-center justify-center mx-auto text-xl mb-3">
+                            <td colspan="6" class="p-12 text-center text-[#5A6578] dark:text-[#9DA4B2]">
+                                <div class="w-10 h-10 rounded-[8px] bg-[#F8F9FA] dark:bg-[#151a26] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center mx-auto text-base mb-2">
                                     <i class="fa-solid fa-tags"></i>
                                 </div>
-                                <p class="font-bold text-slate-700 dark:text-slate-300 text-sm">{{ __('No promo codes found') }}</p>
-                                <p class="text-xs text-slate-500 mt-1">{{ __('Create marketing discount codes to incentivize direct guest bookings on your storefront.') }}</p>
+                                <p class="font-semibold text-[#12181E] dark:text-white text-sm">{{ __('No promo codes found') }}</p>
+                                <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-1">{{ __('Create marketing discount codes to incentivize direct guest bookings on your storefront.') }}</p>
                             </td>
                         </tr>
                     @endforelse
@@ -703,7 +703,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
         </div>
 
         @if ($coupons->hasPages())
-            <div class="p-4 border-t border-slate-100 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#10141d]">
+            <div class="p-3 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                 {{ $coupons->links() }}
             </div>
         @endif
@@ -712,27 +712,30 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
     <!-- Delete Confirmation Modal -->
     @if ($confirming_delete_id)
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs">
-                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl p-6 space-y-4 text-center animate-fade-in">
-                    <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-lg">
+            <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs">
+                <div class="w-full max-w-md rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none p-5 space-y-4 text-center animate-fade-in">
+                    <!-- Mobile drag handle -->
+                    <div class="mx-auto my-1 h-1 w-10 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden"></div>
+
+                    <div class="w-10 h-10 rounded-[8px] bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-base">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                     </div>
 
-                    <div class="space-y-1.5">
-                        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    <div class="space-y-1">
+                        <h3 class="text-sm font-semibold text-[#12181E] dark:text-white">
                             {{ __('Delete Promo Code ":code"?', ['code' => $confirming_delete_code]) }}
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] max-w-xs mx-auto leading-relaxed">
                             {{ __('Are you sure you want to permanently delete this promo code? Guests will no longer be able to use it on your storefront.') }}
                         </p>
                     </div>
 
-                    <div class="flex items-center justify-center gap-3 pt-2">
+                    <div class="flex items-center justify-center gap-2.5 pt-2">
                         <x-button
                             type="button"
                             variant="secondary"
                             wire:click="cancelDelete"
-                            class="font-semibold text-xs"
+                            class="font-medium text-xs rounded-[6px]"
                         >
                             {{ __('Cancel') }}
                         </x-button>
@@ -740,7 +743,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                             type="button"
                             variant="danger"
                             wire:click="confirmDelete"
-                            class="font-semibold text-xs shadow-xs"
+                            class="font-medium text-xs shadow-none rounded-[6px]"
                         >
                             <i class="fa-solid fa-trash-can mr-1.5 text-xs"></i>
                             {{ __('Confirm Delete') }}
@@ -754,17 +757,20 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
     <!-- Toggle Active Status Confirmation Modal -->
     @if ($confirming_toggle_id)
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs">
-                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl p-6 space-y-4 text-center animate-fade-in">
-                    <div class="w-12 h-12 rounded-2xl {{ $confirming_toggle_current_state ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400' }} flex items-center justify-center mx-auto text-lg">
+            <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs">
+                <div class="w-full max-w-md rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none p-5 space-y-4 text-center animate-fade-in">
+                    <!-- Mobile drag handle -->
+                    <div class="mx-auto my-1 h-1 w-10 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden"></div>
+
+                    <div class="w-10 h-10 rounded-[8px] {{ $confirming_toggle_current_state ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' }} flex items-center justify-center mx-auto text-base">
                         <i class="fa-solid {{ $confirming_toggle_current_state ? 'fa-pause' : 'fa-play' }}"></i>
                     </div>
 
-                    <div class="space-y-1.5">
-                        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    <div class="space-y-1">
+                        <h3 class="text-sm font-semibold text-[#12181E] dark:text-white">
                             {{ $confirming_toggle_current_state ? __('Deactivate Promo Code ":code"?', ['code' => $confirming_toggle_code]) : __('Activate Promo Code ":code"?', ['code' => $confirming_toggle_code]) }}
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] max-w-xs mx-auto leading-relaxed">
                             @if ($confirming_toggle_current_state)
                                 {{ __('Deactivating this code will immediately prevent guests from redeeming it in the storefront booking box until re-enabled.') }}
                             @else
@@ -773,12 +779,12 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                         </p>
                     </div>
 
-                    <div class="flex items-center justify-center gap-3 pt-2">
+                    <div class="flex items-center justify-center gap-2.5 pt-2">
                         <x-button
                             type="button"
                             variant="secondary"
                             wire:click="cancelToggleActive"
-                            class="font-semibold text-xs"
+                            class="font-medium text-xs rounded-[6px]"
                         >
                             {{ __('Cancel') }}
                         </x-button>
@@ -786,7 +792,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                             type="button"
                             variant="{{ $confirming_toggle_current_state ? 'secondary' : 'primary' }}"
                             wire:click="confirmToggleActive"
-                            class="font-semibold text-xs {{ $confirming_toggle_current_state ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}"
+                            class="font-medium text-xs rounded-[6px] shadow-none {{ $confirming_toggle_current_state ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}"
                         >
                             <i class="fa-solid {{ $confirming_toggle_current_state ? 'fa-circle-pause' : 'fa-circle-check' }} mr-1.5 text-xs"></i>
                             {{ $confirming_toggle_current_state ? __('Deactivate Code') : __('Activate Code') }}
@@ -800,34 +806,37 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
     <!-- Create / Edit Modal Dialog -->
     @if ($show_modal)
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-                <div class="w-full max-w-lg rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl flex flex-col my-8">
+            <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto">
+                <div class="w-full max-w-lg rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none flex flex-col my-0 sm:my-8 max-h-[90vh]">
+                    <!-- Mobile drag handle -->
+                    <div class="mx-auto my-2 h-1 w-10 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden"></div>
+
                     <!-- Modal Header -->
-                    <div class="p-6 border-b border-slate-100 dark:border-[#1e2433] flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-[#10141d] rounded-t-3xl">
-                        <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                    <div class="p-4 sm:p-5 border-b border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-8 h-8 rounded-[8px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-xs shrink-0 font-bold">
                                 <i class="fa-solid fa-ticket"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
-                                <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                                <h3 class="font-semibold text-sm sm:text-base text-[#12181E] dark:text-white leading-tight truncate">
                                     {{ $editing_id ? __('Edit Storefront Promo Code') : __('Create Storefront Promo Code') }}
                                 </h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                                     {{ __('Set discount percentage, minimum spend, and guest validity dates.') }}
                                 </p>
                             </div>
                         </div>
-                        <button type="button" wire:click="closeModal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0 -mr-1 -mt-1">
+                        <button type="button" wire:click="closeModal" class="p-1.5 rounded-[6px] text-[#5A6578] hover:text-[#12181E] dark:text-[#9DA4B2] dark:hover:text-white hover:bg-[#F8F9FA] dark:hover:bg-[#151a26] transition cursor-pointer shrink-0">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
 
                     <!-- Modal Body Form -->
-                    <form wire:submit="saveCoupon" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                    <form wire:submit="saveCoupon" class="p-4 sm:p-5 space-y-4 overflow-y-auto">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-label for="code" :value="__('Coupon Code (e.g. SUMMER26)')" required />
-                                <x-input id="code" type="text" wire:model="code" placeholder="{{ __('SUMMER26') }}" class="font-mono uppercase font-black" :error="$errors->has('code')" />
+                                <x-input id="code" type="text" wire:model="code" placeholder="{{ __('SUMMER26') }}" class="font-mono uppercase font-semibold rounded-[6px]" :error="$errors->has('code')" />
                                 <x-input-error :messages="$errors->get('code')" />
                             </div>
 
@@ -836,6 +845,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                                 <x-select
                                     id="discount_type"
                                     wire:model.live="discount_type"
+                                    class="h-9 rounded-[6px] text-xs font-medium"
                                     :options="[
                                         ['value' => 'percentage', 'label' => __('Percentage (% OFF)')],
                                         ['value' => 'fixed', 'label' => __('Fixed Amount (Rp OFF)')],
@@ -848,42 +858,43 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
 
                         <div>
                             <x-label for="description" :value="__('Campaign Description / Internal Note')" />
-                            <x-input id="description" type="text" wire:model="description" placeholder="{{ __('e.g. 10% discount for early bird bookings') }}" :error="$errors->has('description')" />
+                            <x-input id="description" type="text" wire:model="description" class="rounded-[6px]" placeholder="{{ __('e.g. 10% discount for early bird bookings') }}" :error="$errors->has('description')" />
                             <x-input-error :messages="$errors->get('description')" />
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                             <div>
                                 <x-label for="discount_value" :value="$discount_type === 'percentage' ? __('Discount (%)') : __('Discount (Rp)')" required />
-                                <x-input id="discount_value" type="number" step="0.1" wire:model="discount_value" class="font-bold font-mono" :error="$errors->has('discount_value')" />
+                                <x-input id="discount_value" type="number" step="0.1" wire:model="discount_value" class="font-medium font-mono rounded-[6px]" :error="$errors->has('discount_value')" />
                                 <x-input-error :messages="$errors->get('discount_value')" />
                             </div>
 
                             <div>
                                 <x-label for="min_spend" :value="__('Min Spend (Rp)')" required />
-                                <x-input id="min_spend" type="number" step="1000" wire:model="min_spend" class="font-bold" :error="$errors->has('min_spend')" />
+                                <x-input id="min_spend" type="number" step="1000" wire:model="min_spend" class="font-medium rounded-[6px]" :error="$errors->has('min_spend')" />
                                 <x-input-error :messages="$errors->get('min_spend')" />
                             </div>
 
                             <div>
                                 <x-label for="max_discount_amount" :value="__('Max Cap (Rp)')" />
-                                <x-input id="max_discount_amount" type="number" step="1000" wire:model="max_discount_amount" placeholder="{{ __('No Cap') }}" :error="$errors->has('max_discount_amount')" />
+                                <x-input id="max_discount_amount" type="number" step="1000" wire:model="max_discount_amount" class="rounded-[6px]" placeholder="{{ __('No Cap') }}" :error="$errors->has('max_discount_amount')" />
                                 <x-input-error :messages="$errors->get('max_discount_amount')" />
                             </div>
                         </div>
 
                         <div>
                             <x-label for="max_uses" :value="__('Total Max Uses (Blank = Unlimited)')" />
-                            <x-input id="max_uses" type="number" wire:model="max_uses" placeholder="{{ __('Unlimited') }}" :error="$errors->has('max_uses')" />
+                            <x-input id="max_uses" type="number" wire:model="max_uses" class="rounded-[6px]" placeholder="{{ __('Unlimited') }}" :error="$errors->has('max_uses')" />
                             <x-input-error :messages="$errors->get('max_uses')" />
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                             <div>
                                 <x-label for="starts_at" :value="__('Active From')" />
                                 <x-datetime-picker
                                     id="starts_at"
                                     wire:model="starts_at"
+                                    class="rounded-[6px]"
                                     :error="$errors->has('starts_at')"
                                 />
                                 <x-input-error :messages="$errors->get('starts_at')" />
@@ -894,14 +905,15 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                                 <x-datetime-picker
                                     id="expires_at"
                                     wire:model="expires_at"
+                                    class="rounded-[6px]"
                                     :error="$errors->has('expires_at')"
                                 />
                                 <x-input-error :messages="$errors->get('expires_at')" />
                             </div>
                         </div>
 
-                        <div class="pt-3 border-t border-slate-100 dark:border-[#1e2433]">
-                            <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/50 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
+                        <div class="pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                            <div class="p-3 rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F8F9FA] dark:bg-[#151a26] transition">
                                 <x-checkbox
                                     id="coupon_is_active"
                                     wire:model="is_active"
@@ -912,11 +924,11 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupons & Discounts - Operator Por
                         </div>
 
                         <!-- Modal Footer -->
-                        <div class="pt-4 border-t border-slate-100 dark:border-[#1e2433] flex items-center justify-end gap-3">
-                            <x-button type="button" variant="secondary" wire:click="closeModal" class="text-xs font-bold">
+                        <div class="pt-3 border-t border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-end gap-2.5">
+                            <x-button type="button" variant="secondary" wire:click="closeModal" class="text-xs font-medium rounded-[6px]">
                                 {{ __('Cancel') }}
                             </x-button>
-                            <x-button type="submit" variant="primary" class="text-xs font-bold">
+                            <x-button type="submit" variant="primary" class="text-xs font-medium rounded-[6px] !bg-[#FFEF4D] !text-[#12181E] hover:!bg-[#F3E13A] shadow-none">
                                 <i class="fa-solid fa-floppy-disk mr-1.5 text-xs"></i>
                                 <span>{{ __('Save Promo Code') }}</span>
                             </x-button>

@@ -118,3 +118,32 @@ test('operator registration auto generates slug when not provided', function () 
     expect($operator)->not->toBeNull()
         ->and($operator->slug)->toBe('lombok-coral-dive');
 });
+
+test('reserved platform addresses cannot be claimed as a shop slug', function () {
+    $this->from(route('register'))
+        ->post(route('register.store'), [
+            'name' => 'Sneaky Admin',
+            'email' => 'sneaky@example.com',
+            'password' => 'SecurePass123!',
+            'password_confirmation' => 'SecurePass123!',
+            'agency_name' => 'Admin Tours',
+            'slug' => 'admin',
+            'terms' => '1',
+        ])
+        ->assertSessionHasErrors('slug');
+
+    expect(Operator::where('slug', 'admin')->exists())->toBeFalse();
+});
+
+test('an auto generated slug skips reserved addresses', function () {
+    $this->post(route('register.store'), [
+        'name' => 'Www Owner',
+        'email' => 'www@example.com',
+        'password' => 'SecurePass123!',
+        'password_confirmation' => 'SecurePass123!',
+        'agency_name' => 'WWW',
+        'terms' => '1',
+    ]);
+
+    expect(Operator::where('name', 'WWW')->value('slug'))->toBe('www-1');
+});

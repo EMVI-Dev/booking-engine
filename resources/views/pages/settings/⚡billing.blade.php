@@ -138,30 +138,24 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
     <!-- Header with Subscription & Billing Navigation Tabs -->
     <x-billing-nav />
 
-    <!-- Page Title & Subtitle -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                {{ __('Billing & Invoices') }}
-            </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Manage your subscription billing profile, payment history, and download official receipts.') }}
-            </p>
-        </div>
-
-        <div class="flex items-center gap-3">
+    <x-page-header
+        :title="__('Billing & Invoices')"
+        :subtitle="__('Manage your subscription billing profile, payment history, and download official receipts.')"
+        icon="fa-file-invoice-dollar"
+    >
+        <x-slot:actions>
             <a href="{{ route('settings.plan') }}" wire:navigate
-                class="px-4 py-2.5 rounded-2xl bg-[#FFEF4D] text-[#090d16] hover:bg-[#FFEF4D]/90 active:bg-[#FFEF4D]/80 font-extrabold text-xs shadow-sm transition flex items-center gap-2 cursor-pointer">
-                <i class="fa-solid fa-crown text-[#090d16] text-xs"></i>
+                class="h-9 px-4 rounded-[6px] bg-[#FFEF4D] text-[#12181E] hover:bg-[#F3E13A] font-semibold text-xs shadow-none transition inline-flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-crown text-[#12181E] text-xs"></i>
                 <span>{{ __('Manage Subscription Tier') }}</span>
             </a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Feedback Alerts -->
     @if (session()->has('success'))
         <div
-            class="p-4 rounded-2xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-fade-in">
+            class="p-4 rounded-[8px] bg-emerald-50 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-medium flex items-center gap-2 shadow-none animate-fade-in">
             <i class="fa-solid fa-circle-check text-sm text-emerald-600 dark:text-emerald-400"></i>
             <span>{{ session('success') }}</span>
         </div>
@@ -181,20 +175,20 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <!-- Card 1: Active Subscription Overview -->
         <div
-            class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+            class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
             <div class="flex items-center justify-between">
-                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                     {{ __('Active Subscription') }}
                 </span>
                 <span
-                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $currentPlan->isFree() ? 'bg-slate-100 text-slate-700 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]' : 'bg-[#FFEF4D] text-[#090d16] dark:bg-purple-950 dark:text-purple-300 border border-[#FFEF4D]/60 dark:border-purple-800/60 font-black' }}">
+                    class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase {{ $currentPlan->isFree() ? 'bg-[#F4F5F7] text-[#12181E] dark:bg-[#1E2433] dark:text-[#E4E5E9] border border-[#E4E5E9] dark:border-[#1E2433]' : 'bg-[#FFEF4D] text-[#12181E] border border-[#FFEF4D]/60 font-semibold' }}">
                     {{ $currentPlan->name }}
                 </span>
             </div>
 
             <div>
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl font-black text-slate-900 dark:text-white">
+                    <span class="text-2xl font-bold font-mono text-[#12181E] dark:text-white">
                         @if ($currentPlan->isFree())
                             {{ __('Free Tier') }}
                         @else
@@ -203,19 +197,19 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                         @endif
                     </span>
                     @if (!$currentPlan->isFree())
-                        <span class="text-xs text-slate-400 font-bold">/
+                        <span class="text-xs text-[#5A6578] dark:text-[#9DA4B2] font-medium">/
                             {{ $operator->subscription_interval ?: 'monthly' }}</span>
                     @endif
                 </div>
 
                 <div class="mt-2 flex items-center gap-2">
                     <span
-                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold {{ $autoRenew ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60' }}">
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-medium {{ $autoRenew ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60' }}">
                         <i class="fa-solid {{ $autoRenew ? 'fa-repeat' : 'fa-hourglass-half' }} text-[9px]"></i>
                         <span>{{ $autoRenew ? __('Auto-Renewing') : __('Manual Term') }}</span>
                     </span>
                     @if ($operator->plan_expires_at)
-                        <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                        <span class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                             &bull;
                             {{ __('Renews :date', ['date' => Carbon::parse($operator->plan_expires_at)->format('d M Y')]) }}
                         </span>
@@ -223,9 +217,9 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                 </div>
             </div>
 
-            <div class="pt-3 border-t border-slate-100 dark:border-[#1e2433]">
+            <div class="pt-3 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                 <a href="{{ route('settings.plan') }}" wire:navigate
-                    class="text-xs font-bold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-[#FFEF4D] inline-flex items-center gap-1.5 transition">
+                    class="text-xs font-semibold text-[#12181E] dark:text-[#E4E5E9] hover:underline inline-flex items-center gap-1.5 transition">
                     <span>{{ __('Change plan or auto-renew settings') }}</span>
                     <i class="fa-solid fa-arrow-right text-[10px]"></i>
                 </a>
@@ -234,13 +228,13 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
         <!-- Card 2: Billing Contact Info -->
         <div
-            class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+            class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
             <div class="flex items-center justify-between">
-                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                     {{ __('Billing Contact') }}
                 </span>
                 <button type="button" wire:click="$set('show_billing_info_modal', true)"
-                    class="text-xs font-bold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-[#FFEF4D] underline cursor-pointer transition">
+                    class="text-xs font-semibold text-[#12181E] dark:text-[#E4E5E9] hover:underline cursor-pointer transition">
                     {{ __('Edit') }}
                 </button>
             </div>
@@ -248,26 +242,26 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
             <div class="space-y-1.5 text-xs">
                 <div>
                     <span
-                        class="text-[10px] text-slate-400 uppercase font-bold block">{{ __('Invoice Recipient') }}</span>
+                        class="text-[10px] text-[#5A6578] dark:text-[#9DA4B2] uppercase font-semibold block">{{ __('Invoice Recipient') }}</span>
                     <span
-                        class="font-bold text-slate-800 dark:text-slate-200 block truncate">{{ $company_legal_name ?: $operator->name ?? 'Default Entity' }}</span>
+                        class="font-semibold text-[#12181E] dark:text-white block truncate">{{ $company_legal_name ?: $operator->name ?? 'Default Entity' }}</span>
                 </div>
                 <div>
-                    <span class="text-[10px] text-slate-400 uppercase font-bold block">{{ __('Billing Email') }}</span>
+                    <span class="text-[10px] text-[#5A6578] dark:text-[#9DA4B2] uppercase font-semibold block">{{ __('Billing Email') }}</span>
                     <span
-                        class="font-mono text-slate-700 dark:text-slate-300 block truncate">{{ $billing_email ?: auth()->user()->email ?? '-' }}</span>
+                        class="font-mono text-[#5A6578] dark:text-[#9DA4B2] block truncate">{{ $billing_email ?: auth()->user()->email ?? '-' }}</span>
                 </div>
                 @if ($tax_id)
                     <div>
                         <span
-                            class="text-[10px] text-slate-400 uppercase font-bold block">{{ __('Tax / NPWP ID') }}</span>
-                        <span class="font-mono text-slate-700 dark:text-slate-300 block">{{ $tax_id }}</span>
+                            class="text-[10px] text-[#5A6578] dark:text-[#9DA4B2] uppercase font-semibold block">{{ __('Tax / NPWP ID') }}</span>
+                        <span class="font-mono text-[#5A6578] dark:text-[#9DA4B2] block">{{ $tax_id }}</span>
                     </div>
                 @endif
             </div>
 
-            <div class="pt-3 border-t border-slate-100 dark:border-[#1e2433]">
-                <p class="text-[11px] text-slate-400">
+            <div class="pt-3 border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                     {{ __('Invoices and payment receipts are addressed to this billing contact.') }}
                 </p>
             </div>
@@ -275,28 +269,28 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
         <!-- Card 3: Invoiced Total Summary -->
         <div
-            class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+            class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
             <div class="flex items-center justify-between">
-                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                     {{ __('Total Invoiced YTD') }}
                 </span>
                 <span
-                    class="p-2 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-emerald-950 dark:text-emerald-400 text-xs shadow-xs">
+                    class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                     <i class="fa-solid fa-receipt"></i>
                 </span>
             </div>
 
             <div>
-                <span class="text-2xl font-black font-mono text-slate-900 dark:text-white block">
+                <span class="text-2xl font-bold font-mono text-[#12181E] dark:text-white block">
                     Rp {{ number_format($totalPaidSum, 0, ',', '.') }}
                 </span>
-                <span class="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
+                <span class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-1 block">
                     {{ __(':count paid subscription invoice(s) on record', ['count' => $totalPaidCount]) }}
                 </span>
             </div>
 
             <div
-                class="pt-3 border-t border-slate-100 dark:border-[#1e2433] flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                class="pt-3 border-t border-[#E4E5E9] dark:border-[#1E2433] flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
                 <i class="fa-solid fa-shield-check text-xs"></i>
                 <span>{{ __('Secure 256-bit encrypted billing') }}</span>
             </div>
@@ -305,15 +299,15 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
     <!-- Invoices & Payment History Section -->
     <div
-        class="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-5">
+        class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
         <div
-            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100 dark:border-[#1e2433]">
+            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
             <div>
-                <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-file-invoice-dollar text-[#FFEF4D] dark:text-[#FFEF4D]"></i>
+                <h3 class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#12181E] dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice-dollar text-[#8a7808] dark:text-[#FFEF4D]"></i>
                     <span>{{ __('Invoices & Payment History') }}</span>
                 </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-0.5">
                     {{ __('Official tax invoices, subscription renewals, and proration credit receipts.') }}
                 </p>
             </div>
@@ -321,225 +315,226 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
         @if ($this->invoices->isEmpty())
             <!-- Empty State -->
-            <div class="py-14 text-center space-y-3">
+            <div class="py-12 text-center space-y-3">
                 <div
-                    class="w-14 h-14 rounded-3xl bg-slate-100 dark:bg-[#141821] text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-[#1e2433] flex items-center justify-center text-2xl mx-auto shadow-inner">
+                    class="flex size-12 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#5A6578] dark:text-[#9DA4B2] text-xl mx-auto">
                     <i class="fa-solid fa-file-invoice"></i>
                 </div>
                 <div class="space-y-1 max-w-sm mx-auto">
-                    <h4 class="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                    <h4 class="text-sm font-semibold text-[#12181E] dark:text-white">
                         {{ __('No Invoices Generated Yet') }}
                     </h4>
-                    <p class="text-xs text-slate-400 leading-relaxed">
+                    <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] leading-relaxed">
                         {{ __('When you upgrade your tier or renew your plan, itemized receipts and tax invoices will appear here.') }}
                     </p>
                 </div>
                 @if ($currentPlan->isFree())
                     <div class="pt-2">
                         <a href="{{ route('settings.plan') }}" wire:navigate
-                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FFEF4D] text-[#090d16] text-xs font-bold hover:bg-[#FFEF4D]/90 transition shadow-xs">
+                            class="h-9 px-4 rounded-[6px] bg-[#FFEF4D] text-[#12181E] text-xs font-semibold hover:bg-[#F3E13A] transition inline-flex items-center gap-2">
                             <i class="fa-solid fa-arrow-up text-xs"></i>
                             <span>{{ __('Explore Growth and Agency plans') }}</span>
                         </a>
                     </div>
                 @endif
             </div>
-            @else
-                <!-- Mobile Card List View (md:hidden) -->
-                <div class="md:hidden space-y-3 transition-opacity duration-200" wire:loading.class="opacity-60">
-                    @foreach ($this->invoices as $payment)
-                        <div
-                            class="p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="font-mono font-extrabold text-xs text-slate-900 dark:text-white">
-                                    {{ $payment->invoice_number }}
+        @else
+            <!-- Mobile Card List View (md:hidden) -->
+            <div class="md:hidden space-y-3 transition-opacity duration-200" wire:loading.class="opacity-60">
+                @foreach ($this->invoices as $payment)
+                    <div
+                        class="p-4 rounded-[8px] bg-[#F9FAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-mono font-semibold text-xs text-[#12181E] dark:text-white">
+                                {{ $payment->invoice_number }}
+                            </span>
+                            @if ($payment->status === 'completed')
+                                <span
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
+                                    <i class="fa-solid fa-check text-[9px]"></i>
+                                    <span>{{ __('Paid') }}</span>
                                 </span>
-                                @if ($payment->status === 'completed')
-                                    <span
-                                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
-                                        <i class="fa-solid fa-check text-[9px]"></i>
-                                        <span>{{ __('Paid') }}</span>
-                                    </span>
-                                @elseif ($payment->status === 'pending')
-                                    <span
-                                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
-                                        <i class="fa-solid fa-clock text-[9px]"></i>
-                                        <span>{{ __('Pending') }}</span>
-                                    </span>
-                                @else
-                                    <span
-                                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60">
-                                        <i class="fa-solid fa-xmark text-[9px]"></i>
-                                        <span>{{ ucfirst($payment->status) }}</span>
-                                    </span>
-                                @endif
-                            </div>
+                            @elseif ($payment->status === 'pending')
+                                <span
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
+                                    <i class="fa-solid fa-clock text-[9px]"></i>
+                                    <span>{{ __('Pending') }}</span>
+                                </span>
+                            @else
+                                <span
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60">
+                                    <i class="fa-solid fa-xmark text-[9px]"></i>
+                                    <span>{{ ucfirst($payment->status) }}</span>
+                                </span>
+                            @endif
+                        </div>
 
-                            <div
-                                class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-[#1e2433]">
-                                <div>
+                        <div
+                            class="grid grid-cols-2 gap-2 text-xs pt-2.5 border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                            <div>
+                                <span
+                                    class="text-[10px] uppercase font-semibold text-[#5A6578] dark:text-[#9DA4B2] block">{{ __('Plan / Description') }}</span>
+                                <div class="flex items-center gap-1.5 flex-wrap">
                                     <span
-                                        class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Plan / Description') }}</span>
-                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        class="font-medium text-[#12181E] dark:text-white truncate">{{ $payment->plan?->name ?? 'Custom Tier' }}</span>
+                                    @if (!empty($payment->breakdown['coupon_code']))
                                         <span
-                                            class="font-bold text-slate-800 dark:text-slate-200 truncate">{{ $payment->plan?->name ?? 'Custom Tier' }}</span>
+                                            class="px-1.5 py-0.5 rounded-[4px] text-[9px] font-semibold font-mono bg-[#FFEF4D] text-[#12181E] border border-[#FFEF4D]/40">
+                                            {{ $payment->breakdown['coupon_code'] }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span
+                                    class="text-[10px] uppercase font-semibold text-[#5A6578] dark:text-[#9DA4B2] block">{{ __('Net Amount') }}</span>
+                                <span class="font-mono font-bold text-[#12181E] dark:text-white block">Rp
+                                    {{ number_format((float) $payment->net_amount_paid, 0, ',', '.') }}</span>
+                            </div>
+                        </div>
+
+                        <div
+                            class="flex items-center justify-between pt-2.5 border-t border-[#E4E5E9] dark:border-[#1E2433] text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
+                            <span class="truncate">
+                                {{ $payment->paid_at ? Carbon::parse($payment->paid_at)->format('d M Y') : Carbon::parse($payment->created_at)->format('d M Y') }}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                @if ($payment->status === 'pending')
+                                    <a href="{{ route('settings.plan.checkout', $payment) }}" wire:navigate
+                                        class="h-8 px-3 rounded-[6px] bg-[#FFEF4D] text-[#12181E] font-semibold text-xs inline-flex items-center">
+                                        {{ __('Pay Now') }}
+                                    </a>
+                                @endif
+                                <button type="button" wire:click="viewInvoice('{{ $payment->id }}')"
+                                    class="h-8 px-3 rounded-[6px] bg-white dark:bg-[#10141d] text-[#12181E] dark:text-[#E4E5E9] font-medium text-xs border border-[#E4E5E9] dark:border-[#1E2433] cursor-pointer inline-flex items-center">
+                                    {{ __('View Receipt') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Desktop Invoices Table (hidden on mobile) -->
+            <div class="hidden md:block overflow-x-auto rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] transition-opacity duration-200"
+                wire:loading.class="opacity-60">
+                <table class="w-full text-left text-xs sm:text-sm">
+                    <thead>
+                        <tr
+                            class="bg-[#F9FAFB] dark:bg-[#141821] border-b border-[#E4E5E9] dark:border-[#1E2433] text-[11px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
+                            <th class="py-3 px-4">{{ __('Invoice #') }}</th>
+                            <th class="py-3 px-4">{{ __('Date') }}</th>
+                            <th class="py-3 px-4">{{ __('Plan / Description') }}</th>
+                            <th class="py-3 px-4">{{ __('Payment Method') }}</th>
+                            <th class="py-3 px-4 text-right">{{ __('Net Amount') }}</th>
+                            <th class="py-3 px-4 text-center">{{ __('Status') }}</th>
+                            <th class="py-3 px-4 text-right">{{ __('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
+                        @foreach ($this->invoices as $payment)
+                            <tr class="hover:bg-[#F9FAFB]/70 dark:hover:bg-[#141821]/60 transition-colors group">
+                                <!-- Invoice Number -->
+                                <td class="py-3 px-4">
+                                    <button type="button" wire:click="viewInvoice('{{ $payment->id }}')"
+                                        class="font-mono text-[11px] font-medium text-[#12181E] dark:text-white px-2 py-0.5 rounded-[4px] bg-[#F8F9FA] dark:bg-[#141821] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] transition cursor-pointer">
+                                        #{{ $payment->invoice_number }}
+                                    </button>
+                                </td>
+
+                                <!-- Date -->
+                                <td class="py-3 px-4 text-[#5A6578] dark:text-[#9DA4B2] whitespace-nowrap">
+                                    {{ $payment->paid_at ? Carbon::parse($payment->paid_at)->format('d M Y, H:i') : Carbon::parse($payment->created_at)->format('d M Y, H:i') }}
+                                </td>
+
+                                <!-- Plan / Description -->
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold text-[#12181E] dark:text-white">
+                                            {{ $payment->plan?->name ?? 'Custom Tier' }}
+                                        </span>
                                         @if (!empty($payment->breakdown['coupon_code']))
                                             <span
-                                                class="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-[#FFEF4D] text-[#090d16] dark:bg-purple-950 dark:text-purple-300 border border-[#FFEF4D]/40">
-                                                {{ $payment->breakdown['coupon_code'] }}
+                                                class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold font-mono bg-[#FFEF4D] text-[#12181E] border border-[#FFEF4D]/40">
+                                                <i
+                                                    class="fa-solid fa-tag text-[9px] mr-0.5"></i>{{ $payment->breakdown['coupon_code'] }}
                                             </span>
                                         @endif
                                     </div>
-                                </div>
-                                <div class="text-right">
+                                    <span class="text-[10px] text-[#5A6578] dark:text-[#9DA4B2] uppercase font-medium">
+                                        {{ ucfirst($payment->type ?: 'Upgrade') }} &bull;
+                                        {{ ucfirst($payment->billing_interval) }}
+                                    </span>
+                                </td>
+
+                                <!-- Payment Method -->
+                                <td class="py-3 px-4 whitespace-nowrap">
                                     <span
-                                        class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Net Amount') }}</span>
-                                    <span class="font-mono font-black text-slate-900 dark:text-white block">Rp
-                                        {{ number_format((float) $payment->net_amount_paid, 0, ',', '.') }}</span>
-                                </div>
-                            </div>
+                                        class="inline-flex items-center gap-1.5 text-[#5A6578] dark:text-[#9DA4B2] font-medium">
+                                        <i class="{{ $payment->getGatewayIcon() }}"></i>
+                                        <span>{{ $payment->getGatewayLabel() }}</span>
+                                    </span>
+                                </td>
 
-                            <div
-                                class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#1e2433] text-[11px] text-slate-500">
-                                <span class="truncate">
-                                    {{ $payment->paid_at ? Carbon::parse($payment->paid_at)->format('d M Y') : Carbon::parse($payment->created_at)->format('d M Y') }}
-                                </span>
-                                <div class="flex items-center gap-2">
-                                    @if ($payment->status === 'pending')
-                                        <a href="{{ route('settings.plan.checkout', $payment) }}" wire:navigate
-                                            class="px-3 py-1 rounded-xl bg-[#FFEF4D] text-[#090d16] font-bold text-xs shadow-2xs">
-                                            {{ __('Pay Now') }}
-                                        </a>
-                                    @endif
-                                    <button type="button" wire:click="viewInvoice('{{ $payment->id }}')"
-                                        class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-[#1e2433] cursor-pointer">
-                                        {{ __('View Receipt') }}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+                                <!-- Net Amount Paid -->
+                                <td
+                                    class="py-3 px-4 text-right font-mono font-bold text-[#12181E] dark:text-white whitespace-nowrap">
+                                    Rp {{ number_format((float) $payment->net_amount_paid, 0, ',', '.') }}
+                                </td>
 
-                <!-- Desktop Invoices Table (hidden on mobile) -->
-                <div class="hidden md:block overflow-x-auto transition-opacity duration-200"
-                    wire:loading.class="opacity-60">
-                    <table class="w-full text-left text-xs sm:text-sm">
-                        <thead>
-                            <tr
-                                class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                                <th class="py-3.5 px-4">{{ __('Invoice #') }}</th>
-                                <th class="py-3.5 px-4">{{ __('Date') }}</th>
-                                <th class="py-3.5 px-4">{{ __('Plan / Description') }}</th>
-                                <th class="py-3.5 px-4">{{ __('Payment Method') }}</th>
-                                <th class="py-3.5 px-4 text-right">{{ __('Net Amount') }}</th>
-                                <th class="py-3.5 px-4 text-center">{{ __('Status') }}</th>
-                                <th class="py-3.5 px-4 text-right">{{ __('Action') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
-                            @foreach ($this->invoices as $payment)
-                                <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition group">
-                                    <!-- Invoice Number -->
-                                    <td class="py-3.5 px-4">
-                                        <span class="font-mono text-[10px] font-extrabold text-[#090d16] dark:text-[#FFEF4D] px-2 py-0.5 rounded-lg bg-[#FFEF4D] dark:bg-[#FFEF4D]/10 border border-[#FFEF4D]/40">
-                                            #{{ $payment->invoice_number }}
-                                        </span>
-                                    </td>
-
-                                    <!-- Date -->
-                                    <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                                        {{ $payment->paid_at ? Carbon::parse($payment->paid_at)->format('d M Y, H:i') : Carbon::parse($payment->created_at)->format('d M Y, H:i') }}
-                                    </td>
-
-                                    <!-- Plan / Description -->
-                                    <td class="py-3.5 px-4">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-bold text-slate-900 dark:text-white">
-                                                {{ $payment->plan?->name ?? 'Custom Tier' }}
-                                            </span>
-                                            @if (!empty($payment->breakdown['coupon_code']))
-                                                <span
-                                                    class="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-[#FFEF4D] text-[#090d16] dark:bg-[#FFEF4D]/20 dark:text-[#FFEF4D] border border-[#FFEF4D]/40">
-                                                    <i
-                                                        class="fa-solid fa-tag text-[9px] mr-0.5"></i>{{ $payment->breakdown['coupon_code'] }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                        <span class="text-[10px] text-slate-400 uppercase font-medium">
-                                            {{ ucfirst($payment->type ?: 'Upgrade') }} &bull;
-                                            {{ ucfirst($payment->billing_interval) }}
-                                        </span>
-                                    </td>
-
-                                    <!-- Payment Method -->
-                                    <td class="py-3.5 px-4 whitespace-nowrap">
+                                <!-- Status Badge -->
+                                <td class="py-3 px-4 text-center whitespace-nowrap">
+                                    @if ($payment->status === 'completed')
                                         <span
-                                            class="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-medium">
-                                            <i class="{{ $payment->getGatewayIcon() }}"></i>
-                                            <span>{{ $payment->getGatewayLabel() }}</span>
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+                                            <span>{{ __('Paid') }}</span>
                                         </span>
-                                    </td>
+                                    @elseif ($payment->status === 'pending')
+                                        <span
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
+                                            <i class="fa-solid fa-spinner fa-spin text-[10px]"></i>
+                                            <span>{{ __('Pending') }}</span>
+                                        </span>
+                                    @else
+                                        <span
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400"></span>
+                                            <span>{{ ucfirst($payment->status) }}</span>
+                                        </span>
+                                    @endif
+                                </td>
 
-                                    <!-- Net Amount Paid -->
-                                    <td
-                                        class="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                                        Rp {{ number_format((float) $payment->net_amount_paid, 0, ',', '.') }}
-                                    </td>
-
-                                    <!-- Status Badge -->
-                                    <td class="py-3.5 px-4 text-center whitespace-nowrap">
-                                        @if ($payment->status === 'completed')
-                                            <span
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
-                                                <span>{{ __('Paid') }}</span>
-                                            </span>
-                                        @elseif ($payment->status === 'pending')
-                                            <span
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
-                                                <i class="fa-solid fa-spinner fa-spin text-[10px]"></i>
-                                                <span>{{ __('Pending') }}</span>
-                                            </span>
-                                        @else
-                                            <span
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400"></span>
-                                                <span>{{ ucfirst($payment->status) }}</span>
-                                            </span>
+                                <!-- Action Buttons -->
+                                <td class="py-3 px-4 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-2">
+                                        @if ($payment->status === 'pending')
+                                            <a href="{{ route('settings.plan.checkout', $payment) }}"
+                                                wire:navigate
+                                                class="h-7 px-2.5 rounded-[6px] bg-[#FFEF4D] text-[#12181E] font-semibold text-xs inline-flex items-center gap-1 shadow-none cursor-pointer">
+                                                <i class="fa-solid fa-credit-card text-[10px]"></i>
+                                                <span>{{ __('Pay Now') }}</span>
+                                            </a>
                                         @endif
-                                    </td>
 
-                                    <!-- Action Buttons -->
-                                    <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                                        <div class="flex items-center justify-end gap-2">
-                                            @if ($payment->status === 'pending')
-                                                <a href="{{ route('settings.plan.checkout', $payment) }}"
-                                                    wire:navigate
-                                                    class="h-8 px-3 rounded-xl bg-[#FFEF4D] text-[#090d16] font-black text-xs inline-flex items-center gap-1 shadow-xs cursor-pointer">
-                                                    <i class="fa-solid fa-credit-card text-[10px]"></i>
-                                                    <span>{{ __('Pay Now') }}</span>
-                                                </a>
-                                            @endif
+                                        <button type="button"
+                                            wire:click="viewInvoice('{{ $payment->id }}')"
+                                            class="h-7 px-2.5 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs transition inline-flex items-center gap-1 shadow-none cursor-pointer">
+                                            <i class="fa-solid fa-receipt text-[10px]"></i>
+                                            <span>{{ __('View') }}</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-                                            <button type="button"
-                                                wire:click="viewInvoice('{{ $payment->id }}')"
-                                                class="h-8 px-3 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#1e2433] font-bold text-xs transition inline-flex items-center gap-1 shadow-2xs cursor-pointer">
-                                                <i class="fa-solid fa-receipt text-[10px]"></i>
-                                                <span>{{ __('View') }}</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination -->
-                <div class="pt-4 border-t border-slate-100 dark:border-[#1e2433]">
-                    {{ $this->invoices->links() }}
-                </div>
+            <!-- Pagination -->
+            <div class="pt-4 border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                {{ $this->invoices->links() }}
+            </div>
         @endif
     </div>
 
@@ -646,11 +641,14 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                     }
 
                     #printable-invoice .dark\:bg-\[\#10141d\],
+                    #printable-invoice .bg-\[\#F8F9FA\],
                     #printable-invoice .bg-slate-50 {
                         background-color: #f8fafc !important;
                     }
 
+                    #printable-invoice .dark\:border-\[\#1E2433\],
                     #printable-invoice .dark\:border-\[\#1e2433\],
+                    #printable-invoice .border-\[\#E4E5E9\],
                     #printable-invoice .border-slate-200\/80,
                     #printable-invoice .border-slate-100 {
                         border-color: #e2e8f0 !important;
@@ -680,29 +678,33 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
             <div
                 id="invoice-print-portal"
-                class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in print:p-0 print:static print:block"
+                class="fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-6 select-none animate-fade-in print:p-0 print:static print:block"
                 wire:keydown.escape.window="closeInvoiceModal"
             >
                 <!-- Modal Backdrop -->
-                <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity no-print"
+                <div class="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity no-print"
                     wire:click="closeInvoiceModal"></div>
 
                 <!-- Invoice Modal Content -->
                 <div
                     id="printable-invoice"
-                    class="relative w-full max-w-xl rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 z-10 print:border-none print:shadow-none print:p-0 print:space-y-5 print:bg-white print:text-slate-900 print:overflow-visible">
+                    class="relative w-full max-w-xl rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden p-6 sm:p-7 space-y-6 z-10 print:border-none print:shadow-none print:p-0 print:space-y-5 print:bg-white print:text-[#12181E] print:overflow-visible">
+                    
+                    <!-- Mobile drag handle -->
+                    <div class="mx-auto -mt-2 mb-2 h-1 w-10 shrink-0 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden no-print"></div>
+
                     <!-- Modal Top Header -->
                     <div
-                        class="flex items-start justify-between gap-4 pb-5 border-b border-slate-100 dark:border-[#1e2433] print:border-slate-200">
+                        class="flex items-start justify-between gap-4 pb-5 border-b border-[#E4E5E9] dark:border-[#1E2433] print:border-slate-200">
                         <div class="flex items-center gap-3">
                             <div
-                                class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] flex items-center justify-center text-lg font-black shadow-xs print:border print:border-slate-300">
+                                class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-base font-semibold shadow-none print:border print:border-slate-300">
                                 <i class="fa-solid fa-receipt"></i>
                             </div>
                             <div>
                                 <span
-                                    class="text-[10px] font-black uppercase tracking-wider text-slate-400 print:text-slate-500 block">{{ __('Official Subscription Receipt') }}</span>
-                                <h3 class="text-lg font-black font-mono text-slate-900 dark:text-white print:text-slate-900">
+                                    class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-500 block">{{ __('Official Subscription Receipt') }}</span>
+                                <h3 class="text-base sm:text-lg font-semibold font-mono text-[#12181E] dark:text-white print:text-slate-900">
                                     {{ $inv->invoice_number }}
                                 </h3>
                             </div>
@@ -710,13 +712,13 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
                         <div class="flex items-center gap-2 no-print">
                             <button type="button" onclick="window.print()"
-                                class="h-8 px-3 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] font-bold text-xs flex items-center gap-1.5 transition cursor-pointer">
-                                <i class="fa-solid fa-print text-xs"></i>
+                                class="h-8 px-3 rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F8F9FA] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-white border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs flex items-center gap-1.5 shadow-none transition cursor-pointer">
+                                <i class="fa-solid fa-print text-xs text-[#5A6578] dark:text-[#9DA4B2]"></i>
                                 <span>{{ __('Print') }}</span>
                             </button>
 
                             <button type="button" wire:click="closeInvoiceModal"
-                                class="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-[#1e2433] flex items-center justify-center transition cursor-pointer">
+                                class="h-8 w-8 rounded-[6px] bg-transparent text-[#5A6578] hover:text-[#12181E] dark:text-[#9DA4B2] dark:hover:text-white hover:bg-[#F0F1F3] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center transition cursor-pointer">
                                 <i class="fa-solid fa-xmark text-xs"></i>
                             </button>
                         </div>
@@ -726,41 +728,41 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                     <div class="grid grid-cols-2 gap-4 text-xs">
                         <div>
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-500 block">{{ __('Billed To') }}</span>
-                            <p class="font-extrabold text-slate-900 dark:text-white print:text-slate-900 mt-1">
+                                class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-500 block">{{ __('Billed To') }}</span>
+                            <p class="font-semibold text-[#12181E] dark:text-white print:text-slate-900 mt-1">
                                 {{ $company_legal_name ?: $operator->name ?? 'Valued Operator' }}</p>
-                            <p class="text-slate-500 dark:text-slate-400 print:text-slate-600 text-[11px]">
+                            <p class="text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-600 text-[11px]">
                                 {{ $billing_email ?: auth()->user()->email ?? '' }}</p>
                             @if ($tax_id)
-                                <p class="text-slate-500 dark:text-slate-400 print:text-slate-600 text-[11px] font-mono">
+                                <p class="text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-600 text-[11px] font-mono">
                                     {{ __('NPWP: :id', ['id' => $tax_id]) }}</p>
                             @endif
                         </div>
 
                         <div class="text-right">
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-500 block">{{ __('Payment Details') }}</span>
-                            <p class="font-bold text-slate-900 dark:text-white print:text-slate-900 mt-1">
+                                class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-500 block">{{ __('Payment Details') }}</span>
+                            <p class="font-medium text-[#12181E] dark:text-white print:text-slate-900 mt-1">
                                 {{ $inv->paid_at ? Carbon::parse($inv->paid_at)->format('d M Y, H:i') : Carbon::parse($inv->created_at)->format('d M Y') }}
                             </p>
-                            <p class="text-slate-600 dark:text-slate-300 print:text-slate-700 text-[11px] font-medium flex items-center justify-end gap-1.5 mt-0.5">
+                            <p class="text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-700 text-[11px] font-medium flex items-center justify-end gap-1.5 mt-0.5">
                                 <i class="{{ $inv->getGatewayIcon() }} text-[10px]"></i>
                                 <span>{{ $inv->getGatewayLabel() }}</span>
                             </p>
                             @if ($inv->gateway_ref && $inv->gateway_ref !== 'SIM-INSTANT')
-                                <p class="text-slate-400 dark:text-slate-500 print:text-slate-600 text-[10px] font-mono mt-0.5">
+                                <p class="text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-600 text-[10px] font-mono mt-0.5">
                                     {{ __('Ref: :ref', ['ref' => $inv->gateway_ref]) }}
                                 </p>
                             @endif
                             <div class="mt-1">
                                 @if ($inv->status === 'completed')
                                     <span
-                                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 print:bg-emerald-50 print:text-emerald-800 print:border-emerald-300">
+                                        class="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 print:bg-emerald-50 print:text-emerald-800 print:border-emerald-300">
                                         {{ __('Paid in Full') }}
                                     </span>
                                 @else
                                     <span
-                                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 print:bg-amber-50 print:text-amber-800 print:border-amber-300">
+                                        class="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 print:bg-amber-50 print:text-amber-800 print:border-amber-300">
                                         {{ ucfirst($inv->status) }}
                                     </span>
                                 @endif
@@ -770,28 +772,28 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
                     <!-- Itemized Breakdown -->
                     <div
-                        class="p-4 rounded-2xl bg-slate-50 dark:bg-[#10141d] border border-slate-200/80 dark:border-[#1e2433] print:bg-slate-50 print:border-slate-200 space-y-3 text-xs">
+                        class="p-4 rounded-[8px] bg-[#F8F9FA] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] print:bg-slate-50 print:border-slate-200 space-y-3 text-xs">
                         <div
-                            class="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-[#1e2433] print:border-slate-200 text-slate-500 dark:text-slate-400 print:text-slate-500 font-bold">
+                            class="flex items-center justify-between pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433] print:border-slate-200 text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-500 font-medium">
                             <span>{{ __('Description') }}</span>
                             <span>{{ __('Amount') }}</span>
                         </div>
 
-                        <div class="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200 print:text-slate-900">
+                        <div class="flex items-center justify-between font-medium text-[#12181E] dark:text-white print:text-slate-900">
                             <div>
                                 <span>{{ __(':plan Subscription Tier (:interval)', ['plan' => $inv->plan?->name ?? 'Growth Plan', 'interval' => ucfirst($inv->billing_interval)]) }}</span>
                                 <span
-                                    class="text-[10px] text-slate-400 print:text-slate-500 font-normal block">{{ ucfirst($inv->type ?: 'Upgrade') }}
+                                    class="text-[10px] text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-500 font-normal block">{{ ucfirst($inv->type ?: 'Upgrade') }}
                                     subscription term</span>
                             </div>
-                            <span class="font-mono font-bold">
+                            <span class="font-mono font-semibold">
                                 Rp {{ number_format((float) $inv->gross_amount, 0, ',', '.') }}
                             </span>
                         </div>
 
                         @if ((float) $inv->prorated_credit > 0)
                             <div
-                                class="flex items-center justify-between text-emerald-700 dark:text-emerald-400 print:text-emerald-700 font-bold">
+                                class="flex items-center justify-between text-emerald-700 dark:text-emerald-400 print:text-emerald-700 font-medium">
                                 <div>
                                     <span>{{ __('Prorated Unused Credit Applied') }}</span>
                                     <span
@@ -804,7 +806,7 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                         @endif
 
                         @if ((float) ($breakdown['discount_amount'] ?? 0) > 0)
-                            <div class="flex items-center justify-between text-purple-700 dark:text-purple-400 print:text-purple-700 font-bold">
+                            <div class="flex items-center justify-between text-purple-700 dark:text-purple-400 print:text-purple-700 font-medium">
                                 <div>
                                     <span class="flex items-center gap-1.5">
                                         <i class="fa-solid fa-ticket text-xs"></i>
@@ -819,14 +821,14 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                             </div>
                         @endif
 
-                        <div class="pt-3 border-t border-slate-200 dark:border-[#1e2433] print:border-slate-200 flex items-center justify-between">
+                        <div class="pt-3 border-t border-[#E4E5E9] dark:border-[#1E2433] print:border-slate-200 flex items-center justify-between">
                             <div>
                                 <span
-                                    class="font-black text-sm text-slate-900 dark:text-white print:text-slate-900 block">{{ __('Total Net Paid') }}</span>
+                                    class="font-semibold text-sm text-[#12181E] dark:text-white print:text-slate-900 block">{{ __('Total Net Paid') }}</span>
                                 <span
-                                    class="text-[10px] text-slate-400 print:text-slate-500">{{ __('Includes all platform services & licensing') }}</span>
+                                    class="text-[10px] text-[#5A6578] dark:text-[#9DA4B2] print:text-slate-500">{{ __('Includes all platform services & licensing') }}</span>
                             </div>
-                            <span class="text-xl font-black font-mono text-slate-900 dark:text-white print:text-slate-900">
+                            <span class="text-lg font-semibold font-mono text-[#12181E] dark:text-white print:text-slate-900">
                                 Rp {{ number_format((float) $inv->net_amount_paid, 0, ',', '.') }}
                             </span>
                         </div>
@@ -834,14 +836,14 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
 
                     <!-- Clean Print-Only Official Footer -->
                     <div class="hidden print:block pt-5 border-t border-slate-200 text-center text-[10px] text-slate-500 space-y-1">
-                        <p class="font-bold text-slate-700">{{ __('Thank you for choosing :name for your tourism operations.', ['name' => config('app.name', 'TravelEngine')]) }}</p>
+                        <p class="font-semibold text-slate-700">{{ __('Thank you for choosing :name for your tourism operations.', ['name' => config('app.name', 'TravelEngine')]) }}</p>
                         <p>{{ __('This is an electronically generated subscription receipt. No signature is required.') }} &bull; {{ now()->format('d M Y, H:i') }}</p>
                     </div>
 
                     <!-- Footer Actions -->
                     <div class="flex items-center justify-end gap-3 pt-2 no-print">
                         <button type="button" wire:click="closeInvoiceModal"
-                            class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] font-bold text-xs transition cursor-pointer">
+                            class="px-4 py-2 rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F8F9FA] dark:hover:bg-[#1E2433] text-[#5A6578] dark:text-[#9DA4B2] hover:text-[#12181E] dark:hover:text-white border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs shadow-none transition cursor-pointer">
                             {{ __('Close') }}
                         </button>
                     </div>
@@ -853,27 +855,32 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
     <!-- Edit Billing Information Modal -->
     @if ($show_billing_info_modal)
         <div
-            class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in no-print">
+            class="fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-6 select-none animate-fade-in no-print"
+            wire:keydown.escape.window="$set('show_billing_info_modal', false)">
             <!-- Modal Backdrop -->
-            <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity"
+            <div class="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
                 wire:click="$set('show_billing_info_modal', false)"></div>
 
             <!-- Modal Content Card -->
             <div
-                class="relative w-full max-w-md rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl overflow-hidden p-6 sm:p-7 space-y-5 z-10">
+                class="relative w-full max-w-md rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden p-6 space-y-5 z-10">
+                
+                <!-- Mobile drag handle -->
+                <div class="mx-auto -mt-2 mb-2 h-1 w-10 shrink-0 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden"></div>
+
                 <div
-                    class="flex items-start justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+                    class="flex items-start justify-between gap-3 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <div>
-                        <h3 class="text-base font-black text-slate-900 dark:text-white">
+                        <h3 class="text-base font-semibold text-[#12181E] dark:text-white">
                             {{ __('Edit Billing Contact Details') }}
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-0.5">
                             {{ __('Update the legal company name and email used on your subscription tax invoices.') }}
                         </p>
                     </div>
 
                     <button type="button" wire:click="$set('show_billing_info_modal', false)"
-                        class="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-[#1e2433] flex items-center justify-center transition cursor-pointer">
+                        class="h-8 w-8 rounded-[6px] bg-transparent text-[#5A6578] hover:text-[#12181E] dark:text-[#9DA4B2] dark:hover:text-white hover:bg-[#F0F1F3] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center transition cursor-pointer">
                         <i class="fa-solid fa-xmark text-xs"></i>
                     </button>
                 </div>
@@ -901,14 +908,14 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
                     </div>
 
                     <div
-                        class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-[#1e2433]">
+                        class="flex items-center justify-end gap-3 pt-3 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                         <button type="button" wire:click="$set('show_billing_info_modal', false)"
-                            class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433] font-bold text-xs transition cursor-pointer">
+                            class="px-4 py-2 rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F8F9FA] dark:hover:bg-[#1E2433] text-[#5A6578] dark:text-[#9DA4B2] hover:text-[#12181E] dark:hover:text-white border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs shadow-none transition cursor-pointer">
                             {{ __('Cancel') }}
                         </button>
 
                         <button type="submit"
-                            class="px-5 py-2.5 rounded-xl bg-[#FFEF4D] hover:bg-[#FFEF4D]/90 text-[#090d16] font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                            class="px-4 py-2 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] active:bg-[#E5D735] text-[#12181E] font-semibold text-xs shadow-none transition flex items-center gap-1.5 cursor-pointer"
                             wire:loading.attr="disabled"
                             wire:target="updateBillingInfo">
                             <i class="fa-solid fa-check text-xs" wire:loading.remove wire:target="updateBillingInfo"></i>
@@ -922,3 +929,4 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
         </div>
     @endif
 </div>
+

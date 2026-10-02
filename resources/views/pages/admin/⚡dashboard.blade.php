@@ -208,17 +208,13 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
 }; ?>
 
 <div class="space-y-6">
-    <div class="op-hero flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-1">
-        <div>
-            <h1 class="text-[20px] font-medium leading-[1.6] text-[#1C2024] dark:text-white">
-                {{ __('Platform overview') }}
-            </h1>
-            <p class="text-[14px] font-normal leading-[1.43] text-[#60646C] dark:text-slate-400">
-                {{ __('Operator subscriptions, pending approvals, and platform health.') }}
-            </p>
-        </div>
-
-        <div class="flex items-center gap-2">
+    <x-page-header
+        class="op-hero"
+        :title="__('Platform overview')"
+        :subtitle="__('Operator subscriptions, pending approvals, and platform health.')"
+        icon="fa-gauge-high"
+    >
+        <x-slot:actions>
             @if ($this->isPlatformMaintenance)
                 <span class="inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-[12px] font-medium bg-[#FFFBEB] dark:bg-amber-950/40 text-[#92400E] dark:text-amber-300 border border-[#FDE68A] dark:border-amber-800/50">
                     <span class="h-2 w-2 rounded-full bg-[#F59E0B] animate-pulse"></span>
@@ -230,8 +226,8 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
                     {{ __('Platform operational') }}
                 </span>
             @endif
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     {{-- Items Needing Attention Banner --}}
     @if ($this->isPlatformMaintenance || $this->pendingOperatorsCount > 0 || $this->pendingPayoutsCount > 0)

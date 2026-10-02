@@ -15,8 +15,8 @@
             {{ __('Subscription & Plan') }}
             @if ($currentPlan)
                 <span @class([
-                    'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                    'bg-stone-900 text-amber-200' => request()->routeIs('settings.plan', 'settings.plan.checkout'),
+                    'rounded-[4px] px-1.5 py-0.5 text-[10px] font-medium',
+                    'bg-[#12181E] text-[#FFEF4D]' => request()->routeIs('settings.plan', 'settings.plan.checkout'),
                     'bg-op-muted text-op-subtle' => ! request()->routeIs('settings.plan', 'settings.plan.checkout'),
                 ])>
                     {{ $currentPlan->name }}

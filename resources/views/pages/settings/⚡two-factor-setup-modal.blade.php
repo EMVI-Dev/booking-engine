@@ -153,10 +153,12 @@ new class extends Component {
 }; ?>
 
 <x-modal name="two-factor-setup-modal" maxWidth="md">
-    <div class="p-6 space-y-6">
-        <div class="text-center space-y-2">
-            <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ $this->modalConfig['title'] }}</h3>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ $this->modalConfig['description'] }}</p>
+    <div class="p-5 sm:p-6 space-y-5 rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433]">
+        <div class="mx-auto -mt-2 mb-2 h-1 w-10 shrink-0 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden"></div>
+
+        <div class="text-center space-y-1.5">
+            <h3 class="text-sm sm:text-base font-semibold text-[#12181E] dark:text-white">{{ $this->modalConfig['title'] }}</h3>
+            <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] leading-relaxed">{{ $this->modalConfig['description'] }}</p>
         </div>
 
         @if ($showVerificationStep)
@@ -176,25 +178,25 @@ new class extends Component {
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <x-button variant="outline" class="flex-1" wire:click="resetVerification">
+                    <x-button variant="outline" class="flex-1 rounded-[6px]" wire:click="resetVerification">
                         {{ __('Back') }}
                     </x-button>
-                    <x-button variant="primary" class="flex-1" wire:click="confirmTwoFactor">
+                    <x-button variant="primary" class="flex-1 rounded-[6px]" wire:click="confirmTwoFactor">
                         {{ __('Confirm') }}
                     </x-button>
                 </div>
             </div>
         @else
             @error('setupData')
-                <div class="p-3 bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 rounded-lg text-sm">
+                <div class="p-3 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900 rounded-[8px] text-xs font-medium">
                     {{ $message }}
                 </div>
             @enderror
 
             <div class="flex justify-center">
-                <div class="w-48 h-48 border rounded-xl border-zinc-200 dark:border-zinc-700 flex items-center justify-center p-3 bg-white">
+                <div class="w-48 h-48 border rounded-[8px] border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-center p-3 bg-white">
                     @empty($qrCodeSvg)
-                        <div class="animate-pulse text-zinc-400 text-sm">
+                        <div class="animate-pulse text-[#5A6578] dark:text-[#9DA4B2] text-xs">
                             {{ __('Loading QR...') }}
                         </div>
                     @else
@@ -209,7 +211,7 @@ new class extends Component {
                 <x-button
                     :disabled="$errors->has('setupData')"
                     variant="primary"
-                    class="w-full"
+                    class="w-full rounded-[6px]"
                     wire:click="showVerificationIfNecessary"
                 >
                     {{ $this->modalConfig['buttonText'] }}
@@ -217,9 +219,9 @@ new class extends Component {
             </div>
 
             @if ($manualSetupKey)
-                <div class="space-y-2">
-                    <p class="text-xs text-zinc-500 text-center">{{ __('Or enter the setup key manually:') }}</p>
-                    <div class="p-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-center font-mono text-xs select-all text-zinc-800 dark:text-zinc-200">
+                <div class="space-y-1.5">
+                    <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] text-center">{{ __('Or enter the setup key manually:') }}</p>
+                    <div class="p-2.5 bg-[#F4F5F7] dark:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] rounded-[6px] text-center font-mono text-xs select-all text-[#12181E] dark:text-[#F4F5F7]">
                         {{ $manualSetupKey }}
                     </div>
                 </div>

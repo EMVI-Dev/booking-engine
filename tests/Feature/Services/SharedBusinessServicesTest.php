@@ -270,6 +270,34 @@ test('a mid-cycle prorated upgrade keeps the current billing period end', functi
         ->and($operator->plan_expires_at->timestamp)->toBe($periodEnd->timestamp);
 });
 
+test('a paid subscription promo is logged so first-purchase-only codes cannot be reused', function () {
+    Plan::seedDefaultPlans();
+    $growth = Plan::where('slug', 'growth')->firstOrFail();
+    $coupon = PlatformCoupon::factory()->firstPurchaseOnly()->create([
+        'scope' => 'subscription',
+        'code' => 'WELCOME10',
+        'discount_type' => 'percentage',
+        'discount_value' => 10,
+        'min_spend' => 0,
+        'max_uses' => null,
+        'operator_id' => null,
+    ]);
+
+    expect($coupon->validateFor(500000, $this->operator->id)['valid'])->toBeTrue();
+
+    $service = app(SubscriptionProrationService::class);
+    $payment = $service->createPendingUpgrade($this->operator->fresh(), $growth, couponCode: 'WELCOME10', discountAmount: 1000);
+    $service->completePendingPayment($payment, 'TEST', 'doku');
+    $service->completePendingPayment($payment, 'TEST', 'doku');
+
+    $coupon->refresh();
+
+    expect($coupon->used_count)->toBe(1)
+        ->and($coupon->redemptions()->where('operator_id', $this->operator->id)->count())->toBe(1)
+        ->and($coupon->validateFor(500000, $this->operator->id)['valid'])->toBeFalse()
+        ->and($coupon->validateFor(500000, Operator::factory()->create()->id)['valid'])->toBeTrue();
+});
+
 test('downgrading drafts listings above the new cap and blocks re-publishing them', function () {
     Plan::seedDefaultPlans();
     $starter = Plan::where('slug', 'starter')->firstOrFail();

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('tagline')->nullable();
             $table->decimal('price_monthly', 12, 2)->default(0.00);
             $table->decimal('price_yearly', 12, 2)->default(0.00);
-            $table->decimal('commission_rate', 5, 4)->default(0.1000);
+            $table->decimal('commission_rate', 5, 4)->default(0); // operators keep 100% of the base price; the platform earns the guest service fee
             $table->integer('package_limit')->nullable(); // null = unlimited
             $table->integer('team_member_limit')->nullable(); // null = unlimited
             $table->json('features')->nullable();

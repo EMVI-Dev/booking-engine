@@ -220,25 +220,25 @@ new #[Title('Reservation Details')] class extends Component {
                 {{ __('All Reservations') }}
             </x-back-link>
 
-            <div class="flex items-start gap-4 min-w-0">
+            <div class="flex items-start gap-3 sm:gap-4 min-w-0">
                 <div
-                    class="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-xs">
+                    class="w-10 h-10 rounded-[8px] bg-[#FFEF4D]/20 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/40 font-medium text-base flex items-center justify-center shrink-0 shadow-none">
                     <i class="fa-solid fa-receipt"></i>
                 </div>
 
                 <div class="min-w-0 space-y-1">
-                    <div class="flex flex-wrap items-center gap-2.5">
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="text-[20px] font-medium tracking-tight text-op-ink truncate">
                             {{ $res->guest_name }}
                         </h1>
                         <span
-                            class="font-mono text-xs font-bold text-indigo-700 dark:text-indigo-300 px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200/80 dark:border-indigo-800/60 shadow-2xs">
+                            class="font-mono text-xs font-medium text-op-ink px-2 py-0.5 rounded-[4px] bg-[#F7F8F9] dark:bg-[#1A2030] border border-[#E4E5E9] dark:border-[#1E2433]">
                             #{{ $resCode }}
                         </span>
                         <x-status-badge :status="$res->status" />
                     </div>
 
-                    <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <p class="text-xs text-op-subtle flex items-center gap-2">
                         <span><i
                                 class="fa-regular fa-clock mr-1"></i>{{ __('Booked on :date', ['date' => $res->created_at?->format('M d, Y · H:i') ?? '—']) }}</span>
                         <span>·</span>
@@ -258,14 +258,13 @@ new #[Title('Reservation Details')] class extends Component {
             @endif
 
             <x-button :href="$receiptUrl" target="_blank" rel="noopener" variant="secondary" size="sm">
-                <i class="fa-solid fa-file-invoice text-xs text-slate-400"></i>
+                <i class="fa-solid fa-file-invoice text-xs text-op-subtle"></i>
                 <span>{{ __('Receipt') }}</span>
             </x-button>
 
             <!-- Status Controls -->
             @if (in_array($res->status, [ReservationStatus::PaymentPending, ReservationStatus::PendingConfirmation], true))
-                <x-button type="button" variant="primary" wire:click="confirmStatusTransition('confirmed')"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold" size="sm">
+                <x-button type="button" variant="success" wire:click="confirmStatusTransition('confirmed')" size="sm">
                     <i class="fa-solid fa-check mr-1.5 text-xs"></i>
                     {{ __('Confirm Booking') }}
                 </x-button>
@@ -282,8 +281,7 @@ new #[Title('Reservation Details')] class extends Component {
             @if (
                 $res->status === ReservationStatus::Confirmed &&
                     ($res->requested_date->isToday() || $res->requested_date->isPast()))
-                <x-button type="button" variant="primary" wire:click="confirmStatusTransition('completed')"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold" size="sm">
+                <x-button type="button" variant="primary" wire:click="confirmStatusTransition('completed')" size="sm">
                     <i class="fa-solid fa-flag-checkered mr-1.5 text-xs"></i>
                     {{ __('Mark Completed') }}
                 </x-button>
@@ -306,14 +304,14 @@ new #[Title('Reservation Details')] class extends Component {
     <!-- Active Payment Hold Notice (If Payment Pending) -->
     @if ($isPendingHold)
         <div
-            class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            class="p-3.5 sm:p-4 rounded-[12px] bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-none">
             <div class="flex items-center gap-3">
                 <div
-                    class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shrink-0">
+                    class="w-8 h-8 rounded-[6px] bg-amber-500 text-white flex items-center justify-center text-sm shrink-0">
                     <i class="fa-solid fa-hourglass-half animate-pulse"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-sm text-amber-900 dark:text-amber-200">
+                    <h4 class="font-medium text-sm text-amber-900 dark:text-amber-200">
                         {{ __('Reservation on 30-Minute Payment Hold') }}
                     </h4>
                     <p class="text-xs text-amber-800/80 dark:text-amber-300/80">
@@ -328,13 +326,13 @@ new #[Title('Reservation Details')] class extends Component {
 
             <div class="flex items-center gap-2">
                 <a href="{{ $paymentHoldWaUrl }}" target="_blank"
-                    class="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5">
+                    class="h-8 px-3 rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center gap-1.5">
                     <i class="fa-brands fa-whatsapp text-sm"></i>
                     <span>{{ __('Send Pay Link') }}</span>
                 </a>
 
                 <button type="button" wire:click="syncPaymentStatus"
-                    class="h-9 px-3.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-amber-50 dark:hover:bg-zinc-700 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                    class="h-8 px-3 rounded-[6px] bg-white dark:bg-[#151a26] hover:bg-amber-50 dark:hover:bg-zinc-800 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 font-medium text-xs transition flex items-center gap-1.5 cursor-pointer shadow-none">
                     <i class="fa-solid fa-arrows-rotate text-xs" wire:loading.class="animate-spin"
                         wire:target="syncPaymentStatus"></i>
                     <span>{{ __('Check Gateway') }}</span>
@@ -344,96 +342,96 @@ new #[Title('Reservation Details')] class extends Component {
     @endif
 
     <!-- Two-Column Master Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         <!-- LEFT COLUMN (2 Cols): Tour Details, Guest Profile, WhatsApp Dispatch, Notes, Terms -->
-        <div class="lg:col-span-2 space-y-6">
+        <div class="lg:col-span-2 space-y-5">
 
             <!-- Card 1: Experience & Schedule Overview -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-5">
-                <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-[#1e2433]">
+                class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-op-line">
                     <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
-                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <span class="w-2 h-2 rounded-full bg-[#FFEF4D]"></span>
+                        <h2 class="text-xs font-medium uppercase tracking-wider text-op-subtle">
                             {{ __('Booked Experience') }}
                         </h2>
                     </div>
 
                     <div class="flex items-center gap-2">
                         <button type="button" wire:click="openTripInfoModal"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60 font-bold text-xs transition cursor-pointer shadow-2xs">
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-op-muted hover:bg-op-line text-op-ink border border-op-line font-medium text-xs transition cursor-pointer">
                             <i class="fa-solid fa-circle-info text-xs"></i>
                             <span>{{ __('Trip Info') }}</span>
                         </button>
 
                         <span
-                            class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase {{ $res->bookable_type === 'package' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60' }}">
+                            class="px-2 py-0.5 rounded-[4px] text-[11px] font-medium uppercase {{ $res->bookable_type === 'package' ? 'bg-[#FFEF4D]/20 text-[#12181E] dark:bg-[#FFEF4D]/15 dark:text-[#FFEF4D]' : 'bg-op-muted text-op-ink border border-op-line' }}">
                             {{ $res->bookable_type === 'package' ? __('Tour Package') : __('Standalone Product') }}
                         </span>
                     </div>
                 </div>
 
-                <div class="space-y-2">
+                <div class="space-y-1.5">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <h3 class="text-xl font-bold text-slate-900 dark:text-white leading-snug">
+                        <h3 class="text-lg font-medium text-op-ink leading-snug">
                             {{ $bookable->name ?? ($bookable->title ?? __('Direct Experience Item')) }}
                         </h3>
                         @if ($appliedCouponCode)
                             <span
-                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-750 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shadow-2xs">
+                                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60">
                                 <i class="fa-solid fa-tag text-[10px] text-amber-600 dark:text-amber-400"></i>
-                                <span>{{ __('Promo Code: :code', ['code' => $appliedCouponCode]) }}</span>
+                                <span>{{ __('Promo: :code', ['code' => $appliedCouponCode]) }}</span>
                                 @if ($couponDiscount > 0)
-                                    <span class="font-extrabold text-amber-700 dark:text-amber-300">(-Rp {{ number_format($couponDiscount, 0, ',', '.') }})</span>
+                                    <span class="font-medium text-amber-700 dark:text-amber-300">(-Rp {{ number_format($couponDiscount, 0, ',', '.') }})</span>
                                 @endif
                             </span>
                         @endif
                     </div>
 
                     @if ($bookable && !empty($bookable->description))
-                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                        <p class="text-xs text-op-subtle line-clamp-3 leading-relaxed">
                             {{ $bookable->description }}
                         </p>
                     @endif
                 </div>
 
                 <!-- Schedule Specs Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                     <div
-                        class="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] space-y-1">
+                        class="p-3 rounded-[8px] bg-[#F7F8F9] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                         <span
-                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ __('Trip Date') }}</span>
-                        <p class="font-bold text-sm text-slate-900 dark:text-white">
+                            class="text-[10px] font-medium text-op-subtle uppercase tracking-wider">{{ __('Trip Date') }}</span>
+                        <p class="font-medium text-sm text-op-ink">
                             {{ $res->requested_date->format('l, M d, Y') }}
                         </p>
-                        <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                        <span class="text-[11px] text-op-subtle">
                             {{ $res->requested_date->isToday() ? __('Today') : $res->requested_date->diffForHumans() }}
                         </span>
                     </div>
 
                     <div
-                        class="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] space-y-1">
+                        class="p-3 rounded-[8px] bg-[#F7F8F9] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                         <span
-                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ __('Party Size') }}</span>
-                        <p class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                            <i class="fa-solid fa-users text-indigo-500 text-xs"></i>
+                            class="text-[10px] font-medium text-op-subtle uppercase tracking-wider">{{ __('Party Size') }}</span>
+                        <p class="font-medium text-sm text-op-ink flex items-center gap-1.5">
+                            <i class="fa-solid fa-users text-op-subtle text-xs"></i>
                             {{ __(':count Guests (Pax)', ['count' => $res->pax_count]) }}
                         </p>
-                        <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                        <span class="text-[11px] text-op-subtle">
                             Rp {{ number_format($frozenPrice, 0, ',', '.') }} / pax
                         </span>
                     </div>
 
                     <div
-                        class="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] space-y-1 flex flex-col justify-between">
+                        class="p-3 rounded-[8px] bg-[#F7F8F9] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5 flex flex-col justify-between">
                         <div>
                             <span
-                                class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ __('Calendar Sync') }}</span>
-                            <p class="font-bold text-sm text-slate-900 dark:text-white">{{ __('Google Cal') }}</p>
+                                class="text-[10px] font-medium text-op-subtle uppercase tracking-wider">{{ __('Calendar Sync') }}</span>
+                            <p class="font-medium text-sm text-op-ink">{{ __('Google Cal') }}</p>
                         </div>
                         <a href="{{ $gcalUrl }}" target="_blank"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                            class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
                             <i class="fa-brands fa-google text-xs"></i>
                             <span>{{ __('Add to Schedule') }}</span>
                         </a>
@@ -443,18 +441,18 @@ new #[Title('Reservation Details')] class extends Component {
 
             <!-- Card 2: Guest Details & CRM Connection -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+                class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-op-line">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-user text-slate-400 text-xs"></i>
-                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <i class="fa-solid fa-user text-op-subtle text-xs"></i>
+                        <h2 class="text-xs font-medium uppercase tracking-wider text-op-subtle">
                             {{ __('Guest Profile & Contact') }}
                         </h2>
                     </div>
 
                     @if ($res->guest)
                         <a href="{{ route('guests.show', $res->guest) }}" wire:navigate
-                            class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                            class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
                             <i class="fa-solid fa-address-book text-xs"></i>
                             <span>{{ __('View CRM History') }} &rarr;</span>
                         </a>
@@ -462,26 +460,26 @@ new #[Title('Reservation Details')] class extends Component {
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div class="flex items-start gap-3.5">
+                    <div class="flex items-start gap-3">
                         <div
-                            class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-black text-lg flex items-center justify-center shrink-0 border border-emerald-300 dark:border-emerald-800/60">
+                            class="w-10 h-10 rounded-[8px] bg-op-muted text-op-ink font-medium text-sm flex items-center justify-center shrink-0 border border-op-line">
                             {{ strtoupper(substr($res->guest_name, 0, 2)) }}
                         </div>
-                        <div class="space-y-1 min-w-0">
-                            <h4 class="font-bold text-base text-slate-900 dark:text-white leading-tight">
+                        <div class="space-y-0.5 min-w-0">
+                            <h4 class="font-medium text-sm sm:text-base text-op-ink leading-tight">
                                 {{ $res->guest_name }}
                             </h4>
                             <div
-                                class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+                                class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-op-subtle">
                                 @if ($res->guest_email)
                                     <a href="mailto:{{ $res->guest_email }}"
-                                        class="flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400">
-                                        <i class="fa-solid fa-envelope text-slate-400"></i>
+                                        class="flex items-center gap-1.5 hover:text-op-ink">
+                                        <i class="fa-solid fa-envelope text-op-subtle"></i>
                                         <span>{{ $res->guest_email }}</span>
                                     </a>
                                 @endif
                                 <a href="{{ $directWaUrl }}" target="_blank"
-                                    class="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                                    class="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
                                     <i class="fa-brands fa-whatsapp text-sm"></i>
                                     <span>{{ $res->guest_contact }}</span>
                                 </a>
@@ -490,7 +488,7 @@ new #[Title('Reservation Details')] class extends Component {
                     </div>
 
                     <a href="{{ $directWaUrl }}" target="_blank"
-                        class="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 shrink-0">
+                        class="h-8 px-3 rounded-[6px] bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-xs transition flex items-center justify-center gap-1.5 shrink-0">
                         <i class="fa-brands fa-whatsapp text-sm"></i>
                         <span>{{ __('Direct WhatsApp Chat') }}</span>
                     </a>
@@ -500,41 +498,41 @@ new #[Title('Reservation Details')] class extends Component {
             <!-- Card 3: 1-Click WhatsApp Dispatch Center -->
             @if ($this->currentOperator?->hasFeature('whatsapp_dispatch'))
                 <div
-                    class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
+                    class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
                     <div
-                        class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+                        class="flex items-center justify-between pb-3 border-b border-op-line">
                         <div class="flex items-center gap-2">
                             <i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i>
-                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <h2 class="text-xs font-medium uppercase tracking-wider text-op-subtle">
                                 {{ __('1-Click WhatsApp Guest Dispatch') }}
                             </h2>
                         </div>
 
                         <span
-                            class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                            class="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
                             {{ __('Pre-Formatted Guest Messages') }}
                         </span>
                     </div>
 
-                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                    <p class="text-xs text-op-subtle">
                         {{ __('Trigger formatted notifications directly into your WhatsApp web or mobile client. All booking vouchers, departure reminders, and meeting points are auto-populated.') }}
                     </p>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
                         <a href="{{ $voucherWaUrl }}" target="_blank"
-                            class="h-10 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 text-center">
+                            class="h-8 px-3 rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
                             <i class="fa-solid fa-ticket text-xs"></i>
                             <span class="truncate">{{ __('Send E-Voucher') }}</span>
                         </a>
 
                         <a href="{{ $reminderWaUrl }}" target="_blank"
-                            class="h-10 px-3 rounded-xl bg-white dark:bg-[#141821] hover:bg-emerald-50 dark:hover:bg-zinc-800 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 font-bold text-xs transition flex items-center justify-center gap-2 text-center shadow-2xs">
+                            class="h-8 px-3 rounded-[6px] bg-white dark:bg-[#151a26] hover:bg-emerald-50 dark:hover:bg-zinc-800 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
                             <i class="fa-solid fa-bell text-xs"></i>
                             <span class="truncate">{{ __('Send 24h Reminder') }}</span>
                         </a>
 
                         <a href="{{ $meetingWaUrl }}" target="_blank"
-                            class="h-10 px-3 rounded-xl bg-white dark:bg-[#141821] hover:bg-emerald-50 dark:hover:bg-zinc-800 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 font-bold text-xs transition flex items-center justify-center gap-2 text-center shadow-2xs">
+                            class="h-8 px-3 rounded-[6px] bg-white dark:bg-[#151a26] hover:bg-emerald-50 dark:hover:bg-zinc-800 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
                             <i class="fa-solid fa-location-dot text-xs"></i>
                             <span class="truncate">{{ __('Send Meeting Pin') }}</span>
                         </a>
@@ -542,10 +540,10 @@ new #[Title('Reservation Details')] class extends Component {
                 </div>
             @else
                 <div
-                    class="p-6 rounded-3xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/50 shadow-2xs space-y-2">
+                    class="p-4 sm:p-5 rounded-[12px] bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/50 shadow-none space-y-2">
                     <div class="flex items-center gap-2">
                         <i class="fa-brands fa-whatsapp text-amber-600 dark:text-amber-400 text-base"></i>
-                        <h4 class="font-bold text-sm text-amber-900 dark:text-amber-200">
+                        <h4 class="font-medium text-sm text-amber-900 dark:text-amber-200">
                             {{ __('Ready-made WhatsApp messages are on Growth') }}
                         </h4>
                     </div>
@@ -557,18 +555,18 @@ new #[Title('Reservation Details')] class extends Component {
 
             <!-- Card 4: Internal Driver & Operational Notes -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+                class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-op-line">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-note-sticky text-amber-500 text-xs"></i>
-                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <h2 class="text-xs font-medium uppercase tracking-wider text-op-subtle">
                             {{ __('Internal Operational Notes') }}
                         </h2>
                     </div>
 
                     @if (!$isEditingNotes)
                         <button type="button" wire:click="startEditingNotes"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+                            class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
                             <i class="fa-solid fa-pen-to-square text-xs"></i>
                             <span>{{ __('Edit Notes') }}</span>
                         </button>
@@ -584,16 +582,15 @@ new #[Title('Reservation Details')] class extends Component {
                             <x-button size="sm" variant="secondary" wire:click="cancelEditingNotes">
                                 {{ __('Cancel') }}
                             </x-button>
-                            <x-button size="sm" variant="primary" wire:click="saveNotes"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+                            <x-button size="sm" variant="primary" wire:click="saveNotes">
                                 <i class="fa-solid fa-floppy-disk mr-1.5"></i>
-                                {{ __('Save Operational Notes') }}
+                                <span>{{ __('Save Notes') }}</span>
                             </x-button>
                         </div>
                     </div>
                 @else
                     <div
-                        class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] text-xs text-slate-700 dark:text-slate-300 leading-relaxed min-h-16">
+                        class="p-3.5 rounded-[8px] bg-[#F7F8F9] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] text-xs text-op-ink leading-relaxed min-h-16">
                         {{ !empty($res->notes) ? $res->notes : __('No operational notes recorded yet. Click Edit Notes to add driver pickup notes or dietary preferences.') }}
                     </div>
                 @endif
@@ -602,14 +599,14 @@ new #[Title('Reservation Details')] class extends Component {
             <!-- Card 5: Frozen Terms & Policy Snapshot -->
             @if (!empty($res->terms_snapshot))
                 <div x-data="{ openTerms: false }"
-                    class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3">
+                    class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-3">
                     <button type="button" @click="openTerms = !openTerms"
-                        class="w-full flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                        class="w-full flex items-center justify-between text-xs font-medium text-op-ink cursor-pointer">
                         <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-shield-halved text-indigo-500"></i>
+                            <i class="fa-solid fa-shield-halved text-op-subtle"></i>
                             {{ __('Frozen Terms & Cancellation Policy Snapshot') }}
                         </span>
-                        <div class="flex items-center gap-2 text-slate-400">
+                        <div class="flex items-center gap-2 text-op-subtle">
                             <span
                                 class="text-[11px] font-normal">{{ __('Cutoff: :hours hrs', ['hours' => $res->getFrozenFreeCancellationHours()]) }}</span>
                             <i class="fa-solid fa-chevron-down text-xs transition-transform duration-200"
@@ -618,22 +615,22 @@ new #[Title('Reservation Details')] class extends Component {
                     </button>
 
                     <div x-show="openTerms" x-cloak
-                        class="pt-3 border-t border-slate-100 dark:border-[#1e2433] space-y-3 text-xs">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600 dark:text-slate-400">
+                        class="pt-3 border-t border-op-line space-y-3 text-xs">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-op-subtle">
                             <div>
                                 <span
-                                    class="font-bold text-slate-700 dark:text-slate-300 block mb-1">{{ __('Cancellation Terms:') }}</span>
+                                    class="font-medium text-op-ink block mb-1">{{ __('Cancellation Terms:') }}</span>
                                 <p>{{ $res->terms_snapshot['cancellation_terms'] ?? __('Standard policy.') }}</p>
                             </div>
                             <div>
                                 <span
-                                    class="font-bold text-slate-700 dark:text-slate-300 block mb-1">{{ __('Frozen At:') }}</span>
+                                    class="font-medium text-op-ink block mb-1">{{ __('Frozen At:') }}</span>
                                 <p class="font-mono">{{ $res->terms_snapshot['frozen_at'] ?? '—' }}</p>
                             </div>
                         </div>
 
                         <div
-                            class="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] font-mono text-[11px] text-slate-600 dark:text-slate-400 overflow-x-auto max-h-48">
+                            class="p-3 rounded-[6px] bg-[#F7F8F9] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] font-mono text-[11px] text-op-subtle overflow-x-auto max-h-48">
                             {{ json_encode($res->terms_snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}
                         </div>
                     </div>
@@ -643,15 +640,15 @@ new #[Title('Reservation Details')] class extends Component {
         </div>
 
         <!-- RIGHT COLUMN (1 Col): Financial Breakdown, Escrow Status, Quick Links, Timeline -->
-        <div class="space-y-6">
+        <div class="space-y-5">
 
             <!-- Card 1: Payment & Settlement Summary -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-5">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+                class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-op-line">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-wallet text-indigo-500 text-xs"></i>
-                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <i class="fa-solid fa-wallet text-op-subtle text-xs"></i>
+                        <h2 class="text-xs font-medium uppercase tracking-wider text-op-subtle">
                             {{ __('Financial Settlement') }}
                         </h2>
                     </div>
@@ -660,14 +657,14 @@ new #[Title('Reservation Details')] class extends Component {
                 </div>
 
                 <!-- Big Amount Display -->
-                <div class="space-y-1">
+                <div class="space-y-0.5">
                     <span
-                        class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Booking Total Amount') }}</span>
-                    <p class="text-2xl font-extrabold text-slate-900 dark:text-white">
+                        class="text-[10px] font-medium uppercase tracking-wider text-op-subtle">{{ __('Booking Total Amount') }}</span>
+                    <p class="text-xl sm:text-2xl font-medium text-op-ink">
                         Rp
                         {{ number_format($latestPayment ? (float) $latestPayment->amount : $totalCalculated, 0, ',', '.') }}
                     </p>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                    <span class="text-xs text-op-subtle">
                         {{ $res->pax_count }} pax &times; Rp {{ number_format($frozenPrice, 0, ',', '.') }}
                     </span>
                 </div>
@@ -675,10 +672,10 @@ new #[Title('Reservation Details')] class extends Component {
                 <!-- Escrow Status Callout -->
                 @if ($earningTx)
                     <div
-                        class="p-4 rounded-2xl {{ $earningTx->status->value === 'cleared' ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60' : ($earningTx->status->value === 'pending_escrow' ? 'bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60' : 'bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700') }} space-y-1.5">
+                        class="p-3.5 rounded-[8px] {{ $earningTx->status->value === 'cleared' ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60' : ($earningTx->status->value === 'pending_escrow' ? 'bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60' : 'bg-[#F7F8F9] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433]') }} space-y-1">
                         <div class="flex items-center justify-between">
                             <span
-                                class="text-xs font-bold {{ $earningTx->status->value === 'cleared' ? 'text-emerald-900 dark:text-emerald-200' : ($earningTx->status->value === 'pending_escrow' ? 'text-amber-900 dark:text-amber-200' : 'text-slate-700 dark:text-slate-300') }} flex items-center gap-1.5">
+                                class="text-xs font-medium {{ $earningTx->status->value === 'cleared' ? 'text-emerald-900 dark:text-emerald-200' : ($earningTx->status->value === 'pending_escrow' ? 'text-amber-900 dark:text-amber-200' : 'text-op-ink') }} flex items-center gap-1.5">
                                 @if ($earningTx->status->value === 'cleared')
                                     <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400"></i>
                                     {{ __('Funds Cleared & Available') }}
@@ -686,19 +683,19 @@ new #[Title('Reservation Details')] class extends Component {
                                     <i class="fa-solid fa-lock text-amber-500"></i>
                                     {{ __('In Escrow Safe') }}
                                 @else
-                                    <i class="fa-solid fa-circle-xmark text-slate-400"></i>
+                                    <i class="fa-solid fa-circle-xmark text-op-subtle"></i>
                                     {{ __('Escrow Voided / Cancelled') }}
                                 @endif
                             </span>
 
                             <span
-                                class="font-bold text-xs {{ $earningTx->status->value === 'cleared' ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300' }}">
+                                class="font-medium text-xs {{ $earningTx->status->value === 'cleared' ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300' }}">
                                 Rp {{ number_format((float) $earningTx->net_amount, 0, ',', '.') }}
                             </span>
                         </div>
 
                         <p
-                            class="text-[11px] leading-relaxed {{ $earningTx->status->value === 'cleared' ? 'text-emerald-800/90 dark:text-emerald-300/90' : ($earningTx->status->value === 'pending_escrow' ? 'text-amber-800/90 dark:text-amber-300/90' : 'text-slate-500') }}">
+                            class="text-[11px] leading-relaxed {{ $earningTx->status->value === 'cleared' ? 'text-emerald-800/90 dark:text-emerald-300/90' : ($earningTx->status->value === 'pending_escrow' ? 'text-amber-800/90 dark:text-amber-300/90' : 'text-op-subtle') }}">
                             @if ($earningTx->status->value === 'cleared')
                                 {{ __('Net earnings are cleared and ready for payout withdrawal.') }}
                             @elseif ($earningTx->status->value === 'pending_escrow')
@@ -711,26 +708,26 @@ new #[Title('Reservation Details')] class extends Component {
                 @endif
 
                 <!-- Payment Details Rows -->
-                <div class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-[#1e2433] text-xs">
-                    <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <div class="space-y-2 pt-2 border-t border-op-line text-xs">
+                    <div class="flex items-center justify-between text-op-subtle">
                         <span>{{ __('Gateway Provider') }}</span>
                         <strong
-                            class="font-bold text-slate-900 dark:text-white uppercase">{{ $latestPayment?->gateway ?? 'DOKU' }}</strong>
+                            class="font-medium text-op-ink uppercase">{{ $latestPayment?->gateway ?? 'DOKU' }}</strong>
                     </div>
 
-                    <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                    <div class="flex items-center justify-between text-op-subtle">
                         <span>{{ __('Gateway Reference') }}</span>
                         <span
-                            class="font-mono text-slate-800 dark:text-slate-200">{{ $latestPayment?->gateway_ref ?? '—' }}</span>
+                            class="font-mono text-op-ink">{{ $latestPayment?->gateway_ref ?? '—' }}</span>
                     </div>
 
                     @if ($appliedCouponCode && $couponDiscount > 0)
-                        <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                        <div class="flex items-center justify-between text-op-subtle">
                             <span>{{ __('Experience Subtotal') }}</span>
                             <span>Rp {{ number_format($originalSubtotal, 0, ',', '.') }}</span>
                         </div>
 
-                        <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 font-semibold">
+                        <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 font-medium">
                             <span class="flex items-center gap-1.5">
                                 <i class="fa-solid fa-tag text-[10px]"></i>
                                 {{ __('Promo Discount (:code)', ['code' => $appliedCouponCode]) }}
@@ -740,16 +737,16 @@ new #[Title('Reservation Details')] class extends Component {
                     @endif
 
                     @if ($latestPayment && !empty($latestPayment->split_details))
-                        <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                        <div class="flex items-center justify-between text-op-subtle">
                             <span>{{ __('Guest Service Fee (5%)') }}</span>
                             <span class="text-rose-500 font-medium">
                                 Rp {{ number_format((float) ($latestPayment->split_details['guest_service_fee'] ?? 0), 0, ',', '.') }}
                             </span>
                         </div>
 
-                        <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                        <div class="flex items-center justify-between text-op-subtle">
                             <span>{{ __('Net Operator Earning') }}</span>
-                            <strong class="font-bold text-emerald-600 dark:text-emerald-400">
+                            <strong class="font-medium text-emerald-600 dark:text-emerald-400">
                                 Rp {{ number_format((float) ($latestPayment->split_details['operator_amount'] ?? ($earningTx?->net_amount ?? $totalCalculated)), 0, ',', '.') }}
                             </strong>
                         </div>
@@ -758,7 +755,7 @@ new #[Title('Reservation Details')] class extends Component {
 
                 @if ($latestPayment && !$latestPayment->isPaid())
                     <button type="button" wire:click="syncPaymentStatus"
-                        class="w-full h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                        class="w-full h-8 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] font-medium text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-none">
                         <i class="fa-solid fa-arrows-rotate text-xs" wire:loading.class="animate-spin"
                             wire:target="syncPaymentStatus"></i>
                         <span>{{ __('Sync with Payment Gateway') }}</span>
@@ -768,43 +765,43 @@ new #[Title('Reservation Details')] class extends Component {
 
             <!-- Card 2: Quick Links & Sharing -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-3.5">
-                <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
-                    <i class="fa-solid fa-share-nodes text-slate-400 text-xs"></i>
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-3">
+                <div class="flex items-center gap-2 pb-2 border-b border-op-line">
+                    <i class="fa-solid fa-share-nodes text-op-subtle text-xs"></i>
+                    <h2 class="text-xs font-medium uppercase tracking-wider text-op-subtle">
                         {{ __('Customer Links') }}
                     </h2>
                 </div>
 
                 <div class="space-y-2">
                     <a href="{{ $receiptUrl }}" target="_blank"
-                        class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-[#1e2433] flex items-center justify-between text-xs transition">
-                        <span class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
-                            <i class="fa-solid fa-file-invoice text-indigo-500"></i>
+                        class="w-full p-2.5 rounded-[8px] bg-[#F7F8F9] dark:bg-[#151a26] hover:bg-[#EEF0F2] dark:hover:bg-[#1A2030] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-between text-xs transition">
+                        <span class="flex items-center gap-2 font-medium text-op-ink">
+                            <i class="fa-solid fa-file-invoice text-op-subtle"></i>
                             {{ __('Online Receipt & Portal') }}
                         </span>
-                        <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 text-[10px]"></i>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-op-subtle text-[10px]"></i>
                     </a>
 
                     @if ($isPaid)
                         <a href="{{ $eTicketUrl }}" target="_blank"
-                            class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-[#1e2433] flex items-center justify-between text-xs transition">
-                            <span class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+                            class="w-full p-2.5 rounded-[8px] bg-[#F7F8F9] dark:bg-[#151a26] hover:bg-[#EEF0F2] dark:hover:bg-[#1A2030] border border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-between text-xs transition">
+                            <span class="flex items-center gap-2 font-medium text-op-ink">
                                 <i class="fa-solid fa-ticket text-emerald-500"></i>
                                 {{ __('Printable E-Ticket') }}
                             </span>
-                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 text-[10px]"></i>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-op-subtle text-[10px]"></i>
                         </a>
                     @else
                         <div x-data="{ copied: false }" class="space-y-1.5 pt-1">
                             <span
-                                class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ __('Direct Checkout Link') }}</span>
+                                class="text-[10px] font-medium text-op-subtle uppercase tracking-wider">{{ __('Direct Checkout Link') }}</span>
                             <div class="flex items-center gap-1.5">
                                 <input type="text" readonly value="{{ $paymentUrl }}"
-                                    class="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#141821] border border-slate-200/80 dark:border-[#1e2433] text-slate-600 dark:text-slate-400 font-mono text-xs truncate" />
+                                    class="w-full h-8 px-2.5 rounded-[6px] bg-[#F7F8F9] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] text-op-ink font-mono text-xs truncate" />
                                 <button type="button"
                                     @click="navigator.clipboard.writeText('{{ $paymentUrl }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                                    class="h-9 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 cursor-pointer transition">
+                                    class="h-8 px-2.5 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] font-medium text-xs shrink-0 cursor-pointer transition">
                                     <span x-text="copied ? '{{ __('Copied') }}' : '{{ __('Copy') }}'"></span>
                                 </button>
                             </div>
@@ -815,66 +812,66 @@ new #[Title('Reservation Details')] class extends Component {
 
             <!-- Card 3: Audit Trail & Timeline -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
-                <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
-                    <i class="fa-solid fa-clock-rotate-left text-slate-400 text-xs"></i>
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                class="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+                <div class="flex items-center gap-2 pb-2 border-b border-op-line">
+                    <i class="fa-solid fa-clock-rotate-left text-op-subtle text-xs"></i>
+                    <h2 class="text-xs font-medium uppercase tracking-wider text-op-subtle">
                         {{ __('Booking Timeline') }}
                     </h2>
                 </div>
 
                 <div
-                    class="relative pl-6 space-y-4 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-[#1e2433] text-xs">
+                    class="relative pl-6 space-y-3.5 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-op-line text-xs">
                     <!-- Completed / Cancelled -->
                     @if ($res->status === ReservationStatus::Completed)
                         <div class="relative">
                             <div
-                                class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-emerald-600 ring-4 ring-emerald-50 dark:ring-emerald-950">
+                                class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-emerald-600">
                             </div>
-                            <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ __('Trip Completed') }}
+                            <p class="font-medium text-emerald-600 dark:text-emerald-400">{{ __('Trip Completed') }}
                             </p>
                             <span
-                                class="text-[11px] text-slate-400">{{ $res->updated_at?->format('d M Y, H:i') }}</span>
+                                class="text-[11px] text-op-subtle">{{ $res->updated_at?->format('d M Y, H:i') }}</span>
                         </div>
                     @elseif ($res->status === ReservationStatus::Cancelled)
                         <div class="relative">
                             <div
-                                class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-rose-600 ring-4 ring-rose-50 dark:ring-rose-950">
+                                class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-rose-600">
                             </div>
-                            <p class="font-bold text-rose-600 dark:text-rose-400">{{ __('Cancelled') }}</p>
+                            <p class="font-medium text-rose-600 dark:text-rose-400">{{ __('Cancelled') }}</p>
                             <span
-                                class="text-[11px] text-slate-400">{{ $res->updated_at?->format('d M Y, H:i') }}</span>
+                                class="text-[11px] text-op-subtle">{{ $res->updated_at?->format('d M Y, H:i') }}</span>
                         </div>
                     @endif
 
                     <!-- Departure -->
                     <div class="relative">
                         <div
-                            class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full {{ $res->requested_date->isPast() ? 'bg-slate-400' : 'bg-amber-500 ring-4 ring-amber-50 dark:ring-amber-950' }}">
+                            class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full {{ $res->requested_date->isPast() ? 'bg-op-subtle' : 'bg-amber-500' }}">
                         </div>
-                        <p class="font-bold text-slate-900 dark:text-white">{{ __('Scheduled Departure') }}</p>
-                        <span class="text-[11px] text-slate-400">{{ $res->requested_date->format('d M Y') }}</span>
+                        <p class="font-medium text-op-ink">{{ __('Scheduled Departure') }}</p>
+                        <span class="text-[11px] text-op-subtle">{{ $res->requested_date->format('d M Y') }}</span>
                     </div>
 
                     <!-- Payment -->
                     @if ($isPaid)
                         <div class="relative">
                             <div
-                                class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-emerald-600 ring-4 ring-emerald-50 dark:ring-emerald-950">
+                                class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-emerald-600">
                             </div>
-                            <p class="font-bold text-slate-900 dark:text-white">{{ __('Payment Confirmed') }}</p>
+                            <p class="font-medium text-op-ink">{{ __('Payment Confirmed') }}</p>
                             <span
-                                class="text-[11px] text-slate-400">{{ $latestPayment->updated_at?->format('d M Y, H:i') }}</span>
+                                class="text-[11px] text-op-subtle">{{ $latestPayment->updated_at?->format('d M Y, H:i') }}</span>
                         </div>
                     @endif
 
                     <!-- Created -->
                     <div class="relative">
                         <div
-                            class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-4 ring-indigo-50 dark:ring-indigo-950">
+                            class="absolute -left-6 top-1 w-2 h-2 rounded-full bg-op-subtle">
                         </div>
-                        <p class="font-bold text-slate-900 dark:text-white">{{ __('Reservation Created') }}</p>
-                        <span class="text-[11px] text-slate-400">{{ $res->created_at?->format('d M Y, H:i') }}</span>
+                        <p class="font-medium text-op-ink">{{ __('Reservation Created') }}</p>
+                        <span class="text-[11px] text-op-subtle">{{ $res->created_at?->format('d M Y, H:i') }}</span>
                     </div>
                 </div>
             </div>
@@ -886,37 +883,37 @@ new #[Title('Reservation Details')] class extends Component {
     <!-- Confirmation Modal for Status Transitions -->
     @if ($showConfirmStatusModal && $pendingStatusValue)
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
                 wire:keydown.escape="closeConfirmStatusModal">
                 <div
-                    class="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl overflow-hidden animate-scale-up">
+                    class="w-full max-w-lg rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden animate-scale-up">
 
-                    <div class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4">
-                        <div class="flex items-start gap-3.5">
+                    <div class="p-4 sm:p-5 border-b border-op-line flex items-start justify-between gap-4">
+                        <div class="flex items-start gap-3">
                             @if ($pendingStatusValue === 'confirmed')
                                 <div
-                                    class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center justify-center shrink-0">
-                                    <i class="fa-solid fa-check"></i>
+                                    class="w-9 h-9 rounded-[8px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
+                                    <i class="fa-solid fa-check text-xs"></i>
                                 </div>
                             @elseif ($pendingStatusValue === 'declined')
                                 <div
-                                    class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 flex items-center justify-center shrink-0">
-                                    <i class="fa-solid fa-ban"></i>
+                                    class="w-9 h-9 rounded-[8px] bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 flex items-center justify-center shrink-0 border border-rose-200 dark:border-rose-800">
+                                    <i class="fa-solid fa-ban text-xs"></i>
                                 </div>
                             @elseif ($pendingStatusValue === 'completed')
                                 <div
-                                    class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center justify-center shrink-0">
-                                    <i class="fa-solid fa-flag-checkered"></i>
+                                    class="w-9 h-9 rounded-[8px] bg-op-muted text-op-ink flex items-center justify-center shrink-0 border border-op-line">
+                                    <i class="fa-solid fa-flag-checkered text-xs"></i>
                                 </div>
                             @else
                                 <div
-                                    class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 flex items-center justify-center shrink-0">
-                                    <i class="fa-solid fa-xmark"></i>
+                                    class="w-9 h-9 rounded-[8px] bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 flex items-center justify-center shrink-0 border border-rose-200 dark:border-rose-800">
+                                    <i class="fa-solid fa-xmark text-xs"></i>
                                 </div>
                             @endif
 
-                            <div class="space-y-1">
-                                <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">
+                            <div class="space-y-0.5">
+                                <h3 class="font-medium text-base text-op-ink">
                                     @if ($pendingStatusValue === 'confirmed')
                                         {{ __('Confirm Reservation') }}
                                     @elseif ($pendingStatusValue === 'declined')
@@ -928,7 +925,7 @@ new #[Title('Reservation Details')] class extends Component {
                                     @endif
                                 </h3>
 
-                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                <p class="text-xs text-op-subtle">
                                     @if ($pendingStatusValue === 'confirmed')
                                         {{ __('This will officially confirm the booking and dispatch confirmation notifications.') }}
                                     @elseif ($pendingStatusValue === 'declined')
@@ -945,40 +942,40 @@ new #[Title('Reservation Details')] class extends Component {
                         </div>
 
                         <button type="button" wire:click="closeConfirmStatusModal"
-                            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0">
-                            <i class="fa-solid fa-xmark text-sm"></i>
+                            class="p-1.5 rounded-[6px] text-op-subtle hover:text-op-ink hover:bg-op-muted transition cursor-pointer shrink-0">
+                            <i class="fa-solid fa-xmark text-xs"></i>
                         </button>
                     </div>
 
-                    <div class="p-6 space-y-4">
+                    <div class="p-4 sm:p-5 space-y-3.5">
                         <div
-                            class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-800 space-y-2 text-xs">
+                            class="p-3.5 rounded-[8px] bg-[#F7F8F9] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-2 text-xs">
                             <div class="flex items-center justify-between">
                                 <span
-                                    class="font-mono font-bold text-indigo-600 dark:text-indigo-400">#{{ $resCode }}</span>
+                                    class="font-mono font-medium text-op-ink">#{{ $resCode }}</span>
                                 <span
-                                    class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-300">
+                                    class="px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-op-muted text-op-ink border border-op-line">
                                     {{ $res->status->label() }} &rarr; {{ ucfirst($pendingStatusValue) }}
                                 </span>
                             </div>
                             <div
-                                class="flex items-center justify-between text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-200/60 dark:border-zinc-700/60">
+                                class="flex items-center justify-between text-op-subtle pt-1 border-t border-op-line">
                                 <span>{{ __('Guest:') }}</span>
-                                <strong class="text-slate-900 dark:text-white">{{ $res->guest_name }}</strong>
+                                <strong class="font-medium text-op-ink">{{ $res->guest_name }}</strong>
                             </div>
-                            <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                            <div class="flex items-center justify-between text-op-subtle">
                                 <span>{{ __('Total:') }}</span>
-                                <strong class="text-slate-900 dark:text-white">Rp
+                                <strong class="font-medium text-op-ink">Rp
                                     {{ number_format($latestPayment ? (float) $latestPayment->amount : $totalCalculated, 0, ',', '.') }}</strong>
                             </div>
                         </div>
 
                         @if ($pendingStatusValue === 'cancelled' && $isPaid)
                             <div
-                                class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs flex items-start gap-3">
-                                <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 text-sm shrink-0"></i>
-                                <div class="space-y-1">
-                                    <p class="font-bold text-amber-950 dark:text-amber-100">
+                                class="p-3.5 rounded-[8px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs flex items-start gap-3">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 text-xs shrink-0"></i>
+                                <div class="space-y-0.5">
+                                    <p class="font-medium text-amber-950 dark:text-amber-100">
                                         {{ __('Automated Gateway Refund') }}</p>
                                     <p class="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
                                         {{ __('This booking was paid (Rp :amount). Confirming will automatically refund the guest via DOKU and void your pending escrow hold.', ['amount' => number_format((float) $latestPayment->amount, 0, ',', '.')]) }}
@@ -987,34 +984,30 @@ new #[Title('Reservation Details')] class extends Component {
                             </div>
                         @endif
 
-                        <div class="flex items-center justify-end gap-3 pt-3">
+                        <div class="flex items-center justify-end gap-2 pt-2 border-t border-op-line">
                             <x-button type="button" variant="secondary" wire:click="closeConfirmStatusModal"
-                                class="text-xs font-bold">
+                                size="sm">
                                 {{ __('Cancel') }}
                             </x-button>
 
                             @if ($pendingStatusValue === 'confirmed')
-                                <x-button type="button" variant="primary" wire:click="executeStatusTransition"
-                                    class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
-                                    <i class="fa-solid fa-check mr-1.5"></i>
+                                <x-button type="button" variant="success" wire:click="executeStatusTransition" size="sm">
+                                    <i class="fa-solid fa-check mr-1.5 text-xs"></i>
                                     {{ __('Yes, Confirm Booking') }}
                                 </x-button>
                             @elseif ($pendingStatusValue === 'declined')
-                                <x-button type="button" variant="danger" wire:click="executeStatusTransition"
-                                    class="text-xs font-bold">
-                                    <i class="fa-solid fa-ban mr-1.5"></i>
+                                <x-button type="button" variant="danger" wire:click="executeStatusTransition" size="sm">
+                                    <i class="fa-solid fa-ban mr-1.5 text-xs"></i>
                                     {{ __('Yes, Decline Booking') }}
                                 </x-button>
                             @elseif ($pendingStatusValue === 'completed')
-                                <x-button type="button" variant="primary" wire:click="executeStatusTransition"
-                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">
-                                    <i class="fa-solid fa-flag-checkered mr-1.5"></i>
+                                <x-button type="button" variant="primary" wire:click="executeStatusTransition" size="sm">
+                                    <i class="fa-solid fa-flag-checkered mr-1.5 text-xs"></i>
                                     {{ __('Yes, Mark as Completed') }}
                                 </x-button>
                             @else
-                                <x-button type="button" variant="danger" wire:click="executeStatusTransition"
-                                    class="text-xs font-bold">
-                                    <i class="fa-solid fa-xmark mr-1.5"></i>
+                                <x-button type="button" variant="danger" wire:click="executeStatusTransition" size="sm">
+                                    <i class="fa-solid fa-xmark mr-1.5 text-xs"></i>
                                     {{ $isPaid ? __('Yes, Cancel & Refund') : __('Yes, Cancel Reservation') }}
                                 </x-button>
                             @endif
@@ -1053,27 +1046,29 @@ new #[Title('Reservation Details')] class extends Component {
             }
         @endphp
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
+            <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
                 wire:keydown.escape="closeTripInfoModal">
-                <div class="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl overflow-hidden animate-scale-up"
+                <div class="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden animate-scale-up"
                     @click.outside="$wire.closeTripInfoModal()">
+
+                    <div class="mx-auto my-2 h-1 w-10 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden"></div>
 
                     <!-- Modal Header -->
                     <div
-                        class="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-zinc-800/40">
-                        <div class="flex items-start gap-3.5 min-w-0">
+                        class="p-4 sm:p-5 border-b border-[#E4E5E9] dark:border-[#1E2433] flex items-start justify-between gap-4 bg-[#F9FAFB] dark:bg-[#151a26]">
+                        <div class="flex items-start gap-3 min-w-0">
                             <div
-                                class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                                class="w-9 h-9 rounded-[8px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-sm shrink-0 mt-0.5">
                                 <i class="fa-solid fa-map-location-dot"></i>
                             </div>
-                            <div class="space-y-1 min-w-0">
+                            <div class="space-y-0.5 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <h3
-                                        class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                                        class="font-medium text-[16px] sm:text-[18px] text-[#12181E] dark:text-white leading-tight truncate">
                                         {{ $bookable->name ?? ($bookable->title ?? __('Trip Information')) }}
                                     </h3>
                                     <span
-                                        class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase {{ $res->bookable_type === 'package' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60' }}">
+                                        class="px-2 py-0.5 rounded-[4px] text-[10px] font-medium uppercase {{ $res->bookable_type === 'package' ? 'bg-[#FFEF4D]/20 text-[#12181E] dark:text-[#FFEF4D] border border-[#FFEF4D]/40' : 'bg-slate-100 text-slate-700 dark:bg-[#1E2433] dark:text-slate-300 border border-[#E4E5E9] dark:border-[#1E2433]' }}">
                                         {{ $res->bookable_type === 'package' ? __('Tour Package') : __('Standalone Product') }}
                                     </span>
                                 </div>
@@ -1084,52 +1079,52 @@ new #[Title('Reservation Details')] class extends Component {
                         </div>
 
                         <button type="button" wire:click="closeTripInfoModal"
-                            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0 -mr-1 -mt-1">
+                            class="p-1.5 rounded-[6px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-[#F3F4F6] dark:hover:bg-[#1E2433] transition cursor-pointer shrink-0">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
 
                     <!-- Modal Body (Scrollable) -->
-                    <div class="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                    <div class="p-4 sm:p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
 
                         <!-- Trip Specs Grid -->
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
                             <div
-                                class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] space-y-0.5">
+                                class="p-3 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                                 <span
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{{ __('Trip Date') }}</span>
+                                    class="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">{{ __('Trip Date') }}</span>
                                 <strong
-                                    class="font-bold text-slate-900 dark:text-white block">{{ $res->requested_date->format('M d, Y') }}</strong>
+                                    class="font-medium text-[#12181E] dark:text-white block">{{ $res->requested_date->format('M d, Y') }}</strong>
                                 <span
                                     class="text-[11px] text-slate-500">{{ $res->requested_date->diffForHumans() }}</span>
                             </div>
 
                             <div
-                                class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] space-y-0.5">
+                                class="p-3 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                                 <span
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{{ __('Party Size') }}</span>
+                                    class="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">{{ __('Party Size') }}</span>
                                 <strong
-                                    class="font-bold text-slate-900 dark:text-white block">{{ __(':count Guests (Pax)', ['count' => $res->pax_count]) }}</strong>
+                                    class="font-medium text-[#12181E] dark:text-white block">{{ __(':count Guests (Pax)', ['count' => $res->pax_count]) }}</strong>
                                 <span class="text-[11px] text-slate-500">Rp
                                     {{ number_format($frozenPrice, 0, ',', '.') }} / pax</span>
                             </div>
 
                             <div
-                                class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] space-y-0.5">
+                                class="p-3 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                                 <span
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{{ __('Location') }}</span>
+                                    class="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">{{ __('Location') }}</span>
                                 <strong
-                                    class="font-bold text-slate-900 dark:text-white truncate block">{{ $bookable?->location ?: __('Storefront / Operator Location') }}</strong>
+                                    class="font-medium text-[#12181E] dark:text-white truncate block">{{ $bookable?->location ?: __('Storefront / Operator Location') }}</strong>
                                 <span
                                     class="text-[11px] text-slate-500">{{ $bookable?->category ?: __('Standard Tour') }}</span>
                             </div>
 
                             <div
-                                class="p-3 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] space-y-0.5">
+                                class="p-3 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-0.5">
                                 <span
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{{ __('Free Cancellation') }}</span>
+                                    class="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">{{ __('Free Cancellation') }}</span>
                                 <strong
-                                    class="font-bold text-slate-900 dark:text-white block">{{ __(':hours Hours Cutoff', ['hours' => $res->getFrozenFreeCancellationHours()]) }}</strong>
+                                    class="font-medium text-[#12181E] dark:text-white block">{{ __(':hours Hours Cutoff', ['hours' => $res->getFrozenFreeCancellationHours()]) }}</strong>
                                 <span class="text-[11px] text-slate-500">{{ __('Before Departure') }}</span>
                             </div>
                         </div>
@@ -1137,23 +1132,23 @@ new #[Title('Reservation Details')] class extends Component {
                         <!-- Promotional Coupon Banner if applied -->
                         @if ($appliedCouponCode)
                             <div
-                                class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex items-center justify-between text-xs">
-                                <div class="flex items-center gap-3">
+                                class="p-3.5 rounded-[8px] bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2.5">
                                     <div
-                                        class="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold shrink-0">
+                                        class="w-7 h-7 rounded-[6px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center font-medium shrink-0">
                                         <i class="fa-solid fa-tag text-xs"></i>
                                     </div>
                                     <div>
-                                        <p class="font-bold text-amber-950 dark:text-amber-200">
+                                        <p class="font-medium text-amber-950 dark:text-amber-200">
                                             {{ __('Promotional Coupon Applied') }}</p>
                                         <span
-                                            class="text-[11px] text-amber-800 dark:text-amber-400 font-mono font-bold">{{ $appliedCouponCode }}</span>
+                                            class="text-[11px] text-amber-800 dark:text-amber-400 font-mono font-medium">{{ $appliedCouponCode }}</span>
                                     </div>
                                 </div>
                                 @if ($couponDiscount > 0)
                                     <div class="text-right">
-                                        <span class="text-[10px] text-amber-700 dark:text-amber-400 block uppercase font-bold">{{ __('Discount') }}</span>
-                                        <span class="font-black text-sm text-amber-800 dark:text-amber-300">
+                                        <span class="text-[10px] text-amber-700 dark:text-amber-400 block uppercase font-medium">{{ __('Discount') }}</span>
+                                        <span class="font-medium text-sm text-amber-800 dark:text-amber-300">
                                             -Rp {{ number_format($couponDiscount, 0, ',', '.') }}
                                         </span>
                                     </div>
@@ -1163,26 +1158,26 @@ new #[Title('Reservation Details')] class extends Component {
 
                         <!-- Description -->
                         @if ($bookable && !empty($bookable->description))
-                            <div class="space-y-2">
+                            <div class="space-y-1.5">
                                 <h4
-                                    class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-align-left text-indigo-500"></i>
+                                    class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-align-left text-slate-400"></i>
                                     {{ __('Experience Overview') }}
                                 </h4>
                                 <div
-                                    class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                                    class="p-3.5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                                     {{ $bookable->description }}
                                 </div>
                             </div>
                         @endif
 
                         <!-- Inclusions & Exclusions Side-by-Side -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <!-- Inclusions -->
                             <div
-                                class="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/50 space-y-2.5">
+                                class="p-3.5 rounded-[8px] bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 space-y-2">
                                 <h4
-                                    class="font-bold text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                                    class="font-medium text-xs text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
                                     <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-sm"></i>
                                     {{ __('What is Included') }}
                                 </h4>
@@ -1205,8 +1200,8 @@ new #[Title('Reservation Details')] class extends Component {
 
                             <!-- Exclusions -->
                             <div
-                                class="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/70 dark:border-rose-900/50 space-y-2.5">
-                                <h4 class="font-bold text-xs text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+                                class="p-3.5 rounded-[8px] bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 space-y-2">
+                                <h4 class="font-medium text-xs text-rose-900 dark:text-rose-300 flex items-center gap-1.5">
                                     <i class="fa-solid fa-circle-xmark text-rose-600 dark:text-rose-400 text-sm"></i>
                                     {{ __('Not Included') }}
                                 </h4>
@@ -1230,39 +1225,39 @@ new #[Title('Reservation Details')] class extends Component {
 
                         <!-- Itinerary if available -->
                         @if (!empty($itinerary))
-                            <div class="space-y-2">
+                            <div class="space-y-1.5">
                                 <h4
-                                    class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-route text-indigo-500"></i>
+                                    class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-route text-slate-400"></i>
                                     {{ __('Trip Itinerary') }}
                                 </h4>
                                 <div
-                                    class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                                    class="p-3.5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                                     {{ $itinerary }}
                                 </div>
                             </div>
                         @endif
 
                         <!-- Cancellation & Terms Policy -->
-                        <div class="space-y-2">
+                        <div class="space-y-1.5">
                             <h4
-                                class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                                <i class="fa-solid fa-shield-halved text-indigo-500"></i>
+                                class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved text-slate-400"></i>
                                 {{ __('Cancellation Policy & Terms') }}
                             </h4>
                             <div
-                                class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821] border border-slate-200/60 dark:border-[#1e2433] space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                                class="p-3.5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-2 text-xs text-slate-700 dark:text-slate-300">
                                 @if (!empty($cancellationTerms))
                                     <div>
                                         <span
-                                            class="font-bold text-slate-900 dark:text-white block">{{ __('Cancellation Policy:') }}</span>
+                                            class="font-medium text-[#12181E] dark:text-white block">{{ __('Cancellation Policy:') }}</span>
                                         <p class="leading-relaxed">{{ $cancellationTerms }}</p>
                                     </div>
                                 @endif
                                 @if (!empty($termsAndConditions))
-                                    <div class="pt-2 border-t border-slate-200/60 dark:border-zinc-700/60">
+                                    <div class="pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                                         <span
-                                            class="font-bold text-slate-900 dark:text-white block">{{ __('Terms & Conditions:') }}</span>
+                                            class="font-medium text-[#12181E] dark:text-white block">{{ __('Terms & Conditions:') }}</span>
                                         <p class="leading-relaxed">{{ $termsAndConditions }}</p>
                                     </div>
                                 @endif
@@ -1273,19 +1268,19 @@ new #[Title('Reservation Details')] class extends Component {
 
                     <!-- Modal Footer -->
                     <div
-                        class="p-4 sm:p-5 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-zinc-800/40">
+                        class="p-4 sm:p-5 border-t border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-between gap-3 bg-[#F9FAFB] dark:bg-[#151a26]">
                         <div>
                             @if ($editRoute)
                                 <a href="{{ $editRoute }}" wire:navigate
-                                    class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white transition">
                                     <i class="fa-solid fa-pen-to-square text-xs"></i>
                                     <span>{{ __('Edit Experience in Catalog') }}</span>
                                 </a>
                             @endif
                         </div>
 
-                        <x-button type="button" variant="secondary" wire:click="closeTripInfoModal"
-                            class="text-xs font-bold">
+                        <x-button type="button" variant="secondary" size="sm" wire:click="closeTripInfoModal"
+                            class="rounded-[6px] text-xs font-medium">
                             {{ __('Close') }}
                         </x-button>
                     </div>

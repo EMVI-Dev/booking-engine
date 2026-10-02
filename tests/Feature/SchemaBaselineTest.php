@@ -6,8 +6,48 @@ use App\Models\Reservation;
 use App\Models\User;
 use Database\Seeders\AdminUserSeeder;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
+
+test('every table has exactly one create migration and no alter or drop migrations', function () {
+    $creates = [];
+
+    foreach (File::files(database_path('migrations')) as $file) {
+        $source = $file->getContents();
+
+        expect($source)->not->toContain('Schema::table(')
+            ->and(preg_match('/up\(\): void\s*\{[^}]*Schema::drop/s', $source))->toBe(0, "{$file->getFilename()} drops a table in up()");
+
+        preg_match_all("/Schema::create\('([a-z_]+)'/", $source, $matches);
+
+        foreach ($matches[1] as $table) {
+            $creates[$table][] = $file->getFilename();
+        }
+    }
+
+    foreach ($creates as $table => $files) {
+        expect($files)->toHaveCount(1, "{$table} is created in more than one migration");
+    }
+
+    expect(array_keys($creates))->not->toContain('reviews')
+        ->not->toContain('product_availability');
+});
+
+test('folded columns live in their create migrations', function () {
+    expect(Schema::hasColumn('products', 'vendor_id'))->toBeTrue()
+        ->and(Schema::hasColumn('operators', 'last_active_at'))->toBeTrue()
+        ->and(Schema::hasColumn('operators', 'inactivity_reminder_sent_at'))->toBeTrue()
+        ->and(Schema::hasIndex('operators', ['last_active_at']))->toBeTrue()
+        ->and(Schema::hasIndex('platform_coupons', ['scope', 'operator_id', 'code'], 'unique'))->toBeTrue()
+        ->and(Schema::hasIndex('platform_coupons', ['code'], 'unique'))->toBeFalse()
+        ->and(Schema::hasTable('admin_audit_logs'))->toBeTrue()
+        ->and(Schema::hasTable('product_availability'))->toBeFalse();
+
+    $commissionDefault = collect(Schema::getColumns('plans'))->firstWhere('name', 'commission_rate')['default'] ?? null;
+
+    expect((float) trim((string) $commissionDefault, "'"))->toBe(0.0);
+});
 
 test('fresh migrations create the current booking schema', function () {
     expect(Schema::hasColumn('reservations', 'public_token'))->toBeTrue()

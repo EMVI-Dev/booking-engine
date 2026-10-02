@@ -52,8 +52,9 @@ class CheckOperatorInactivityCommand extends Command
 
             $recipient = $operator->accountRecipient();
 
-            // 1. Suspend operators inactive for 90+ days (3 months)
-            if ($inactiveDays >= 90) {
+            // 1. Suspend operators inactive for 90+ days (3 months), unless they are still
+            //    paying or guests hold upcoming bookings (those only get the reminder).
+            if ($inactiveDays >= 90 && ! $operator->hasLiveCommitments()) {
                 $accounts->changeStatus($operator, OperatorStatus::Suspended);
                 $suspendedCount++;
 

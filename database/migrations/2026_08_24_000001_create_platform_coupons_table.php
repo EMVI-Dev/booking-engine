@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('platform_coupons', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->string('code', 50)->unique();
+            $table->string('code', 50);
             $table->string('description')->nullable();
             $table->string('scope', 20)->default('guest'); // subscription, guest
             $table->string('discount_type', 20)->default('percentage'); // percentage, fixed
@@ -31,6 +31,9 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
 
+            // Codes are unique per owner (scope + operator). Platform-wide codes (operator_id null)
+            // are kept unique by validation, since NULLs never collide in a unique index.
+            $table->unique(['scope', 'operator_id', 'code'], 'platform_coupons_owner_code_unique');
             $table->index(['code', 'is_active']);
             $table->index(['scope', 'is_active']);
             $table->index(['operator_id', 'is_active']);

@@ -11,16 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_availability', function (Blueprint $table) {
-            $table->ulid('id')->primary();
-            $table->foreignUlid('product_id')->constrained('products')->cascadeOnDelete();
-            $table->date('date');
-            $table->unsignedInteger('capacity_booked')->default(0);
-            $table->timestamps();
-
-            $table->unique(['product_id', 'date']);
-        });
-
         Schema::create('availability_blocks', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();
@@ -43,6 +33,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('availability_blocks');
-        Schema::dropIfExists('product_availability');
     }
 };

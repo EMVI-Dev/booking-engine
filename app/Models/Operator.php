@@ -7,6 +7,7 @@ use App\Enums\DomainType;
 use App\Enums\OperatorStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PayoutStatus;
+use App\Enums\ReservationStatus;
 use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use App\Services\DomainResolverService;
@@ -48,11 +49,25 @@ use Illuminate\Validation\ValidationException;
  * @property array<string, mixed>|null $settings
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $last_active_at
+ * @property Carbon|null $inactivity_reminder_sent_at
  */
 class Operator extends Model
 {
     /** @use HasFactory<OperatorFactory> */
     use HasFactory, HasUlids;
+
+    /**
+     * Shop addresses an operator may not claim: they are platform hosts ({slug}.platform)
+     * or would be mistaken for the platform itself.
+     *
+     * @var list<string>
+     */
+    public const RESERVED_SLUGS = [
+        'admin', 'administrator', 'api', 'app', 'assets', 'auth', 'billing', 'blog', 'cdn', 'dashboard',
+        'demo', 'dev', 'docs', 'help', 'login', 'mail', 'register', 'root', 'smtp', 'staging', 'static',
+        'status', 'storage', 'support', 'system', 'test', 'travelengine', 'webhook', 'webhooks', 'www',
+    ];
 
     protected $table = 'operators';
 
@@ -85,6 +100,14 @@ class Operator extends Model
         'last_active_at',
         'inactivity_reminder_sent_at',
     ];
+
+    /**
+     * Whether a shop address is held back for the platform.
+     */
+    public static function isReservedSlug(string $slug): bool
+    {
+        return in_array(strtolower($slug), self::RESERVED_SLUGS, true);
+    }
 
     /**
      * @var array<string, mixed>
@@ -630,6 +653,27 @@ class Operator extends Model
     }
 
     /**
+     * Root URL of this operator's desk on its platform slug host (e.g. https://bali-sea.travelengine.id).
+     * Sign-in, sign-up and email-verification links all land here so the session stays on one host.
+     */
+    public function slugDeskRoot(?string $platformDomain = null): string
+    {
+        $request = request();
+        $runningInConsole = app()->runningInConsole() && ! app()->runningUnitTests();
+
+        $scheme = $runningInConsole
+            ? (parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'https')
+            : $request->getScheme();
+
+        $port = $runningInConsole ? null : $request->getPort();
+        $portSuffix = ($port && ! in_array((int) $port, [80, 443], true)) ? ':'.$port : '';
+
+        $host = strtolower($this->slug.'.'.($platformDomain ?? app(DomainResolverService::class)->getPlatformDomain()));
+
+        return $scheme.'://'.$host.$portSuffix;
+    }
+
+    /**
      * Get the operator desk login URL on the operator domain/subdomain.
      */
     public function getDeskUrl(): string
@@ -655,6 +699,22 @@ class Operator extends Model
         }
 
         return Plan::getDefaultPlan();
+    }
+
+    /**
+     * Whether the shop must stay open even if nobody has used the desk for months:
+     * the operator is paying for a plan that is still running, or guests hold upcoming bookings.
+     */
+    public function hasLiveCommitments(): bool
+    {
+        if (! $this->getPlan()->isFree() && $this->plan_expires_at?->isFuture()) {
+            return true;
+        }
+
+        return $this->reservations()
+            ->whereIn('status', [ReservationStatus::PendingConfirmation, ReservationStatus::Confirmed])
+            ->whereDate('requested_date', '>=', today())
+            ->exists();
     }
 
     /**

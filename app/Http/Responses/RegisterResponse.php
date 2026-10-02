@@ -3,7 +3,6 @@
 namespace App\Http\Responses;
 
 use App\Models\User;
-use App\Services\DomainResolverService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -32,7 +31,6 @@ class RegisterResponse implements RegisterResponseContract
             return redirect()->intended(Fortify::redirects('register'));
         }
 
-        $platformDomain = app(DomainResolverService::class)->getPlatformDomain();
         $relativeHandoff = URL::temporarySignedRoute(
             'auth.registration-handoff',
             now()->addMinutes(5),
@@ -40,7 +38,7 @@ class RegisterResponse implements RegisterResponseContract
             absolute: false,
         );
 
-        $deskUrl = $request->getScheme().'://'.$operator->slug.'.'.$platformDomain.$relativeHandoff;
+        $deskUrl = $operator->slugDeskRoot().$relativeHandoff;
 
         return redirect()->away($deskUrl);
     }

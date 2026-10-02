@@ -163,3 +163,78 @@ Scope: `/admin` (login, dashboard, operators, plans, subscriptions, announcement
 
 ### DRY
 Pending-payout totals ×3 (dashboard, payouts, admin sidebar); subscription revenue ×3 (dashboard card, chart, subscriptions page) with raw `'completed'` strings; auto-renew toggled in two places; plan dates changed outside the subscription service (extend); coupon page loads every operator + users on each render. Proposed: `AdminMetricsService` and moving extend/auto-renew into `SubscriptionProrationService`.
+
+## 9. Admin fixes (2026-10-02) — all AD items closed
+
+| Item | Fix |
+|---|---|
+| AD1 | Admin login validates credentials without signing in; admins with 2FA are sent through Fortify's challenge. Passkey/2FA sign-ins for admins land on `/admin`. |
+| AD2 | `EnsureUserIsAdmin` and `EnsureOnPlatformDomain` registered as Livewire persistent middleware. |
+| AD3 | `admin_audit_logs` table (immutable), `AdminAuditLogger` service, `RecordsAdminActions` trait, `/admin/audit-log` page. Logged: sign-in, operator status, start/stop managing, plan create/update/reset/grant/extend/auto-renew/reminder, payouts approve/reject/send, dispute hold/release/lost, admin cancel, wallet adjustment, coupons, announcements, settings (changed keys), maintenance, failed-job retry/flush, admin create/revoke, email/password/2FA/passkey changes, CSV exports. |
+| AD4 | Managing a shop goes through `OperatorAccountService::startManaging/stopManaging` (logged), expires after 120 min, `POST /admin/stop-managing`. Admins never fall back to an arbitrary operator. Payouts and bank changes are blocked while managing (same gate as demo). Admins no longer count as operator activity. |
+| AD5 | `/admin/admins` and `/admin/profile` require `password.confirm`. |
+| AD6 | Migration: coupon codes unique per (`scope`, `operator_id`, `code`); admin subscription codes unique within subscription scope. |
+| AD7 | `SubscriptionProrationService::extendPeriod()` (1–366 days, Rp 0 `admin_extension` invoice) and `setAutoRenew()` shared by admin and operator pages. |
+| AD8–10 | `AdminMetricsService`: MRR (paying, live periods only), subscription revenue + monthly series, payout totals, guest-fee revenue, GMV, escrow liability, cleared balances, open dispute holds, coupon usage (paid invoices only). Used by dashboard, payouts, subscriptions, coupons, admin sidebar. |
+| AD11 | Currency locked to IDR; Slack webhook must be `https://hooks.slack.com/…`; guest-fee cap editable (`guest_service_fee_cap`); legacy payment-split fallbacks no longer take an operator commission (operators keep 100%). |
+| AD12 | `ReservationLifecycleService::resolveCardDispute()` (won/lost; lost = final chargeback deduction + booking cancelled), `WalletService::recordManualAdjustment()`; admin operator page: `cancelBooking`, `markDisputeLost`, `adjustWallet`. |
+| AD13 | Same error for wrong password and non-admin; remember-me off by default. |
+| AD14 | `localhost`/dev hosts only count as platform outside production. |
+
+New Livewire state for Antigravity to surface: admin operator page `adjustmentAmount`, `adjustmentReason`, actions `adjustWallet`, `cancelBooking(id)`, `markDisputeLost(id)`; platform settings `guest_service_fee_cap`; dashboard computed `guestFeeRevenue`, `grossBookingValue`, `escrowLiability`, `clearedOperatorBalances`, `openDisputeHolds`; a "Stop managing" button posting to `admin.operators.stop-managing`. The audit-log page uses existing components and a plain table.
+
+Deploy notes: run `php artisan migrate` (2 migrations). Suite: 631 passing.
+
+## 10. Fresh-prod baseline and MVP alignment (2026-10-02)
+
+### Migrations: one create per table
+- 17 migration files, each table created exactly once in its final shape, ordered by foreign keys. No `Schema::table` and no drops in `up()` (enforced by `SchemaBaselineTest`).
+- Folded in: `vendors` now created before `products` (with `vendor_id`), `operators.last_active_at` (indexed) and `inactivity_reminder_sent_at`, platform coupon codes unique per owner (`scope`, `operator_id`, `code`), plan `commission_rate` default 0.
+- Removed: `reviews` create/drop pair, dead `product_availability` table with its model, factory and `Product::availabilityRecords()`, and the five alter/drop migrations.
+- Verified: `migrate:fresh --seed` on SQLite and MariaDB 10.11, `migrate:reset` then `migrate` on MariaDB, and the full suite on both databases.
+- Demo seeder no longer fails when the server cannot reach Unsplash (it falls back to placeholder images).
+- **Prod note:** these migrations are only for an empty database. Do not run them against an existing database that already has the old migrations recorded.
+
+### Promo redemption rules now enforced
+- "First purchase only" and "once per period" were stored but never checked, and redemptions were never logged.
+- `PlatformCoupon::validateFor()` now applies the rule for subscription codes.
+- A paid invoice calls `recordRedemptionBy()`, which bumps `used_count` and writes `operator_coupon_redemptions`.
+
+### Security leftovers
+- JSON-LD on storefront and platform pages is encoded with `JSON_HEX_TAG`, so operator text cannot close the script tag.
+- SVG uploads are refused (brand logo validation and `MediaStore`), because they can carry script on the shop's own domain. PDF proofs still work.
+- Reserved shop addresses (`Operator::RESERVED_SLUGS`, for example admin, www, api, mail, demo) are rejected at sign-up and skipped by the auto-slug.
+- Find booking now needs the exact booking email or the same phone number after normalising (at least 8 digits). Guest names and phone fragments no longer open the e-ticket. The logic is `Reservation::matchesGuestContact()`.
+- The inactivity job no longer suspends operators who are on a running paid plan or whose guests hold upcoming bookings. Those operators still get the reminder (`Operator::hasLiveCommitments()`).
+
+### Email verification
+- `User` implements `MustVerifyEmail`.
+- The verification link opens on the operator's slug host, where their session lives (`Operator::slugDeskRoot()`, shared with the login and register handoffs).
+- Setting a password from an emailed reset link (team invites) marks the address verified.
+
+### Queues and scheduler
+- Booking, vendor and renewal mails go through the queue explicitly. Database and redis queues use `after_commit`, so a mail is never sent for a booking that rolled back.
+- Every scheduled command uses `withoutOverlapping()->onOneServer()`, and daily jobs run at fixed WITA times. This needs a shared cache store (database or redis).
+
+### Bali time
+- `app.timezone` defaults to `Asia/Makassar` (`APP_TIMEZONE`).
+- WITA now applies to "today", trip completion, free-cancel cutoffs, escrow release and the scheduler.
+- iCal `DTSTAMP` is converted to UTC explicitly. DOKU request timestamps already used `gmdate`.
+
+### Checks
+- 649 tests pass on SQLite and on MariaDB.
+- Pint is clean.
+- PHPStan errors went down from about 50 to 43; the remaining ones were already there before this work.
+
+### Moving from Caddy to Laravel Cloud (open decision)
+- **Slug storefronts:** the `*.travelengine.id` wildcard plus the root domain replaces Caddy for slugs. Hosts are still resolved from the request host, so no code change is needed.
+- **Agency custom domains:**
+  - Each one must be added to the Cloud environment, and each counts toward the plan allowance.
+  - Cloud has a domains API (`POST /environments/{environment}/domains`, plus get, verify and delete). Connecting a custom domain could call it and show the DNS records it returns, replacing the Lightsail IP / Caddy ask flow.
+  - Not built yet.
+- **Media storage:**
+  - Cloud's local disk does not persist across deploys, so `MEDIA_DISK` must point at an S3-compatible bucket (Cloud object storage).
+  - This needs `league/flysystem-aws-s3-v3`, which is not installed. The dependency needs approval.
+- **Leftovers if Caddy goes:**
+  - `CaddyAskController`, `domains:probe-ssl` and `config/domains.php` IP settings become unused.
+  - The brand settings DNS instructions (UI) would need the Cloud records instead.

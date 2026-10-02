@@ -143,14 +143,6 @@ class Product extends Model implements Bookable
     }
 
     /**
-     * @return HasMany<ProductAvailability, $this>
-     */
-    public function availabilityRecords(): HasMany
-    {
-        return $this->hasMany(ProductAvailability::class);
-    }
-
-    /**
      * @return HasMany<AvailabilityBlock, $this>
      */
     public function availabilityBlocks(): HasMany

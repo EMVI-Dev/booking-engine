@@ -30,18 +30,22 @@ test('raster uploads are resized and stored as webp', function () {
     imagedestroy($image);
 });
 
-test('svg and pdf uploads stay in their original format', function () {
-    $svg = UploadedFile::fake()->createWithContent('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+test('pdf uploads stay in their original format', function () {
     $pdf = UploadedFile::fake()->createWithContent('proof.pdf', '%PDF-1.4');
 
-    $svgPath = $this->media->storeUpload($svg, 'logos');
     $pdfPath = $this->media->storeUpload($pdf, 'proofs');
 
-    expect($svgPath)->toEndWith('.svg')
-        ->and($pdfPath)->toEndWith('.pdf');
+    expect($pdfPath)->toEndWith('.pdf');
 
-    Storage::disk(MediaStore::diskName())->assertExists($svgPath);
     Storage::disk(MediaStore::diskName())->assertExists($pdfPath);
+});
+
+test('svg uploads are never stored because they can carry script', function () {
+    $svg = UploadedFile::fake()->createWithContent('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+
+    expect(fn () => $this->media->storeUpload($svg, 'logos'))->toThrow(RuntimeException::class);
+
+    expect(Storage::disk(MediaStore::diskName())->allFiles('logos'))->toBeEmpty();
 });
 
 test('media urls use the configured disk and leave absolute urls alone', function () {

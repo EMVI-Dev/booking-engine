@@ -164,7 +164,7 @@ new #[Title('Brand Settings')] class extends Component {
     public function updatedLogo(): void
     {
         $this->validate([
-            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg,gif', 'max:10240'],
+            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,gif', 'max:10240'],
         ]);
     }
 
@@ -189,7 +189,7 @@ new #[Title('Brand Settings')] class extends Component {
             'whatsapp_days' => ['array'],
             'brand_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/'],
             'reservation_code_prefix' => ['required', 'string', 'max:8', 'regex:/^[A-Za-z0-9]+$/'],
-            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg,gif', 'max:10240'],
+            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,gif', 'max:10240'],
             'instagram_url' => ['nullable', 'string', 'max:255'],
             'facebook_url' => ['nullable', 'string', 'max:255'],
             'tiktok_url' => ['nullable', 'string', 'max:255'],
@@ -335,34 +335,23 @@ new #[Title('Brand Settings')] class extends Component {
         <!-- Unified Settings Navigation -->
         <x-settings-nav />
 
-        <!-- Standalone Page Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2.5">
-                    <span class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300">
-                        <i class="fa-solid fa-paintbrush text-lg"></i>
-                    </span>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Brand & Identity') }}
-                    </h1>
-                </div>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    {{ __('Customize your public storefront branding, logo, instant WhatsApp operating hours, and social media presence.') }}
-                </p>
-            </div>
-        </div>
+        <x-page-header
+            :title="__('Brand & Identity')"
+            :subtitle="__('Customize your public storefront branding, logo, instant WhatsApp operating hours, and social media presence.')"
+            icon="fa-paintbrush"
+        />
 
         @if ($highlightLogo || $highlightBio || $highlightBookingNotificationEmail || $highlightBillingEmail)
             <div
-                class="flex items-start gap-3 rounded-2xl border border-[#FFEF4D]/50 bg-[#FFEF4D]/15 px-4 py-3 dark:border-[#FFEF4D]/25 dark:bg-[#FFEF4D]/10"
+                class="flex items-start gap-3 rounded-[10px] border border-[#FFEF4D]/50 bg-[#FFEF4D]/15 px-4 py-3 dark:border-[#FFEF4D]/25 dark:bg-[#FFEF4D]/10"
                 role="status"
             >
-                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E]" aria-hidden="true">
+                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#FFEF4D] text-[#12181E]" aria-hidden="true">
                     <i class="fa-solid fa-list-check text-sm"></i>
                 </span>
                 <div class="min-w-0">
-                    <p class="text-sm font-bold text-op-ink">{{ __('Finish the highlighted fields') }}</p>
-                    <p class="mt-0.5 text-xs text-op-subtle">
+                    <p class="text-sm font-semibold text-[#12181E] dark:text-white">{{ __('Finish the highlighted fields') }}</p>
+                    <p class="mt-0.5 text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                         {{ __('Yellow fields are still needed before guests can pay you.') }}
                     </p>
                 </div>
@@ -388,22 +377,22 @@ new #[Title('Brand Settings')] class extends Component {
         >
             <!-- Card 1: Brand Logo & Visual Assets -->
             <x-setup-needed :needed="$highlightLogo" anchor="setup-logo">
-                <div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-[#1e2433] dark:bg-[#0C0E13]">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
+                <div class="space-y-4 rounded-[12px] border border-[#E4E5E9] bg-white p-5 sm:p-6 shadow-none dark:border-[#1E2433] dark:bg-[#10141d]">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
+                        class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                         <i class="fa-solid fa-image"></i>
                     </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                         {{ __('Brand Logo & Visual Identity') }}
                     </h3>
                 </div>
 
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6 pt-2">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6 pt-1">
                     <!-- Logo Preview -->
                     <div class="relative group w-full sm:w-24">
                         <div
-                            class="w-full h-36 sm:w-24 sm:h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-[#1e2433] bg-slate-50 dark:bg-[#141821] flex items-center justify-center overflow-hidden shadow-xs">
+                            class="w-full h-36 sm:w-24 sm:h-24 rounded-[8px] border-2 border-dashed border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#141821] flex items-center justify-center overflow-hidden shadow-none">
                             @if ($logo)
                                 <img src="{{ $logo->temporaryUrl() }}" alt="Logo preview"
                                     class="w-full h-full object-cover" />
@@ -411,16 +400,16 @@ new #[Title('Brand Settings')] class extends Component {
                                 <img src="{{ $this->mediaUrl($existing_logo_path) }}" alt="Logo"
                                     class="w-full h-full object-cover" />
                             @else
-                                <div class="text-center p-2 text-slate-400 dark:text-slate-500">
+                                <div class="text-center p-2 text-[#5A6578] dark:text-[#9DA4B2]">
                                     <i class="fa-solid fa-cloud-arrow-up text-2xl mb-1 block"></i>
-                                    <span class="text-[10px] font-bold uppercase">{{ __('No Logo') }}</span>
+                                    <span class="text-[10px] font-semibold uppercase">{{ __('No Logo') }}</span>
                                 </div>
                             @endif
                         </div>
 
                         @if ($logo || $existing_logo_path)
                             <button type="button" wire:click="removeLogo"
-                                class="absolute -top-2 -right-2 h-9 w-9 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center text-xs shadow-md transition cursor-pointer"
+                                class="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center text-xs shadow-none transition cursor-pointer"
                                 title="{{ __('Remove Logo') }}">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
@@ -431,20 +420,20 @@ new #[Title('Brand Settings')] class extends Component {
                     <div class="space-y-2 flex-1">
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                             <label
-                                class="h-11 sm:h-10 px-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 text-xs font-bold transition border border-slate-200 dark:border-[#1e2433] cursor-pointer">
-                                <i class="fa-solid fa-upload text-slate-600 dark:text-[#FFEF4D]"></i>
+                                class="h-11 sm:h-9 px-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] text-xs font-medium transition border border-[#E4E5E9] dark:border-[#1E2433] cursor-pointer">
+                                <i class="fa-solid fa-upload text-[#5A6578] dark:text-[#FFEF4D]"></i>
                                 <span>{{ __('Upload New Logo') }}</span>
                                 <input type="file" wire:model="logo"
-                                    accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" class="hidden" />
+                                    accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" />
                             </label>
 
                             <div wire:loading wire:target="logo"
-                                class="text-xs font-semibold text-slate-800 dark:text-[#FFEF4D] inline-flex items-center gap-1.5">
+                                class="text-xs font-medium text-[#12181E] dark:text-[#FFEF4D] inline-flex items-center gap-1.5">
                                 <i class="fa-solid fa-spinner fa-spin"></i>
                                 {{ __('Uploading...') }}
                             </div>
                         </div>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                        <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                             {{ __('Supported formats: PNG (with transparency), JPG, WEBP, or SVG. Up to 10MB.') }}
                         </p>
                         <x-input-error :messages="$errors->get('logo')" />
@@ -455,13 +444,13 @@ new #[Title('Brand Settings')] class extends Component {
 
             <!-- Card 2: Brand Profile Details -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
+                class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
+                        class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                         <i class="fa-solid fa-id-card"></i>
                     </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                         {{ __('Business Information & Colors') }}
                     </h3>
                 </div>
@@ -477,7 +466,7 @@ new #[Title('Brand Settings')] class extends Component {
 
                         <div>
                             <x-label for="brand_color" :value="__('Brand Accent Color (Hex)')" />
-                            <div class="space-y-2.5 mt-1.5">
+                            <div class="space-y-2 mt-1">
                                 @php
                                     $previewHex = preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $brand_color)
                                         ? $brand_color
@@ -488,121 +477,121 @@ new #[Title('Brand Settings')] class extends Component {
                                     <div
                                         class="absolute left-2.5 flex items-center justify-center pointer-events-none z-10">
                                         <span
-                                            class="w-6 h-6 rounded-full shadow-inner border border-slate-300 dark:border-white/30 shrink-0 transition-transform duration-200"
+                                            class="w-5 h-5 rounded-full border border-black/10 dark:border-white/20 shrink-0 transition-transform duration-200"
                                             style="background-color: {{ $previewHex }};"></span>
                                     </div>
                                     <input id="brand_color_picker" type="color" wire:model.live="brand_color"
-                                        class="absolute left-2.5 w-6 h-6 opacity-0 cursor-pointer z-20" />
+                                        class="absolute left-2.5 w-5 h-5 opacity-0 cursor-pointer z-20" />
                                     <x-input id="brand_color" wire:model.live.debounce.250ms="brand_color"
                                         type="text" placeholder="#4f46e5" class="pl-11 font-mono text-xs uppercase"
                                         :error="$errors->has('brand_color')" />
                                 </div>
 
                                 <!-- Preset Curated Palette Swatches (Sleek Circular Dots) -->
-                                <div class="flex items-center gap-2 pt-1 overflow-x-auto">
+                                <div class="flex items-center gap-2 pt-0.5 overflow-x-auto">
                                     <span
-                                        class="text-[10px] uppercase font-black tracking-wider text-slate-500 dark:text-slate-400 shrink-0">{{ __('Presets:') }}</span>
-                                    <div class="flex items-center gap-2 py-1 px-1">
+                                        class="text-[10px] uppercase font-semibold tracking-wider text-[#5A6578] dark:text-[#9DA4B2] shrink-0">{{ __('Presets:') }}</span>
+                                    <div class="flex items-center gap-2 py-0.5 px-0.5">
                                         @foreach ([['label' => 'Indigo', 'hex' => '#4f46e5'], ['label' => 'Ocean Sky', 'hex' => '#0284c7'], ['label' => 'Emerald Marine', 'hex' => '#059669'], ['label' => 'Coral Sunset', 'hex' => '#ea580c'], ['label' => 'Royal Purple', 'hex' => '#7c3aed'], ['label' => 'Rose Pink', 'hex' => '#e11d48'], ['label' => 'Amber Gold', 'hex' => '#d97706'], ['label' => 'Slate Navy', 'hex' => '#334155']] as $palette)
                                             @php
                                                 $isSelected = strtolower($brand_color) === strtolower($palette['hex']);
                                             @endphp
                                             <button type="button"
-                                                wire:click="$set('brand_color', '{{ $palette['hex'] }}')"
-                                                class="w-7 h-7 rounded-full transition-all duration-200 cursor-pointer shrink-0 relative flex items-center justify-center shadow-xs hover:scale-110 active:scale-95 {{ $isSelected ? 'ring-2 ring-offset-2 ring-slate-900 dark:ring-white ring-offset-white dark:ring-offset-[#0C0E13] scale-110 z-10' : 'hover:ring-2 hover:ring-offset-1 hover:ring-slate-300 dark:hover:ring-[#1e2433]' }}"
-                                                style="background-color: {{ $palette['hex'] }};"
-                                                title="{{ $palette['label'] }} ({{ $palette['hex'] }})">
-                                                @if ($isSelected)
-                                                    <i
-                                                        class="fa-solid fa-check text-[10px] text-white drop-shadow-xs"></i>
-                                                @endif
-                                            </button>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                            <x-input-error :messages="$errors->get('brand_color')" />
-                        </div>
-                    </div>
+                                                 wire:click="$set('brand_color', '{{ $palette['hex'] }}')"
+                                                 class="w-6 h-6 rounded-full transition-all duration-150 cursor-pointer shrink-0 relative flex items-center justify-center shadow-none hover:scale-110 active:scale-95 {{ $isSelected ? 'ring-2 ring-offset-2 ring-[#12181E] dark:ring-white ring-offset-white dark:ring-offset-[#10141d] scale-105 z-10' : 'hover:ring-1 hover:ring-offset-1 hover:ring-[#E4E5E9] dark:hover:ring-[#1E2433]' }}"
+                                                 style="background-color: {{ $palette['hex'] }};"
+                                                 title="{{ $palette['label'] }} ({{ $palette['hex'] }})">
+                                                 @if ($isSelected)
+                                                     <i
+                                                         class="fa-solid fa-check text-[9px] text-white"></i>
+                                                 @endif
+                                             </button>
+                                         @endforeach
+                                     </div>
+                                 </div>
+                             </div>
+                             <x-input-error :messages="$errors->get('brand_color')" />
+                         </div>
+                     </div>
 
-                    <div class="max-w-sm">
-                        <x-label for="reservation_code_prefix" :value="__('Booking code prefix')" />
-                        <x-input id="reservation_code_prefix" wire:model="reservation_code_prefix" type="text"
-                            maxlength="8" class="font-mono uppercase" placeholder="RSV"
-                            :error="$errors->has('reservation_code_prefix')" />
-                        <p class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                            {{ __('Guest booking codes look like :example. Letters and numbers only. Default is RSV.', [
-                                'example' => strtoupper($reservation_code_prefix !== '' ? $reservation_code_prefix : 'RSV').'-A1B2C3D4',
-                            ]) }}
-                        </p>
-                        <x-input-error :messages="$errors->get('reservation_code_prefix')" />
-                    </div>
+                     <div class="max-w-sm">
+                         <x-label for="reservation_code_prefix" :value="__('Booking code prefix')" />
+                         <x-input id="reservation_code_prefix" wire:model="reservation_code_prefix" type="text"
+                             maxlength="8" class="font-mono uppercase" placeholder="RSV"
+                             :error="$errors->has('reservation_code_prefix')" />
+                         <p class="mt-1.5 text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
+                             {{ __('Guest booking codes look like :example. Letters and numbers only. Default is RSV.', [
+                                 'example' => strtoupper($reservation_code_prefix !== '' ? $reservation_code_prefix : 'RSV').'-A1B2C3D4',
+                             ]) }}
+                         </p>
+                         <x-input-error :messages="$errors->get('reservation_code_prefix')" />
+                     </div>
 
-                    <!-- Live Color Theme Preview Box -->
-                    @php
-                        $previewHex = preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $brand_color)
-                            ? $brand_color
-                            : '#4f46e5';
-                    @endphp
-                    <div
-                        class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span
-                                class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-wand-magic-sparkles text-xs"
-                                    style="color: {{ $previewHex }}"></i>
-                                {{ __('Live Storefront Accent Preview') }}
-                            </span>
-                            <span
-                                class="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-white dark:bg-[#0C0E13] border border-slate-200 dark:border-[#1e2433] text-slate-700 dark:text-slate-300">
-                                {{ $previewHex }}
-                            </span>
-                        </div>
+                     <!-- Live Color Theme Preview Box -->
+                     @php
+                         $previewHex = preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $brand_color)
+                             ? $brand_color
+                             : '#4f46e5';
+                     @endphp
+                     <div
+                         class="p-4 rounded-[8px] bg-[#F9FAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-3">
+                         <div class="flex items-center justify-between">
+                             <span
+                                 class="text-xs font-semibold text-[#12181E] dark:text-[#F4F5F7] flex items-center gap-1.5">
+                                 <i class="fa-solid fa-wand-magic-sparkles text-xs"
+                                     style="color: {{ $previewHex }}"></i>
+                                 {{ __('Live Storefront Accent Preview') }}
+                             </span>
+                             <span
+                                 class="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-[4px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] text-[#12181E] dark:text-[#E4E5E9]">
+                                 {{ $previewHex }}
+                             </span>
+                         </div>
 
-                        <div class="flex flex-wrap items-center gap-3 pt-1">
-                            <!-- Preview Button -->
-                            <button type="button" style="background-color: {{ $previewHex }}; color: #ffffff;"
-                                class="h-9 px-4 rounded-xl font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-default">
-                                <i class="fa-solid fa-bolt text-[11px]"></i>
-                                <span>{{ __('Book Now Button') }}</span>
-                            </button>
+                         <div class="flex flex-wrap items-center gap-3 pt-1">
+                             <!-- Preview Button -->
+                             <button type="button" style="background-color: {{ $previewHex }}; color: #ffffff;"
+                                 class="h-9 px-4 rounded-[6px] font-semibold text-xs shadow-none transition inline-flex items-center gap-1.5 cursor-default">
+                                 <i class="fa-solid fa-bolt text-[11px]"></i>
+                                 <span>{{ __('Book Now Button') }}</span>
+                             </button>
 
-                            <!-- Preview Tag / Badge -->
-                            <span
-                                style="background-color: {{ $previewHex }}1a; color: {{ $previewHex }}; border-color: {{ $previewHex }}33;"
-                                class="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border">
-                                {{ __('Featured Package') }}
-                            </span>
+                             <!-- Preview Tag / Badge -->
+                             <span
+                                 style="background-color: {{ $previewHex }}1a; color: {{ $previewHex }}; border-color: {{ $previewHex }}33;"
+                                 class="px-2.5 py-0.5 rounded-[4px] text-[11px] font-semibold uppercase tracking-wider border">
+                                 {{ __('Featured Package') }}
+                             </span>
 
-                            <!-- Preview Text Link -->
-                            <span style="color: {{ $previewHex }};"
-                                class="text-xs font-bold cursor-default hover:underline">
-                                {{ __('Text Link & Pricing Highlight') }} &rarr;
-                            </span>
-                        </div>
-                    </div>
+                             <!-- Preview Text Link -->
+                             <span style="color: {{ $previewHex }};"
+                                 class="text-xs font-semibold cursor-default hover:underline">
+                                 {{ __('Text Link & Pricing Highlight') }} &rarr;
+                             </span>
+                         </div>
+                     </div>
 
-                    <x-setup-needed :needed="$highlightBio" anchor="setup-bio" @class(['space-y-1', 'p-3 sm:p-3.5' => $highlightBio])>
-                        <x-label for="bio" :value="__('Storefront Introduction / Bio')" required />
-                        <x-textarea id="bio" wire:model.live.debounce.300ms="bio" rows="3"
-                            placeholder="Tell guests about your experience, services, and local expertise..."
-                            :error="$errors->has('bio')" />
-                        <p class="text-[11px] text-slate-500 mt-1">
-                            {{ __('Displayed prominently on your public storefront header.') }}</p>
-                        <x-input-error :messages="$errors->get('bio')" />
-                    </x-setup-needed>
-                </div>
-            </div>
+                     <x-setup-needed :needed="$highlightBio" anchor="setup-bio" @class(['space-y-1', 'p-3 sm:p-3.5' => $highlightBio])>
+                         <x-label for="bio" :value="__('Storefront Introduction / Bio')" required />
+                         <x-textarea id="bio" wire:model.live.debounce.300ms="bio" rows="3"
+                             placeholder="Tell guests about your experience, services, and local expertise..."
+                             :error="$errors->has('bio')" />
+                         <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
+                             {{ __('Displayed prominently on your public storefront header.') }}</p>
+                         <x-input-error :messages="$errors->get('bio')" />
+                     </x-setup-needed>
+                 </div>
+             </div>
 
-            <!-- Card 3: WhatsApp Storefront Integration & Online Hours Schedule -->
-            <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-5">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
+             <!-- Card 3: WhatsApp Storefront Integration & Online Hours Schedule -->
+             <div
+                 class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
+                        class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
                         <i class="fa-brands fa-whatsapp"></i>
                     </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                         {{ __('WhatsApp Instant Guest Chat & Online Hours') }}
                     </h3>
                 </div>
@@ -613,7 +602,7 @@ new #[Title('Brand Settings')] class extends Component {
                         <x-label for="contact_whatsapp" :value="__('WhatsApp Contact Number')" required />
                         <x-input id="contact_whatsapp" wire:model="contact_whatsapp" type="text"
                             placeholder="+62 812 3456 7890" :error="$errors->has('contact_whatsapp')" />
-                        <p class="text-[11px] text-slate-500 mt-1">
+                        <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                             {{ __('Floating chat button will be active on your storefront.') }}</p>
                         <x-input-error :messages="$errors->get('contact_whatsapp')" />
                     </div>
@@ -623,7 +612,7 @@ new #[Title('Brand Settings')] class extends Component {
                         <x-input id="whatsapp_prefilled_message" wire:model="whatsapp_prefilled_message"
                             type="text" placeholder="Hi, I would like to inquire about your packages."
                             :error="$errors->has('whatsapp_prefilled_message')" />
-                        <p class="text-[11px] text-slate-500 mt-1">
+                        <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                             {{ __('Default greeting pre-filled when a guest taps the chat button.') }}</p>
                         <x-input-error :messages="$errors->get('whatsapp_prefilled_message')" />
                     </div>
@@ -631,29 +620,29 @@ new #[Title('Brand Settings')] class extends Component {
 
                 <!-- Operating Hours & Online Settings Schedule Box -->
                 <div
-                    class="p-5 rounded-2xl bg-slate-50/80 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-4">
+                    class="p-4 sm:p-5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] space-y-4">
                     <div
-                        class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-[#1e2433]">
+                        class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                         <div>
                             <h4
-                                class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <i class="fa-solid fa-clock text-[#FFEF4D] dark:text-[#FFEF4D]"></i>
+                                class="text-xs sm:text-sm font-semibold text-[#12181E] dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-clock text-[#FFEF4D]"></i>
                                 {{ __('Online Support Schedule & Status Indicators') }}
                             </h4>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-0.5">
                                 {{ __('Controls the live Online / Away indicator dot and response expectation badge on your storefront.') }}
                             </p>
                         </div>
 
                         <!-- Schedule Mode Toggle -->
                         <div
-                            class="inline-flex rounded-xl bg-slate-200/80 dark:bg-[#10141d] p-1 shrink-0 border border-slate-200 dark:border-[#1e2433]">
+                            class="inline-flex rounded-[8px] bg-[#F4F5F7] dark:bg-[#141821] p-1 shrink-0 border border-[#E4E5E9] dark:border-[#1E2433]">
                             <button type="button" wire:click="$set('whatsapp_schedule_mode', 'schedule')"
-                                class="px-3 py-1 text-xs font-bold rounded-lg transition {{ $whatsapp_schedule_mode === 'schedule' ? 'bg-white dark:bg-[#1e2433] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                                class="px-3 py-1 text-xs font-medium rounded-[6px] transition {{ $whatsapp_schedule_mode === 'schedule' ? 'bg-white dark:bg-[#1E2433] text-[#12181E] dark:text-white shadow-none' : 'text-[#5A6578] dark:text-[#9DA4B2] hover:text-[#12181E] dark:hover:text-white' }}">
                                 {{ __('Custom Hours') }}
                             </button>
                             <button type="button" wire:click="$set('whatsapp_schedule_mode', 'always')"
-                                class="px-3 py-1 text-xs font-bold rounded-lg transition {{ $whatsapp_schedule_mode === 'always' ? 'bg-white dark:bg-[#1e2433] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                                class="px-3 py-1 text-xs font-medium rounded-[6px] transition {{ $whatsapp_schedule_mode === 'always' ? 'bg-white dark:bg-[#1E2433] text-[#12181E] dark:text-white shadow-none' : 'text-[#5A6578] dark:text-[#9DA4B2] hover:text-[#12181E] dark:hover:text-white' }}">
                                 {{ __('24/7 Always Online') }}
                             </button>
                         </div>
@@ -718,7 +707,7 @@ new #[Title('Brand Settings')] class extends Component {
                                             $isActive = in_array($key, $whatsapp_days, true);
                                         @endphp
                                         <button type="button" wire:click="toggleDay('{{ $key }}')"
-                                            class="h-9 px-3.5 rounded-xl text-xs font-bold border transition-all cursor-pointer select-none {{ $isActive ? 'bg-[#FFEF4D] border-[#FFEF4D] text-[#090d16] font-black shadow-xs' : 'bg-white dark:bg-[#141821] border-slate-200 dark:border-[#1e2433] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600' }}">
+                                            class="h-9 px-3.5 rounded-[6px] text-xs font-semibold border transition-all cursor-pointer select-none {{ $isActive ? 'bg-[#FFEF4D] border-[#FFEF4D] text-[#12181E] shadow-none' : 'bg-white dark:bg-[#10141d] border-[#E4E5E9] dark:border-[#1E2433] text-[#5A6578] dark:text-[#9DA4B2] hover:border-[#12181E]/30' }}">
                                             {{ $label }}
                                             @if ($isActive)
                                                 <i class="fa-solid fa-check ml-1 text-[10px]"></i>
@@ -731,7 +720,7 @@ new #[Title('Brand Settings')] class extends Component {
                         </div>
                     @else
                         <div
-                            class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                            class="p-3 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-medium flex items-center gap-2">
                             <i class="fa-solid fa-circle-check text-sm"></i>
                             <span>{{ __('Your storefront WhatsApp chat widget will display an active "Online" green pulse indicator 24 hours a day, 7 days a week.') }}</span>
                         </div>
@@ -741,13 +730,13 @@ new #[Title('Brand Settings')] class extends Component {
 
             <!-- Card: Notification Channels -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
+                class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
+                        class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                         <i class="fa-solid fa-bell"></i>
                     </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                         {{ __('Notification Channels & Email Routing') }}
                     </h3>
                 </div>
@@ -762,7 +751,7 @@ new #[Title('Brand Settings')] class extends Component {
                         <x-label for="booking_notification_email" :value="__('Guest Booking Notifications Email')" required />
                         <x-input id="booking_notification_email" wire:model="booking_notification_email"
                             type="email" placeholder="bookings@yourdomain.com" :error="$errors->has('booking_notification_email')" />
-                        <p class="text-[11px] text-slate-500 mt-1">
+                        <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                             {{ __('Receives instant alerts for new guest bookings, cancellations, and schedule updates.') }}
                         </p>
                         <x-input-error :messages="$errors->get('booking_notification_email')" />
@@ -777,7 +766,7 @@ new #[Title('Brand Settings')] class extends Component {
                         <x-label for="billing_email" :value="__('Platform & Billing Statements Email')" required />
                         <x-input id="billing_email" wire:model="billing_email" type="email"
                             placeholder="finance@yourdomain.com" :error="$errors->has('billing_email')" />
-                        <p class="text-[11px] text-slate-500 mt-1">
+                        <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                             {{ __('Receives payout settlement receipts, platform invoices, and critical account security notices.') }}
                         </p>
                         <x-input-error :messages="$errors->get('billing_email')" />
@@ -787,52 +776,52 @@ new #[Title('Brand Settings')] class extends Component {
 
             <!-- Advanced Configuration Accordion (Progressive Disclosure) -->
             <div x-data="{ showAdvanced: false }"
-                class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] overflow-hidden shadow-xs">
+                class="rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] overflow-hidden shadow-none">
                 <button type="button" @click="showAdvanced = !showAdvanced"
-                    class="w-full p-5 flex items-center justify-between hover:bg-slate-50/80 dark:hover:bg-[#141821]/60 transition cursor-pointer text-left select-none">
-                    <div class="flex items-center gap-3.5">
+                    class="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-[#F9FAFB] dark:hover:bg-[#10141d] transition cursor-pointer text-left select-none">
+                    <div class="flex items-center gap-3">
                         <div
-                            class="w-9 h-9 rounded-xl bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 flex items-center justify-center text-sm shadow-xs shrink-0 font-black">
+                            class="size-8 rounded-[6px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-xs font-semibold shrink-0">
                             <i class="fa-solid fa-sliders"></i>
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <h4 class="text-sm font-bold text-slate-900 dark:text-white">
+                                <h4 class="text-xs sm:text-sm font-semibold text-[#12181E] dark:text-white">
                                     {{ __('Advanced Configurations & Marketing') }}
                                 </h4>
                                 <span
-                                    class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 dark:bg-[#141821] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
+                                    class="px-2 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-[#F4F5F7] dark:bg-[#1E2433] text-[#5A6578] dark:text-[#9DA4B2] border border-[#E4E5E9] dark:border-[#1E2433]">
                                     {{ __('Optional') }}
                                 </span>
                             </div>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-0.5">
                                 {{ __('Social media, your own website address, and ads tracking.') }}
                             </p>
                         </div>
                     </div>
                     <div
-                        class="p-2 rounded-xl bg-slate-100 dark:bg-[#141821] border border-slate-200 dark:border-[#1e2433] text-slate-600 dark:text-slate-300 shadow-2xs">
-                        <i class="fa-solid text-xs transition-transform duration-200"
+                        class="size-7 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] text-[#5A6578] dark:text-[#9DA4B2] flex items-center justify-center text-xs">
+                        <i class="fa-solid transition-transform duration-200"
                             :class="showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                     </div>
                 </button>
 
                 <div x-show="showAdvanced" x-collapse
-                    class="space-y-6 p-4 sm:p-6 pt-2 border-t border-slate-100 dark:border-[#1e2433]">
+                    class="space-y-5 p-4 sm:p-6 pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                     <!-- Card: Social Media Links -->
                     <div
-                        class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
-                        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
+                        class="p-4 sm:p-5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-4">
+                        <div class="flex items-center gap-2.5 pb-2.5 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                             <span
-                                class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
+                                class="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-white dark:bg-[#10141d] text-[#12181E] dark:text-[#E4E5E9] border border-[#E4E5E9] dark:border-[#1E2433] text-xs">
                                 <i class="fa-solid fa-share-nodes"></i>
                             </span>
-                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                                 {{ __('Social Media Links') }}
                             </h3>
                         </div>
 
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                             {{ __('Add Instagram, Facebook, TikTok, and YouTube so guests can find you.') }}
                         </p>
 
@@ -892,55 +881,55 @@ new #[Title('Brand Settings')] class extends Component {
                         $hasCustomDomain = $this->currentOperator?->hasFeature('custom_domain') ?? false;
                     @endphp
                     <div
-                        class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
+                        class="p-4 sm:p-5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-4">
                         <div
-                            class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#1e2433]">
+                            class="flex items-center justify-between pb-2.5 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                             <div class="flex items-center gap-2.5">
                                 <span
-                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
+                                    class="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-white dark:bg-[#10141d] text-[#12181E] dark:text-[#E4E5E9] border border-[#E4E5E9] dark:border-[#1E2433] text-xs">
                                     <i class="fa-solid fa-globe"></i>
                                 </span>
                                 <h3
-                                    class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                    class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                                     {{ __('Custom Website Domain (`yourbrand.com`)') }}
                                 </h3>
                             </div>
                             @if ($hasCustomDomain)
                                 <span
-                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                    class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                                     {{ __('Active & Unlocked') }}
                                 </span>
                             @else
                                 <span
-                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
+                                    class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
                                     <i class="fa-solid fa-lock text-[9px]"></i>
                                     <span>{{ __('Agency') }}</span>
                                 </span>
                             @endif
                         </div>
 
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] leading-relaxed">
                             {{ __('This storefront is your website — guests book and pay here. Use yourname.com if you do not already have a site (typical for freelance guides). Use tours.yourname.com if you already have a website and only want bookings on a smaller name. After the name points here, the padlock appears by itself in a few minutes.') }}
                         </p>
 
                         @if (!$hasCustomDomain)
                             <div
-                                class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/60 border border-slate-200 dark:border-[#1e2433] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                class="p-3.5 sm:p-4 rounded-[8px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div class="flex items-center gap-2.5">
                                     <span
-                                        class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs shadow-xs font-black">
-                                        <i class="fa-solid fa-crown"></i>
+                                        class="flex size-8 shrink-0 items-center justify-center rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
+                                        <i class="fa-solid fa-crown text-[#8a7808] dark:text-[#FFEF4D]"></i>
                                     </span>
                                     <div>
-                                        <p class="text-xs font-bold text-slate-900 dark:text-white">
+                                        <p class="text-xs font-semibold text-[#12181E] dark:text-white">
                                             {{ __('Custom Domains Require the Agency Plan') }}</p>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                        <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                                             {{ __('Upgrade to Agency to use your own website address.') }}
                                         </p>
                                     </div>
                                 </div>
                                 <a href="{{ route('settings.plan') }}"
-                                    class="px-3.5 py-1.5 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs transition inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-xs"
+                                    class="h-8 px-3 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] font-semibold text-xs transition inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-none"
                                     wire:navigate>
                                     <i class="fa-solid fa-crown text-[10px]"></i>
                                     <span>{{ __('Upgrade Plan') }}</span>
@@ -958,7 +947,7 @@ new #[Title('Brand Settings')] class extends Component {
                                         placeholder="yourname.com" class="pl-9 font-mono text-xs" :disabled="!$hasCustomDomain"
                                         :error="$errors->has('custom_domain')" />
                                 </div>
-                                <p class="text-[11px] text-slate-500 mt-1">
+                                <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                                     {{ __('Type yourname.com if this is your only website, or tours.yourname.com if you already have a site.') }}
                                 </p>
                                 <x-input-error :messages="$errors->get('custom_domain')" />
@@ -982,19 +971,19 @@ new #[Title('Brand Settings')] class extends Component {
                             @endphp
 
                             <div
-                                class="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-[#10141d] text-slate-900 dark:text-slate-100 space-y-4 border border-slate-200 dark:border-[#1e2433] shadow-xs">
+                                class="p-4 sm:p-5 rounded-[8px] bg-white dark:bg-[#10141d] text-[#12181E] dark:text-[#F4F5F7] space-y-4 border border-[#E4E5E9] dark:border-[#1E2433] shadow-none">
                                 <div
-                                    class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between border-b border-slate-200 dark:border-[#1e2433] pb-3">
+                                    class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between border-b border-[#E4E5E9] dark:border-[#1E2433] pb-3">
                                     <div class="flex items-center gap-2">
                                         <span
-                                            class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
+                                            class="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                                             <i class="fa-solid fa-network-wired"></i>
                                         </span>
                                         <div>
                                             <h4
-                                                class="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider">
+                                                class="font-semibold text-xs text-[#12181E] dark:text-white uppercase tracking-wider">
                                                 {{ __('How to connect your own address') }}</h4>
-                                            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                                                 {{ __('Pick one path below. Root names use a number. Smaller names use our website name.') }}
                                             </p>
                                         </div>
@@ -1003,13 +992,13 @@ new #[Title('Brand Settings')] class extends Component {
                                     @if ($customDomainModel)
                                         @if ($customDomainModel->status === \App\Enums\DomainStatus::Active)
                                             <span
-                                                class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
+                                                class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
                                                 <i class="fa-solid fa-circle-check text-[9px]"></i>
                                                 <span>{{ $customDomainModel->ssl_issued_at ? __('Connected & padlock on') : __('Connected. Padlock in a few minutes.') }}</span>
                                             </span>
                                         @else
                                             <span
-                                                class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 flex items-center gap-1">
+                                                class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 flex items-center gap-1">
                                                 <i class="fa-solid fa-clock text-[9px] animate-pulse"></i>
                                                 <span>{{ __('Still waiting') }}</span>
                                             </span>
@@ -1017,22 +1006,22 @@ new #[Title('Brand Settings')] class extends Component {
                                     @endif
                                 </div>
 
-                                <!-- DNS Record Spec -->
+                                <!-- DNS Record Spec Mobile Cards -->
                                 <div class="space-y-3 md:hidden">
                                     <div
-                                        class="rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#141821] p-3 space-y-2">
+                                        class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-2">
                                         <div
-                                            class="flex items-center justify-between gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                            class="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                                             <span>{{ __('CNAME') }}</span>
                                             <span
-                                                class="font-mono text-slate-900 dark:text-amber-300">{{ $cnameName }}</span>
+                                                class="font-mono text-[#12181E] dark:text-amber-300">{{ $cnameName }}</span>
                                         </div>
                                         <p
-                                            class="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 select-all break-all">
+                                            class="font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-all break-all">
                                             {{ $targetHost }}</p>
                                         <button type="button" x-data="{ copied: false }"
                                             x-on:click="navigator.clipboard.writeText(@js($targetHost)); copied = true; setTimeout(() => copied = false, 2000)"
-                                            class="h-9 w-full rounded-xl bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-xs transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center justify-center gap-1.5">
+                                            class="h-9 w-full rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F4F5F7] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-xs transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center justify-center gap-1.5">
                                             <i class="fa-solid"
                                                 :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
                                             <span
@@ -1041,19 +1030,19 @@ new #[Title('Brand Settings')] class extends Component {
                                     </div>
                                     @forelse ($apexIpv4 as $ipv4)
                                         <div
-                                            class="rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#141821] p-3 space-y-2">
+                                            class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-2">
                                             <div
-                                                class="flex items-center justify-between gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                                class="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                                                 <span>{{ __('A') }}</span>
                                                 <span
-                                                    class="font-mono text-slate-900 dark:text-amber-300">{{ '@' }}</span>
+                                                    class="font-mono text-[#12181E] dark:text-amber-300">{{ '@' }}</span>
                                             </div>
                                             <p
-                                                class="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 select-all break-all">
+                                                class="font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-all break-all">
                                                 {{ $ipv4 }}</p>
                                             <button type="button" x-data="{ copied: false }"
                                                 x-on:click="navigator.clipboard.writeText(@js($ipv4)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                class="h-9 w-full rounded-xl bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-xs transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center justify-center gap-1.5">
+                                                class="h-9 w-full rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F4F5F7] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-xs transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center justify-center gap-1.5">
                                                 <i class="fa-solid"
                                                     :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
                                                 <span
@@ -1062,29 +1051,29 @@ new #[Title('Brand Settings')] class extends Component {
                                         </div>
                                     @empty
                                         <div
-                                            class="rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#141821] p-3 space-y-1">
+                                            class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-1">
                                             <p
-                                                class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                                class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                                                 {{ __('A') }} · {{ '@' }}</p>
-                                            <p class="text-xs text-slate-500 italic">
+                                            <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] italic">
                                                 {{ __('We’ll show this number once the live server is ready.') }}</p>
                                         </div>
                                     @endforelse
                                     @foreach ($apexIpv6 as $ipv6)
                                         <div
-                                            class="rounded-xl border border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#141821] p-3 space-y-2">
+                                            class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-2">
                                             <div
-                                                class="flex items-center justify-between gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                                class="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
                                                 <span>{{ __('AAAA') }}</span>
                                                 <span
-                                                    class="font-mono text-slate-900 dark:text-amber-300">{{ '@' }}</span>
+                                                    class="font-mono text-[#12181E] dark:text-amber-300">{{ '@' }}</span>
                                             </div>
                                             <p
-                                                class="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 select-all break-all">
+                                                class="font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-all break-all">
                                                 {{ $ipv6 }}</p>
                                             <button type="button" x-data="{ copied: false }"
                                                 x-on:click="navigator.clipboard.writeText(@js($ipv6)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                class="h-9 w-full rounded-xl bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-xs transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center justify-center gap-1.5">
+                                                class="h-9 w-full rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F4F5F7] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-xs transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center justify-center gap-1.5">
                                                 <i class="fa-solid"
                                                     :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
                                                 <span
@@ -1097,7 +1086,7 @@ new #[Title('Brand Settings')] class extends Component {
                                     <table class="w-full text-left text-xs font-mono border-collapse">
                                         <thead>
                                             <tr
-                                                class="text-[10px] font-extrabold uppercase text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#1e2433] pb-2">
+                                                class="text-[10px] font-semibold uppercase text-[#5A6578] dark:text-[#9DA4B2] border-b border-[#E4E5E9] dark:border-[#1E2433] pb-2">
                                                 <th class="py-2 px-3">{{ __('Type of setting') }}</th>
                                                 <th class="py-2 px-3">{{ __('The name you own') }}</th>
                                                 <th class="py-2 px-3">{{ __('Point it at') }}</th>
@@ -1105,24 +1094,24 @@ new #[Title('Brand Settings')] class extends Component {
                                             </tr>
                                         </thead>
                                         <tbody
-                                            class="divide-y divide-slate-200/80 dark:divide-[#1e2433] font-semibold text-slate-800 dark:text-slate-200">
+                                            class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433] font-medium text-[#12181E] dark:text-[#E4E5E9]">
                                             <tr>
                                                 <td class="py-2.5 px-3">
                                                     <span
-                                                        class="px-2 py-0.5 rounded bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-bold text-[11px] border border-[#FFEF4D]/30">CNAME</span>
+                                                        class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">CNAME</span>
                                                 </td>
                                                 <td
-                                                    class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-amber-300">
+                                                    class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300">
                                                     {{ $cnameName }}
                                                 </td>
                                                 <td
-                                                    class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold select-all">
+                                                    class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-semibold select-all">
                                                     {{ $targetHost }}
                                                 </td>
                                                 <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
                                                     <button type="button"
                                                         x-on:click="navigator.clipboard.writeText(@js($targetHost)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                        class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-[10px] transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center gap-1">
+                                                        class="px-2.5 py-1 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-[10px] transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center gap-1">
                                                         <i class="fa-solid"
                                                             :class="copied ? 'fa-check text-emerald-600 dark:text-emerald-400' :
                                                                 'fa-copy text-slate-400'"></i>
@@ -1135,20 +1124,20 @@ new #[Title('Brand Settings')] class extends Component {
                                                 <tr>
                                                     <td class="py-2.5 px-3">
                                                         <span
-                                                            class="px-2 py-0.5 rounded bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-bold text-[11px] border border-[#FFEF4D]/30">A</span>
+                                                            class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">A</span>
                                                     </td>
                                                     <td
-                                                        class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-amber-300">
+                                                        class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300">
                                                         {{ '@' }}
                                                     </td>
                                                     <td
-                                                        class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold select-all">
+                                                        class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-semibold select-all">
                                                         {{ $ipv4 }}
                                                     </td>
                                                     <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
                                                         <button type="button"
                                                             x-on:click="navigator.clipboard.writeText(@js($ipv4)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                            class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-[10px] transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center gap-1">
+                                                            class="px-2.5 py-1 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-[10px] transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center gap-1">
                                                             <i class="fa-solid"
                                                                 :class="copied ?
                                                                     'fa-check text-emerald-600 dark:text-emerald-400' :
@@ -1162,14 +1151,14 @@ new #[Title('Brand Settings')] class extends Component {
                                                 <tr>
                                                     <td class="py-2.5 px-3">
                                                         <span
-                                                            class="px-2 py-0.5 rounded bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-bold text-[11px] border border-[#FFEF4D]/30">A</span>
+                                                            class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">A</span>
                                                     </td>
                                                     <td
-                                                        class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-amber-300">
+                                                        class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300">
                                                         {{ '@' }}
                                                     </td>
                                                     <td
-                                                        class="py-2.5 px-3 text-slate-400 dark:text-slate-500 font-sans font-semibold italic">
+                                                        class="py-2.5 px-3 text-[#5A6578] dark:text-[#9DA4B2] font-sans font-medium italic">
                                                         {{ __('We’ll show this number once the live server is ready.') }}
                                                     </td>
                                                     <td class="py-2.5 px-3"></td>
@@ -1179,20 +1168,20 @@ new #[Title('Brand Settings')] class extends Component {
                                                 <tr>
                                                     <td class="py-2.5 px-3">
                                                         <span
-                                                            class="px-2 py-0.5 rounded bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-bold text-[11px] border border-[#FFEF4D]/30">AAAA</span>
+                                                            class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">AAAA</span>
                                                     </td>
                                                     <td
-                                                        class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-amber-300">
+                                                        class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300">
                                                         {{ '@' }}
                                                     </td>
                                                     <td
-                                                        class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold select-all">
+                                                        class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-semibold select-all">
                                                         {{ $ipv6 }}
                                                     </td>
                                                     <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
                                                         <button type="button"
                                                             x-on:click="navigator.clipboard.writeText(@js($ipv6)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                            class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#141821] hover:bg-slate-100 dark:hover:bg-[#1e2433] text-slate-800 dark:text-slate-200 font-sans font-bold text-[10px] transition border border-slate-300 dark:border-[#1e2433] shadow-xs cursor-pointer inline-flex items-center gap-1">
+                                                            class="px-2.5 py-1 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-[10px] transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center gap-1">
                                                             <i class="fa-solid"
                                                                 :class="copied ?
                                                                     'fa-check text-emerald-600 dark:text-emerald-400' :
@@ -1209,11 +1198,11 @@ new #[Title('Brand Settings')] class extends Component {
 
                                 <!-- Quick 4-Step Instructions -->
                                 <div
-                                    class="space-y-2 text-[11px] text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-[#1e2433]">
+                                    class="space-y-2 text-[11px] text-[#5A6578] dark:text-[#9DA4B2] pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                                     <span
-                                        class="font-bold text-slate-900 dark:text-slate-200 block uppercase tracking-wider text-[10px]">{{ __('What to ask your website host:') }}</span>
+                                        class="font-semibold text-[#12181E] dark:text-white block uppercase tracking-wider text-[10px]">{{ __('What to ask your website host:') }}</span>
                                     <ol
-                                        class="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-400 leading-relaxed font-sans">
+                                        class="list-decimal list-inside space-y-1 text-[#5A6578] dark:text-[#9DA4B2] leading-relaxed font-sans">
                                         <li>{{ __('Sign in where you bought the website name (GoDaddy, Niagahoster, Rumahweb, or similar).') }}
                                         </li>
                                         <li>{{ __('Open the page for website-name settings. It is often called DNS or Domain.') }}
@@ -1233,13 +1222,13 @@ new #[Title('Brand Settings')] class extends Component {
 
                                 <!-- Verification Action Button -->
                                 <div
-                                    class="pt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-200 dark:border-[#1e2433]">
-                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 font-sans">
+                                    class="pt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                                    <span class="text-[10px] text-[#5A6578] dark:text-[#9DA4B2] font-sans">
                                         <i class="fa-solid fa-circle-info text-[#8a7808] dark:text-[#FFEF4D] mr-1"></i>
                                         {{ __('The change can take a few minutes. If it is not ready, try again in 15 minutes.') }}
                                     </span>
                                     <button type="button" wire:click="verifyCustomDomainDns"
-                                        class="h-10 w-full sm:w-auto px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-sans font-black text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
+                                        class="h-9 w-full sm:w-auto px-4 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] font-sans font-semibold text-xs shadow-none transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
                                         <i class="fa-solid fa-rotate text-[10px]" wire:loading.class="animate-spin"
                                             wire:target="verifyCustomDomainDns"></i>
                                         <span>{{ __('Check connection') }}</span>
@@ -1254,55 +1243,55 @@ new #[Title('Brand Settings')] class extends Component {
                         $hasTracking = $this->currentOperator?->hasFeature('tracking_pixels') ?? false;
                     @endphp
                     <div
-                        class="p-5 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xs space-y-4">
+                        class="p-4 sm:p-5 rounded-[8px] bg-[#F9FAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-4">
                         <div
-                            class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#1e2433]">
+                            class="flex items-center justify-between pb-2.5 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                             <div class="flex items-center gap-2.5">
                                 <span
-                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs">
+                                    class="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-white dark:bg-[#10141d] text-[#12181E] dark:text-[#E4E5E9] border border-[#E4E5E9] dark:border-[#1E2433] text-xs">
                                     <i class="fa-solid fa-chart-line"></i>
                                 </span>
                                 <h3
-                                    class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                    class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                                     {{ __('Marketing Tracking Pixels') }}
                                 </h3>
                             </div>
                             @if ($hasTracking)
                                 <span
-                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                    class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                                     {{ __('Active & Unlocked') }}
                                 </span>
                             @else
                                 <span
-                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
+                                    class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
                                     <i class="fa-solid fa-lock text-[9px]"></i>
                                     <span>{{ __('Growth') }}</span>
                                 </span>
                             @endif
                         </div>
 
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] leading-relaxed">
                             {{ __('Connect your marketing pixels to measure conversions on Facebook / Instagram Ads.') }}
                         </p>
 
                         @if (!$hasTracking)
                             <div
-                                class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/60 border border-slate-200 dark:border-[#1e2433] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                class="p-3.5 sm:p-4 rounded-[8px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div class="flex items-center gap-2.5">
                                     <span
-                                        class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300 text-xs shadow-xs font-black">
-                                        <i class="fa-solid fa-crown"></i>
+                                        class="flex size-8 shrink-0 items-center justify-center rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
+                                        <i class="fa-solid fa-crown text-[#8a7808] dark:text-[#FFEF4D]"></i>
                                     </span>
                                     <div>
-                                        <p class="text-xs font-bold text-slate-900 dark:text-white">
+                                        <p class="text-xs font-semibold text-[#12181E] dark:text-white">
                                             {{ __('Requires Growth or Agency') }}</p>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                        <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                                             {{ __('Upgrade to unlock Google Analytics 4, Meta Pixel ROAS tracking, and automated 12-hour review request emails.') }}
                                         </p>
                                     </div>
                                 </div>
                                 <a href="{{ route('settings.plan') }}"
-                                    class="px-3.5 py-1.5 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs transition inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-xs"
+                                    class="h-8 px-3 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] font-semibold text-xs transition inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-none"
                                     wire:navigate>
                                     <i class="fa-solid fa-crown text-[10px]"></i>
                                     <span>{{ __('Upgrade Plan') }}</span>
@@ -1322,7 +1311,7 @@ new #[Title('Brand Settings')] class extends Component {
                                         placeholder="e.g. 123456789012345" class="pl-9 font-mono text-xs"
                                         :disabled="!$hasTracking" :error="$errors->has('meta_pixel_id')" />
                                 </div>
-                                <p class="text-[11px] text-slate-500 mt-1">
+                                <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                                     {{ __('Tracks PageViews and Purchase events for Facebook & Instagram Ads.') }}</p>
                                 <x-input-error :messages="$errors->get('meta_pixel_id')" />
                             </div>
@@ -1337,7 +1326,7 @@ new #[Title('Brand Settings')] class extends Component {
                                         placeholder="e.g. G-XXXXXXXXXX" class="pl-9 font-mono text-xs"
                                         :disabled="!$hasTracking" :error="$errors->has('google_analytics_id')" />
                                 </div>
-                                <p class="text-[11px] text-slate-500 mt-1">
+                                <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                                     {{ __('Tracks visitor traffic and purchase conversions on your storefront.') }}
                                 </p>
                                 <x-input-error :messages="$errors->get('google_analytics_id')" />
@@ -1353,7 +1342,7 @@ new #[Title('Brand Settings')] class extends Component {
                                         type="text" placeholder="e.g. GTM-XXXXXXX" class="pl-9 font-mono text-xs"
                                         :disabled="!$hasTracking" :error="$errors->has('google_tag_manager_id')" />
                                 </div>
-                                <p class="text-[11px] text-slate-500 mt-1">
+                                <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                                     {{ __('Optional custom tag manager container.') }}</p>
                                 <x-input-error :messages="$errors->get('google_tag_manager_id')" />
                             </div>
@@ -1368,7 +1357,7 @@ new #[Title('Brand Settings')] class extends Component {
                                         type="text" placeholder="e.g. google-site-verification=... or code"
                                         class="pl-9 font-mono text-xs" :disabled="!$hasTracking" :error="$errors->has('google_site_verification')" />
                                 </div>
-                                <p class="text-[11px] text-slate-500 mt-1">
+                                <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2] mt-1">
                                     {{ __('Injected into <head> for 1-click Google Search Console domain verification.') }}
                                 </p>
                                 <x-input-error :messages="$errors->get('google_site_verification')" />
@@ -1381,9 +1370,9 @@ new #[Title('Brand Settings')] class extends Component {
             <!-- Submit Button & Success Toast -->
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
                 <x-button variant="primary" type="submit" data-test="update-brand-button"
-                    class="w-full sm:w-auto shadow-sm" wire:loading.attr="disabled" wire:target="updateBrandSettings">
-                    <i class="fa-solid fa-floppy-disk mr-1 text-xs" wire:loading.remove wire:target="updateBrandSettings"></i>
-                    <i class="fa-solid fa-spinner fa-spin mr-1 text-xs" wire:loading wire:target="updateBrandSettings"></i>
+                    class="w-full sm:w-auto" wire:loading.attr="disabled" wire:target="updateBrandSettings">
+                    <i class="fa-solid fa-floppy-disk mr-1.5 text-xs" wire:loading.remove wire:target="updateBrandSettings"></i>
+                    <i class="fa-solid fa-spinner fa-spin mr-1.5 text-xs" wire:loading wire:target="updateBrandSettings"></i>
                     <span wire:loading.remove wire:target="updateBrandSettings">{{ __('Save Brand Settings') }}</span>
                     <span wire:loading wire:target="updateBrandSettings">{{ __('Saving…') }}</span>
                 </x-button>

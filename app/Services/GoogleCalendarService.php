@@ -81,14 +81,14 @@ class GoogleCalendarService
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
             $this->foldIcalLine("X-WR-CALNAME:{$this->escapeIcalText($calName)}"),
-            'X-WR-TIMEZONE:UTC',
+            'X-WR-TIMEZONE:'.config('app.timezone'),
         ];
 
         foreach ($reservations as $res) {
             $code = $res->code ?: strtoupper(substr($res->id, -8));
             $startDate = $res->requested_date->format('Ymd');
             $endDate = $res->requested_date->copy()->addDay()->format('Ymd');
-            $dtstamp = $res->updated_at?->format('Ymd\THis\Z') ?? now()->format('Ymd\THis\Z');
+            $dtstamp = ($res->updated_at ?? now())->utc()->format('Ymd\THis\Z');
 
             $bookableTitle = $res->bookable instanceof Bookable
                 ? $res->bookable->getTitle()

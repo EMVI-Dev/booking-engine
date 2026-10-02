@@ -105,34 +105,23 @@ new #[Title('Storefront Settings')] class extends Component {
         <!-- Unified Settings Navigation -->
         <x-settings-nav />
 
-        <!-- Standalone Page Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2.5">
-                    <span class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300">
-                        <i class="fa-solid fa-store text-lg"></i>
-                    </span>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ __('Storefront & Policies') }}
-                    </h1>
-                </div>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    {{ __('Control standalone product selling permissions, catalog visibility, and guest booking policies.') }}
-                </p>
-            </div>
-        </div>
+        <x-page-header
+            :title="__('Storefront & Policies')"
+            :subtitle="__('Control standalone product selling permissions, catalog visibility, and guest booking policies.')"
+            icon="fa-store"
+        />
 
         <!-- Main Settings Form -->
         <form wire:submit="updateStorefrontSettings" class="w-full space-y-6">
             <!-- Card 1: Sales Permissions & Catalog Configuration -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-[#FFEF4D] text-[#090d16] dark:bg-indigo-950/70 dark:text-indigo-400 text-xs">
+                        class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                         <i class="fa-solid fa-cart-shopping"></i>
                     </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                         {{ __('Sales Permissions & Selling Mode') }}
                     </h3>
                 </div>
@@ -140,7 +129,7 @@ new #[Title('Storefront Settings')] class extends Component {
                 <div class="space-y-3">
                     <!-- Toggle: Allow Standalone Product Selling -->
                     <div
-                        class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
+                        class="p-4 rounded-[8px] bg-[#F9FAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433]">
                         <x-checkbox id="allow_standalone_products" wire:model="allow_standalone_products"
                             :label="__('Allow Standalone Product & Service Sales')" :description="__(
                                 'When enabled, products and services flagged as \'Sell Standalone\' (e.g. day passes, single sessions, guide hire) can be booked directly by guests outside of packages.',
@@ -149,7 +138,7 @@ new #[Title('Storefront Settings')] class extends Component {
 
                     <!-- Toggle: Show Inclusions Preview -->
                     <div
-                        class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
+                        class="p-4 rounded-[8px] bg-[#F9FAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433]">
                         <x-checkbox id="show_inclusions_preview" wire:model="show_inclusions_preview" :label="__('Show Package Inclusions Preview Chips')"
                             :description="__(
                                 'Display included product badges directly on package listing cards in catalog view.',
@@ -160,17 +149,17 @@ new #[Title('Storefront Settings')] class extends Component {
 
             <!-- Card 2: Booking Confirmation Workflow Mode -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
+                        class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                         <i class="fa-solid fa-clipboard-check"></i>
                     </span>
                     <div>
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                             {{ __('Booking Confirmation & Approval Workflow') }}
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] mt-0.5">
                             {{ __('Choose whether paid guest bookings are confirmed instantly or require manual operator review.') }}
                         </p>
                     </div>
@@ -179,56 +168,56 @@ new #[Title('Storefront Settings')] class extends Component {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Option 1: Automatic / Instant Booking -->
                     <label
-                        class="relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between space-y-3 {{ $booking_confirmation_mode === 'automatic' ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/30 ring-2 ring-indigo-600/20' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-slate-300 dark:hover:border-zinc-700' }}">
+                        class="relative p-4 sm:p-5 rounded-[8px] border cursor-pointer transition-all duration-150 flex flex-col justify-between space-y-3 {{ $booking_confirmation_mode === 'automatic' ? 'border-[#12181E] dark:border-white bg-[#F9FAFB] dark:bg-[#141821] ring-1 ring-[#12181E] dark:ring-white' : 'border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#10141d] hover:border-[#12181E]/30 dark:hover:border-white/30' }}">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <span
-                                    class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm shrink-0">
+                                    class="flex size-8 shrink-0 items-center justify-center rounded-[6px] bg-[#FFEF4D] text-[#12181E] text-xs">
                                     <i class="fa-solid fa-bolt"></i>
                                 </span>
                                 <div>
-                                    <h4 class="font-bold text-sm text-slate-900 dark:text-white">
+                                    <h4 class="font-semibold text-xs sm:text-sm text-[#12181E] dark:text-white">
                                         {{ __('Instant Booking') }}
                                     </h4>
                                     <span
-                                        class="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+                                        class="text-[10px] font-semibold uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
                                         {{ __('Automated (Recommended)') }}
                                     </span>
                                 </div>
                             </div>
                             <input type="radio" name="booking_confirmation_mode" value="automatic"
                                 wire:model.live="booking_confirmation_mode"
-                                class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 mt-1" />
+                                class="w-4 h-4 accent-[#12181E] dark:accent-[#FFEF4D] mt-1" />
                         </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] leading-relaxed">
                             {{ __('Bookings are instantly confirmed as soon as payment is settled. Calendar capacity is locked automatically and vouchers are immediately issued to guests.') }}
                         </p>
                     </label>
 
                     <!-- Option 2: Manual Confirmation / Operator Review -->
                     <label
-                        class="relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between space-y-3 {{ $booking_confirmation_mode === 'manual' ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/30 ring-2 ring-indigo-600/20' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-slate-300 dark:hover:border-zinc-700' }}">
+                        class="relative p-4 sm:p-5 rounded-[8px] border cursor-pointer transition-all duration-150 flex flex-col justify-between space-y-3 {{ $booking_confirmation_mode === 'manual' ? 'border-[#12181E] dark:border-white bg-[#F9FAFB] dark:bg-[#141821] ring-1 ring-[#12181E] dark:ring-white' : 'border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#10141d] hover:border-[#12181E]/30 dark:hover:border-white/30' }}">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <span
-                                    class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-amber-600 dark:text-indigo-400 flex items-center justify-center text-sm shrink-0">
+                                    class="flex size-8 shrink-0 items-center justify-center rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                                     <i class="fa-solid fa-user-check"></i>
                                 </span>
                                 <div>
-                                    <h4 class="font-bold text-sm text-slate-900 dark:text-white">
+                                    <h4 class="font-semibold text-xs sm:text-sm text-[#12181E] dark:text-white">
                                         {{ __('Manual Approval') }}
                                     </h4>
                                     <span
-                                        class="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                        class="text-[10px] font-semibold uppercase text-[#5A6578] dark:text-[#9DA4B2] tracking-wider">
                                         {{ __('Operator Review') }}
                                     </span>
                                 </div>
                             </div>
                             <input type="radio" name="booking_confirmation_mode" value="manual"
                                 wire:model.live="booking_confirmation_mode"
-                                class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 mt-1" />
+                                class="w-4 h-4 accent-[#12181E] dark:accent-[#FFEF4D] mt-1" />
                         </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] leading-relaxed">
                             {{ __('Paid reservations are placed in "Pending Confirmation" status. You manually inspect staff schedule, capacity, and resource availability before clicking "Confirm" in your Bookings dashboard.') }}
                         </p>
                     </label>
@@ -238,12 +227,12 @@ new #[Title('Storefront Settings')] class extends Component {
 
             <!-- Card 3: Hero Banner Content -->
             <x-setup-needed :needed="$highlightHero" anchor="setup-hero">
-                <div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-                    <div class="flex items-center gap-2.5 border-b border-slate-100 pb-2 dark:border-zinc-800">
-                        <span class="rounded-lg bg-sky-50 p-1.5 text-xs text-sky-600 dark:bg-sky-950/70 dark:text-sky-400">
+                <div class="space-y-4 rounded-[12px] border border-[#E4E5E9] bg-white p-5 sm:p-6 shadow-none dark:border-[#1E2433] dark:bg-[#10141d]">
+                    <div class="flex items-center gap-2.5 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
+                        <span class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                             <i class="fa-solid fa-bullhorn"></i>
                         </span>
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                             {{ __('Hero Banner Copy & Marketing Text') }}
                         </h3>
                     </div>
@@ -253,7 +242,7 @@ new #[Title('Storefront Settings')] class extends Component {
                             <x-label for="hero_headline" :value="__('Custom Hero Headline')" required />
                             <x-input id="hero_headline" wire:model.live.debounce.300ms="hero_headline" type="text"
                                 placeholder="e.g. Unforgettable Bali Expeditions" :error="$errors->has('hero_headline')" />
-                            <p class="mt-1 text-[11px] text-slate-500">
+                            <p class="mt-1 text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                                 {{ __('Shown at the top of your booking page. Add a headline or tagline.') }}</p>
                             <x-input-error :messages="$errors->get('hero_headline')" />
                         </div>
@@ -268,15 +257,15 @@ new #[Title('Storefront Settings')] class extends Component {
                 </div>
             </x-setup-needed>
 
-            <!-- Card 3: Storefront Terms & Policies -->
+            <!-- Card 4: Storefront Terms & Policies -->
             <div
-                class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <span
-                        class="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 text-xs">
+                        class="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[#F4F5F7] dark:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] text-xs">
                         <i class="fa-solid fa-file-contract"></i>
                     </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[#12181E] dark:text-[#F4F5F7]">
                         {{ __('Storefront Booking Policy & Cancellation Rules') }}
                     </h3>
                 </div>
@@ -299,7 +288,7 @@ new #[Title('Storefront Settings')] class extends Component {
                         <x-textarea id="terms_and_conditions" wire:model.live.debounce.300ms="terms_and_conditions" rows="5"
                             placeholder="Detail your standard policies: cancellation cutoff rules, health and physical requirements, weather rescheduling policies, and guest liability disclaimers..."
                             :error="$errors->has('terms_and_conditions')" />
-                        <p class="text-[11px] text-slate-500">
+                        <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
                             {{ __('These terms are frozen into the guest reservation snapshot upon booking.') }}</p>
                         <x-input-error :messages="$errors->get('terms_and_conditions')" />
                     </x-setup-needed>
@@ -308,9 +297,9 @@ new #[Title('Storefront Settings')] class extends Component {
 
             <!-- Submit Button & Success Toast -->
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
-                <x-button variant="primary" type="submit" data-test="update-storefront-button" class="w-full sm:w-auto shadow-sm" wire:loading.attr="disabled" wire:target="updateStorefrontSettings">
-                    <i class="fa-solid fa-floppy-disk mr-1 text-xs" wire:loading.remove wire:target="updateStorefrontSettings"></i>
-                    <i class="fa-solid fa-spinner fa-spin mr-1 text-xs" wire:loading wire:target="updateStorefrontSettings"></i>
+                <x-button variant="primary" type="submit" data-test="update-storefront-button" class="w-full sm:w-auto" wire:loading.attr="disabled" wire:target="updateStorefrontSettings">
+                    <i class="fa-solid fa-floppy-disk mr-1.5 text-xs" wire:loading.remove wire:target="updateStorefrontSettings"></i>
+                    <i class="fa-solid fa-spinner fa-spin mr-1.5 text-xs" wire:loading wire:target="updateStorefrontSettings"></i>
                     <span wire:loading.remove wire:target="updateStorefrontSettings">{{ __('Save Storefront Settings') }}</span>
                     <span wire:loading wire:target="updateStorefrontSettings">{{ __('Saving…') }}</span>
                 </x-button>

@@ -211,27 +211,19 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
 <div class="space-y-6 w-full">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
-        <div class="flex items-center gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] text-sm">
-                <i class="fa-solid fa-user-shield"></i>
-            </span>
-            <div>
-                <h1 class="text-[20px] font-medium leading-[1.6] text-[#1C2024] dark:text-white">
-                    {{ __('Your profile') }}
-                </h1>
-                <p class="text-[13px] text-[#60646C] dark:text-zinc-400">
-                    {{ __('Name, password, and extra sign-in protection.') }}
-                </p>
-            </div>
-        </div>
-        <div>
+    <x-page-header
+        :title="__('Your profile')"
+        :subtitle="__('Name, password, and extra sign-in protection.')"
+        icon="fa-user-shield"
+        class="pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]"
+    >
+        <x-slot:actions>
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[#FFEF4D]/20 text-[#856404] dark:text-[#FFEF4D] border border-[#FFEF4D]/40 text-xs font-medium">
                 <i class="fa-solid fa-crown text-[10px]"></i>
                 <span>{{ __('Admin') }}</span>
             </span>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     <!-- Main Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

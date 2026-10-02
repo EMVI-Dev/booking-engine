@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Models\Operator;
 use App\Models\PlatformSetting;
 use App\Models\User;
 use App\Services\OperatorOnboardingService;
@@ -34,7 +35,7 @@ class CreateNewUser implements CreatesNewUsers
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
             'business_name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:64', 'alpha_dash', Rule::unique('operators', 'slug')],
+            'slug' => ['nullable', 'string', 'max:64', 'alpha_dash', Rule::notIn(Operator::RESERVED_SLUGS), Rule::unique('operators', 'slug')],
             'contact_whatsapp' => ['nullable', 'string', 'max:30'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'bank_account_ref' => ['nullable', 'string', 'max:100'],
@@ -42,6 +43,7 @@ class CreateNewUser implements CreatesNewUsers
         ], [
             'business_name.required' => 'Please provide your tour operator or guide business name.',
             'slug.unique' => 'That page address is already taken. Please choose another.',
+            'slug.not_in' => 'That page address is reserved. Please choose another.',
             'terms.accepted' => 'Please agree to the terms before creating your account.',
         ])->validate();
 

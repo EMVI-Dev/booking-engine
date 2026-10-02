@@ -4,8 +4,8 @@
     'icon' => 'fa-solid fa-laptop',
 ])
 
-<div class="lg:hidden p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-center space-y-5 shadow-xs my-3 animate-fade-in">
-    <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center text-2xl border border-indigo-200/60 dark:border-zinc-700 shadow-inner">
+<div class="lg:hidden p-6 sm:p-8 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] text-center space-y-4 shadow-none my-3">
+    <div class="w-14 h-14 rounded-[8px] bg-[#FFEF4D]/20 text-[#12181E] dark:text-[#FFEF4D] mx-auto flex items-center justify-center text-xl border border-[#FFEF4D]/40">
         <i class="{{ $icon }}"></i>
     </div>
 
@@ -13,7 +13,7 @@
         <h3 class="text-base font-bold text-slate-900 dark:text-white">
             {{ $title }}
         </h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+        <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] max-w-xs mx-auto leading-relaxed">
             {{ $description }}
         </p>
     </div>
@@ -22,7 +22,7 @@
         <a
             href="{{ route('dashboard') }}"
             wire:navigate
-            class="w-full sm:w-auto h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
+            class="w-full sm:w-auto h-9 px-4 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-semibold flex items-center justify-center gap-2 shadow-none transition cursor-pointer"
         >
             <i class="fa-solid fa-arrow-left text-[11px]"></i>
             <span>{{ __('Back to Dashboard') }}</span>
@@ -31,7 +31,7 @@
         <button
             type="button"
             @click="navigator.clipboard.writeText(window.location.href); copied = true; setTimeout(() => copied = false, 2500)"
-            class="w-full sm:w-auto h-10 px-4 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+            class="w-full sm:w-auto h-9 px-4 rounded-[6px] bg-[#F4F5F7] hover:bg-[#E4E5E9] dark:bg-[#151a26] dark:hover:bg-[#1E2433] text-slate-700 dark:text-slate-300 border border-[#E4E5E9] dark:border-[#1E2433] text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-none"
         >
             <i class="fa-solid" :class="copied ? 'fa-check text-emerald-500' : 'fa-copy'"></i>
             <span x-text="copied ? '{{ __('Link Copied!') }}' : '{{ __('Copy Link for Desktop') }}'"></span>

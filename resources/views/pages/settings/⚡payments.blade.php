@@ -142,22 +142,11 @@ new #[Title('Payout bank account')] class extends Component {
         <!-- Unified Billing Navigation -->
         <x-billing-nav />
 
-    <!-- Standalone Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-300">
-                    <i class="fa-solid fa-credit-card text-lg"></i>
-                </span>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {{ __('Payout bank account') }}
-                </h1>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Tell us where to send your money after a trip. Guests always pay through EMVI — you keep the listed price.') }}
-            </p>
-        </div>
-    </div>
+    <x-page-header
+        :title="__('Payout bank account')"
+        :subtitle="__('Tell us where to send your money after a trip. Guests always pay through EMVI — you keep the listed price.')"
+        icon="fa-credit-card"
+    />
 
     <!-- Main Settings Form -->
     <form
@@ -178,15 +167,15 @@ new #[Title('Payout bank account')] class extends Component {
     >
         @if ($highlightPayoutBank)
             <div
-                class="flex items-start gap-3 rounded-2xl border border-[#FFEF4D]/50 bg-[#FFEF4D]/15 px-4 py-3 dark:border-[#FFEF4D]/25 dark:bg-[#FFEF4D]/10"
+                class="flex items-start gap-3 rounded-[12px] border border-[#FFEF4D]/50 bg-[#FFEF4D]/15 px-4 py-3 dark:border-[#FFEF4D]/25 dark:bg-[#FFEF4D]/10 shadow-none"
                 role="status"
             >
-                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E]" aria-hidden="true">
+                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E]" aria-hidden="true">
                     <i class="fa-solid fa-list-check text-sm"></i>
                 </span>
                 <div class="min-w-0">
-                    <p class="text-sm font-bold text-op-ink">{{ __('Finish the highlighted fields') }}</p>
-                    <p class="mt-0.5 text-xs text-op-subtle">
+                    <p class="text-sm font-bold text-slate-900 dark:text-white">{{ __('Finish the highlighted fields') }}</p>
+                    <p class="mt-0.5 text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                         {{ __('Add your payout bank so we can send you money after each trip.') }}
                     </p>
                 </div>
@@ -195,17 +184,17 @@ new #[Title('Payout bank account')] class extends Component {
 
         <!-- Card 1: Bank Payout Settlement Account -->
         <x-setup-needed :needed="$highlightPayoutBank" anchor="setup-payout-bank">
-            <div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
-                    <span class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
+            <div class="space-y-4 rounded-[12px] border border-[#E4E5E9] bg-white p-4 shadow-none sm:p-6 dark:border-[#1E2433] dark:bg-[#10141d]">
+                <div class="flex items-center gap-2.5 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
+                    <span class="w-7 h-7 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/50 flex items-center justify-center text-xs">
                         <i class="fa-solid fa-building-columns"></i>
                     </span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                         {{ __('Where we send your money') }}
                     </h3>
                 </div>
 
-                <p class="text-xs text-slate-500 dark:text-slate-400">
+                <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2]">
                     {{ __('After the trip, we send the listed price to this Indonesian bank account. Money is held until then.') }}
                 </p>
 
@@ -231,6 +220,7 @@ new #[Title('Payout bank account')] class extends Component {
                                 'SeaBank' => 'SeaBank',
                                 'Other' => 'Other Bank',
                             ]"
+                            class="rounded-[6px] h-9 text-xs"
                             :error="$errors->has('bank_provider')"
                         />
                         <x-input-error :messages="$errors->get('bank_provider')" />
@@ -244,6 +234,7 @@ new #[Title('Payout bank account')] class extends Component {
                             wire:model.live.debounce.300ms="bank_account_name"
                             type="text"
                             placeholder="e.g. PT Bali Adventures / John Doe"
+                            class="rounded-[6px] h-9 text-xs"
                             :error="$errors->has('bank_account_name')"
                         />
                         <x-input-error :messages="$errors->get('bank_account_name')" />
@@ -257,7 +248,7 @@ new #[Title('Payout bank account')] class extends Component {
                             wire:model.live.debounce.300ms="bank_account_number"
                             type="text"
                             placeholder="e.g. 1234567890"
-                            class="font-mono"
+                            class="font-mono rounded-[6px] h-9 text-xs"
                             :error="$errors->has('bank_account_number')"
                         />
                         <x-input-error :messages="$errors->get('bank_account_number')" />
@@ -266,31 +257,31 @@ new #[Title('Payout bank account')] class extends Component {
             </div>
         </x-setup-needed>
 
-        <div class="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
-            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
-                <span class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-xs">
+        <div class="p-5 sm:p-6 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-3">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
+                <span class="w-7 h-7 rounded-[6px] bg-[#FFEF4D]/20 text-[#12181E] dark:text-[#FFEF4D] border border-[#FFEF4D]/40 flex items-center justify-center text-xs">
                     <i class="fa-solid fa-wallet"></i>
                 </span>
-                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                     {{ __('How guests pay') }}
                 </h3>
             </div>
 
-            <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p class="text-xs leading-relaxed text-[#5A6578] dark:text-[#9DA4B2]">
                 {{ __('Guests pay on your storefront with QRIS, bank transfer, card, or e-wallet. We hold the money until the trip, then send the listed price to the bank account above. Every plan works this way — including Agency.') }}
             </p>
 
             <div class="flex flex-wrap gap-1.5">
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300">QRIS</span>
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300">Bank transfer</span>
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300">Visa / Mastercard</span>
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300">OVO, DANA, ShopeePay</span>
+                <span class="px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[#F4F5F7] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] text-slate-700 dark:text-slate-300">QRIS</span>
+                <span class="px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[#F4F5F7] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] text-slate-700 dark:text-slate-300">Bank transfer</span>
+                <span class="px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[#F4F5F7] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] text-slate-700 dark:text-slate-300">Visa / Mastercard</span>
+                <span class="px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[#F4F5F7] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] text-slate-700 dark:text-slate-300">OVO, DANA, ShopeePay</span>
             </div>
         </div>
 
         <!-- Submit Button & Success Toast -->
         <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
-            <x-button variant="primary" type="submit" data-test="update-payments-button" class="w-full shadow-sm sm:w-auto" wire:loading.attr="disabled" wire:target="updatePaymentSettings">
+            <x-button variant="primary" type="submit" data-test="update-payments-button" class="w-full shadow-none font-semibold sm:w-auto" wire:loading.attr="disabled" wire:target="updatePaymentSettings">
                 <i class="fa-solid fa-floppy-disk mr-1 text-xs" wire:loading.remove wire:target="updatePaymentSettings"></i>
                 <i class="fa-solid fa-spinner fa-spin mr-1 text-xs" wire:loading wire:target="updatePaymentSettings"></i>
                 <span wire:loading.remove wire:target="updatePaymentSettings">{{ __('Save bank account') }}</span>

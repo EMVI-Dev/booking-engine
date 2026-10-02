@@ -49,7 +49,7 @@
                 </div>
 
                 <div>
-                    <x-label for="contact" :value="__('Email, phone, or lead guest name')" required />
+                    <x-label for="contact" :value="__('Email or phone used to book')" required />
                     <x-input
                         id="contact"
                         name="contact"

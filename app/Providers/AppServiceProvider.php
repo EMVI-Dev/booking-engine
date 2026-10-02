@@ -6,12 +6,17 @@ use App\Http\Middleware\EnsureOnPlatformDomain;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\Package;
 use App\Models\Product;
+use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Livewire;
@@ -39,10 +44,39 @@ class AppServiceProvider extends ServiceProvider
 
         // Livewire re-runs only "persistent" middleware on component actions. Without this,
         // admin-only and platform-only checks ran on page load but not on later button clicks.
+        $this->configureEmailVerificationLinks();
+
         Livewire::addPersistentMiddleware([
             EnsureUserIsAdmin::class,
             EnsureOnPlatformDomain::class,
         ]);
+    }
+
+    /**
+     * Operators are signed in on their slug host, not the platform host they registered on,
+     * so the verification link must open there or it would land on a logged-out session.
+     */
+    protected function configureEmailVerificationLinks(): void
+    {
+        VerifyEmail::createUrlUsing(function (User $notifiable): string {
+            $parameters = [
+                'id' => $notifiable->getKey(),
+                'hash' => sha1($notifiable->getEmailForVerification()),
+            ];
+            $expires = now()->addMinutes((int) config('auth.verification.expire', 60));
+
+            $operator = $notifiable->currentOperator();
+
+            if ($operator === null || blank($operator->slug)) {
+                return URL::temporarySignedRoute('verification.verify', $expires, $parameters);
+            }
+
+            // A generator bound to the desk host, so the signature covers the URL the operator opens.
+            $generator = new UrlGenerator(app('router')->getRoutes(), Request::create($operator->slugDeskRoot()));
+            $generator->setKeyResolver(fn (): array => [config('app.key'), ...(config('app.previous_keys') ?? [])]);
+
+            return $generator->temporarySignedRoute('verification.verify', $expires, $parameters);
+        });
     }
 
     /**

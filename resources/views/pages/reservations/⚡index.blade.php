@@ -578,8 +578,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
     </x-toolbar>
 
     <!-- Reservations Section -->
-    <div
-        class="rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 shadow-xs overflow-hidden">
+    <div class="rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden">
         <!-- Reservations Mobile Responsive Card List (md:hidden) -->
         <div class="md:hidden space-y-3 p-3 transition-opacity duration-200" wire:loading.class="opacity-60">
             @forelse ($this->reservations as $res)
@@ -590,41 +589,35 @@ new #[Title('Bookings & Reservations')] class extends Component {
                     $cleanPhone = \App\Services\PhoneNumber::normalize($res->guest_contact);
                     $waUrl = 'https://wa.me/' . $cleanPhone . '?text=' . urlencode(__('Hello :name, reaching out regarding your reservation (:code) with :agent', ['name' => $res->guest_name, 'code' => $resCode, 'agent' => $this->currentOperator->name]));
                 @endphp
-                <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 space-y-3">
+                <div class="p-3.5 rounded-[8px] bg-white dark:bg-[#151a26] border border-[#E4E5E9] dark:border-[#1E2433] space-y-2.5">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                            <span class="font-medium text-sm text-op-ink truncate">
                                 {{ $res->guest_name }}
                             </span>
                             <a href="{{ route('reservations.show', $res) }}" wire:navigate
-                                class="font-mono text-[10px] font-semibold text-stone-700 dark:text-zinc-200 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0 transition"
+                                class="font-mono text-[10px] font-medium text-op-ink px-1.5 py-0.5 rounded-[4px] bg-[#F7F8F9] dark:bg-[#1A2030] hover:bg-[#EEF0F2] dark:hover:bg-[#222B40] shrink-0 transition"
                                 title="{{ __('Open full reservation page') }}">
                                 #{{ $resCode }}
                             </a>
                         </div>
                         <div class="shrink-0">
-                            @if ($res->status->value === 'confirmed')
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">Confirmed</span>
-                            @elseif ($res->status->value === 'pending_confirmation')
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">Pending Confirmation</span>
-                            @else
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-zinc-300">{{ ucfirst($res->status->value) }}</span>
-                            @endif
+                            <x-status-badge :status="$res->status" />
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-stone-100 dark:border-zinc-800">
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-op-line">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Experience') }}</span>
-                            <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">{{ $bookable->name ?? ($bookable->title ?? __('Custom Booking')) }}</span>
-                            <span class="text-[10px] text-slate-500 block">{{ __(':count Pax', ['count' => $res->pax_count]) }}</span>
+                            <span class="text-[10px] uppercase font-medium text-op-subtle block">{{ __('Experience') }}</span>
+                            <span class="font-medium text-op-ink block truncate">{{ $bookable->name ?? ($bookable->title ?? __('Custom Booking')) }}</span>
+                            <span class="text-[10px] text-op-subtle block">{{ __(':count Pax', ['count' => $res->pax_count]) }}</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">{{ __('Trip Date') }}</span>
-                            <span class="font-bold text-slate-900 dark:text-white block">{{ $res->requested_date->format('M d, Y') }}</span>
-                            <span class="text-[10px] font-mono font-black text-slate-900 dark:text-white block">Rp {{ number_format((float) $res->total_price, 0, ',', '.') }}</span>
+                            <span class="text-[10px] uppercase font-medium text-op-subtle block">{{ __('Trip Date') }}</span>
+                            <span class="font-medium text-op-ink block">{{ $res->requested_date->format('M d, Y') }}</span>
+                            <span class="text-[10px] font-mono font-medium text-op-ink block">Rp {{ number_format((float) $res->total_price, 0, ',', '.') }}</span>
                             @if (!empty($res->terms_snapshot['coupon_code']))
-                                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60">
+                                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[4px] text-[9px] font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60">
                                     <i class="fa-solid fa-tag text-[7px]"></i>
                                     <span>{{ $res->terms_snapshot['coupon_code'] }}</span>
                                 </span>
@@ -632,23 +625,23 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-zinc-800 text-[11px]">
+                    <div class="flex items-center justify-between pt-2 border-t border-op-line text-[11px]">
                         <div>
                             @if ($res->guest_contact)
-                                <a href="{{ $waUrl }}" target="_blank" class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                <a href="{{ $waUrl }}" target="_blank" class="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 py-1">
                                     <i class="fa-brands fa-whatsapp text-xs"></i>
                                     <span>{{ __('Chat') }}</span>
                                 </a>
                             @endif
                         </div>
-                        <x-button :href="route('reservations.show', $res)" wire:navigate variant="secondary" size="sm" class="h-9 px-3 text-xs font-semibold">
+                        <x-button :href="route('reservations.show', $res)" wire:navigate variant="secondary" size="sm">
                             <span>{{ __('Details') }}</span>
                             <i class="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
                         </x-button>
                     </div>
                 </div>
             @empty
-                <div class="p-8 text-center text-xs text-slate-400">
+                <div class="p-8 text-center text-xs text-op-subtle">
                     {{ __('No reservations found') }}
                 </div>
             @endforelse
@@ -658,17 +651,17 @@ new #[Title('Bookings & Reservations')] class extends Component {
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead
-                    class="bg-stone-50 dark:bg-zinc-800 border-b border-stone-200 dark:border-zinc-700 text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-zinc-400">
+                    class="bg-[#F7F8F9] dark:bg-[#151a26] border-b border-[#E4E5E9] dark:border-[#1E2433] text-[11px] font-medium uppercase tracking-wider text-[#60646C] dark:text-[#8C92A4]">
                     <tr>
-                        <th class="px-5 py-3.5">{{ __('Guest & Contact') }}</th>
-                        <th class="px-4 py-3.5">{{ __('Booked Experience') }}</th>
-                        <th class="px-4 py-3.5">{{ __('Trip Date') }}</th>
-                        <th class="px-4 py-3.5">{{ __('Payment') }}</th>
-                        <th class="px-4 py-3.5">{{ __('Status') }}</th>
-                        <th class="px-5 py-3.5 text-right">{{ __('Actions') }}</th>
+                        <th class="px-5 py-3">{{ __('Guest & Contact') }}</th>
+                        <th class="px-4 py-3">{{ __('Booked Experience') }}</th>
+                        <th class="px-4 py-3">{{ __('Trip Date') }}</th>
+                        <th class="px-4 py-3">{{ __('Payment') }}</th>
+                        <th class="px-4 py-3">{{ __('Status') }}</th>
+                        <th class="px-5 py-3 text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-stone-100 dark:divide-zinc-700">
+                <tbody class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                     @forelse ($this->reservations as $res)
                         @php
                             $bookable = $res->bookable;
@@ -687,25 +680,25 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     ]),
                                 );
                         @endphp
-                        <tr class="hover:bg-stone-50/70 dark:hover:bg-zinc-800/80 transition group">
+                        <tr class="hover:bg-[#F7F8F9]/60 dark:hover:bg-[#151a26]/60 transition group">
                             <!-- Guest Info -->
-                            <td class="px-5 py-4">
-                                <div class="space-y-1">
+                            <td class="px-5 py-3.5">
+                                <div class="space-y-0.5">
                                     <div class="flex items-center gap-2">
-                                        <span class="font-bold text-slate-900 dark:text-white">
+                                        <span class="font-medium text-op-ink">
                                             {{ $res->guest_name }}
                                         </span>
                                         <a href="{{ route('reservations.show', $res) }}" wire:navigate
-                                            class="font-mono text-[10px] font-semibold text-stone-700 dark:text-zinc-200 px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-stone-200 dark:hover:bg-zinc-700 transition"
+                                            class="font-mono text-[10px] font-medium text-op-ink px-1.5 py-0.5 rounded-[4px] bg-[#F7F8F9] dark:bg-[#1A2030] hover:bg-[#EEF0F2] dark:hover:bg-[#222B40] transition"
                                             title="{{ __('Open full reservation page') }}">
                                             #{{ $resCode }}
                                         </a>
                                     </div>
                                     <div
-                                        class="flex items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                        class="flex items-center gap-2 text-[11px] text-op-subtle">
                                         @if ($res->guest_contact)
                                             <a href="{{ $waUrl }}" target="_blank"
-                                                class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+                                                class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
                                                 title="{{ __('Chat on WhatsApp') }}">
                                                 <i class="fa-brands fa-whatsapp text-xs"></i>
                                                 {{ $res->guest_contact }}
@@ -713,32 +706,32 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                         @endif
                                         @if ($res->guest_email)
                                             <span
-                                                class="text-slate-400 truncate max-w-[140px]">{{ $res->guest_email }}</span>
+                                                class="text-op-subtle truncate max-w-[140px]">{{ $res->guest_email }}</span>
                                         @endif
                                     </div>
                                 </div>
                             </td>
 
                             <!-- Booked Experience -->
-                            <td class="px-4 py-4">
-                                <div class="space-y-1">
+                            <td class="px-4 py-3.5">
+                                <div class="space-y-0.5">
                                     <div class="flex items-center gap-1.5">
                                         @if ($res->bookable_type === 'package' || $res->bookable_type === \App\Models\Package::class)
                                             <span
-                                                class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-amber-50 text-amber-800 dark:bg-amber-400/10 dark:text-amber-200">
+                                                class="px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-[#FFEF4D]/20 text-[#12181E] dark:bg-[#FFEF4D]/15 dark:text-[#FFEF4D]">
                                                 {{ __('Package') }}
                                             </span>
                                         @else
                                             <span
-                                                class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-slate-100 text-slate-800 dark:bg-[#141821] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
+                                                class="px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium uppercase bg-op-muted text-op-ink border border-op-line">
                                                 {{ __('Product') }}
                                             </span>
                                         @endif
-                                        <p class="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">
+                                        <p class="font-medium text-op-ink truncate max-w-[200px]">
                                             {{ $bookable->name ?? ($bookable->title ?? __('Custom Booking')) }}
                                         </p>
                                     </div>
-                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <p class="text-[11px] text-op-subtle flex items-center gap-1">
                                         <i class="fa-solid fa-users text-[10px]"></i>
                                         {{ __(':count Guests (Pax)', ['count' => $res->pax_count]) }}
                                     </p>
@@ -746,32 +739,32 @@ new #[Title('Bookings & Reservations')] class extends Component {
                             </td>
 
                             <!-- Trip Date -->
-                            <td class="px-4 py-4 whitespace-nowrap">
+                            <td class="px-4 py-3.5 whitespace-nowrap">
                                 <div class="space-y-0.5">
-                                    <p class="font-bold text-slate-800 dark:text-slate-200">
+                                    <p class="font-medium text-op-ink">
                                         {{ $res->requested_date->format('M d, Y') }}
                                     </p>
-                                    <p class="text-[11px] text-slate-500">
+                                    <p class="text-[11px] text-op-subtle">
                                         {{ $res->requested_date->format('l') }}
                                     </p>
                                 </div>
                             </td>
 
                             <!-- Payment Status -->
-                            <td class="px-4 py-4 whitespace-nowrap">
+                            <td class="px-4 py-3.5 whitespace-nowrap">
                                 <div class="space-y-1">
                                     @if ($latestPayment && $latestPayment->isPaid())
                                         <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                             <i class="fa-solid fa-circle-check text-[10px]"></i>
                                             {{ __('Paid') }}
                                         </span>
-                                        <p class="font-bold text-xs text-slate-900 dark:text-white">
+                                        <p class="font-medium text-xs text-op-ink">
                                             Rp {{ number_format((float) $latestPayment->amount, 0, ',', '.') }}
                                         </p>
                                         @if (!empty($res->terms_snapshot['coupon_code']))
                                             <span
-                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[9px] font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60"
                                                 title="{{ __('Coupon used: :code', ['code' => $res->terms_snapshot['coupon_code']]) }}">
                                                 <i class="fa-solid fa-tag text-[8px]"></i>
                                                 <span>{{ $res->terms_snapshot['coupon_code'] }}</span>
@@ -779,16 +772,16 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                         @endif
                                     @elseif ($latestPayment && $latestPayment->status->value === 'pending')
                                         <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[11px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                                             <i class="fa-solid fa-clock text-[10px]"></i>
                                             {{ __('Unpaid') }}
                                         </span>
-                                        <p class="font-bold text-xs text-slate-500">
+                                        <p class="font-medium text-xs text-op-subtle">
                                             Rp {{ number_format((float) $latestPayment->amount, 0, ',', '.') }}
                                         </p>
                                         @if (!empty($res->terms_snapshot['coupon_code']))
                                             <span
-                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[9px] font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60"
                                                 title="{{ __('Coupon used: :code', ['code' => $res->terms_snapshot['coupon_code']]) }}">
                                                 <i class="fa-solid fa-tag text-[8px]"></i>
                                                 <span>{{ $res->terms_snapshot['coupon_code'] }}</span>
@@ -796,7 +789,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                         @endif
                                     @else
                                         <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-[#181d2a] dark:text-slate-400">
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[11px] font-medium bg-op-muted text-op-subtle border border-op-line">
                                             {{ __('No Payment') }}
                                         </span>
                                     @endif
@@ -804,79 +797,27 @@ new #[Title('Bookings & Reservations')] class extends Component {
                             </td>
 
                             <!-- Reservation Status -->
-                            <td class="px-4 py-4 whitespace-nowrap">
-                                @if ($res->status === ReservationStatus::Confirmed)
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        {{ __('Confirmed') }}
-                                    </span>
-                                @elseif ($res->status === ReservationStatus::PendingConfirmation)
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800 animate-pulse">
-                                        <i class="fa-solid fa-hourglass-half text-[10px]"></i>
-                                        {{ __('Needs Confirmation') }}
-                                    </span>
-                                @elseif ($res->status === ReservationStatus::PaymentPending)
-                                    <div class="space-y-1.5">
-                                        <div class="flex items-center gap-1.5">
-                                            <span
-                                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                                <span
-                                                    class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                                {{ __('Payment Hold') }}
-                                            </span>
-                                            @if ($res->hold_expires_at && $res->hold_expires_at->isFuture())
-                                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                                                    ({{ now()->diffInMinutes($res->hold_expires_at) }}m)
-                                                </span>
-                                            @endif
+                            <td class="px-4 py-3.5 whitespace-nowrap">
+                                <div class="space-y-1">
+                                    <x-status-badge :status="$res->status" />
+                                    @if ($res->status === ReservationStatus::PaymentPending && $res->guest_contact && $this->currentOperator?->hasFeature('whatsapp_dispatch'))
+                                        <div>
+                                            <a href="{{ app(\App\Services\WhatsAppDispatchService::class)->getPaymentHoldLinkUrl($res) }}"
+                                                target="_blank"
+                                                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-medium transition cursor-pointer"
+                                                title="{{ __('Send Direct Payment Link to Guest via WhatsApp') }}">
+                                                <i class="fa-brands fa-whatsapp text-xs text-emerald-600 dark:text-emerald-400"></i>
+                                                <span>{{ __('Send Link') }}</span>
+                                            </a>
                                         </div>
-
-                                        @if ($res->guest_contact && $this->currentOperator?->hasFeature('whatsapp_dispatch'))
-                                            <div>
-                                                <a href="{{ app(\App\Services\WhatsAppDispatchService::class)->getPaymentHoldLinkUrl($res) }}"
-                                                    target="_blank"
-                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-bold transition shadow-2xs cursor-pointer"
-                                                    title="{{ __('Send Direct Payment Link to Guest via WhatsApp') }}">
-                                                    <i
-                                                        class="fa-brands fa-whatsapp text-xs text-emerald-600 dark:text-emerald-400"></i>
-                                                    <span>{{ __('Send Payment Link') }}</span>
-                                                </a>
-                                            </div>
-                                        @endif
-                                    </div>
-                                @elseif ($res->status === ReservationStatus::Completed)
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-[#181d2a] dark:text-slate-300 border border-slate-200 dark:border-[#1e2433]">
-                                        <i class="fa-solid fa-flag-checkered text-[10px]"></i>
-                                        {{ __('Completed') }}
-                                    </span>
-                                @elseif ($res->status === ReservationStatus::Declined)
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                        <i class="fa-solid fa-xmark text-[10px]"></i>
-                                        {{ __('Declined') }}
-                                    </span>
-                                @elseif ($res->status === ReservationStatus::Cancelled)
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                        <i class="fa-solid fa-ban text-[10px]"></i>
-                                        {{ __('Cancelled') }}
-                                    </span>
-                                @else
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-400">
-                                        {{ $res->status->label() }}
-                                    </span>
-                                @endif
+                                    @endif
+                                </div>
                             </td>
 
                             <!-- Action Buttons -->
-                            <td class="px-5 py-4 text-right whitespace-nowrap">
+                            <td class="px-5 py-3.5 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end">
-                                    <x-button :href="route('reservations.show', $res)" wire:navigate size="sm" variant="secondary"
-                                        class="h-8 text-xs font-bold">
+                                    <x-button :href="route('reservations.show', $res)" wire:navigate size="sm" variant="secondary">
                                         <span>{{ __('Details') }}</span>
                                         <i class="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
                                     </x-button>
@@ -888,13 +829,13 @@ new #[Title('Bookings & Reservations')] class extends Component {
                             <td colspan="6" class="p-12 text-center">
                                 <div class="max-w-sm mx-auto space-y-3">
                                     <div
-                                        class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto text-xl">
+                                        class="w-10 h-10 rounded-[8px] bg-op-muted text-op-ink flex items-center justify-center mx-auto text-lg">
                                         <i class="fa-solid fa-calendar-xmark"></i>
                                     </div>
-                                    <h4 class="font-bold text-slate-800 dark:text-slate-200">
+                                    <h4 class="font-medium text-op-ink">
                                         {{ __('No reservations found') }}
                                     </h4>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    <p class="text-xs text-op-subtle">
                                         {{ $search !== '' || $statusFilter !== 'all' || $dateFilter !== 'all' ? __('Try clearing filters or search queries to see other bookings.') : __('When guests book packages or standalone items from your storefront, they will appear here.') }}
                                     </p>
                                 </div>
@@ -906,7 +847,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
         </div>
 
         @if ($this->reservations->hasPages())
-            <div class="px-4 py-4 border-t border-slate-100 dark:border-[#1e2433]">
+            <div class="px-4 py-3 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                 {{ $this->reservations->onEachSide(1)->links() }}
             </div>
         @endif
@@ -920,20 +861,20 @@ new #[Title('Bookings & Reservations')] class extends Component {
             $dateSoon = now()->addDays(3)->toDateString();
         @endphp
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/75 backdrop-blur-xs overflow-y-auto"
+            <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto"
                 wire:keydown.escape="closeCreateLinkModal">
-                <div class="relative flex w-full max-w-xl max-h-[92vh] sm:max-h-[88vh] flex-col overflow-hidden rounded-t-3xl border border-op-line bg-op-surface shadow-2xl sm:rounded-3xl"
+                <div class="relative flex w-full max-w-xl max-h-[92vh] sm:max-h-[88vh] flex-col overflow-hidden rounded-t-[16px] sm:rounded-[12px] border border-[#E4E5E9] bg-white shadow-none dark:border-[#1E2433] dark:bg-[#10141d]"
                     @click.outside="if (!$event.target.closest('[data-date-picker-popover]')) $wire.closeCreateLinkModal()">
 
-                    <div class="mx-auto my-2.5 h-1 w-12 shrink-0 rounded-full bg-op-line sm:hidden"></div>
+                    <div class="mx-auto my-2 h-1 w-10 shrink-0 rounded-full bg-[#E4E5E9] dark:bg-[#1E2433] sm:hidden"></div>
 
-                    <div class="flex shrink-0 items-center justify-between gap-3 border-b border-op-line bg-op-muted/70 px-5 py-4 sm:px-6">
+                    <div class="flex shrink-0 items-center justify-between gap-3 border-b border-[#E4E5E9] dark:border-[#1E2433] bg-[#F7F8F9] dark:bg-[#151a26] px-4 py-3 sm:px-5">
                         <div class="flex min-w-0 items-center gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-400 text-brand-foreground">
-                                <i class="fa-solid fa-link text-sm"></i>
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] shadow-none">
+                                <i class="fa-solid fa-link text-xs"></i>
                             </div>
                             <div class="min-w-0">
-                                <h3 class="truncate text-base font-bold leading-tight text-op-ink">
+                                <h3 class="truncate text-[15px] font-medium leading-tight text-op-ink">
                                     {{ $linkCreatedSuccessfully ? __('Link ready') : __('Create a pay link') }}
                                 </h3>
                                 <p class="truncate text-xs text-op-subtle">
@@ -943,20 +884,20 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         </div>
 
                         <button type="button" wire:click="closeCreateLinkModal"
-                            class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-op-subtle hover:bg-op-muted hover:text-op-ink">
-                            <i class="fa-solid fa-xmark text-sm"></i>
+                            class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-op-subtle hover:bg-op-muted hover:text-op-ink">
+                            <i class="fa-solid fa-xmark text-xs"></i>
                         </button>
                     </div>
 
                     @if ($linkCreatedSuccessfully)
-                        <div class="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6"
+                        <div class="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
                             x-data="{ copied: false }"
                             x-init="$nextTick(() => $refs.payLink?.select())">
-                            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center dark:border-emerald-800 dark:bg-emerald-950/40">
-                                <p class="text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                            <div class="rounded-[8px] border border-emerald-200 bg-emerald-50/70 p-3.5 text-center dark:border-emerald-800 dark:bg-emerald-950/40">
+                                <p class="text-sm font-medium text-emerald-900 dark:text-emerald-200">
                                     {{ __('Hold is on for 30 minutes') }}
                                 </p>
-                                <p class="mt-0.5 font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                <p class="mt-0.5 font-mono text-xs font-medium text-emerald-700 dark:text-emerald-300">
                                     #{{ $generatedReservationCode }}
                                     @if ($this->createQuote['title'])
                                         · {{ $this->createQuote['title'] }}
@@ -965,13 +906,13 @@ new #[Title('Bookings & Reservations')] class extends Component {
                             </div>
 
                             <div class="space-y-1.5">
-                                <label class="text-xs font-semibold text-op-subtle">{{ __('Pay link') }}</label>
+                                <label class="text-xs font-medium text-op-subtle">{{ __('Pay link') }}</label>
                                 <div class="flex items-center gap-2">
                                     <input x-ref="payLink" type="text" readonly value="{{ $generatedPaymentUrl }}"
                                         class="op-input min-w-0 flex-1 font-mono text-xs" />
                                     <button type="button"
                                         @click="navigator.clipboard.writeText($refs.payLink.value); copied = true; setTimeout(() => copied = false, 2000)"
-                                        class="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-brand-400 px-4 text-xs font-semibold text-brand-foreground hover:bg-brand-500">
+                                        class="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] px-3 text-xs font-medium text-[#12181E] transition">
                                         <i class="fa-solid" :class="copied ? 'fa-check' : 'fa-copy'"></i>
                                         <span x-text="copied ? '{{ __('Copied') }}' : '{{ __('Copy') }}'"></span>
                                     </button>
@@ -980,15 +921,15 @@ new #[Title('Bookings & Reservations')] class extends Component {
 
                             @if ($generatedWhatsAppUrl)
                                 <a href="{{ $generatedWhatsAppUrl }}" target="_blank" rel="noopener"
-                                    class="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-op-line bg-op-muted text-sm font-semibold text-op-ink hover:bg-op-line">
-                                    <i class="fa-brands fa-whatsapp text-base text-emerald-600"></i>
+                                    class="inline-flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-op-line bg-op-muted text-xs font-medium text-op-ink hover:bg-op-line transition">
+                                    <i class="fa-brands fa-whatsapp text-sm text-emerald-600"></i>
                                     <span>{{ __('Open WhatsApp to paste') }}</span>
                                 </a>
                             @endif
 
                             <div class="flex items-center justify-between gap-3 border-t border-op-line pt-3">
                                 <button type="button" wire:click="openCreateLinkModal"
-                                    class="cursor-pointer text-xs font-semibold text-op-ink hover:underline">
+                                    class="cursor-pointer text-xs font-medium text-op-ink hover:underline">
                                     {{ __('Make another') }}
                                 </button>
                                 <x-button size="sm" variant="secondary" wire:click="closeCreateLinkModal">
@@ -998,10 +939,10 @@ new #[Title('Bookings & Reservations')] class extends Component {
                         </div>
                     @else
                         <form wire:submit="generateBookingLink" class="flex flex-1 flex-col overflow-hidden">
-                            <div class="flex-1 space-y-4 overflow-y-auto overscroll-contain p-5 sm:p-6">
+                            <div class="flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
                                 @if ($this->currentOperator?->isDemo())
-                                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100">
-                                        <p class="font-semibold">{{ __('Sample shop') }}</p>
+                                    <div class="rounded-[8px] border border-amber-200 bg-amber-50/70 p-3.5 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100">
+                                        <p class="font-medium">{{ __('Sample shop') }}</p>
                                         <p class="mt-1 text-xs text-amber-800 dark:text-amber-200/80">
                                             {{ __('Pay links stay off here so visitors are never charged. This is not platform maintenance.') }}
                                         </p>
@@ -1011,8 +952,8 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 @endif
 
                                 @if ($this->experienceOptions === [])
-                                    <div class="rounded-2xl border border-op-line bg-op-muted p-4 text-sm text-op-ink">
-                                        <p class="font-semibold">{{ __('Publish a trip first') }}</p>
+                                    <div class="rounded-[8px] border border-op-line bg-op-muted p-3.5 text-sm text-op-ink">
+                                        <p class="font-medium">{{ __('Publish a trip first') }}</p>
                                         <p class="mt-1 text-xs text-op-subtle">{{ __('This link needs a published package or activity.') }}</p>
                                         <div class="mt-3 flex flex-wrap gap-2">
                                             <x-button size="xs" :href="route('products.create')" wire:navigate>{{ __('Add activity') }}</x-button>
@@ -1029,17 +970,17 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 @endif
 
                                 <div class="space-y-3">
-                                    <div class="flex h-8 w-full overflow-hidden rounded-xl border border-op-line p-0.5">
+                                    <div class="flex h-8 w-full overflow-hidden rounded-[6px] border border-op-line p-0.5">
                                         <button type="button" wire:click="setCreateDatePreset('today')"
-                                            @class(['min-w-0 flex-1 rounded-lg text-[11px] font-semibold cursor-pointer', $createRequestedDate === $dateToday ? 'bg-brand-400 text-brand-foreground' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
+                                            @class(['min-w-0 flex-1 rounded-[4px] text-[11px] font-medium cursor-pointer transition', $createRequestedDate === $dateToday ? 'bg-[#FFEF4D] text-[#12181E]' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
                                             {{ __('Today') }}
                                         </button>
                                         <button type="button" wire:click="setCreateDatePreset('tomorrow')"
-                                            @class(['min-w-0 flex-1 rounded-lg text-[11px] font-semibold cursor-pointer', $createRequestedDate === $dateTomorrow ? 'bg-brand-400 text-brand-foreground' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
+                                            @class(['min-w-0 flex-1 rounded-[4px] text-[11px] font-medium cursor-pointer transition', $createRequestedDate === $dateTomorrow ? 'bg-[#FFEF4D] text-[#12181E]' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
                                             {{ __('Tomorrow') }}
                                         </button>
                                         <button type="button" wire:click="setCreateDatePreset('soon')"
-                                            @class(['min-w-0 flex-1 rounded-lg text-[11px] font-semibold cursor-pointer', $createRequestedDate === $dateSoon ? 'bg-brand-400 text-brand-foreground' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
+                                            @class(['min-w-0 flex-1 rounded-[4px] text-[11px] font-medium cursor-pointer transition', $createRequestedDate === $dateSoon ? 'bg-[#FFEF4D] text-[#12181E]' : 'text-op-subtle hover:bg-op-muted hover:text-op-ink'])>
                                             {{ __('In 3 days') }}
                                         </button>
                                     </div>
@@ -1047,23 +988,23 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_8.75rem]">
                                         <div>
                                             <x-label for="createRequestedDate" :value="__('Date')" required />
-                                            <x-date-picker id="createRequestedDate" class="h-10 py-0 leading-5" wire:model.live="createRequestedDate"
+                                            <x-date-picker id="createRequestedDate" class="h-9 py-0 leading-5" wire:model.live="createRequestedDate"
                                                 min="{{ now()->format('Y-m-d') }}" :blackout-dates="$this->createBookableBlackoutDates" :placeholder="__('Select date...')" :error="$errors->has('createRequestedDate')" />
                                             <x-input-error :messages="$errors->get('createRequestedDate')" />
                                         </div>
                                         <div>
                                             <x-label for="createPaxCount" :value="__('Guests')" required />
-                                            <div class="flex h-10 items-center overflow-hidden rounded-xl border border-op-line bg-op-inset shadow-xs">
+                                            <div class="flex h-9 items-center overflow-hidden rounded-[6px] border border-op-line bg-op-inset shadow-none">
                                                 <button type="button" wire:click="decrementCreatePax"
-                                                    class="flex h-10 w-9 shrink-0 cursor-pointer items-center justify-center text-op-ink hover:bg-op-muted disabled:cursor-not-allowed disabled:opacity-40"
+                                                    class="flex h-9 w-8 shrink-0 cursor-pointer items-center justify-center text-op-ink hover:bg-op-muted disabled:cursor-not-allowed disabled:opacity-40"
                                                     @disabled($createPaxCount <= 1)>
                                                     <i class="fa-solid fa-minus text-xs"></i>
                                                 </button>
                                                 <input id="createPaxCount" wire:model.live="createPaxCount" type="number"
                                                     min="1" max="50"
-                                                    class="h-10 min-w-0 flex-1 border-0 bg-transparent text-center text-sm font-semibold text-op-ink focus:ring-0" />
+                                                    class="h-9 min-w-0 flex-1 border-0 bg-transparent text-center text-sm font-medium text-op-ink focus:ring-0" />
                                                 <button type="button" wire:click="incrementCreatePax"
-                                                    class="flex h-10 w-9 shrink-0 cursor-pointer items-center justify-center text-op-ink hover:bg-op-muted">
+                                                    class="flex h-9 w-8 shrink-0 cursor-pointer items-center justify-center text-op-ink hover:bg-op-muted">
                                                     <i class="fa-solid fa-plus text-xs"></i>
                                                 </button>
                                             </div>
@@ -1080,10 +1021,10 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                 <div class="space-y-3">
                                     @if ($this->recentGuests->isNotEmpty())
                                         <div class="flex flex-wrap items-center gap-1.5">
-                                            <span class="text-[11px] font-semibold text-op-subtle">{{ __('Recent') }}</span>
+                                            <span class="text-[11px] font-medium text-op-subtle">{{ __('Recent') }}</span>
                                             @foreach ($this->recentGuests as $recentGuest)
                                                 <button type="button" wire:click="fillGuestFromCrm('{{ $recentGuest->id }}')"
-                                                    class="h-7 cursor-pointer rounded-full border border-op-line bg-op-muted px-2.5 text-[11px] font-semibold text-op-ink hover:border-brand-400">
+                                                    class="h-6 cursor-pointer rounded-[4px] border border-op-line bg-op-muted px-2 text-[11px] font-medium text-op-ink hover:border-[#D1D3D8] hover:bg-[#F7F8F9] dark:hover:bg-[#1A2030] transition">
                                                     {{ $recentGuest->name }}
                                                 </button>
                                             @endforeach

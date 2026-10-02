@@ -223,6 +223,10 @@ class PlatformCoupon extends Model
             return ['valid' => false, 'reason' => __('This promo code is only valid for a specific operator storefront.')];
         }
 
+        if ($operatorId !== null && $this->scope === 'subscription' && ! $this->redemptionRuleAllows($operatorId)) {
+            return ['valid' => false, 'reason' => __('You have already used this promo code.')];
+        }
+
         if ($this->min_spend > 0 && $subtotal < (float) $this->min_spend) {
             $formattedMin = number_format((float) $this->min_spend, 0, ',', '.');
 
@@ -242,11 +246,7 @@ class PlatformCoupon extends Model
      */
     public function meetsRedemptionRuleFor(Operator $operator): bool
     {
-        return match ($this->redemption_scope) {
-            'first_purchase_only' => ! $this->hasBeenRedeemedBy($operator),
-            'once_per_period' => ! $this->hasBeenRedeemedThisPeriodBy($operator),
-            default => true, // unlimited
-        };
+        return $this->redemptionRuleAllows($operator->id);
     }
 
     /**
@@ -266,8 +266,32 @@ class PlatformCoupon extends Model
     {
         return $this->redemptions()
             ->where('operator_id', $operator->id)
-            ->where('billing_cycle', now()->format('Y-m'))
+            ->where('billing_cycle', OperatorCouponRedemption::currentBillingCycle())
             ->exists();
+    }
+
+    /**
+     * Count a paid subscription redemption: bumps the usage counter and logs who redeemed it
+     * so first_purchase_only and once_per_period rules can be enforced next time.
+     */
+    public function recordRedemptionBy(Operator $operator): void
+    {
+        $this->incrementUsage();
+        OperatorCouponRedemption::record($this, $operator);
+    }
+
+    /**
+     * Apply the redemption_scope rule for one operator.
+     */
+    private function redemptionRuleAllows(string $operatorId): bool
+    {
+        $redemptions = $this->redemptions()->where('operator_id', $operatorId);
+
+        return match ($this->redemption_scope) {
+            'first_purchase_only' => ! $redemptions->exists(),
+            'once_per_period' => ! $redemptions->where('billing_cycle', OperatorCouponRedemption::currentBillingCycle())->exists(),
+            default => true, // unlimited
+        };
     }
 
     /**

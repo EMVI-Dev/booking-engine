@@ -105,15 +105,22 @@ class MediaStore
     }
 
     /**
-     * Store an upload. Raster images are resized and saved as WebP. SVG and PDF stay as uploaded.
+     * Store an upload. Raster images are resized and saved as WebP. PDFs stay as uploaded.
+     * SVG is never stored: it can carry script and is served from the shop's own domain.
      */
     public function storeUpload(UploadedFile $file, string $directory, int $maxWidth = self::COVER_MAX_WIDTH): string
     {
         $extension = strtolower((string) $file->getClientOriginalExtension());
         $mime = (string) $file->getMimeType();
 
-        if ($extension === 'svg' || $mime === 'image/svg+xml' || $mime === 'application/pdf' || $extension === 'pdf') {
-            return $file->store($directory, static::diskName());
+        if ($mime === 'application/pdf' && $extension === 'pdf') {
+            $path = $file->store($directory, static::diskName());
+
+            if ($path === false) {
+                throw new RuntimeException('Could not store the uploaded file.');
+            }
+
+            return $path;
         }
 
         $contents = file_get_contents($file->getRealPath());

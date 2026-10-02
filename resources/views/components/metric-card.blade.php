@@ -1,6 +1,7 @@
 @props([
     'label',
     'value' => null,
+    'suffix' => null,
     'hint' => null,
     'icon' => null,
     'tone' => 'neutral',

@@ -98,3 +98,19 @@ test('catalog pages emit absolute share images', function () {
         ->assertSee('http://whitebox-reef.booking.test/storage/operators/covers/mask.jpg', false)
         ->assertDontSee('content="/storage/', false);
 });
+
+test('operator text cannot close the structured data script tag', function () {
+    $this->operator->update(['bio' => 'Reef trips</script><script>alert(1)</script>']);
+    Cache::flush();
+
+    $html = $this->get($this->host.'/', $this->headers)->assertOk()->getContent();
+
+    preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $html, $blocks);
+
+    expect($blocks[1])->not->toBeEmpty();
+
+    foreach ($blocks[1] as $json) {
+        expect($json)->not->toContain('<script')
+            ->and(json_decode($json, true))->toBeArray();
+    }
+});

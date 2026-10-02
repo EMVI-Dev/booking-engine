@@ -70,13 +70,23 @@ test('a matching code and phone opens the reservation e-ticket', function () {
         ->assertRedirect(route('storefront.reservation.ticket', $this->reservation));
 });
 
-test('a matching code and guest name opens the reservation e-ticket', function () {
+test('a phone typed in international format still matches', function () {
     $this->post('http://bali-sea.booking.test/find-booking', [
         'code' => $this->reservation->code,
-        'contact' => 'Sarah Connor',
+        'contact' => '+62 812-3456-7890',
     ], $this->headers)
         ->assertRedirect(route('storefront.reservation.ticket', $this->reservation));
 });
+
+test('a guest name or a fragment of the phone no longer opens the e-ticket', function (string $contact) {
+    $this->from('http://bali-sea.booking.test/find-booking')
+        ->post('http://bali-sea.booking.test/find-booking', [
+            'code' => $this->reservation->code,
+            'contact' => $contact,
+        ], $this->headers)
+        ->assertRedirect('http://bali-sea.booking.test/find-booking')
+        ->assertSessionHasErrors('code');
+})->with(['Sarah Connor', '7890', '1', 'SARAH@example.co']);
 
 test('wrong contact details do not reveal that the booking exists', function () {
     $this->from('http://bali-sea.booking.test/find-booking')

@@ -61,7 +61,7 @@ class OperatorOnboardingService
             // Ensure slug uniqueness
             $baseSlug = $slug;
             $counter = 1;
-            while (Operator::where('slug', $slug)->exists()) {
+            while (Operator::isReservedSlug($slug) || Operator::where('slug', $slug)->exists()) {
                 $slug = $baseSlug.'-'.$counter++;
             }
 

@@ -87,10 +87,7 @@ class LoginResponse implements LoginResponseContract
             absolute: false,
         );
 
-        $port = $request->getPort();
-        $portSuffix = ($port && ! in_array($port, [80, 443], true)) ? ':'.$port : '';
-
-        $deskUrl = $request->getScheme().'://'.$operator->slug.'.'.$platformDomain.$portSuffix.$relativeHandoff;
+        $deskUrl = $operator->slugDeskRoot($platformDomain).$relativeHandoff;
 
         return redirect()->away($deskUrl);
     }
