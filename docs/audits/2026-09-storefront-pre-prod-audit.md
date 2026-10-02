@@ -2,6 +2,8 @@
 
 _Guest shop only · desktop + mobile · templates + StorefrontController + storefront tests · 2026-09-13_
 
+> Point-in-time audit. Some items may be fixed since; check the code before acting on any item. Later security work on the shop (find-booking hardening, JSON-LD escaping, SVG uploads) is in the [2026-10 backend audit](2026-10-backend-audit.md).
+
 > **Ship advice:** Flow is production-capable. Fix the five P0 items before push — especially mobile safe-area and reservation noindex. P1 can land in a fast follow if you need to ship tonight.
 
 **Summary:** P0 ×5 (before prod) · P1 ×9 (should fix soon) · P2 ×8 (polish backlog) · 21 storefront tests green

@@ -114,7 +114,7 @@ class MediaStore
         $mime = (string) $file->getMimeType();
 
         if ($mime === 'application/pdf' && $extension === 'pdf') {
-            $path = $file->store($directory, static::diskName());
+            $path = $file->store($directory, ['disk' => static::diskName()] + $this->writeOptions('application/pdf'));
 
             if ($path === false) {
                 throw new RuntimeException('Could not store the uploaded file.');
@@ -163,12 +163,28 @@ class MediaStore
 
         $path = trim($directory, '/').'/'.Str::ulid().'.webp';
 
-        static::disk()->put($path, $webp, [
-            'visibility' => 'public',
-            'mimetype' => 'image/webp',
-        ]);
+        if (! static::disk()->put($path, $webp, $this->writeOptions('image/webp'))) {
+            throw new RuntimeException('Could not store the image.');
+        }
 
         return $path;
+    }
+
+    /**
+     * Local disks need a public file mode; object storage (R2) has no ACLs and serves
+     * public files from the bucket's public domain, so no visibility is sent there.
+     *
+     * @return array<string, string>
+     */
+    protected function writeOptions(string $mimeType): array
+    {
+        $options = ['mimetype' => $mimeType];
+
+        if (config('filesystems.disks.'.static::diskName().'.driver') === 'local') {
+            $options['visibility'] = 'public';
+        }
+
+        return $options;
     }
 
     protected function resizeToMaxWidth(GdImage $image, int $maxWidth): GdImage

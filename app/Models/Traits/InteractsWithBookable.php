@@ -78,22 +78,6 @@ trait InteractsWithBookable
         return (string) $this->operator_id;
     }
 
-    /**
-     * @deprecated Use getOperator() instead.
-     */
-    public function getAgent(): Operator
-    {
-        return $this->getOperator();
-    }
-
-    /**
-     * @deprecated Use getOperatorId() instead.
-     */
-    public function getAgentId(): string
-    {
-        return $this->getOperatorId();
-    }
-
     public function getFreeCancellationHours(): int
     {
         return (int) $this->free_cancellation_hours;

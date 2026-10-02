@@ -65,6 +65,10 @@ return [
     |
     */
 
+    // Proxies whose X-Forwarded-* headers are trusted: empty keeps the local reverse proxy
+    // only; "*" on Laravel Cloud (the app is only reachable through Cloud's edge).
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
     // Every operator is in Bali for the MVP: "today", trip days, free-cancel cutoffs,
     // escrow release and the scheduler all follow WITA (UTC+8).
     'timezone' => env('APP_TIMEZONE', 'Asia/Makassar'),

@@ -44,8 +44,8 @@ Schedule::command('subscriptions:return-unpaid-to-free')->dailyAt('00:45')->with
 // 10. Flag guest payments that never reached an operator wallet
 Schedule::command('platform:match-payments')->dailyAt('03:00')->withoutOverlapping()->onOneServer();
 
-// 11. Record the padlock after Caddy has issued HTTPS for a connected address
-Schedule::command('domains:probe-ssl')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+// 11. Re-check operator website addresses waiting for DNS or their padlock (Laravel Cloud)
+Schedule::command('domains:check')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 
 // 12. Refresh cached Google listing reviews so the shop does not call Google on each page view
 Schedule::command('google:refresh-reviews')->dailyAt('04:00')->withoutOverlapping()->onOneServer();

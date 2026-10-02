@@ -57,14 +57,6 @@ class StorefrontController extends Controller
     }
 
     /**
-     * @deprecated Use resolveCurrentOperator() instead.
-     */
-    protected function resolveCurrentAgent(Request $request): ?Operator
-    {
-        return $this->resolveCurrentOperator($request);
-    }
-
-    /**
      * Check if operator storefront is active or return suspended/pending response.
      */
     protected function checkOperatorStatus(?Operator $agent): ?\Symfony\Component\HttpFoundation\Response
@@ -99,7 +91,7 @@ class StorefrontController extends Controller
      */
     public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
 
         // If no agent domain is active, render central platform landing page
         if (! $agent) {
@@ -140,7 +132,7 @@ class StorefrontController extends Controller
      */
     public function allPackages(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
 
         if (! $agent) {
             abort(404);
@@ -192,7 +184,7 @@ class StorefrontController extends Controller
      */
     public function allProducts(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
 
         if (! $agent) {
             abort(404);
@@ -246,7 +238,7 @@ class StorefrontController extends Controller
      */
     public function showPackage(Request $request, string $slug): View|\Symfony\Component\HttpFoundation\Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
 
         if (! $agent) {
             abort(404);
@@ -273,7 +265,7 @@ class StorefrontController extends Controller
      */
     public function showProduct(Request $request, string $slug): View|\Symfony\Component\HttpFoundation\Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
 
         if (! $agent) {
             abort(404);
@@ -300,7 +292,7 @@ class StorefrontController extends Controller
      */
     public function showTerms(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
 
         if (! $agent) {
             abort(404);
@@ -337,14 +329,14 @@ class StorefrontController extends Controller
         $paymentId = (string) $request->query('payment');
 
         /** @var Reservation $reservation */
-        $reservation = Reservation::query()->with(['agent', 'bookable'])->findOrFail($reservationId);
+        $reservation = Reservation::query()->with(['operator', 'bookable'])->findOrFail($reservationId);
         /** @var Payment $payment */
         $payment = Payment::query()->where('reservation_id', $reservation->id)->findOrFail($paymentId);
 
         return view('storefront.payment-simulate', [
             'reservation' => $reservation,
             'payment' => $payment,
-            'agent' => $reservation->agent,
+            'agent' => $reservation->operator,
         ]);
     }
 
@@ -392,18 +384,18 @@ class StorefrontController extends Controller
     {
         $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
 
-        $reservation->load(['agent', 'bookable', 'latestPayment']);
+        $reservation->load(['operator', 'bookable', 'latestPayment']);
 
         // Auto-check live status with DOKU if still pending
         if ($reservation->status === ReservationStatus::PaymentPending && $reservation->latestPayment) {
             $paymentService->syncPaymentStatus($reservation->latestPayment);
             $reservation->refresh();
-            $reservation->load(['agent', 'bookable', 'latestPayment']);
+            $reservation->load(['operator', 'bookable', 'latestPayment']);
         }
 
         return view('storefront.confirmation', [
             'reservation' => $reservation,
-            'agent' => $reservation->agent,
+            'agent' => $reservation->operator,
         ]);
     }
 
@@ -414,7 +406,7 @@ class StorefrontController extends Controller
     {
         $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
 
-        $reservation->load(['agent', 'bookable', 'latestPayment']);
+        $reservation->load(['operator', 'bookable', 'latestPayment']);
 
         if (! $reservation->hasValidTicket()) {
             return redirect()->route('storefront.reservation.receipt', $reservation);
@@ -422,7 +414,7 @@ class StorefrontController extends Controller
 
         return view('storefront.e-ticket', [
             'reservation' => $reservation,
-            'agent' => $reservation->agent,
+            'agent' => $reservation->operator,
         ]);
     }
 
@@ -433,9 +425,9 @@ class StorefrontController extends Controller
     {
         $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
 
-        $reservation->load(['operator', 'agent', 'bookable', 'latestPayment']);
+        $reservation->load(['operator', 'bookable', 'latestPayment']);
 
-        ($reservation->operator ?? $reservation->agent)?->assertCheckoutAllowed();
+        $reservation->operator?->assertCheckoutAllowed();
 
         if ($reservation->status === ReservationStatus::Confirmed || $reservation->latestPayment?->isPaid()) {
             return redirect()->route('storefront.reservation.receipt', $reservation);
@@ -588,7 +580,7 @@ class StorefrontController extends Controller
      */
     public function robots(Request $request): Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
         $baseUrl = $request->getSchemeAndHttpHost();
 
         if ($agent?->isDemo()) {
@@ -637,7 +629,7 @@ class StorefrontController extends Controller
      */
     public function sitemap(Request $request): Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
         $baseUrl = $request->getSchemeAndHttpHost();
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
@@ -697,7 +689,7 @@ class StorefrontController extends Controller
      */
     public function llmsTxt(Request $request): Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
         $baseUrl = $request->getSchemeAndHttpHost();
 
         if (! $agent) {
@@ -793,7 +785,7 @@ class StorefrontController extends Controller
      */
     public function llmsFullTxt(Request $request): Response
     {
-        $agent = $this->resolveCurrentAgent($request);
+        $agent = $this->resolveCurrentOperator($request);
         $baseUrl = $request->getSchemeAndHttpHost();
 
         if (! $agent) {

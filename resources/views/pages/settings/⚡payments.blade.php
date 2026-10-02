@@ -13,15 +13,6 @@ new #[Title('Payout bank account')] class extends Component {
     public string $bank_account_number = '';
     public string $bank_account_ref = '';
 
-    // Payment Processing Method: 'platform' (Built-in Doku Managed) vs 'custom' (BYO Merchant Account)
-    public string $payment_mode = 'platform';
-
-    // Custom Gateway Configuration
-    public string $selected_gateway_provider = 'doku'; // doku (exclusive platform gateway)
-    public string $gateway_environment = 'sandbox'; // sandbox, production
-    public string $gateway_client_id = '';
-    public string $gateway_shared_key = '';
-
     public bool $saved = false;
 
     public bool $highlightPayoutBank = false;
@@ -38,15 +29,6 @@ new #[Title('Payout bank account')] class extends Component {
             $this->bank_account_name = $operator->bank_account_name ?? '';
             $this->bank_account_number = $operator->bank_account_number ?? '';
             $this->bank_account_ref = $operator->bank_account_ref ?? '';
-
-            $settings = $operator->settings ?? [];
-            $gateway = $settings['payment_gateway'] ?? [];
-
-            $this->payment_mode = 'platform';
-            $this->selected_gateway_provider = 'doku';
-            $this->gateway_environment = (string) ($gateway['environment'] ?? 'sandbox');
-            $this->gateway_client_id = (string) ($gateway['client_id'] ?? '');
-            $this->gateway_shared_key = (string) ($gateway['shared_key'] ?? '');
         }
 
         $this->syncPayoutHighlight();
@@ -74,36 +56,18 @@ new #[Title('Payout bank account')] class extends Component {
             return;
         }
 
-        $isCustom = $this->payment_mode === 'custom';
-
-        if ($isCustom) {
-            $this->addError('payment_mode', __('Guests always pay through EMVI. The Agency plan adds extra tools, not your own payment account.'));
-
-            return;
-        }
-
         $validated = $this->validate([
             'bank_provider' => ['required', 'string', 'max:100'],
             'bank_account_name' => ['required', 'string', 'max:255'],
             'bank_account_number' => ['required', 'string', 'max:50'],
-            'payment_mode' => ['required', 'string', 'in:platform,custom'],
-            'selected_gateway_provider' => [$isCustom ? 'required' : 'nullable', 'string', 'in:doku'],
-            'gateway_environment' => [$isCustom ? 'required' : 'nullable', 'string', 'in:sandbox,production'],
-            'gateway_client_id' => [$isCustom ? 'required' : 'nullable', 'string', 'max:255'],
-            'gateway_shared_key' => [$isCustom ? 'required' : 'nullable', 'string', 'max:255'],
         ]);
 
         /** @var Operator|null $operator */
         $operator = $this->currentOperator;
         if ($operator) {
+            // Guests always pay through EMVI's DOKU account; operators only set where payouts go.
             $settings = $operator->settings ?? [];
-            $settings['payment_gateway'] = [
-                'provider' => 'doku',
-                'use_custom_credentials' => $isCustom,
-                'environment' => $isCustom ? $validated['gateway_environment'] : 'production',
-                'client_id' => $isCustom ? ($validated['gateway_client_id'] ?? null) : null,
-                'shared_key' => $isCustom ? ($validated['gateway_shared_key'] ?? null) : null,
-            ];
+            unset($settings['payment_gateway']);
 
             $bankRef = ($validated['bank_provider'] && $validated['bank_account_number'])
                 ? "{$validated['bank_provider']} - {$validated['bank_account_number']}" . ($validated['bank_account_name'] ? " ({$validated['bank_account_name']})" : '')

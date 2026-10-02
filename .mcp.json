@@ -22,7 +22,7 @@
                 "tailwindcss-mcp"
             ],
             "env": {
-                "TAILWIND_CONFIG_PATH": "/Users/mastervarol/Herd/booking",
+                "TAILWIND_CONFIG_PATH": "/Users/mastervarol/Herd/travelengine",
                 "TAILWIND_VERSION": "4"
             }
         }

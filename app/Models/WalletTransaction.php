@@ -68,16 +68,6 @@ class WalletTransaction extends Model
     }
 
     /**
-     * @deprecated Use operator() instead.
-     *
-     * @return BelongsTo<Operator, $this>
-     */
-    public function agent(): BelongsTo
-    {
-        return $this->operator();
-    }
-
-    /**
      * @return BelongsTo<Reservation, $this>
      */
     public function reservation(): BelongsTo

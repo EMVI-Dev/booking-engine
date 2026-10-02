@@ -54,7 +54,6 @@ test('payment settings can be configured to use built-in platform Doku payment',
         ->set('bank_provider', 'BCA')
         ->set('bank_account_name', 'PT Paradise Expeditions')
         ->set('bank_account_number', '1234567890')
-        ->set('payment_mode', 'platform')
         ->call('updatePaymentSettings')
         ->assertHasNoErrors()
         ->assertDispatched('toast', message: __('Payout bank saved. :bank account ending :last.', [
@@ -69,27 +68,24 @@ test('payment settings can be configured to use built-in platform Doku payment',
     expect($this->operator->bank_provider)->toBe('BCA')
         ->and($this->operator->bank_account_name)->toBe('PT Paradise Expeditions')
         ->and($this->operator->bank_account_number)->toBe('1234567890')
-        ->and($this->operator->settings['payment_gateway']['provider'])->toBe('doku')
-        ->and($this->operator->settings['payment_gateway']['use_custom_credentials'])->toBeFalse();
+        ->and($this->operator->settings)->not->toHaveKey('payment_gateway');
 });
 
-test('agency operators cannot connect a private merchant gateway', function () {
+test('there is no private merchant gateway option, even on agency', function () {
     $enterprisePlan = Plan::factory()->enterprise()->create();
-    $this->operator->update(['plan_id' => $enterprisePlan->id]);
+    $this->operator->update(['plan_id' => $enterprisePlan->id, 'settings' => ['payment_gateway' => ['use_custom_credentials' => true, 'client_id' => 'OLD']]]);
 
-    Livewire::test('pages::settings.payments')
+    $component = Livewire::test('pages::settings.payments');
+
+    expect(property_exists($component->instance(), 'gateway_client_id'))->toBeFalse()
+        ->and(property_exists($component->instance(), 'payment_mode'))->toBeFalse();
+
+    $component
         ->set('bank_provider', 'Mandiri')
         ->set('bank_account_name', 'PT Paradise Expeditions')
         ->set('bank_account_number', '9876543210')
-        ->set('payment_mode', 'custom')
-        ->set('selected_gateway_provider', 'doku')
-        ->set('gateway_environment', 'production')
-        ->set('gateway_client_id', 'MALLID_CUSTOM_999')
-        ->set('gateway_shared_key', 'DOKU_CUSTOM_KEY_888')
         ->call('updatePaymentSettings')
-        ->assertHasErrors(['payment_mode']);
+        ->assertHasNoErrors();
 
-    $this->operator->refresh();
-
-    expect($this->operator->settings['payment_gateway']['use_custom_credentials'] ?? false)->toBeFalse();
+    expect($this->operator->fresh()->settings)->not->toHaveKey('payment_gateway');
 });

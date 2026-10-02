@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Local reverse proxy by default; TRUSTED_PROXIES (config app.trusted_proxies) widens it
+        // in AppServiceProvider, e.g. * on Laravel Cloud.
         $middleware->trustProxies(at: [
             '127.0.0.1',
             '::1',

@@ -31,7 +31,7 @@ class SendDepartureRemindersCommand extends Command
         $this->info('Scanning for upcoming trips departing in the next 24-48 hours...');
 
         $upcomingReservations = Reservation::query()
-            ->with(['agent', 'bookable'])
+            ->with(['operator', 'bookable'])
             ->where('status', ReservationStatus::Confirmed)
             ->whereNotNull('guest_email')
             ->where('guest_email', '!=', '')

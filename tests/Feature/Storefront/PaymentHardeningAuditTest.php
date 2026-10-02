@@ -18,6 +18,7 @@ use App\Models\SubscriptionPayment;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\DokuPaymentService;
+use App\Services\Integrations\DokuClient;
 use App\Services\WalletService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
@@ -332,26 +333,26 @@ test('doku webhook rejects zero-amount payload as underpayment for guest booking
         ->and($this->reservation->fresh()->status)->toBe(ReservationStatus::PaymentPending);
 });
 
-test('doku service sanitizes customer phone numbers to numeric digits only', function () {
-    $service = app(DokuPaymentService::class);
+test('doku client sanitizes customer phone numbers to numeric digits only', function () {
+    $client = app(DokuClient::class);
 
-    expect($service->sanitizePhoneNumber('+62 812-3456-7890'))->toBe('6281234567890')
-        ->and($service->sanitizePhoneNumber('0812 9988 7766'))->toBe('081299887766')
-        ->and($service->sanitizePhoneNumber(''))->toBe('081234567890')
-        ->and($service->sanitizePhoneNumber('123'))->toBe('081234567890');
+    expect($client->checkoutPhone('+62 812-3456-7890'))->toBe('6281234567890')
+        ->and($client->checkoutPhone('0812 9988 7766'))->toBe('081299887766')
+        ->and($client->checkoutPhone(''))->toBe('081234567890')
+        ->and($client->checkoutPhone('123'))->toBe('081234567890');
 });
 
-test('doku service normalizes bank provider codes for BI-FAST disbursement', function () {
-    $service = app(DokuPaymentService::class);
+test('doku client normalizes bank provider codes for BI-FAST disbursement', function () {
+    $client = app(DokuClient::class);
 
-    expect($service->normalizeBankCode('BCA'))->toBe('BCA')
-        ->and($service->normalizeBankCode('BCA (Bank Central Asia)'))->toBe('BCA')
-        ->and($service->normalizeBankCode('Mandiri'))->toBe('MANDIRI')
-        ->and($service->normalizeBankCode('Bank Mandiri'))->toBe('MANDIRI')
-        ->and($service->normalizeBankCode('CIMB Niaga'))->toBe('CIMB')
-        ->and($service->normalizeBankCode('Bank Jago'))->toBe('JAGO')
-        ->and($service->normalizeBankCode('BSI (Bank Syariah Indonesia)'))->toBe('BSI')
-        ->and($service->normalizeBankCode('SeaBank'))->toBe('SEABANK');
+    expect($client->bankCode('BCA'))->toBe('BCA')
+        ->and($client->bankCode('BCA (Bank Central Asia)'))->toBe('BCA')
+        ->and($client->bankCode('Mandiri'))->toBe('MANDIRI')
+        ->and($client->bankCode('Bank Mandiri'))->toBe('MANDIRI')
+        ->and($client->bankCode('CIMB Niaga'))->toBe('CIMB')
+        ->and($client->bankCode('Bank Jago'))->toBe('JAGO')
+        ->and($client->bankCode('BSI (Bank Syariah Indonesia)'))->toBe('BSI')
+        ->and($client->bankCode('SeaBank'))->toBe('SEABANK');
 });
 
 test('doku webhook captures payment channel into subscription breakdown and booking split details', function () {

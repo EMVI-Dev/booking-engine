@@ -31,7 +31,7 @@ class SendPostTripReviewRequestsCommand extends Command
         $this->info('Scanning for completed trips needing review requests...');
 
         $eligibleReservations = Reservation::query()
-            ->with(['agent', 'bookable'])
+            ->with(['operator', 'bookable'])
             ->whereIn('status', [ReservationStatus::Confirmed, ReservationStatus::Completed])
             ->whereNotNull('guest_email')
             ->where('guest_email', '!=', '')
@@ -43,7 +43,7 @@ class SendPostTripReviewRequestsCommand extends Command
         $skippedCount = 0;
 
         foreach ($eligibleReservations as $reservation) {
-            $agent = $reservation->agent;
+            $agent = $reservation->operator;
 
             if (! $agent || ! $agent->hasFeature('automated_review_requests')) {
                 $skippedCount++;

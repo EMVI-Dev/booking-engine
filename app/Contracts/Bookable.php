@@ -17,10 +17,6 @@ interface Bookable
 
     public function getOperatorId(): string;
 
-    public function getAgent(): Operator;
-
-    public function getAgentId(): string;
-
     public function getPrice(): float;
 
     public function getFreeCancellationHours(): int;

@@ -7,8 +7,8 @@ use App\Models\User;
 use Database\Seeders\AdminUserSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use RuntimeException;
 
 test('every table has exactly one create migration and no alter or drop migrations', function () {
     $creates = [];
@@ -131,4 +131,18 @@ test('demo catalog seeder writes reservation public tokens without model events'
 
     expect(Reservation::query()->where('code', 'RSV-DEMO-001')->value('public_token'))->toBeString()
         ->and(Reservation::query()->where('code', 'RSV-DEMO-002')->value('public_token'))->toBeString();
+});
+
+test('the admin seeder reads cached config, not only env, so it works on Laravel Cloud', function () {
+    $this->app['env'] = 'production';
+    config(['platform.admin_email' => 'ops@travelengine.id', 'platform.admin_password' => 'from-config-secret']);
+
+    (new AdminUserSeeder)->run();
+
+    $this->app['env'] = 'testing';
+
+    $admin = User::query()->where('email', 'ops@travelengine.id')->first();
+
+    expect($admin?->is_admin)->toBeTrue()
+        ->and(Hash::check('from-config-secret', (string) $admin?->password))->toBeTrue();
 });

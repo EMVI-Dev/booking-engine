@@ -4,6 +4,7 @@ use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\PlatformSetting;
 use App\Models\User;
+use App\Services\Integrations\DokuClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -225,57 +226,35 @@ test('saving platform settings does not change maintenance without confirmation'
     expect(PlatformSetting::current()->fresh()->isPlatformMaintenance())->toBeFalse();
 });
 
-test('platform setting resolves doku mode strictly from config', function () {
-    config(['doku.default_mode' => 'live']);
-    expect(PlatformSetting::current()->getDokuMode()->value)->toBe('live');
+test('doku mode comes strictly from config', function () {
+    config(['doku.mode' => 'live']);
+    expect(DokuClient::mode()->value)->toBe('live');
 
-    config(['doku.default_mode' => 'sandbox']);
-    expect(PlatformSetting::current()->getDokuMode()->value)->toBe('sandbox');
+    config(['doku.mode' => 'sandbox']);
+    expect(DokuClient::mode()->value)->toBe('sandbox');
 });
 
-test('platform setting ignores database values for doku mode', function () {
-    config(['doku.default_mode' => 'sandbox']);
-
-    $platform = PlatformSetting::current();
-    $platform->update([
-        'settings' => [
-            'doku_mode' => 'live',
-            'doku' => ['mode' => 'live'],
-        ],
-    ]);
-
-    expect($platform->fresh()->getDokuMode()->value)->toBe('sandbox');
-});
-
-test('platform settings reads doku credentials strictly from config and ignores database values', function () {
+test('doku credentials are read from config only and never stored in platform settings', function () {
     config([
-        'doku.sandbox.client_id' => 'cfg-sandbox-client',
-        'doku.sandbox.secret_key' => 'cfg-sandbox-secret',
+        'doku.mode' => 'live',
         'doku.live.client_id' => 'cfg-live-client',
         'doku.live.secret_key' => 'cfg-live-secret',
     ]);
 
     $platform = PlatformSetting::current();
-    $platform->update([
-        'settings' => [
-            'doku' => [
-                'sandbox' => [
-                    'client_id' => 'db-leaked-client',
-                    'secret_key' => 'db-leaked-secret',
-                ],
-                'live' => [
-                    'client_id' => 'db-leaked-client',
-                    'secret_key' => 'db-leaked-secret',
-                ],
-            ],
-        ],
+    $platform->update(['settings' => array_merge($platform->settings ?? [], [
+        'doku' => ['live' => ['client_id' => 'db-leaked-client', 'secret_key' => 'db-leaked-secret']],
+    ])]);
+
+    expect(app(DokuClient::class)->credentials())->toMatchArray([
+        'client_id' => 'cfg-live-client',
+        'secret_key' => 'cfg-live-secret',
     ]);
 
-    $fresh = $platform->fresh();
-    expect($fresh->getDokuSandboxClientId())->toBe('cfg-sandbox-client')
-        ->and($fresh->getDokuSandboxSecretKey())->toBe('cfg-sandbox-secret')
-        ->and($fresh->getDokuLiveClientId())->toBe('cfg-live-client')
-        ->and($fresh->getDokuLiveSecretKey())->toBe('cfg-live-secret');
+    PlatformSetting::query()->delete();
+
+    expect(PlatformSetting::current()->settings)->not->toHaveKey('doku')
+        ->and(json_encode(PlatformSetting::current()->settings))->not->toContain('cfg-live-secret');
 });
 
 test('platform admin can view operators management directory', function () {

@@ -54,16 +54,6 @@ class AvailabilityBlock extends Model
     }
 
     /**
-     * @deprecated Use operator() instead.
-     *
-     * @return BelongsTo<Operator, $this>
-     */
-    public function agent(): BelongsTo
-    {
-        return $this->operator();
-    }
-
-    /**
      * @return BelongsTo<Product, $this>
      */
     public function product(): BelongsTo

@@ -28,6 +28,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'laravel_cloud' => [
+        'token' => env('LARAVEL_CLOUD_API_TOKEN'),
+        'environment' => env('LARAVEL_CLOUD_ENVIRONMENT_ID'),
+        'base_url' => env('LARAVEL_CLOUD_API_URL', 'https://cloud.laravel.com/api'),
+    ],
+
     'google' => [
         'places_key' => env('GOOGLE_PLACES_API_KEY'),
         'platform_analytics_id' => env('PLATFORM_GOOGLE_ANALYTICS_ID', 'G-WBQZPFT82S'),

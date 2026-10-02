@@ -60,16 +60,6 @@ class Guest extends Model
     }
 
     /**
-     * @deprecated Use operator() instead.
-     *
-     * @return BelongsTo<Operator, $this>
-     */
-    public function agent(): BelongsTo
-    {
-        return $this->operator();
-    }
-
-    /**
      * @return HasMany<Reservation, $this>
      */
     public function reservations(): HasMany
@@ -260,7 +250,7 @@ class Guest extends Model
             return '#';
         }
 
-        $agent = $agentName ?: ($this->agent->name ?? 'Tour Operator');
+        $agent = $agentName ?: ($this->operator->name ?? 'Tour Operator');
         $msg = __('Hello :name, reaching out from :agent regarding your reservations', [
             'name' => $this->name,
             'agent' => $agent,

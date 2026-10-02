@@ -1,4 +1,6 @@
-# Booking Engine Platform — V1 Spec (Rev. 24)
+# Booking Engine Platform — V1 Spec (Rev. 25)
+
+_Last reviewed: 2026-10-02_
 
 ## Vision & Audience
 
@@ -54,21 +56,24 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 - **Billing Portal & Clean Invoice Printing (`/settings/billing`)**:
     - Operational tab order: *Payment History & Invoices*, *Payouts & Disbursements*, and *Subscription Plan & Tier*.
     - Real gateway label resolution (DOKU, Admin Complimentary) and clean printable invoice modal via `#invoice-print-portal`.
-- **Operator Subdomain Handoff**:
+- **Operator Subdomain Handoff & Sign-up**:
     - Authenticating on apex domain seamlessly signs the operator into their branded subdomain desk (`{slug}.travelengine.id/auth/login-handoff`).
+    - New sign-ups must verify their email before using the desk. The verification link opens on their slug host. Team invitees are verified when they set their password from the emailed link.
+    - Shop addresses are unique, and reserved platform names (`admin`, `www`, `api`, `mail`, `demo`, …) cannot be claimed.
 - **Native Mobile Navigation Bar & Mobile Card Lists (`md:hidden`)**:
     - Sticky glassmorphism mobile bottom navigation bar (`lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16`) for 1-thumb operations.
     - All data tables convert into responsive mobile cards on smartphone screens (`< 768px`).
 
 ### 3. Branded Storefront & Guest Experience
 - **Subdomain & Custom Domain Routing**:
-    - Default: `slug.travelengine.id` (DNS only to Lightsail). Platform apex `travelengine.id` is Cloudflare-proxied.
-    - Custom Domain (Agency): CNAME to a grey hostname (`cname.travelengine.id` or the operator slug), or A / AAAA the apex at the Lightsail IP. Caddy issues the guest padlock. Do not CNAME at the orange apex.
+    - Default: `slug.travelengine.id`, served by the `*.travelengine.id` wildcard on Laravel Cloud.
+    - Custom Domain (Agency): saved in Brand settings, added to Laravel Cloud through its API. The operator adds the records shown (A on a bare domain, CNAME on a subdomain, plus any certificate records). Cloud issues the padlock. Full flow: [custom domains](../features/custom-domains.md).
 - **Segmented Storefront Navigation**:
     - Direct access to *Catalog (Home)*, *Tour Packages*, *Single Activities*, and *Terms & Policies*.
 - **Direct Checkout & 30-Minute Hold Recovery**:
     - Date picker with real-time capacity validation and instant 30-minute hold countdown.
     - Payment resumption, receipt, and e-ticket use `/reservations/{public_token}/…`. The reservation record id is never exposed to guests.
+    - **Find Booking** needs the booking code plus the exact email or phone number used to book. Guest names and partial numbers are not accepted.
 - **Tier-Gated AI Search Discovery (`/llms.txt`)**:
     - Agency exclusive.
     - Automatically serves structured `/llms.txt` and `/llms-full.txt` Markdown catalog feeds for ChatGPT, Perplexity, Claude, and Gemini crawlers.
@@ -94,7 +99,7 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 
 ### 4. Commercial & Subscription Model (3 Tiers)
 
-Public names are **Starter**, **Growth**, and **Agency** (same as the slugs). **Enterprise is not in V1** — do not seed or show it (see [`v2.md`](v2.md)).
+Public names are **Starter**, **Growth**, and **Agency** (same as the slugs). **Enterprise is not in V1** — do not seed or show it (see [roadmap V2](roadmap-v2.md)).
 
 Guest service fee is **5% on every plan**, capped at **Rp 250.000**. Operator gets 100% of the listed price. Subscription buys features. It does not waive checkout fees or move settlement onto the operator's merchant account. No BYO gateway.
 
@@ -107,8 +112,10 @@ Guest service fee is **5% on every plan**, capped at **Rp 250.000**. Operator ge
 - **Operator Plan & Billing Portal (`/settings/plan`)**:
     - Unified subscription management with interactive tier switcher, proration calculations, auto-renew controls, and invoice receipts.
 - **Platform Coupon Intelligence & Auto-Broadcast System**:
-    - Platform coupons supporting `first_purchase`, `lifetime`, and volume threshold eligibility rules (`min_confirmed_transactions`).
-    - Automated scheduled daily broadcast (`coupons:broadcast`) notifying eligible operators via dashboard announcements.
+    - Redemption scope per subscription promo: `unlimited`, `first_purchase_only`, or `once_per_period` (once per calendar month). It is checked when the code is applied and recorded when the invoice is paid.
+    - Eligibility rules for auto-broadcast: `min_monthly_transactions`, `min_monthly_revenue`, `subscription_age_months`.
+    - Automated scheduled daily broadcast (`coupons:broadcast`, 09:30 WITA) notifying eligible operators via dashboard announcements.
+    - Promo codes are unique per owner (scope + operator), so two operators may use the same code on their own shops.
 
 ### 5. Payment Gateway Engine (DOKU Hosted Checkout Exclusive)
 
@@ -154,15 +161,16 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
 - Multi-currency / multi-language translation engine.
 - Tiered partial refund cancellation policies (single cutoff window only).
 - Bring-your-own payment gateway / private merchant account.
-- Enterprise plan and the V2 slices in [`v2.md`](v2.md) (embeddable booking calendar, QR guest check-in, multiple departures per day, optional day-of guest details, ground-staff login).
+- Enterprise plan and the V2 slices in [roadmap V2](roadmap-v2.md) (embeddable booking calendar, QR guest check-in, multiple departures per day, optional day-of guest details, ground-staff login).
 
 ---
 
 ## Technical Architecture & Quality Standards
 
-- **Framework**: Laravel 12 on PHP 8.5.
+- **Framework**: Laravel 13 on PHP 8.5.
 - **UI Stack**: Livewire 4 SFCs, Tailwind CSS v4, Alpine.js, FontAwesome 6 icons.
-- **Hosting**: AWS Lightsail is the origin. Cloudflare orange-clouds the platform apex (`travelengine.id` / `www`) only. `*.travelengine.id` is DNS-only to Lightsail. Ports 80/443 stay open. Trust `X-Forwarded-*` on the proxied apex. Not Laravel Cloud. Not Cloudflare for SaaS in V1. Mail from `no-reply@travelengine.id`.
-- **Testing**: Pest 5 with **336 automated feature and unit tests (100% passing)**.
+- **Hosting**: Laravel Cloud (wildcard `*.travelengine.id` plus Agency custom domains via the Cloud API), Cloudflare R2 for media. Not Cloudflare for SaaS in V1. Mail from `no-reply@travelengine.id`. Details: [stack and hosting](../engineering/stack-and-hosting.md).
+- **Time**: the whole app runs on Bali time (WITA, `Asia/Makassar`): "today", trip days, cancellation cutoffs, escrow release and schedules.
+- **Testing**: Pest 5 feature and unit tests (SQLite in memory; also run on MariaDB), Larastan.
 - **Code Style**: Formatted and enforced with Laravel Pint.
 - **Primary Keys**: ULIDs throughout.

@@ -1,5 +1,7 @@
 # V2 — not in the product yet
 
+_Last reviewed: 2026-10-02_
+
 Do not seed or show Enterprise until this file says ship.
 
 Who: large operators (several venues, several departures, ground staff).
@@ -17,7 +19,6 @@ Features stay general. Each company runs the day differently — do not bake one
 6. Sales analytics
     - Simple
     - Advanced
-7. 
 
 ## Not V2
 

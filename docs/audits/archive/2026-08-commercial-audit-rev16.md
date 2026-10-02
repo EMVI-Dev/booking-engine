@@ -1,6 +1,8 @@
+> **Archived (superseded).** Kept for history only. Its plan matrix (four tiers, a BYO gateway, Agency at Rp 699.000) and stack notes (Laravel 12) are out of date. Current sources: [plans and pricing](../../commercial/plans-and-pricing.md) and [money rules](../../commercial/money-rules-and-settlement.md).
+
 # Booking Engine Platform — V1 Commercial Audit & Risk Specification (Rev. 16)
 
-> **Canonical Financial Specification**: See [emvi_v1_money_rules_and_settlement_spec.md](emvi_v1_money_rules_and_settlement_spec.md) for the single source of truth governing all monetary calculations, ledger entries, settlement states, and risk allocation policies.
+> **Canonical Financial Specification**: See [emvi_v1_money_rules_and_settlement_spec.md](../../commercial/money-rules-and-settlement.md) for the single source of truth governing all monetary calculations, ledger entries, settlement states, and risk allocation policies.
 
 ## Vision & Architecture
 

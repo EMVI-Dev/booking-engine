@@ -138,24 +138,6 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->impersonatedOperator() !== null;
     }
 
-    /**
-     * @deprecated Use operators() instead.
-     *
-     * @return BelongsToMany<Operator, $this, OperatorUser>
-     */
-    public function agents(): BelongsToMany
-    {
-        return $this->operators();
-    }
-
-    /**
-     * @deprecated Use currentOperator() instead.
-     */
-    public function currentAgent(): ?Operator
-    {
-        return $this->currentOperator();
-    }
-
     public function roleOn(?Operator $operator): ?OperatorUserRole
     {
         if (! $operator) {

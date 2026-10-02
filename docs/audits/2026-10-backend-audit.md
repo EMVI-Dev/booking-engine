@@ -226,15 +226,114 @@ Deploy notes: run `php artisan migrate` (2 migrations). Suite: 631 passing.
 - Pint is clean.
 - PHPStan errors went down from about 50 to 43; the remaining ones were already there before this work.
 
-### Moving from Caddy to Laravel Cloud (open decision)
-- **Slug storefronts:** the `*.travelengine.id` wildcard plus the root domain replaces Caddy for slugs. Hosts are still resolved from the request host, so no code change is needed.
-- **Agency custom domains:**
-  - Each one must be added to the Cloud environment, and each counts toward the plan allowance.
-  - Cloud has a domains API (`POST /environments/{environment}/domains`, plus get, verify and delete). Connecting a custom domain could call it and show the DNS records it returns, replacing the Lightsail IP / Caddy ask flow.
-  - Not built yet.
-- **Media storage:**
-  - Cloud's local disk does not persist across deploys, so `MEDIA_DISK` must point at an S3-compatible bucket (Cloud object storage).
-  - This needs `league/flysystem-aws-s3-v3`, which is not installed. The dependency needs approval.
-- **Leftovers if Caddy goes:**
-  - `CaddyAskController`, `domains:probe-ssl` and `config/domains.php` IP settings become unused.
-  - The brand settings DNS instructions (UI) would need the Cloud records instead.
+### Moving from Caddy to Laravel Cloud
+Decided: Laravel Cloud plus Cloudflare R2. The work is done in section 11.
+
+## 11. Third-party integrations and Laravel Cloud (2026-10-02)
+
+### One client per third-party service (`app/Services/Integrations`)
+| Service | Client | Business service that uses it |
+|---|---|---|
+| DOKU Jokul | `DokuClient`: credentials, mode, signing, webhook signature, checkout, status, refund, BI-FAST transfer, bank code, phone format | `DokuPaymentService` (money rules only) |
+| Slack | `SlackClient`: posts only to `https://hooks.slack.com/` | `OperatorActivitySlackNotifier` (message content) |
+| Google Places | `GooglePlacesClient`: place details, text search, Maps-link expansion | `GooglePlacesService` (operator listing snapshot) |
+| Laravel Cloud | `LaravelCloudClient`: create, get, verify and delete domains | `CustomDomainService` through `LaravelCloudDomainProvider` |
+| Cloudflare R2 | Laravel `r2` disk (S3 driver) | `MediaStore` |
+
+- Security fix found on the way: a pasted "Google Maps link" was fetched with redirects to any address, so an operator could make the server call internal addresses (SSRF). The client now only follows https Google Maps hosts, including across redirects.
+- The Slack client also refuses any non-Slack URL.
+
+### Custom domains (Agency)
+- `CustomDomainService` owns connect, check and disconnect. It refuses platform hosts, addresses another operator uses, IP addresses and malformed names before calling any provider.
+- Providers implement `App\Contracts\CustomDomainProvider` and are selected by `CUSTOM_DOMAIN_PROVIDER`:
+  - **`laravel_cloud`:** adds the address to the environment (real-time verification, Cloudflare strategy "none"). It stores Cloud's DNS records: an A record to the Cloud origin IP for an apex, a CNAME to Cloud's hostname for a subdomain, plus any certificate records. Status is Active only when hostname, SSL and origin are all verified.
+  - **`caddy`:** the previous self-hosted flow (DNS check, then the HTTPS probe for the padlock). It is kept for local work and as a fallback.
+- `operator_domains` gained `provider`, `provider_ref`, `dns_records` and `last_checked_at`, in its create migration.
+- Verifying custom domains already route to the shop. Storefront links switch to the custom domain only once it is Active.
+- `domains:check` (every 5 minutes) replaces `domains:probe-ssl`.
+- Changing or clearing an address removes it from Cloud first. If Cloud is unreachable the row is kept, so no address is left behind counting toward the allowance.
+- Brand settings now call the service, and `customDomainRecords()` gives the UI the exact records to show. **UI to-do (Antigravity):** render those records in place of the fixed Lightsail IP/CNAME instructions when the provider is Laravel Cloud.
+
+### Media on Cloudflare R2
+- The `r2` disk sends no ACL, because R2 rejects `public-read`. Public URLs come from `R2_URL`, the bucket's public domain, and errors throw.
+- `MediaStore` sets visibility only on local disks, and fails loudly if a write fails.
+- **Needs** `composer require league/flysystem-aws-s3-v3 "^3.0"`. The package registry was not reachable from the build environment, so this has to be run locally and committed with `composer.lock`.
+
+### Production environment (Laravel Cloud)
+- `MEDIA_DISK=r2` and `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `R2_URL=https://storage.travelengine.id`
+- `CUSTOM_DOMAIN_PROVIDER=laravel_cloud`, `LARAVEL_CLOUD_API_TOKEN`, `LARAVEL_CLOUD_ENVIRONMENT_ID`
+- Wildcard `*.travelengine.id` plus `travelengine.id` on the environment. Keep the `_acme-challenge` CNAME permanently; on Cloudflare it must be DNS only.
+- `APP_TIMEZONE=Asia/Makassar`, a queue worker, the scheduler enabled, and a database or redis cache.
+- Leftovers that are unused on Cloud: `CaddyAskController`, `PLATFORM_PUBLIC_IPV4/6` and `CADDY_ASK_TOKEN`. They only matter with `CUSTOM_DOMAIN_PROVIDER=caddy`.
+
+### Checks
+- 665 tests pass.
+- Pint is clean.
+- No new PHPStan errors in the touched files.
+
+## 12. Laravel Cloud readiness and docs tidy-up (2026-10-02)
+
+### Laravel Cloud readiness
+- **Packages:** `league/flysystem-aws-s3-v3` is installed, so the R2 disk is usable.
+- **`php artisan cloud:environments`:** checks `LARAVEL_CLOUD_API_TOKEN` and lists environment ids for `LARAVEL_CLOUD_ENVIRONMENT_ID`.
+  - Neither this environment nor the Mac VM could reach the Cloud API, so run it locally or from Cloud Commands.
+  - Domain calls now say clearly when the environment id is missing.
+- **Trusted proxies:** these were hard-coded to `127.0.0.1`. Behind Cloud's edge, that would have made every request look like plain http from the edge IP, breaking secure URLs, guest IPs and rate limits.
+  - They are now config-driven: `TRUSTED_PROXIES`, with `*` on Cloud.
+  - They are applied in `AppServiceProvider`, so they still work with cached config.
+- **Admin seeder:** it read `env()` directly. With cached config on Cloud, `ADMIN_PASSWORD` would be empty and production seeding would refuse to run. It now reads `config/platform.php`.
+- **Open:** `.github/workflows/deploy.yml` still deploys to Lightsail on every push to `main`. Disable it once Cloud is live.
+
+### Docs
+- `docs/` is now grouped into `product/`, `commercial/`, `features/`, `engineering/` and `audits/`, with an index and maintenance rules in `docs/README.md`.
+- **New:** `engineering/integrations.md`, `engineering/production-launch.md` and `features/custom-domains.md`.
+- **Brought in line with the code:**
+  - Hosting (Laravel Cloud, R2, WITA) and the Laravel 13 version.
+  - Find-booking rules, email verification, reserved slugs and coupon redemption rules.
+  - Scheduler command names and times.
+  - The fee base: the guest fee is on the subtotal before an operator promo.
+- **Money rules:** the doc now opens with an implementation-status table that separates what is automated from policy only (operator-fault fee debit, demand notices, write-off, settlement-file reconciliation).
+- **Pricing:** the stale four-tier, bring-your-own-gateway matrix was replaced. The 2026-08 commercial audit was moved to `audits/archive/` with a superseded banner.
+
+## 13. Secrets split and cleanup (2026-10-02)
+
+### `.env` and secrets
+- **`.env.example`:** now two blocks.
+  - **GENERAL:** per-environment settings.
+  - **SECRETS:** always empty. Set them in Laravel Cloud (environment variables or Secrets Manager), or locally in your own git-ignored `.env`.
+  - Everything else has a default in `config/*.php`. For example, DOKU endpoints are fixed per mode, and the R2 region and WebP quality are fixed.
+- **Not stored in committed config:** secret values do not live in `config/platform.php` or any other committed file, because the repository is on GitHub. Config files only *read* secrets, with no default value.
+- **Removed a real leak:** `PlatformSetting::current()` copied the DOKU client ids, secret keys and SNAP private keys into the `platform_settings` table on first boot. Those copies were never read.
+  - The copy is gone, and so are the twelve unused DOKU getters on `PlatformSetting`.
+  - DOKU mode and credentials are now read only by `DokuClient` (`config/doku.php`: `mode`, client id and secret key per mode).
+- **Guard:** `SecretsHygieneTest` checks three things:
+  - Secrets stay empty in `.env.example`.
+  - No config file gives a secret a default.
+  - Secrets never reach `platform_settings`.
+- **Local `.env` (Mac):**
+  - Regrouped into GENERAL and SECRETS. The previous file is saved as `.env.backup`.
+  - Removed 29 keys that were obsolete (Caddy, Lightsail IPs, DOKU URLs) or matched config defaults.
+  - Kept `QUEUE_CONNECTION=sync` for local work.
+
+### Removed as irrelevant
+- **GitHub Actions deploy:** `.github/workflows/deploy.yml` (Lightsail) is gone. Laravel Cloud deploys from GitHub, and `tests.yml` stays as CI.
+- **Caddy / self-hosted TLS:**
+  - Removed: `CaddyAskController` and the `/internal/caddy/ask` route, `CaddyDomainProvider`, and the DNS/IP/HTTPS-probe helpers in `DomainResolverService`.
+  - Removed: `PLATFORM_PUBLIC_IPV4/6` and `CADDY_ASK_TOKEN`, plus their tests.
+  - Replaced by `LocalDomainProvider` for development and tests. It refuses to run in production, where the provider defaults to `laravel_cloud`.
+  - Brand settings now render the provider's DNS records instead of fixed server addresses.
+- **Bring-your-own gateway leftovers:**
+  - Removed the payment-gateway fields on the payout bank page (`payment_mode`, `gateway_*`) and `Operator::getPaymentGatewayConfig()`, `hasCustomPaymentGateway()` and `getPaymentGatewayProvider()`.
+  - Saving the payout bank no longer writes `settings.payment_gateway`.
+- **Legacy "agent" aliases:**
+  - Removed the deprecated `agent()` / `agents()` relations on nine models.
+  - Removed `User::currentAgent()`, `getAgent()` / `getAgentId()` on `Bookable`, `DomainResolverService::resolveAgent()`, `StorefrontController::resolveCurrentAgent()` and `OperatorOnboardingService::registerAgent()`.
+  - All callers now use `operator`.
+- **Docs:** updated for Laravel Cloud deploys from GitHub, the secrets split, the local provider and the DOKU config. The old Lightsail section was removed.
+
+### Still open (needs a product decision)
+- **Commission fields:** operator commission is always 0%, but Admin → Settings and Admin → Plans still show editable commission fields that change nothing. The plan renewal email also shows the plan's commission. Removing them touches the admin UI.
+- **`.env.live` (Mac, git-ignored):** this is the old Lightsail production environment, with live DOKU, R2, database and mail secrets, plus unused DOKU SNAP keys.
+  - Move what is still needed into Laravel Cloud, then delete the file.
+  - Do the same for `private.key` / `public.key` (DOKU SNAP RSA keys, unused by the code).
+- **Local secrets:** the local `.env` holds live DOKU keys, which a laptop does not need. Its `APP_KEY` also equals the one committed in `.env.testing`, so run `php artisan key:generate` locally.

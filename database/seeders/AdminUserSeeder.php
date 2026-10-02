@@ -15,8 +15,9 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $email = (string) env('ADMIN_EMAIL', 'admin@travelengine.id');
-        $password = env('ADMIN_PASSWORD');
+        // Config first: production caches config, and env() is empty once it is cached.
+        $email = (string) (config('platform.admin_email') ?: env('ADMIN_EMAIL', 'admin@travelengine.id'));
+        $password = config('platform.admin_password') ?: env('ADMIN_PASSWORD');
 
         if (! is_string($password) || $password === '') {
             if (app()->environment('production')) {

@@ -3,20 +3,26 @@
 namespace App\Services;
 
 use App\Models\Operator;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Support\Facades\Http;
+use App\Services\Integrations\GooglePlacesClient;
 use Illuminate\Support\Str;
 
+/**
+ * Operator Google listing: find it, snapshot it on the operator, refresh it.
+ * HTTP calls to Google go through GooglePlacesClient.
+ */
 class GooglePlacesService
 {
+    public function __construct(
+        protected GooglePlacesClient $google,
+    ) {}
+
     public const CACHE_DAYS = 30;
 
     public const REVIEW_LIMIT = 5;
 
     public function isConfigured(): bool
     {
-        return filled(config('services.google.places_key'));
+        return $this->google->isConfigured();
     }
 
     /**
@@ -100,37 +106,14 @@ class GooglePlacesService
      */
     private function fetchDetails(string $placeId): ?array
     {
-        $response = $this->client()
-            ->withHeaders([
-                'X-Goog-FieldMask' => 'id,displayName,formattedAddress,rating,userRatingCount,googleMapsUri,reviews',
-            ])
-            ->get('https://places.googleapis.com/v1/places/'.rawurlencode($placeId));
+        $place = $this->google->placeDetails($placeId);
 
-        if ($response->failed()) {
-            return null;
-        }
-
-        return $this->normalizePlace($response->json() ?? []);
+        return $place === null ? null : $this->normalizePlace($place);
     }
 
     private function searchPlaceId(string $query): ?string
     {
-        $response = $this->client()
-            ->withHeaders([
-                'X-Goog-FieldMask' => 'places.id,places.displayName,places.formattedAddress',
-            ])
-            ->post('https://places.googleapis.com/v1/places:searchText', [
-                'textQuery' => $query,
-                'pageSize' => 1,
-            ]);
-
-        if ($response->failed()) {
-            return null;
-        }
-
-        $placeId = $response->json('places.0.id');
-
-        return is_string($placeId) && $placeId !== '' ? $placeId : null;
+        return $this->google->searchPlaceId($query);
     }
 
     private function resolvePlaceId(string $query): ?string
@@ -144,16 +127,11 @@ class GooglePlacesService
             return null;
         }
 
-        try {
-            $response = Http::timeout(8)
-                ->connectTimeout(3)
-                ->withOptions(['allow_redirects' => ['max' => 5, 'track_redirects' => true]])
-                ->get($query);
-        } catch (ConnectionException) {
+        $finalUrl = $this->google->expandMapsLink($query);
+
+        if ($finalUrl === null) {
             return null;
         }
-
-        $finalUrl = (string) ($response->effectiveUri() ?? $query);
 
         return $this->extractPlaceId($finalUrl);
     }
@@ -229,16 +207,5 @@ class GooglePlacesService
     private function looksLikeUrl(string $value): bool
     {
         return Str::startsWith($value, ['http://', 'https://']);
-    }
-
-    private function client(): PendingRequest
-    {
-        return Http::timeout(8)
-            ->connectTimeout(3)
-            ->retry(2, 200, throw: false)
-            ->withHeaders([
-                'X-Goog-Api-Key' => (string) config('services.google.places_key'),
-            ])
-            ->acceptJson();
     }
 }

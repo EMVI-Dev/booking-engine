@@ -1,16 +1,46 @@
 # TravelEngine docs
 
-TravelEngine is the booking product. **EMVI Technologies** is the company.
+TravelEngine is the booking product. **EMVI Technologies** is the company. Agent and tooling files (`AGENTS.md`, `CLAUDE.md`, `.ai/rules`) stay at the repo root.
 
-Agent/tooling files (`AGENTS.md`, `CLAUDE.md`) stay at the repo root.
+Docs are grouped by who reads them. Start with **Product**. If a doc and the code disagree, the code wins: fix the doc in the same change.
 
-| File | What |
+## Product: what we build and for whom
+| Doc | What |
 | --- | --- |
-| [travelengine.md](travelengine.md) | Product overview, mission, and objectives ("What are you trying to achieve?") |
-| [stack.md](stack.md) | How the software is built and hosted |
-| [scope_and_features.md](scope_and_features.md) | Product rules and current features |
-| [platform_commercial_and_pricing_model.md](platform_commercial_and_pricing_model.md) | Plans and commercial model |
-| [operator_portal_coupons_and_billing_spec.md](operator_portal_coupons_and_billing_spec.md) | Operator portal, coupons, reports, billing, and CRM spec |
-| [emvi_v1_money_rules_and_settlement_spec.md](emvi_v1_money_rules_and_settlement_spec.md) | Money, fees, and settlement |
-| [v2.md](v2.md) | Not in the product yet |
-| [travelegine_audit.md](travelegine_audit.md) | Historical audit notes |
+| [product/overview.md](product/overview.md) | Mission, audience, problems solved, business model in one page |
+| [product/scope-and-features.md](product/scope-and-features.md) | V1 product rules and every feature that ships (the main spec) |
+| [product/roadmap-v2.md](product/roadmap-v2.md) | Not in the product yet. Nothing here ships until this file says so |
+
+## Commercial: plans and money
+| Doc | What |
+| --- | --- |
+| [commercial/plans-and-pricing.md](commercial/plans-and-pricing.md) | Plans, prices, limits, guest service fee, why the model works |
+| [commercial/money-rules-and-settlement.md](commercial/money-rules-and-settlement.md) | Canonical money rules: ledger, escrow, payouts, refunds, disputes, fees |
+
+## Features: how specific areas work
+| Doc | What |
+| --- | --- |
+| [features/operator-portal-coupons-billing.md](features/operator-portal-coupons-billing.md) | Coupons and reports, login handoff, billing and invoices, guest CRM |
+| [features/vendor-dispatch.md](features/vendor-dispatch.md) | Vendors (suppliers) and automatic booking dispatch |
+| [features/custom-domains.md](features/custom-domains.md) | Slug storefronts and Agency custom domains on Laravel Cloud |
+
+## Engineering: how it is built and run
+| Doc | What |
+| --- | --- |
+| [engineering/stack-and-hosting.md](engineering/stack-and-hosting.md) | Stack, hosts, Laravel Cloud hosting, queues, scheduler, time zone, where code lives |
+| [engineering/integrations.md](engineering/integrations.md) | Every third-party service, its client class, settings and failure behaviour |
+| [engineering/production-launch.md](engineering/production-launch.md) | Fresh production checklist: environment variables, Cloud settings, first deploy, smoke test |
+
+## Audits: point-in-time reviews (not specs)
+| Doc | What |
+| --- | --- |
+| [audits/2026-10-backend-audit.md](audits/2026-10-backend-audit.md) | Backend, DRY, security, admin and MVP audit with fix log (Oct 2026) |
+| [audits/2026-09-storefront-pre-prod-audit.md](audits/2026-09-storefront-pre-prod-audit.md) | Guest storefront pre-production review (Sep 2026) |
+| [audits/archive/](audits/archive/) | Superseded audits, kept for history only. Do not build from them |
+
+## Keeping docs current
+- **Same change, same PR.** A change to plans, money, hosting, integrations or a feature's behaviour updates its doc here.
+- **One home per fact.** Prices and limits live in `commercial/plans-and-pricing.md`. Money rules live in `commercial/money-rules-and-settlement.md`. Hosting lives in `engineering/stack-and-hosting.md`. Other docs link to these instead of copying them.
+- **No numbers that rot.** Do not write test counts, "100% passing" or line counts in docs.
+- **Specs vs audits.** Specs describe how things work now. Audits are dated snapshots: add a new dated file rather than rewriting an old one, and move superseded audits to `audits/archive/` with a banner on top.
+- Each doc starts with a `Last reviewed:` date. Update it when you check the doc against the code.

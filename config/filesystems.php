@@ -48,21 +48,24 @@ return [
         ],
 
         /*
-         * Cloudflare R2 is S3-compatible. Public files are served from
-         * https://storage.travelengine.id. Set MEDIA_DISK=r2 when the
-         * API token, bucket, and endpoint are in .env. Needs league/flysystem-aws-s3-v3.
+         * Cloudflare R2 is S3-compatible. Public files are served from the bucket's
+         * public domain (R2_URL, e.g. https://storage.travelengine.id). Set MEDIA_DISK=r2
+         * when the API token, bucket and endpoint
+         * (https://<account-id>.r2.cloudflarestorage.com) are in .env.
+         * Needs league/flysystem-aws-s3-v3. R2 has no object ACLs, so no "visibility"
+         * here: public access comes from the bucket's public domain. Errors throw so a
+         * failed upload is never saved as a broken image path.
          */
         'r2' => [
             'driver' => 's3',
             'key' => env('R2_ACCESS_KEY_ID'),
             'secret' => env('R2_SECRET_ACCESS_KEY'),
-            'region' => env('R2_REGION', 'auto'),
+            'region' => 'auto',
             'bucket' => env('R2_BUCKET'),
             'url' => rtrim((string) env('R2_URL', 'https://storage.travelengine.id'), '/') ?: 'https://storage.travelengine.id',
             'endpoint' => env('R2_ENDPOINT'),
-            'use_path_style_endpoint' => env('R2_USE_PATH_STYLE_ENDPOINT', false),
-            'visibility' => 'public',
-            'throw' => false,
+            'use_path_style_endpoint' => false,
+            'throw' => true,
             'report' => false,
         ],
 
@@ -107,6 +110,6 @@ return [
     */
 
     'media' => env('MEDIA_DISK', 'public'),
-    'media_quality' => (int) env('MEDIA_WEBP_QUALITY', 80),
+    'media_quality' => 80,
 
 ];

@@ -1,5 +1,7 @@
 # TravelEngine — Product Overview & Objectives
 
+_Last reviewed: 2026-10-02_
+
 > **"What are you trying to achieve?"**  
 > A focused overview of TravelEngine’s mission, audience, business model, operational capabilities, and technical architecture.
 
@@ -49,7 +51,7 @@ TravelEngine adopts the proven transaction model used by platforms like FareHarb
 * **Branded Storefront & Direct Checkout**: Mobile-optimized guest experience with instant capacity validation, DOKU Jokul hosted checkout, tokenized reservation URLs (`/reservations/{public_token}/...`), and digital e-tickets.
 * **Guest CRM & Operations Hub**: Customer profiles tracking repeat bookings, tags, staff notes, and lifetime value (LTV).
 * **WhatsApp Dispatch Center**: 1-click pre-formatted dispatch messages for payment hold recovery, e-voucher delivery, 24-hour departure reminders, and meeting point locations.
-* **Immutable Double-Entry Ledger & Escrow**: Secure wallet escrow holds funds until the trip departure date before clearing for automated domestic bank payouts (T+3 settlement).
+* **Append-Only Ledger & Escrow**: Wallet escrow holds funds until the trip day (Bali time) before they clear for domestic bank payouts. DOKU settles to EMVI at T+3.
 * **AI Search Optimization (`/llms.txt`)**: Agency tier serves curated Markdown feeds for ChatGPT, Claude, Perplexity, and Gemini search crawlers.
 
 ---
@@ -60,8 +62,9 @@ TravelEngine adopts the proven transaction model used by platforms like FareHarb
 * **Multi-Tenant Host Architecture**: Single application codebase handling three host contexts:
   1. Platform apex (`travelengine.id` / `www`) — Marketing site, operator desk, auth, platform admin.
   2. Operator subdomains (`{slug}.travelengine.id`) — Branded guest storefronts.
-  3. Custom domains (`yourbrand.com`) — Agency storefronts with automatic TLS certificate issuance via Caddy.
-* **Quality & Test Standards**: Pest 5 test suite with 100% passing automated feature and unit tests; code formatted via Laravel Pint; ULIDs for database primary keys.
+  3. Custom domains (`yourbrand.com`) — Agency storefronts, added to Laravel Cloud through its API with automatic TLS ([custom domains](../features/custom-domains.md)).
+* **Hosting**: Laravel Cloud (app, workers, scheduler, MySQL) with Cloudflare R2 for media. See [stack and hosting](../engineering/stack-and-hosting.md).
+* **Quality & Test Standards**: Pest 5 feature and unit tests, Larastan, and Laravel Pint; ULIDs for database primary keys.
 
 ---
 
@@ -79,7 +82,7 @@ To maintain focus and simplicity, the platform explicitly excludes:
 
 ## 7. Related Documentation
 
-- [`scope_and_features.md`](scope_and_features.md) — Comprehensive product rules and current feature specifications.
-- [`stack.md`](stack.md) — Technology stack, server architecture, and hosting setup.
-- [`platform_commercial_and_pricing_model.md`](platform_commercial_and_pricing_model.md) — Pricing tiers, guest fee economics, and financial edge cases.
-- [`emvi_v1_money_rules_and_settlement_spec.md`](emvi_v1_money_rules_and_settlement_spec.md) — Authoritative double-entry ledger, escrow, and payout rules.
+- [Scope and features](scope-and-features.md) — Product rules and current feature specifications.
+- [Stack and hosting](../engineering/stack-and-hosting.md) — Technology stack and Laravel Cloud hosting.
+- [Plans and pricing](../commercial/plans-and-pricing.md) — Plans, guest fee economics.
+- [Money rules and settlement](../commercial/money-rules-and-settlement.md) — Canonical ledger, escrow, and payout rules.

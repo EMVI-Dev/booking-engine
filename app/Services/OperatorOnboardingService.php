@@ -38,7 +38,7 @@ class OperatorOnboardingService
      *     billing_email?: string|null,
      *     brand_color?: string|null
      * } $data
-     * @return array{user: User, operator: Operator, domain: OperatorDomain, agent: Operator}
+     * @return array{user: User, operator: Operator, domain: OperatorDomain}
      */
     public function registerOperator(array $data): array
     {
@@ -108,7 +108,6 @@ class OperatorOnboardingService
             return [
                 'user' => $user,
                 'operator' => $operator,
-                'agent' => $operator, // For backward compatibility
                 'domain' => $domain,
             ];
         });
@@ -123,16 +122,5 @@ class OperatorOnboardingService
         $this->slack->operatorRegistered($result['operator'], $result['user']);
 
         return $result;
-    }
-
-    /**
-     * @deprecated Use registerOperator() instead.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array{user: User, operator: Operator, domain: OperatorDomain, agent: Operator}
-     */
-    public function registerAgent(array $data): array
-    {
-        return $this->registerOperator($data);
     }
 }

@@ -68,16 +68,6 @@ class Plan extends Model
     }
 
     /**
-     * @deprecated Use operators() instead.
-     *
-     * @return HasMany<Operator, $this>
-     */
-    public function agents(): HasMany
-    {
-        return $this->operators();
-    }
-
-    /**
      * Check if this plan includes a specific feature flag.
      */
     public function hasFeature(string $featureKey): bool

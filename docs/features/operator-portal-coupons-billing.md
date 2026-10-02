@@ -1,6 +1,6 @@
 # Operator Portal, Coupons & Financial Operations Spec
 
-_Version: 2026-09-27 · TravelEngine Core Platform_
+_Version: 2026-09-27 · Last reviewed: 2026-10-02 · TravelEngine Core Platform_
 
 This document specifies the architecture, security isolation, and operational workflows for promotional coupons, dedicated analytics reporting, billing invoices, guest CRM profiles, and subdomain desk authentication handoffs.
 
@@ -20,7 +20,9 @@ This document specifies the architecture, security isolation, and operational wo
 #### Standing Rules:
 - **Operator Catalog Queries**: All operator portal views and counts (including the sidebar active badge and `coupons.index`) **MUST** scope queries using `PlatformCoupon::forGuest()->where('operator_id', $operator->id)`.
 - **Targeted Platform Billing Coupons**: An admin can target a subscription coupon to an operator (`operator_id = '...'`). Without `forGuest()` scoping, this billing discount would leak into the operator's public storefront discount list.
-- **Storefront Validation**: `booking-box` queries only `PlatformCoupon::forGuest()->where('operator_id', $this->operator->id)`.
+- **Storefront Validation**: the booking box looks codes up only with `PlatformCoupon::findForGuest()` (that operator's guest codes), and the discount is recalculated on the server by `BookingPricingService`. It is never taken from the browser.
+- **Uniqueness**: codes are unique per owner (`scope`, `operator_id`, `code`), so different operators may reuse the same code.
+- **Subscription promo rules**: `redemption_scope` (`unlimited`, `first_purchase_only`, `once_per_period`) is enforced when the code is applied. Each paid invoice records a row in `operator_coupon_redemptions` (`PlatformCoupon::recordRedemptionBy()`).
 
 ### 1.2 Dedicated Coupon Report Page (`/coupons/{coupon}/report`)
 
@@ -63,6 +65,7 @@ Operators frequently sign in from the marketing landing page on the platform ape
    `https://{slug}.travelengine.id/auth/login-handoff?signature=...&intended=...&remember=...`
 3. The destination subdomain controller (`LoginHandoffController`) validates the signature, signs the user into that subdomain's session, preserves remember cookies, and redirects them to their intended desk URL (defaulting to `/dashboard`).
 4. Operators already logging in from their own subdomain desk remain on that host without unnecessary redirects.
+5. Registration uses the same signed handoff. New operators must verify their email; the verification link is built for the slug host (`Operator::slugDeskRoot()`), where their session lives.
 
 ---
 

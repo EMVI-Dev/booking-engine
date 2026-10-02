@@ -9,14 +9,22 @@ use App\Models\PayoutRequest;
 use App\Models\PlatformSetting;
 use App\Models\Reservation;
 use App\Models\SubscriptionPayment;
+use App\Services\Integrations\DokuClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
+/**
+ * Guest checkout, subscription checkout, webhooks, refunds and payouts: the money rules.
+ * Every call to DOKU itself goes through DokuClient.
+ */
 class DokuPaymentService
 {
+    public function __construct(
+        protected DokuClient $doku,
+    ) {}
+
     /**
      * Whether the offline payment simulator may be used on this deployment.
      *
@@ -39,113 +47,16 @@ class DokuPaymentService
      */
     public static function isConfigured(): bool
     {
-        $platform = PlatformSetting::current();
-        $mode = $platform->getDokuMode()->value;
-
-        $clientId = $mode === 'live' ? $platform->getDokuLiveClientId() : $platform->getDokuSandboxClientId();
-        $secretKey = $mode === 'live' ? $platform->getDokuLiveSecretKey() : $platform->getDokuSandboxSecretKey();
-
-        return ! empty($clientId) && ! empty($secretKey);
+        return DokuClient::isConfigured();
     }
 
     /**
-     * Checkout, payouts, refunds, and webhooks all use the admin-selected DOKU mode.
-     */
-    protected function activeMode(?Operator $operator = null): string
-    {
-        if ($operator?->isDemo()) {
-            return 'sandbox';
-        }
-
-        return PlatformSetting::current()->getDokuMode()->value;
-    }
-
-    /**
-     * Resolve the active gateway credentials for the configured DOKU mode.
-     *
-     * @return array{client_id: string, secret_key: string, base_url: string}
-     */
-    protected function gatewayCredentials(?Operator $operator = null): array
-    {
-        $platform = PlatformSetting::current();
-        $mode = $this->activeMode($operator);
-
-        return [
-            'client_id' => $mode === 'live' ? $platform->getDokuLiveClientId() : $platform->getDokuSandboxClientId(),
-            'secret_key' => $mode === 'live' ? $platform->getDokuLiveSecretKey() : $platform->getDokuSandboxSecretKey(),
-            'base_url' => (string) config("doku.{$mode}.base_url", 'https://api-sandbox.doku.com'),
-        ];
-    }
-
-    /**
-     * HMAC-SHA256 headers required by DOKU Jokul APIs.
-     *
-     * @return array<string, string>
-     */
-    protected function signedHeaders(string $targetPath, ?string $jsonBody = null, ?Operator $operator = null): array
-    {
-        $credentials = $this->gatewayCredentials($operator);
-        $requestId = (string) Str::uuid();
-        $requestTimestamp = gmdate('Y-m-d\TH:i:s\Z');
-
-        $signatureComponent = "Client-Id:{$credentials['client_id']}\n"
-            ."Request-Id:{$requestId}\n"
-            ."Request-Timestamp:{$requestTimestamp}\n"
-            ."Request-Target:{$targetPath}";
-
-        if ($jsonBody !== null) {
-            $signatureComponent .= "\nDigest:".base64_encode(hash('sha256', $jsonBody, true));
-        }
-
-        return [
-            'Client-Id' => $credentials['client_id'],
-            'Request-Id' => $requestId,
-            'Request-Timestamp' => $requestTimestamp,
-            'Signature' => 'HMACSHA256='.base64_encode(hash_hmac('sha256', $signatureComponent, $credentials['secret_key'], true)),
-            'Content-Type' => 'application/json',
-        ];
-    }
-
-    /**
-     * Verify the HMAC-SHA256 signature DOKU attaches to notification callbacks.
-     *
-     * Returns false whenever the payload cannot be proven to originate from DOKU. When
-     * no secret is configured the request is only trusted on simulator deployments.
+     * Whether a DOKU notification can be trusted. Unsigned requests are only accepted
+     * when no credentials exist and the offline simulator is on.
      */
     public function verifyNotificationSignature(Request $request): bool
     {
-        $credentials = $this->gatewayCredentials();
-        $clientId = trim($credentials['client_id']);
-        $secretKey = trim($credentials['secret_key']);
-
-        if ($secretKey === '' || $clientId === '') {
-            return static::simulatorEnabled();
-        }
-
-        $providedSignature = (string) $request->header('Signature', '');
-        $requestId = (string) $request->header('Request-Id', '');
-        $requestTimestamp = (string) $request->header('Request-Timestamp', '');
-        $requestClientId = (string) $request->header('Client-Id', '');
-
-        if ($providedSignature === '' || $requestId === '' || $requestTimestamp === '') {
-            return false;
-        }
-
-        if (! hash_equals($clientId, $requestClientId)) {
-            return false;
-        }
-
-        $digest = base64_encode(hash('sha256', $request->getContent(), true));
-
-        $signatureComponent = "Client-Id:{$clientId}\n"
-            ."Request-Id:{$requestId}\n"
-            ."Request-Timestamp:{$requestTimestamp}\n"
-            .'Request-Target:'.config('doku.notification_path', '/api/v1/payments/doku/notify')."\n"
-            ."Digest:{$digest}";
-
-        $expectedSignature = 'HMACSHA256='.base64_encode(hash_hmac('sha256', $signatureComponent, $secretKey, true));
-
-        return hash_equals($expectedSignature, $providedSignature);
+        return $this->doku->verifyNotificationSignature($request) ?? static::simulatorEnabled();
     }
 
     /**
@@ -155,7 +66,7 @@ class DokuPaymentService
      */
     public function createPaymentSession(Reservation $reservation, float $totalAmount): array
     {
-        $agent = $reservation->operator ?? $reservation->agent;
+        $agent = $reservation->operator;
         $agent?->assertCheckoutAllowed();
 
         $platform = PlatformSetting::current();
@@ -239,122 +150,44 @@ class DokuPaymentService
     }
 
     /**
-     * Request a hosted payment page URL from DOKU Jokul Checkout API.
+     * Request a hosted payment page URL from DOKU Jokul Checkout for a guest booking.
      */
     public function createJokulCheckoutSession(Payment $payment, Reservation $reservation, string $invoiceNumber): ?string
     {
-        $operator = $reservation->operator ?? $reservation->agent;
-        $credentials = $this->gatewayCredentials($operator);
-
-        if (trim($credentials['client_id']) === '' || trim($credentials['secret_key']) === '') {
-            return null;
-        }
-
-        $targetPath = '/checkout/v1/payment';
-
-        $body = [
-            'order' => [
-                'amount' => (int) round((float) $payment->amount),
-                'invoice_number' => $invoiceNumber,
-                'currency' => 'IDR',
-                'callback_url' => route('storefront.reservation.receipt', $reservation),
-                'auto_redirect' => true,
-            ],
-            'payment' => [
-                'payment_due_date' => 30,
-            ],
-            'customer' => [
+        return $this->doku->createCheckout(
+            invoiceNumber: $invoiceNumber,
+            amount: (float) $payment->amount,
+            callbackUrl: route('storefront.reservation.receipt', $reservation),
+            dueMinutes: 30,
+            customer: [
                 'name' => $reservation->guest_name,
                 'email' => $reservation->guest_email ?: 'guest@travelengine.id',
-                'phone' => $this->sanitizePhoneNumber($reservation->guest_contact),
+                'phone' => $reservation->guest_contact,
             ],
-        ];
-
-        $jsonBody = (string) json_encode($body);
-
-        try {
-            $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody, $operator))
-                ->timeout(10)
-                ->connectTimeout(3)
-                ->post($credentials['base_url'].$targetPath, $body);
-
-            if ($response->successful()) {
-                $paymentUrl = $response->json('response.payment.url');
-                if (! empty($paymentUrl) && is_string($paymentUrl)) {
-                    return $paymentUrl;
-                }
-            } else {
-                Log::error('DOKU checkout session creation failed', [
-                    'status' => $response->status(),
-                    'invoice_number' => $invoiceNumber,
-                    'error' => $response->json() ?? $response->body(),
-                ]);
-            }
-        } catch (\Throwable $e) {
-            report($e);
-        }
-
-        return null;
+            operator: $reservation->operator,
+        );
     }
 
     /**
-     * Request a hosted payment page URL from DOKU Jokul Checkout API for an operator subscription invoice.
+     * Request a hosted payment page URL from DOKU Jokul Checkout for an operator subscription invoice.
      */
     public function createSubscriptionCheckoutSession(SubscriptionPayment $payment): ?string
     {
         $operator = $payment->operator;
-        $credentials = $this->gatewayCredentials($operator);
-
-        if (trim($credentials['client_id']) === '' || trim($credentials['secret_key']) === '') {
-            return null;
-        }
-
-        $targetPath = '/checkout/v1/payment';
         $owner = $operator?->users()->first();
 
-        $body = [
-            'order' => [
-                'amount' => (int) round((float) $payment->net_amount_paid),
-                'invoice_number' => (string) $payment->invoice_number,
-                'currency' => 'IDR',
-                'callback_url' => route('settings.plan'),
-                'auto_redirect' => true,
-            ],
-            'payment' => [
-                'payment_due_date' => 60,
-            ],
-            'customer' => [
+        return $this->doku->createCheckout(
+            invoiceNumber: (string) $payment->invoice_number,
+            amount: (float) $payment->net_amount_paid,
+            callbackUrl: route('settings.plan'),
+            dueMinutes: 60,
+            customer: [
                 'name' => $owner?->name ?: ($operator?->name ?: 'Tour Operator'),
                 'email' => $operator?->billing_email ?: ($owner?->email ?: 'billing@travelengine.id'),
-                'phone' => $this->sanitizePhoneNumber($operator?->contact_whatsapp),
+                'phone' => $operator?->contact_whatsapp,
             ],
-        ];
-
-        $jsonBody = (string) json_encode($body);
-
-        try {
-            $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody, $operator))
-                ->timeout(10)
-                ->connectTimeout(3)
-                ->post($credentials['base_url'].$targetPath, $body);
-
-            if ($response->successful()) {
-                $paymentUrl = $response->json('response.payment.url');
-                if (! empty($paymentUrl) && is_string($paymentUrl)) {
-                    return $paymentUrl;
-                }
-            } else {
-                Log::error('DOKU subscription checkout session creation failed', [
-                    'status' => $response->status(),
-                    'invoice_number' => (string) $payment->invoice_number,
-                    'error' => $response->json() ?? $response->body(),
-                ]);
-            }
-        } catch (\Throwable $e) {
-            report($e);
-        }
-
-        return null;
+            operator: $operator,
+        );
     }
 
     /**
@@ -362,31 +195,7 @@ class DokuPaymentService
      */
     public function queryPaymentStatus(string $invoiceNumber, ?Operator $operator = null): ?string
     {
-        $credentials = $this->gatewayCredentials($operator);
-
-        if (trim($credentials['client_id']) === '' || trim($credentials['secret_key']) === '' || trim($invoiceNumber) === '') {
-            return null;
-        }
-
-        $targetPath = "/orders/v1/status/{$invoiceNumber}";
-
-        try {
-            $response = Http::withHeaders($this->signedHeaders($targetPath, null, $operator))
-                ->timeout(10)
-                ->connectTimeout(3)
-                ->get($credentials['base_url'].$targetPath);
-
-            if ($response->successful()) {
-                $status = $response->json('transaction.status') ?? $response->json('response.transaction.status') ?? $response->json('status');
-                if (! empty($status) && is_string($status)) {
-                    return strtoupper($status);
-                }
-            }
-        } catch (\Throwable $e) {
-            report($e);
-        }
-
-        return null;
+        return $this->doku->orderStatus($invoiceNumber, $operator);
     }
 
     /**
@@ -438,18 +247,6 @@ class DokuPaymentService
         }
 
         return false;
-    }
-
-    /**
-     * Whether real gateway credentials are configured for the active mode.
-     *
-     * When true, refund/payout must not fall back to the offline simulator after an API failure.
-     */
-    protected function hasGatewayCredentials(?Operator $operator = null): bool
-    {
-        $credentials = $this->gatewayCredentials($operator);
-
-        return trim($credentials['client_id']) !== '' && trim($credentials['secret_key']) !== '';
     }
 
     /**
@@ -680,42 +477,17 @@ class DokuPaymentService
             return true;
         }
 
-        $credentials = $this->gatewayCredentials($operator);
         $invoiceNumber = (string) $payment->gateway_ref;
-        $hasCredentials = $this->hasGatewayCredentials($operator);
 
-        if ($hasCredentials && $invoiceNumber !== '') {
-            $targetPath = '/orders/v1/refund';
-            $body = [
-                'order' => [
-                    'invoice_number' => $invoiceNumber,
-                    'amount' => (int) round((float) $payment->amount),
-                ],
-            ];
-            $jsonBody = (string) json_encode($body);
-
-            try {
-                $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody, $operator))
-                    ->timeout(10)
-                    ->connectTimeout(3)
-                    ->post($credentials['base_url'].$targetPath, $body);
-
-                if ($response->successful()) {
-                    $this->markPaymentRefunded($payment);
-
-                    return true;
-                }
-
-                Log::warning('DOKU refund was rejected', [
-                    'invoice_number' => $invoiceNumber,
-                    'status' => $response->status(),
-                    'error' => $response->json() ?? $response->body(),
-                ]);
-            } catch (\Throwable $e) {
-                report($e);
+        // Credentials are set: DOKU's answer is final, never fall back to the simulator.
+        if ($this->doku->hasCredentials($operator) && $invoiceNumber !== '') {
+            if (! $this->doku->refund($invoiceNumber, (float) $payment->amount, $operator)) {
+                return false;
             }
 
-            return false;
+            $this->markPaymentRefunded($payment);
+
+            return true;
         }
 
         if (! static::simulatorEnabled()) {
@@ -767,51 +539,24 @@ class DokuPaymentService
             ];
         }
 
-        $credentials = $this->gatewayCredentials($operator);
+        if ($this->doku->hasCredentials($operator)) {
+            $sent = $this->doku->transfer(
+                reference: $reference,
+                amount: (float) $payoutRequest->amount,
+                bank: (string) $payoutRequest->bank_provider,
+                accountNumber: (string) $payoutRequest->bank_account_number,
+                accountName: (string) $payoutRequest->bank_account_name,
+                remark: 'Payout for '.($operator?->name ?? 'Merchant'),
+                operator: $operator,
+            );
 
-        if (trim($credentials['client_id']) !== '' && trim($credentials['secret_key']) !== '') {
-            $targetPath = '/disbursement/v1/transfer';
-            $body = [
-                'partner_reference_no' => $reference,
-                'amount' => [
-                    'value' => number_format((float) $payoutRequest->amount, 2, '.', ''),
-                    'currency' => 'IDR',
-                ],
-                'beneficiary_bank_code' => $this->normalizeBankCode((string) $payoutRequest->bank_provider),
-                'beneficiary_account_number' => (string) $payoutRequest->bank_account_number,
-                'beneficiary_name' => (string) $payoutRequest->bank_account_name,
-                'remark' => 'Payout for '.($payoutRequest->operator?->name ?? 'Merchant'),
-            ];
-            $jsonBody = (string) json_encode($body);
-
-            try {
-                $response = Http::withHeaders($this->signedHeaders($targetPath, $jsonBody, $operator))
-                    ->timeout(10)
-                    ->connectTimeout(3)
-                    ->post($credentials['base_url'].$targetPath, $body);
-
-                if ($response->successful()) {
-                    return [
-                        'success' => true,
-                        'reference' => $reference,
-                        'message' => __('Disbursed instantly via DOKU BI-FAST API'),
-                    ];
-                }
-
-                Log::warning('DOKU payout was rejected', [
-                    'reference' => $reference,
-                    'status' => $response->status(),
-                    'error' => $response->json() ?? $response->body(),
-                ]);
-            } catch (\Throwable $e) {
-                report($e);
-            }
-
-            // Credentials are set — fail closed even if the offline simulator is enabled.
+            // Credentials are set: fail closed even if the offline simulator is enabled.
             return [
-                'success' => false,
+                'success' => $sent,
                 'reference' => $reference,
-                'message' => __('The bank transfer did not go through. The payout is still waiting.'),
+                'message' => $sent
+                    ? __('Disbursed instantly via DOKU BI-FAST API')
+                    : __('The bank transfer did not go through. The payout is still waiting.'),
             ];
         }
 
@@ -828,47 +573,5 @@ class DokuPaymentService
             'reference' => 'SIM-BIFAST-'.strtoupper(Str::random(8)),
             'message' => __('Disbursed via DOKU Simulated BI-FAST Gateway'),
         ];
-    }
-
-    /**
-     * Sanitize phone number for DOKU Jokul Checkout API (numeric digits only).
-     */
-    public function sanitizePhoneNumber(?string $phone): string
-    {
-        if (empty($phone)) {
-            return '081234567890';
-        }
-
-        $digits = PhoneNumber::digits($phone);
-
-        if (strlen($digits) < 9) {
-            return '081234567890';
-        }
-
-        return $digits;
-    }
-
-    /**
-     * Normalize bank provider string to DOKU Jokul BI-FAST / disbursement bank code.
-     */
-    public function normalizeBankCode(string $bank): string
-    {
-        $cleaned = strtoupper(trim($bank));
-
-        return match (true) {
-            str_contains($cleaned, 'BCA') => 'BCA',
-            str_contains($cleaned, 'MANDIRI') => 'MANDIRI',
-            str_contains($cleaned, 'BRI') => 'BRI',
-            str_contains($cleaned, 'BNI') => 'BNI',
-            str_contains($cleaned, 'BSI') || str_contains($cleaned, 'SYARIAH INDONESIA') => 'BSI',
-            str_contains($cleaned, 'CIMB') => 'CIMB',
-            str_contains($cleaned, 'PERMATA') => 'PERMATA',
-            str_contains($cleaned, 'DANAMON') => 'DANAMON',
-            str_contains($cleaned, 'JAGO') => 'JAGO',
-            str_contains($cleaned, 'BTN') => 'BTN',
-            str_contains($cleaned, 'SEABANK') => 'SEABANK',
-            str_contains($cleaned, 'BNC') || str_contains($cleaned, 'NEO') => 'BNC',
-            default => preg_replace('/[^A-Z0-9]/', '', $cleaned) ?: 'BCA',
-        };
     }
 }

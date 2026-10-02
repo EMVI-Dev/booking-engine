@@ -171,7 +171,6 @@ test('a money teammate can save the payout bank account but cannot invite people
         ->set('bank_provider', 'BCA')
         ->set('bank_account_name', 'Money Person')
         ->set('bank_account_number', '4444555566')
-        ->set('payment_mode', 'platform')
         ->call('updatePaymentSettings')
         ->assertSuccessful()
         ->assertHasNoErrors();

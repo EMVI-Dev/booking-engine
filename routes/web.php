@@ -4,7 +4,6 @@ use App\Http\Controllers\Admin\StopManagingOperatorController;
 use App\Http\Controllers\Api\DokuWebhookController;
 use App\Http\Controllers\Auth\LoginHandoffController;
 use App\Http\Controllers\Auth\RegistrationHandoffController;
-use App\Http\Controllers\CaddyAskController;
 use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\StorefrontController;
@@ -54,10 +53,6 @@ Route::post('/api/v1/payments/doku/notify', [DokuWebhookController::class, 'hand
     ->middleware('throttle:60,1')
     ->name('doku.webhook')
     ->withoutMiddleware([ValidateCsrfToken::class]);
-
-Route::get('/internal/caddy/ask', CaddyAskController::class)
-    ->middleware('throttle:60,1')
-    ->name('caddy.ask');
 
 // Agent Dashboard & Tour Operator Catalog Management
 Route::middleware(['auth', 'verified'])->group(function () {

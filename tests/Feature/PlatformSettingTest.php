@@ -4,6 +4,7 @@ use App\Enums\DokuMode;
 use App\Models\Operator;
 use App\Models\Plan;
 use App\Models\PlatformSetting;
+use App\Services\Integrations\DokuClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -14,12 +15,12 @@ test('platform setting returns default values when none exist', function () {
     expect($settings->getCommissionRate())->toBe(0.00)
         ->and($settings->getGuestServiceFeeRate())->toBe(0.05)
         ->and($settings->getBookingHoldMinutes())->toBe(30)
-        ->and($settings->getDokuMode())->toBe(DokuMode::Sandbox)
+        ->and(DokuClient::mode())->toBe(DokuMode::Sandbox)
         ->and($settings->getOperatorSupportEmail())->toBe('support@travelengine.id');
 });
 
 test('platform setting reads updated config', function () {
-    config(['doku.default_mode' => 'live']);
+    config(['doku.mode' => 'live']);
 
     $settings = PlatformSetting::current();
     $settings->update([
@@ -32,7 +33,7 @@ test('platform setting reads updated config', function () {
     $fresh = PlatformSetting::current();
     expect($fresh->getCommissionRate())->toBe(0.15)
         ->and($fresh->getBookingHoldMinutes())->toBe(45)
-        ->and($fresh->getDokuMode())->toBe(DokuMode::Live);
+        ->and(DokuClient::mode())->toBe(DokuMode::Live);
 });
 
 test('operator support never uses a no-reply address', function () {

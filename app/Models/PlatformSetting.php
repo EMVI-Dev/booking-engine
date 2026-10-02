@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\DokuMode;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -39,34 +38,10 @@ class PlatformSetting extends Model
                 'guest_service_fee_rate' => 0.05, // 5% Guest Service Fee added at checkout
                 'guest_service_fee_cap' => 250000.00, // Max Rp 250.000 fee cap for high-ticket bookings (e.g. 100M charters)
                 'booking_hold_minutes' => 30, // 30-minute hold window for unpaid reservations
-                'doku_mode' => config('doku.default_mode', 'sandbox'),
                 'currency_code' => 'IDR',
                 'currency_symbol' => 'Rp',
                 'platform_name' => config('app.name', 'Emvi Booking Platform'),
                 'support_email' => 'support@travelengine.id',
-                'doku' => [
-                    'mode' => config('doku.default_mode', 'sandbox'),
-                    'sandbox' => [
-                        'client_id' => (string) config('doku.sandbox.client_id', ''),
-                        'secret_key' => (string) config('doku.sandbox.secret_key', ''),
-                        'doku_public_key' => (string) config('doku.sandbox.doku_public_key', ''),
-                        'merchant_public_key' => (string) config('doku.sandbox.merchant_public_key', ''),
-                        'merchant_private_key' => (string) config('doku.sandbox.merchant_private_key', ''),
-                        'snap_token_url' => (string) config('doku.sandbox.snap_token_url', 'https://api-sandbox.doku.com/authorization/v1/access-token/b2b'),
-                        'base_url' => (string) config('doku.sandbox.base_url', 'https://api-sandbox.doku.com'),
-                        'checkout_url' => (string) config('doku.sandbox.checkout_url', 'https://jokul-sandbox.doku.com/checkout'),
-                    ],
-                    'live' => [
-                        'client_id' => (string) config('doku.live.client_id', ''),
-                        'secret_key' => (string) config('doku.live.secret_key', ''),
-                        'doku_public_key' => (string) config('doku.live.doku_public_key', ''),
-                        'merchant_public_key' => (string) config('doku.live.merchant_public_key', ''),
-                        'merchant_private_key' => (string) config('doku.live.merchant_private_key', ''),
-                        'snap_token_url' => (string) config('doku.live.snap_token_url', 'https://api.doku.com/authorization/v1/access-token/b2b'),
-                        'base_url' => (string) config('doku.live.base_url', 'https://api.doku.com'),
-                        'checkout_url' => (string) config('doku.live.checkout_url', 'https://jokul.doku.com/checkout'),
-                    ],
-                ],
             ],
         ]);
     }
@@ -102,13 +77,6 @@ class PlatformSetting extends Model
     public function getBookingHoldMinutes(): int
     {
         return (int) ($this->settings['booking_hold_minutes'] ?? 30);
-    }
-
-    public function getDokuMode(): DokuMode
-    {
-        $mode = config('doku.default_mode', 'sandbox');
-
-        return DokuMode::tryFrom((string) $mode) ?? DokuMode::Sandbox;
     }
 
     public function getCurrencyCode(): string
@@ -217,66 +185,6 @@ class PlatformSetting extends Model
     public function assertStorefrontTransactionsAllowed(): void
     {
         abort_unless($this->storefrontTransactionsAllowed(), 403);
-    }
-
-    public function getDokuSandboxClientId(): string
-    {
-        return (string) config('doku.sandbox.client_id', '');
-    }
-
-    public function getDokuSandboxSecretKey(): string
-    {
-        return (string) config('doku.sandbox.secret_key', '');
-    }
-
-    public function getDokuSandboxDokuPublicKey(): string
-    {
-        return (string) config('doku.sandbox.doku_public_key', '');
-    }
-
-    public function getDokuSandboxMerchantPublicKey(): string
-    {
-        return (string) config('doku.sandbox.merchant_public_key', '');
-    }
-
-    public function getDokuSandboxMerchantPrivateKey(): string
-    {
-        return (string) config('doku.sandbox.merchant_private_key', '');
-    }
-
-    public function getDokuSandboxSnapTokenUrl(): string
-    {
-        return (string) config('doku.sandbox.snap_token_url', 'https://api-sandbox.doku.com/authorization/v1/access-token/b2b');
-    }
-
-    public function getDokuLiveClientId(): string
-    {
-        return (string) config('doku.live.client_id', '');
-    }
-
-    public function getDokuLiveSecretKey(): string
-    {
-        return (string) config('doku.live.secret_key', '');
-    }
-
-    public function getDokuLiveDokuPublicKey(): string
-    {
-        return (string) config('doku.live.doku_public_key', '');
-    }
-
-    public function getDokuLiveMerchantPublicKey(): string
-    {
-        return (string) config('doku.live.merchant_public_key', '');
-    }
-
-    public function getDokuLiveMerchantPrivateKey(): string
-    {
-        return (string) config('doku.live.merchant_private_key', '');
-    }
-
-    public function getDokuLiveSnapTokenUrl(): string
-    {
-        return (string) config('doku.live.snap_token_url', 'https://api.doku.com/authorization/v1/access-token/b2b');
     }
 
     /**

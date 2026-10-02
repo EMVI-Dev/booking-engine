@@ -76,16 +76,6 @@ class PayoutRequest extends Model
     }
 
     /**
-     * @deprecated Use operator() instead.
-     *
-     * @return BelongsTo<Operator, $this>
-     */
-    public function agent(): BelongsTo
-    {
-        return $this->operator();
-    }
-
-    /**
      * @return HasMany<WalletTransaction, $this>
      */
     public function walletTransactions(): HasMany

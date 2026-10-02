@@ -1,5 +1,7 @@
 # Vendor Management & Automated Dispatch Specification
 
+_Last reviewed: 2026-10-02_
+
 ## Overview
 
 In tour and travel operations, independent operators and freelance guides frequently curate tours and resell activities provided by 3rd-party suppliers (e.g. ATV parks, boat charters, dive centers, equipment rental shops).
@@ -28,7 +30,7 @@ The **Vendor Management & Automated Dispatch** system allows operators to:
 | `is_active` | `boolean` (default `true`) | Active status toggle |
 | `created_at` / `updated_at` | `timestamps` | Standard Eloquent timestamps |
 
-### `products` Table Modification
+### `products.vendor_id`
 * `vendor_id` (`ulid`, nullable, FK $\rightarrow$ `vendors.id`, null on delete): When null, the activity is in-house (owned/operated by the guide). When set, the activity is outsourced to the assigned vendor.
 
 ---
@@ -36,14 +38,14 @@ The **Vendor Management & Automated Dispatch** system allows operators to:
 ## 2. Operator Workflow & UX
 
 ### Vendor Management Portal (`/vendors`)
-* Livewire SFC at [`resources/views/pages/vendors/⚡index.blade.php`](file:///Users/mastervarol/Herd/booking/resources/views/pages/vendors/⚡index.blade.php).
+* Livewire SFC at [`resources/views/pages/vendors/⚡index.blade.php`](../../resources/views/pages/vendors/⚡index.blade.php).
 * Search, filter by active status, view linked activities count.
 * Create, edit, delete, and toggle active status.
 * Manage optional payout account details.
 * **Test Email Dispatch**: Operators can trigger a test dispatch copy (with `[TEST]` subject and test banner) directly from table row actions or the edit modal to verify vendor inbox deliverability.
 
 ### Inline Vendor Creation during Activity Setup
-* Inside [`resources/views/pages/products/⚡create.blade.php`](file:///Users/mastervarol/Herd/booking/resources/views/pages/products/⚡create.blade.php) and [`⚡edit.blade.php`](file:///Users/mastervarol/Herd/booking/resources/views/pages/products/⚡edit.blade.php):
+* Inside [`resources/views/pages/products/⚡create.blade.php`](../../resources/views/pages/products/⚡create.blade.php) and [`⚡edit.blade.php`](../../resources/views/pages/products/⚡edit.blade.php):
   * **Activity Vendor / Supplier (Optional)** dropdown selector.
   * **"+ Add New Vendor"** button opens a quick modal allowing the operator to register and auto-select a new vendor immediately without losing their in-progress form inputs.
 
@@ -51,7 +53,7 @@ The **Vendor Management & Automated Dispatch** system allows operators to:
 
 ## 3. Automated Dispatch Lifecycle
 
-Handled by [`App\Services\VendorDispatchService`](file:///Users/mastervarol/Herd/booking/app/Services/VendorDispatchService.php).
+Handled by [`App\Services\VendorDispatchService`](../../app/Services/VendorDispatchService.php).
 
 ```
 Booking Paid & Confirmed
@@ -69,9 +71,11 @@ Resolve Reservation Bookable
 ```
 
 ### Notification Triggers
-1. **Automated DOKU Payment:** When webhook/sync verifies payment in [`DokuPaymentService`](file:///Users/mastervarol/Herd/booking/app/Services/DokuPaymentService.php).
-2. **Manual Confirmation:** When an operator marks a booking confirmed in [`pages/reservations/⚡index.blade.php`](file:///Users/mastervarol/Herd/booking/resources/views/pages/reservations/⚡index.blade.php).
-3. **Booking Cancellation:** When a paid booking is cancelled in [`GuestCancellationService`](file:///Users/mastervarol/Herd/booking/app/Services/GuestCancellationService.php), dispatches [`VendorBookingCancelledMail`](file:///Users/mastervarol/Herd/booking/app/Mail/VendorBookingCancelledMail.php).
+All three go through [`BookingNotificationService`](../../app/Services/BookingNotificationService.php), and every mail is **queued** (sent after the database commit):
+
+1. **Automated DOKU Payment:** when the webhook or a status sync marks the payment paid ([`ReservationLifecycleService::applyPaidPayment()`](../../app/Services/ReservationLifecycleService.php)).
+2. **Manual Confirmation:** when an operator confirms a booking ([`ReservationLifecycleService::transitionByOperator()`](../../app/Services/ReservationLifecycleService.php)).
+3. **Booking Cancellation:** when a paid booking is cancelled by the guest, the operator or an admin ([`ReservationLifecycleService`](../../app/Services/ReservationLifecycleService.php)), [`VendorBookingCancelledMail`](../../app/Mail/VendorBookingCancelledMail.php) is sent.
 
 ---
 

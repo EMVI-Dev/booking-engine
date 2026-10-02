@@ -1,17 +1,20 @@
 <?php
 
+use App\Contracts\CustomDomainProvider;
 use App\Enums\DomainStatus;
+use App\Enums\DomainType;
 use App\Enums\OperatorStatus;
 use App\Enums\OperatorUserRole;
 use App\Models\Operator;
-use App\Models\OperatorDomain;
 use App\Models\Plan;
 use App\Models\User;
-use App\Services\DomainResolverService;
+use App\Services\CustomDomains\LocalDomainProvider;
+use App\Services\CustomDomainService;
 use Livewire\Livewire;
-use Mockery\MockInterface;
 
 beforeEach(function () {
+    config(['domains.provider' => 'local']);
+
     $this->user = User::factory()->create();
     $this->operator = Operator::factory()->create([
         'name' => 'Padlock Tours',
@@ -22,67 +25,48 @@ beforeEach(function () {
     $this->actingAs($this->user);
 });
 
-test('a successful domain check connects the address without marking the padlock as already on', function () {
-    $domain = OperatorDomain::factory()->custom()->create([
-        'operator_id' => $this->operator->id,
-        'domain' => 'tours.padlock.test',
-        'status' => DomainStatus::Pending,
-        'ssl_issued_at' => now(),
-    ]);
-
-    $this->partialMock(DomainResolverService::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('customDomainPointsHere')
-            ->once()
-            ->andReturn(true);
-    });
-
-    Livewire::test('pages::settings.brand')
+test('locally a saved address lists its record and a check marks it live', function () {
+    $component = Livewire::test('pages::settings.brand')
         ->set('custom_domain', 'tours.padlock.test')
-        ->call('verifyCustomDomainDns')
+        ->call('updateBrandSettings')
         ->assertHasNoErrors();
 
-    $domain->refresh();
+    $domain = $this->operator->domains()->where('type', DomainType::Custom)->firstOrFail();
 
-    expect($domain->status)->toBe(DomainStatus::Active)
-        ->and($domain->verified_at)->not->toBeNull()
-        ->and($domain->ssl_issued_at)->toBeNull();
+    expect($domain->provider)->toBe('local')
+        ->and($component->instance()->customDomainRecords()[0])->toMatchArray(['type' => 'CNAME', 'name' => 'tours']);
+
+    $component->call('verifyCustomDomainDns')->assertHasNoErrors();
+
+    expect($domain->fresh()->status)->toBe(DomainStatus::Active)
+        ->and($domain->fresh()->isLive())->toBeTrue();
 });
 
-test('an apex website address becomes active after a successful check', function () {
-    $domain = OperatorDomain::factory()->custom()->create([
-        'operator_id' => $this->operator->id,
-        'domain' => 'padlock.com',
-        'status' => DomainStatus::Pending,
-        'ssl_issued_at' => null,
-    ]);
-
-    $this->partialMock(DomainResolverService::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('customDomainPointsHere')
-            ->once()
-            ->andReturn(true);
-    });
+test('brand settings list the records to add instead of fixed server numbers', function () {
+    app(CustomDomainService::class)->connect($this->operator, 'padlock.com');
 
     Livewire::test('pages::settings.brand')
-        ->set('custom_domain', 'padlock.com')
-        ->call('verifyCustomDomainDns')
-        ->assertHasNoErrors();
-
-    $domain->refresh();
-
-    expect($domain->status)->toBe(DomainStatus::Active)
-        ->and($domain->verified_at)->not->toBeNull()
-        ->and($domain->ssl_issued_at)->toBeNull();
+        ->assertSee('ALIAS')
+        ->assertSee('Add each setting above exactly as shown')
+        ->assertDontSee('We’ll show this number once the live server is ready.');
 });
 
-test('brand settings show an A record for the root name', function () {
-    config(['domains.public_ipv4' => '203.0.113.10, 198.51.100.20']);
+test('the local provider refuses to run in production', function () {
+    $this->app['env'] = 'production';
 
-    $html = Livewire::test('pages::settings.brand')
-        ->assertSee('203.0.113.10')
-        ->assertDontSee('198.51.100.20')
-        ->assertSee('If this is your only website', false)
-        ->assertSee('yourname.com')
-        ->html();
+    expect(fn () => app(LocalDomainProvider::class)->check(
+        $this->operator->domains()->create(['domain' => 'x.padlock.test', 'type' => DomainType::Custom, 'status' => DomainStatus::Pending])
+    ))->toThrow(RuntimeException::class);
 
-    expect(substr_count($html, '>A</span>'))->toBe(2);
+    $this->app['env'] = 'testing';
+});
+
+test('production defaults to the laravel cloud provider when none is set', function () {
+    config(['domains.provider' => null]);
+    $this->app['env'] = 'production';
+
+    expect(app(CustomDomainProvider::class)->name())->toBe('laravel_cloud');
+
+    $this->app['env'] = 'testing';
+    expect(app(CustomDomainProvider::class)->name())->toBe('local');
 });

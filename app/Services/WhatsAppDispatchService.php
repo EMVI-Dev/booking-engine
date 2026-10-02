@@ -32,7 +32,7 @@ class WhatsAppDispatchService
      */
     public function getConfirmationUrl(Reservation $reservation): string
     {
-        $agentName = $reservation->agent->name ?? config('app.name', 'Tour Operator');
+        $agentName = $reservation->operator->name ?? config('app.name', 'Tour Operator');
         $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
         $dateFormatted = $reservation->requested_date->format('l, d F Y');
         $pax = $reservation->pax_count;
@@ -68,7 +68,7 @@ class WhatsAppDispatchService
      */
     public function getReminderUrl(Reservation $reservation): string
     {
-        $agentName = $reservation->agent->name ?? config('app.name', 'Tour Operator');
+        $agentName = $reservation->operator->name ?? config('app.name', 'Tour Operator');
         $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
         $dateFormatted = $reservation->requested_date->format('l, d F Y');
         $pax = $reservation->pax_count;
@@ -100,7 +100,7 @@ class WhatsAppDispatchService
      */
     public function getMeetingPointUrl(Reservation $reservation): string
     {
-        $agentName = $reservation->agent->name ?? config('app.name', 'Tour Operator');
+        $agentName = $reservation->operator->name ?? config('app.name', 'Tour Operator');
         $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
         $dateFormatted = $reservation->requested_date->format('l, d F Y');
 
@@ -122,7 +122,7 @@ class WhatsAppDispatchService
      */
     public function getPaymentHoldLinkUrl(Reservation $reservation): string
     {
-        $agentName = $reservation->agent->name ?? config('app.name', 'Tour Operator');
+        $agentName = $reservation->operator->name ?? config('app.name', 'Tour Operator');
         $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
         $dateFormatted = $reservation->requested_date->format('l, d F Y');
         $pax = $reservation->pax_count;
@@ -173,7 +173,7 @@ class WhatsAppDispatchService
      */
     public function getDirectChatUrl(Reservation $reservation): string
     {
-        $agentName = $reservation->agent->name ?? config('app.name', 'Tour Operator');
+        $agentName = $reservation->operator->name ?? config('app.name', 'Tour Operator');
         $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
 
         $msg = "Hello {$reservation->guest_name}, reaching out from {$agentName} regarding your reservation #{$code}.";

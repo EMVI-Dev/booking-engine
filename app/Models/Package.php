@@ -96,16 +96,6 @@ class Package extends Model implements Bookable
     }
 
     /**
-     * @deprecated Use operator() instead.
-     *
-     * @return BelongsTo<Operator, $this>
-     */
-    public function agent(): BelongsTo
-    {
-        return $this->operator();
-    }
-
-    /**
      * @return BelongsToMany<Product, $this, PackageProduct>
      */
     public function products(): BelongsToMany

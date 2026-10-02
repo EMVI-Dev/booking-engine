@@ -66,6 +66,10 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, verifying, active, failed
             $table->timestamp('verified_at')->nullable();
             $table->timestamp('ssl_issued_at')->nullable();
+            $table->string('provider', 30)->nullable(); // laravel_cloud, caddy (custom domains only)
+            $table->string('provider_ref')->nullable(); // id of the domain at the provider
+            $table->json('dns_records')->nullable(); // records the operator must add, as the provider returned them
+            $table->timestamp('last_checked_at')->nullable();
             $table->timestamps();
 
             $table->index(['operator_id', 'status']);

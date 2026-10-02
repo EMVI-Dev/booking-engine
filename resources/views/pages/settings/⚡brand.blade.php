@@ -3,7 +3,7 @@
 use App\Models\Operator;
 use App\Concerns\ResolvesCurrentOperator;
 use App\Concerns\UsesMediaStore;
-use App\Services\DomainResolverService;
+use App\Services\CustomDomainService;
 use App\Services\MediaStore;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
@@ -105,8 +105,7 @@ new #[Title('Brand Settings')] class extends Component {
             $this->google_tag_manager_id = (string) ($tracking['google_tag_manager_id'] ?? '');
             $this->google_site_verification = (string) ($tracking['google_site_verification'] ?? '');
 
-            $customDomain = $operator->domains()->where('type', \App\Enums\DomainType::Custom)->first();
-            $this->custom_domain = $customDomain ? (string) $customDomain->domain : '';
+            $this->custom_domain = (string) app(CustomDomainService::class)->currentFor($operator)?->domain;
         } else {
             $this->booking_notification_email = $user->email;
             $this->billing_email = $user->email;
@@ -206,22 +205,12 @@ new #[Title('Brand Settings')] class extends Component {
         /** @var Operator|null $operator */
         $operator = $this->currentOperator;
         if ($operator) {
-            if ($this->custom_domain !== '') {
-                if (!$operator->hasFeature('custom_domain')) {
-                    $this->addError('custom_domain', __('Your own website address is included on the Agency plan.'));
-                    return;
-                }
+            $customDomains = app(CustomDomainService::class);
 
-                $cleanDomain = strtolower(trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/'))));
-                $existing = \App\Models\OperatorDomain::where('domain', $cleanDomain)->where('operator_id', '!=', $operator->id)->exists();
-                if ($existing) {
-                    $this->addError('custom_domain', __('Another business is already using that address.'));
-                    return;
-                }
-
-                $operator->domains()->updateOrCreate(['type' => \App\Enums\DomainType::Custom], ['domain' => $cleanDomain, 'status' => \App\Enums\DomainStatus::Pending]);
+            if (trim($this->custom_domain) !== '') {
+                $this->custom_domain = $customDomains->connect($operator, $this->custom_domain)->domain;
             } else {
-                $operator->domains()->where('type', \App\Enums\DomainType::Custom)->delete();
+                $customDomains->disconnect($operator);
             }
 
             $logoPath = $this->existing_logo_path;
@@ -282,51 +271,48 @@ new #[Title('Brand Settings')] class extends Component {
     }
 
     /**
-     * Check whether the operator's own website address already points here.
+     * DNS records the operator must add for their own website address (empty when none is connected).
+     *
+     * @return list<array{type: string, name: string, value: string, purpose: string}>
      */
-    public function verifyCustomDomainDns(DomainResolverService $domains): void
+    public function customDomainRecords(): array
+    {
+        $operator = $this->currentOperator;
+
+        return $operator ? (app(CustomDomainService::class)->currentFor($operator)?->requiredDnsRecords() ?? []) : [];
+    }
+
+    /**
+     * Check whether the operator's own website address already points here and has its padlock.
+     */
+    public function verifyCustomDomainDns(CustomDomainService $customDomains): void
     {
         $this->authorizeAbility('manageSettings');
 
         $operator = $this->currentOperator;
-        if (! $operator || ! $this->custom_domain) {
+        $domain = $operator ? $customDomains->currentFor($operator) : null;
+
+        if (! $domain) {
             $this->dispatch(
                 'toast',
-                message: __('Type your website address first.'),
+                message: __('Type your website address and save first.'),
                 type: 'error',
             );
 
             return;
         }
 
-        $cleanDomain = strtolower(trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/'))));
-        $targetHost = $domains->getPlatformDomain();
-        $found = $domains->customDomainPointsHere($cleanDomain, $targetHost);
+        $domain = $customDomains->check($domain);
 
-        $customDomainRecord = $operator->domains()->where('type', \App\Enums\DomainType::Custom)->first();
+        [$message, $type] = match (true) {
+            $domain->isLive() => [__('The address :domain is live with its padlock.', ['domain' => $domain->domain]), 'success'],
+            $domain->status === \App\Enums\DomainStatus::Active => [__('The address :domain is connected. The padlock appears by itself in a few minutes.', ['domain' => $domain->domain]), 'success'],
+            $domain->status === \App\Enums\DomainStatus::Verifying => [__('We can see :domain. The padlock is being set up, which can take a few minutes.', ['domain' => $domain->domain]), 'success'],
+            $domain->status === \App\Enums\DomainStatus::Failed => [__('The records for :domain do not match. Check them against the list and try again.', ['domain' => $domain->domain]), 'error'],
+            default => [__('We cannot see :domain pointing here yet. Add the records shown, then try again in 15 minutes. Changes at your domain shop can take a little while.', ['domain' => $domain->domain]), 'error'],
+        };
 
-        if ($found) {
-            if ($customDomainRecord) {
-                $customDomainRecord->update([
-                    'status' => \App\Enums\DomainStatus::Active,
-                    'verified_at' => now(),
-                    'ssl_issued_at' => null,
-                ]);
-            }
-            $this->dispatch(
-                'toast',
-                message: __('The address :domain is connected. The padlock appears by itself in a few minutes.', ['domain' => $cleanDomain]),
-                type: 'success',
-            );
-        } else {
-            $targets = implode(' / ', array_values(array_filter([$targetHost, ...$domains->expectedPlatformIpv4(), ...$domains->expectedPlatformIpv6()])));
-
-            $this->dispatch(
-                'toast',
-                message: __('We cannot see :domain pointing to :target yet. Use a CNAME for a smaller name, or an A setting on yourname.com. Changes at your domain shop can take a little while. Try again in 15 minutes.', ['domain' => $cleanDomain, 'target' => $targets]),
-                type: 'error',
-            );
-        }
+        $this->dispatch('toast', message: $message, type: $type);
     }
 }; ?>
 
@@ -953,21 +939,12 @@ new #[Title('Brand Settings')] class extends Component {
                                 <x-input-error :messages="$errors->get('custom_domain')" />
                             </div>
 
-                            <!-- Step-by-Step DNS CNAME Configuration Box -->
+                            <!-- DNS records to add (from CustomDomainService / the provider) -->
                             @php
-                                $domainResolver = app(DomainResolverService::class);
-                                $targetHost = $domainResolver->getPlatformDomain();
-                                $apexIpv4 = $domainResolver->instructionIpv4();
-                                $apexIpv6 = $domainResolver->instructionIpv6();
                                 $customDomainModel = $this->currentOperator
-                                    ?->domains()
-                                    ->where('type', \App\Enums\DomainType::Custom)
-                                    ->first();
-                                $typedHost = strtolower(
-                                    trim((string) preg_replace('#^https?://#', '', rtrim($this->custom_domain, '/'))),
-                                );
-                                $typedParts = $typedHost !== '' ? explode('.', $typedHost) : [];
-                                $cnameName = count($typedParts) > 2 ? $typedParts[0] : 'tours';
+                                    ? app(\App\Services\CustomDomainService::class)->currentFor($this->currentOperator)
+                                    : null;
+                                $dnsRecords = $this->customDomainRecords();
                             @endphp
 
                             <div
@@ -984,17 +961,23 @@ new #[Title('Brand Settings')] class extends Component {
                                                 class="font-semibold text-xs text-[#12181E] dark:text-white uppercase tracking-wider">
                                                 {{ __('How to connect your own address') }}</h4>
                                             <p class="text-[11px] text-[#5A6578] dark:text-[#9DA4B2]">
-                                                {{ __('Pick one path below. Root names use a number. Smaller names use our website name.') }}
+                                                {{ __('Save your address first. Then add every setting below where you bought the name.') }}
                                             </p>
                                         </div>
                                     </div>
 
                                     @if ($customDomainModel)
-                                        @if ($customDomainModel->status === \App\Enums\DomainStatus::Active)
+                                        @if ($customDomainModel->isLive())
                                             <span
                                                 class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
                                                 <i class="fa-solid fa-circle-check text-[9px]"></i>
-                                                <span>{{ $customDomainModel->ssl_issued_at ? __('Connected & padlock on') : __('Connected. Padlock in a few minutes.') }}</span>
+                                                <span>{{ __('Connected & padlock on') }}</span>
+                                            </span>
+                                        @elseif ($customDomainModel->status === \App\Enums\DomainStatus::Failed)
+                                            <span
+                                                class="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-300 dark:border-rose-500/40 flex items-center gap-1">
+                                                <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
+                                                <span>{{ __('Settings do not match') }}</span>
                                             </span>
                                         @else
                                             <span
@@ -1006,197 +989,83 @@ new #[Title('Brand Settings')] class extends Component {
                                     @endif
                                 </div>
 
-                                <!-- DNS Record Spec Mobile Cards -->
-                                <div class="space-y-3 md:hidden">
-                                    <div
-                                        class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-2">
-                                        <div
-                                            class="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
-                                            <span>{{ __('CNAME') }}</span>
-                                            <span
-                                                class="font-mono text-[#12181E] dark:text-amber-300">{{ $cnameName }}</span>
-                                        </div>
-                                        <p
-                                            class="font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-all break-all">
-                                            {{ $targetHost }}</p>
-                                        <button type="button" x-data="{ copied: false }"
-                                            x-on:click="navigator.clipboard.writeText(@js($targetHost)); copied = true; setTimeout(() => copied = false, 2000)"
-                                            class="h-9 w-full rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F4F5F7] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-xs transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center justify-center gap-1.5">
-                                            <i class="fa-solid"
-                                                :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
-                                            <span
-                                                x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
-                                        </button>
-                                    </div>
-                                    @forelse ($apexIpv4 as $ipv4)
-                                        <div
-                                            class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-2">
+                                @if ($dnsRecords === [])
+                                    <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] italic">
+                                        {{ __('Save your website address and the settings to add will show here.') }}
+                                    </p>
+                                @else
+                                    <!-- DNS Record Spec Mobile Cards -->
+                                    <div class="space-y-3 md:hidden">
+                                        @foreach ($dnsRecords as $record)
                                             <div
-                                                class="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
-                                                <span>{{ __('A') }}</span>
-                                                <span
-                                                    class="font-mono text-[#12181E] dark:text-amber-300">{{ '@' }}</span>
-                                            </div>
-                                            <p
-                                                class="font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-all break-all">
-                                                {{ $ipv4 }}</p>
-                                            <button type="button" x-data="{ copied: false }"
-                                                x-on:click="navigator.clipboard.writeText(@js($ipv4)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                class="h-9 w-full rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F4F5F7] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-xs transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center justify-center gap-1.5">
-                                                <i class="fa-solid"
-                                                    :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
-                                                <span
-                                                    x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
-                                            </button>
-                                        </div>
-                                    @empty
-                                        <div
-                                            class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-1">
-                                            <p
-                                                class="text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
-                                                {{ __('A') }} · {{ '@' }}</p>
-                                            <p class="text-xs text-[#5A6578] dark:text-[#9DA4B2] italic">
-                                                {{ __('We’ll show this number once the live server is ready.') }}</p>
-                                        </div>
-                                    @endforelse
-                                    @foreach ($apexIpv6 as $ipv6)
-                                        <div
-                                            class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-2">
-                                            <div
-                                                class="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
-                                                <span>{{ __('AAAA') }}</span>
-                                                <span
-                                                    class="font-mono text-[#12181E] dark:text-amber-300">{{ '@' }}</span>
-                                            </div>
-                                            <p
-                                                class="font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-all break-all">
-                                                {{ $ipv6 }}</p>
-                                            <button type="button" x-data="{ copied: false }"
-                                                x-on:click="navigator.clipboard.writeText(@js($ipv6)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                class="h-9 w-full rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F4F5F7] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-xs transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center justify-center gap-1.5">
-                                                <i class="fa-solid"
-                                                    :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
-                                                <span
-                                                    x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
-                                            </button>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                <div class="hidden md:block overflow-x-auto">
-                                    <table class="w-full text-left text-xs font-mono border-collapse">
-                                        <thead>
-                                            <tr
-                                                class="text-[10px] font-semibold uppercase text-[#5A6578] dark:text-[#9DA4B2] border-b border-[#E4E5E9] dark:border-[#1E2433] pb-2">
-                                                <th class="py-2 px-3">{{ __('Type of setting') }}</th>
-                                                <th class="py-2 px-3">{{ __('The name you own') }}</th>
-                                                <th class="py-2 px-3">{{ __('Point it at') }}</th>
-                                                <th class="py-2 px-3 text-right">{{ __('Action') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody
-                                            class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433] font-medium text-[#12181E] dark:text-[#E4E5E9]">
-                                            <tr>
-                                                <td class="py-2.5 px-3">
+                                                class="rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#F9FAFB] dark:bg-[#10141d] p-3 space-y-2">
+                                                <div
+                                                    class="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6578] dark:text-[#9DA4B2]">
+                                                    <span>{{ $record['type'] }}</span>
                                                     <span
-                                                        class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">CNAME</span>
-                                                </td>
-                                                <td
-                                                    class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300">
-                                                    {{ $cnameName }}
-                                                </td>
-                                                <td
-                                                    class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-semibold select-all">
-                                                    {{ $targetHost }}
-                                                </td>
-                                                <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
-                                                    <button type="button"
-                                                        x-on:click="navigator.clipboard.writeText(@js($targetHost)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                        class="px-2.5 py-1 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-[10px] transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center gap-1">
-                                                        <i class="fa-solid"
-                                                            :class="copied ? 'fa-check text-emerald-600 dark:text-emerald-400' :
-                                                                'fa-copy text-slate-400'"></i>
-                                                        <span
-                                                            x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            @forelse ($apexIpv4 as $ipv4)
-                                                <tr>
-                                                    <td class="py-2.5 px-3">
-                                                        <span
-                                                            class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">A</span>
-                                                    </td>
-                                                    <td
-                                                        class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300">
-                                                        {{ '@' }}
-                                                    </td>
-                                                    <td
-                                                        class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-semibold select-all">
-                                                        {{ $ipv4 }}
-                                                    </td>
-                                                    <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
-                                                        <button type="button"
-                                                            x-on:click="navigator.clipboard.writeText(@js($ipv4)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                            class="px-2.5 py-1 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-[10px] transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center gap-1">
-                                                            <i class="fa-solid"
-                                                                :class="copied ?
-                                                                    'fa-check text-emerald-600 dark:text-emerald-400' :
-                                                                    'fa-copy text-slate-400'"></i>
+                                                        class="font-mono text-[#12181E] dark:text-amber-300 break-all">{{ $record['name'] }}</span>
+                                                </div>
+                                                <p
+                                                    class="font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-all break-all">
+                                                    {{ $record['value'] }}</p>
+                                                <button type="button" x-data="{ copied: false }"
+                                                    x-on:click="navigator.clipboard.writeText(@js($record['value'])); copied = true; setTimeout(() => copied = false, 2000)"
+                                                    class="h-9 w-full rounded-[6px] bg-white dark:bg-[#10141d] hover:bg-[#F4F5F7] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-xs transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center justify-center gap-1.5">
+                                                    <i class="fa-solid"
+                                                        :class="copied ? 'fa-check text-emerald-600' : 'fa-copy text-slate-400'"></i>
+                                                    <span
+                                                        x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <div class="hidden md:block overflow-x-auto">
+                                        <table class="w-full text-left text-xs font-mono border-collapse">
+                                            <thead>
+                                                <tr
+                                                    class="text-[10px] font-semibold uppercase text-[#5A6578] dark:text-[#9DA4B2] border-b border-[#E4E5E9] dark:border-[#1E2433] pb-2">
+                                                    <th class="py-2 px-3">{{ __('Type of setting') }}</th>
+                                                    <th class="py-2 px-3">{{ __('The name you own') }}</th>
+                                                    <th class="py-2 px-3">{{ __('Point it at') }}</th>
+                                                    <th class="py-2 px-3 text-right">{{ __('Action') }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody
+                                                class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433] font-medium text-[#12181E] dark:text-[#E4E5E9]">
+                                                @foreach ($dnsRecords as $record)
+                                                    <tr>
+                                                        <td class="py-2.5 px-3">
                                                             <span
-                                                                x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td class="py-2.5 px-3">
-                                                        <span
-                                                            class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">A</span>
-                                                    </td>
-                                                    <td
-                                                        class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300">
-                                                        {{ '@' }}
-                                                    </td>
-                                                    <td
-                                                        class="py-2.5 px-3 text-[#5A6578] dark:text-[#9DA4B2] font-sans font-medium italic">
-                                                        {{ __('We’ll show this number once the live server is ready.') }}
-                                                    </td>
-                                                    <td class="py-2.5 px-3"></td>
-                                                </tr>
-                                            @endforelse
-                                            @foreach ($apexIpv6 as $ipv6)
-                                                <tr>
-                                                    <td class="py-2.5 px-3">
-                                                        <span
-                                                            class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">AAAA</span>
-                                                    </td>
-                                                    <td
-                                                        class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300">
-                                                        {{ '@' }}
-                                                    </td>
-                                                    <td
-                                                        class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-semibold select-all">
-                                                        {{ $ipv6 }}
-                                                    </td>
-                                                    <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
-                                                        <button type="button"
-                                                            x-on:click="navigator.clipboard.writeText(@js($ipv6)); copied = true; setTimeout(() => copied = false, 2000)"
-                                                            class="px-2.5 py-1 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-[10px] transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center gap-1">
-                                                            <i class="fa-solid"
-                                                                :class="copied ?
-                                                                    'fa-check text-emerald-600 dark:text-emerald-400' :
-                                                                    'fa-copy text-slate-400'"></i>
-                                                            <span
-                                                                x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                                class="px-2 py-0.5 rounded-[4px] bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] font-semibold text-[11px] border border-[#FFEF4D]/30">{{ $record['type'] }}</span>
+                                                        </td>
+                                                        <td
+                                                            class="py-2.5 px-3 font-mono font-semibold text-[#12181E] dark:text-amber-300 break-all">
+                                                            {{ $record['name'] }}
+                                                        </td>
+                                                        <td
+                                                            class="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-semibold select-all break-all">
+                                                            {{ $record['value'] }}
+                                                        </td>
+                                                        <td class="py-2.5 px-3 text-right" x-data="{ copied: false }">
+                                                            <button type="button"
+                                                                x-on:click="navigator.clipboard.writeText(@js($record['value'])); copied = true; setTimeout(() => copied = false, 2000)"
+                                                                class="px-2.5 py-1 rounded-[6px] bg-[#F4F5F7] dark:bg-[#1E2433] hover:bg-[#E4E5E9] dark:hover:bg-[#283042] text-[#12181E] dark:text-[#E4E5E9] font-sans font-medium text-[10px] transition border border-[#E4E5E9] dark:border-[#1E2433] shadow-none cursor-pointer inline-flex items-center gap-1">
+                                                                <i class="fa-solid"
+                                                                    :class="copied ?
+                                                                        'fa-check text-emerald-600 dark:text-emerald-400' :
+                                                                        'fa-copy text-slate-400'"></i>
+                                                                <span
+                                                                    x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy Target') }}'"></span>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
 
-                                <!-- Quick 4-Step Instructions -->
+                                <!-- Quick Instructions -->
                                 <div
                                     class="space-y-2 text-[11px] text-[#5A6578] dark:text-[#9DA4B2] pt-2 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                                     <span
@@ -1207,13 +1076,7 @@ new #[Title('Brand Settings')] class extends Component {
                                         </li>
                                         <li>{{ __('Open the page for website-name settings. It is often called DNS or Domain.') }}
                                         </li>
-                                        <li>
-                                            {{ __('If this is your only website (yourname.com): add an A setting on @ and point it at the number above. Some shops call this ALIAS or ANAME — that is fine if it ends up at the same number.') }}
-                                        </li>
-                                        <li>
-                                            {{ __('If you already have a website and only want bookings on a smaller name (tours.yourname.com): add a CNAME and point it at ') }}
-                                            <strong
-                                                class="text-emerald-700 dark:text-emerald-400 font-mono">{{ $targetHost }}</strong>.
+                                        <li>{{ __('Add each setting above exactly as shown: the type, the name, and where it points. An A setting on @ may be called ALIAS or ANAME at some shops.') }}
                                         </li>
                                         <li>{{ __('Save, then tap Check connection. The padlock appears by itself a few minutes after the name points here.') }}
                                         </li>

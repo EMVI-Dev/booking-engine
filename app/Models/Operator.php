@@ -950,58 +950,6 @@ class Operator extends Model
     }
 
     /**
-     * Check if operator has configured their own custom payment gateway credentials.
-     */
-    public function hasCustomPaymentGateway(): bool
-    {
-        $gatewaySettings = $this->settings['payment_gateway'] ?? [];
-
-        return (bool) ($gatewaySettings['use_custom_credentials'] ?? false)
-            && ! empty($gatewaySettings['client_id'])
-            && ! empty($gatewaySettings['shared_key']);
-    }
-
-    /**
-     * Get active payment gateway provider (e.g. 'doku').
-     */
-    public function getPaymentGatewayProvider(): string
-    {
-        return (string) ($this->settings['payment_gateway']['provider'] ?? 'doku');
-    }
-
-    /**
-     * Get effective payment gateway configuration (custom credentials or platform defaults).
-     *
-     * @return array{provider: string, is_custom: bool, client_id: ?string, shared_key: ?string, mode: string}
-     */
-    public function getPaymentGatewayConfig(): array
-    {
-        $platformDokuMode = PlatformSetting::current()->getDokuMode()->value;
-
-        if ($this->hasCustomPaymentGateway()) {
-            $custom = $this->settings['payment_gateway'] ?? [];
-
-            return [
-                'provider' => (string) ($custom['provider'] ?? 'doku'),
-                'is_custom' => true,
-                'client_id' => (string) ($custom['client_id'] ?? null),
-                'shared_key' => (string) ($custom['shared_key'] ?? null),
-                'mode' => (string) ($custom['mode'] ?? $platformDokuMode),
-            ];
-        }
-
-        $platformConfig = config("doku.{$platformDokuMode}", []);
-
-        return [
-            'provider' => 'doku',
-            'is_custom' => false,
-            'client_id' => is_array($platformConfig) ? ($platformConfig['client_id'] ?? null) : null,
-            'shared_key' => is_array($platformConfig) ? ($platformConfig['shared_key'] ?? null) : null,
-            'mode' => $platformDokuMode,
-        ];
-    }
-
-    /**
      * @return HasMany<WalletTransaction, $this>
      */
     public function walletTransactions(): HasMany

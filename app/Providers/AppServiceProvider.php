@@ -2,15 +2,19 @@
 
 namespace App\Providers;
 
+use App\Contracts\CustomDomainProvider;
 use App\Http\Middleware\EnsureOnPlatformDomain;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\Package;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\CustomDomains\LaravelCloudDomainProvider;
+use App\Services\CustomDomains\LocalDomainProvider;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Routing\UrlGenerator;
@@ -28,7 +32,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Operator website addresses: the Laravel Cloud API in production, a no-op locally.
+        $this->app->bind(CustomDomainProvider::class, fn ($app): CustomDomainProvider => match (config('domains.provider') ?: ($app->isProduction() ? 'laravel_cloud' : 'local')) {
+            'laravel_cloud' => $app->make(LaravelCloudDomainProvider::class),
+            default => $app->make(LocalDomainProvider::class),
+        });
     }
 
     /**
@@ -45,11 +53,26 @@ class AppServiceProvider extends ServiceProvider
         // Livewire re-runs only "persistent" middleware on component actions. Without this,
         // admin-only and platform-only checks ran on page load but not on later button clicks.
         $this->configureEmailVerificationLinks();
+        $this->configureTrustedProxies();
 
         Livewire::addPersistentMiddleware([
             EnsureUserIsAdmin::class,
             EnsureOnPlatformDomain::class,
         ]);
+    }
+
+    /**
+     * Widen trusted proxies from config (config is cached in production, so not env() in bootstrap).
+     */
+    protected function configureTrustedProxies(): void
+    {
+        $proxies = trim((string) config('app.trusted_proxies'));
+
+        if ($proxies === '') {
+            return;
+        }
+
+        TrustProxies::at($proxies === '*' ? '*' : array_values(array_filter(array_map('trim', explode(',', $proxies)))));
     }
 
     /**

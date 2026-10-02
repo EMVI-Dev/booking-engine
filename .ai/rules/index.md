@@ -16,6 +16,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/layouts/app/sidebar.blade.php | .ai/rules/layouts-app.md |
 | app/Http/Middleware/** | .ai/rules/middleware.md |
 | app/Models/PlatformSetting.php, app/Models/Plan.php, app/Models/Operator.php | .ai/rules/models.md |
+| docs/** | .ai/rules/docs.md |
 | resources/views/pages/packages/** | .ai/rules/packages.md |
 | resources/views/storefront/partials/navbar.blade.php | .ai/rules/partials.md |
 | resources/views/pages/products/** | .ai/rules/products.md |

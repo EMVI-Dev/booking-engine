@@ -1,5 +1,5 @@
 @php
-    $agent = $reservation->agent;
+    $agent = $reservation->operator;
     $brandColor = $agent->brand_color ?? '#FFEF4D';
     $brandForeground = $agent->brand_foreground_color ?? '#101730';
     $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));

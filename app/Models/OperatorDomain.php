@@ -20,6 +20,10 @@ use Illuminate\Support\Carbon;
  * @property DomainStatus $status
  * @property Carbon|null $verified_at
  * @property Carbon|null $ssl_issued_at
+ * @property string|null $provider
+ * @property string|null $provider_ref
+ * @property array{records?: list<array{type: string, name: string, value: string, purpose: string}>, raw?: array<string, mixed>}|null $dns_records
+ * @property Carbon|null $last_checked_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Operator|null $operator
@@ -39,6 +43,10 @@ class OperatorDomain extends Model
         'status',
         'verified_at',
         'ssl_issued_at',
+        'provider',
+        'provider_ref',
+        'dns_records',
+        'last_checked_at',
     ];
 
     protected function casts(): array
@@ -49,6 +57,8 @@ class OperatorDomain extends Model
             'is_primary' => 'boolean',
             'verified_at' => 'datetime',
             'ssl_issued_at' => 'datetime',
+            'dns_records' => 'array',
+            'last_checked_at' => 'datetime',
         ];
     }
 
@@ -63,6 +73,24 @@ class OperatorDomain extends Model
     public function isActive(): bool
     {
         return $this->status === DomainStatus::Active;
+    }
+
+    /**
+     * Fully live: the address answers and has a padlock.
+     */
+    public function isLive(): bool
+    {
+        return $this->status === DomainStatus::Active && $this->ssl_issued_at !== null;
+    }
+
+    /**
+     * DNS records the operator must add at their domain provider.
+     *
+     * @return list<array{type: string, name: string, value: string, purpose: string}>
+     */
+    public function requiredDnsRecords(): array
+    {
+        return $this->dns_records['records'] ?? [];
     }
 
     public function isSubdomain(): bool

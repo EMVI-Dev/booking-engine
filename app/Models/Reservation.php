@@ -196,16 +196,6 @@ class Reservation extends Model
     }
 
     /**
-     * @deprecated Use operator() instead.
-     *
-     * @return BelongsTo<Operator, $this>
-     */
-    public function agent(): BelongsTo
-    {
-        return $this->operator();
-    }
-
-    /**
      * @return HasMany<Payment, $this>
      */
     public function payments(): HasMany

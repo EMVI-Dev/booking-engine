@@ -6,13 +6,15 @@ use App\Models\Operator;
 use App\Models\PlatformSetting;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Services\Integrations\SlackClient;
 use Throwable;
 
 class OperatorActivitySlackNotifier
 {
+    public function __construct(
+        protected SlackClient $slack,
+    ) {}
+
     /**
      * Incoming webhook used for operator lifecycle alerts, or null when disabled.
      */
@@ -398,21 +400,10 @@ class OperatorActivitySlackNotifier
             return;
         }
 
-        $payload = $this->buildPayload($operator, $text, $title, $fields);
-
-        try {
-            Http::timeout(5)
-                ->connectTimeout(3)
-                ->retry(2, 200, fn (Throwable $exception): bool => $exception instanceof ConnectionException)
-                ->post($url, $payload)
-                ->throw();
-        } catch (Throwable $exception) {
-            report($exception);
-            Log::warning('Operator activity Slack webhook failed.', [
-                'operator_id' => $operator->id,
-                'title' => $title,
-            ]);
-        }
+        $this->slack->post($url, $this->buildPayload($operator, $text, $title, $fields), [
+            'operator_id' => $operator->id,
+            'title' => $title,
+        ]);
     }
 
     public function testAlert(string $adminName, ?string $adminEmail = null): bool
@@ -464,22 +455,6 @@ class OperatorActivitySlackNotifier
             'blocks' => $blocks,
         ];
 
-        try {
-            Http::timeout(5)
-                ->connectTimeout(3)
-                ->retry(2, 200, fn (Throwable $exception): bool => $exception instanceof ConnectionException)
-                ->post($url, $payload)
-                ->throw();
-
-            return true;
-        } catch (Throwable $exception) {
-            report($exception);
-            Log::warning('Slack test alert webhook failed.', [
-                'admin' => $adminName,
-                'error' => $exception->getMessage(),
-            ]);
-
-            return false;
-        }
+        return $this->slack->post($url, $payload, ['admin' => $adminName]);
     }
 }

@@ -1,6 +1,27 @@
-# EMVI Booking Engine Platform — Canonical V1 Money Rules & Settlement Specification (Rev. 16)
+# EMVI Booking Engine Platform — Canonical V1 Money Rules & Settlement Specification (Rev. 17)
 
-> **Authoritative Source of Truth** for Engineering, Finance, Platform Operations, Merchant Legal Terms, and Support Accounting.
+_Last reviewed: 2026-10-02_
+
+> **Authoritative source of truth** for engineering, finance, platform operations, merchant legal terms and support accounting. Prices and plan limits live in [plans-and-pricing.md](plans-and-pricing.md).
+
+## 0. Implementation status (read first)
+
+This spec describes the target rules. The table shows what the code does today, so finance and support do not promise what is not automated yet.
+
+| Rule | Status in code |
+| :--- | :--- |
+| 100% of listed price to operator; 5% guest fee capped at Rp 250.000 | **Done.** `BookingPricingService`, `WalletService::creditBookingPayment()` |
+| Escrow until trip day, then cleared | **Done.** `wallet:release-escrows`, hourly; clears from 00:00 WITA on the trip day |
+| Payouts: minimum Rp 50.000; Rp 2.500 fee under Rp 500.000; auto BI-FAST up to Rp 10.000.000, larger amounts wait for an admin | **Done.** `WalletService` (`createPayoutRequest`, `disbursePayout`, approve or reject) |
+| Payout claim is atomic (no double send) and a failed bank transfer returns to pending | **Done** |
+| Cancel before trip day voids escrow; cancel after it is cleared debits the balance once | **Done.** `WalletService::cancelBookingEarning()` |
+| Card dispute: hold amount + Rp 150.000; won releases; lost settles | **Done.** `openCardDispute`, `releaseDispute`, `settleLostDispute` (admin desk) |
+| Admin manual adjustment with reason (audit-logged) | **Done.** `recordManualAdjustment` |
+| Negative balance blocks payouts until the balance recovers | **Done**, through the payout minimum check |
+| Daily check for paid guest payments with no operator earning | **Done.** `platform:match-payments` at 03:00 WITA. This is not a DOKU settlement-file reconciliation yet |
+| Partial refunds | **Method only** (`processPartialRefund`). No desk action yet |
+| Operator-fault cancellation debits the operator for the guest fee and gateway fee | **Policy only.** Today only the earning is reversed |
+| Gateway fee absorption accounting, 30-day demand notices, debt write-off (`WriteOffLoss`), DOKU settlement-file reconciliation | **Policy only.** Not automated |
 
 ---
 
@@ -41,7 +62,7 @@ All financial entries in `WalletTransaction` are **append-only and immutable**. 
    [CREDIT]  EMVI Platform Revenue:               + Rp    50.000 (PlatformCommission)
    [DEBIT]   DOKU Gateway Processing Cost:        - Rp     7.350 (Internal Expense)
  
- Departure Date Reached (T+0 00:05 AM WIB):
+ Trip Day Reached (from 00:00 WITA, hourly release job):
    [TRANSITION] PendingEscrow ➔ Cleared Balance:   Rp 1.000.000 (Available Balance)
 
  Operator Payout Request (Rp 1.000.000):
@@ -59,7 +80,7 @@ A wallet transaction or payout request MUST exist in exactly one of the followin
 ```mermaid
 stateDiagram-v2
     [*] --> PendingEscrow: Payment Confirmed (DOKU Paid)
-    PendingEscrow --> Cleared: Departure Date Reached (T+0 00:05 WIB)
+    PendingEscrow --> Cleared: Trip Day Reached (00:00 WITA, hourly job)
     PendingEscrow --> Cancelled: Booking Cancelled Before Departure
     Cleared --> PayoutRequested: Operator Requests Withdrawal
     PayoutRequested --> PayoutProcessing: Admin Batch Approval
@@ -69,6 +90,8 @@ stateDiagram-v2
     Cleared --> NegativeBalance: Post-Payout Refund / Chargeback Debit
     NegativeBalance --> Cleared: Future Earnings Offset / Direct Debt Repayment
 ```
+
+> In code, wallet entries use `pending_escrow`, `cleared` and `cancelled` (`WalletTransactionStatus`), and payouts use `pending`, `processing`, `completed` and `rejected` (`PayoutStatus`). `PayoutRequested` ≈ payout `pending`, `PaidOut` ≈ `completed`, `PayoutFailed` ≈ `rejected` (funds returned), and `Reversed` ≈ `cancelled`. `NegativeBalance` is a condition of the cleared balance, not a stored state.
 
 ### State Definitions & Rules
 1. `PendingEscrow`: Funds held until trip departure (`requested_date`). Cannot be withdrawn.
@@ -118,28 +141,15 @@ stateDiagram-v2
 - **Failure Reversal**: If payout fails at the bank level (e.g. account closed/name mismatch), system executes `rejectPayout()`, returning 100% of funds to `Cleared` status with an automated alert to operator.
 
 ### Policy 6: Daily DOKU Settlement Reconciliation Engine
-- **Command**: `php artisan platform:reconcile-doku` (runs daily at 03:00 AM WIB).
+- **Today**: `php artisan platform:match-payments` (daily at 03:00 WITA) flags paid guest payments that never reached an operator wallet. Settlement-file matching below is the target.
 - **Matching Criteria**: Cross-checks DOKU bank settlement report against `Payment` `gateway_ref` invoice numbers, verifying transaction amounts, gateway fees, and net settlement values.
 - **Exception Queue**: Unmatched or delayed records are queued in `/admin/platform` Exception Queue for manual finance review.
 
 ---
 
-## 5. Subscription Plan Commercial Matrix (Canonical Baseline)
+## 5. Plans
 
-| Capability / Metric | **Starter** | **Growth** | **Agency** |
-| :--- | :--- | :--- | :--- |
-| **Monthly Price** | **Free / Rp 0** | **Rp 299.000 / mo** | **Rp 799.000 / mo** |
-| **Annual Price** | **Free / Rp 0** | **Rp 2.990.000 / yr** | **Rp 7.990.000 / yr** |
-| **Operator Commission Cut** | **0.0% (100% Net)** | **0.0% (100% Net)** | **0.0% (100% Net)** |
-| **Guest Service Fee** | **5.0%** (Paid by Guest) | **5.0%** (Paid by Guest) | **5.0%** (Paid by Guest) |
-| **Package Listings Limit** | Up to **5** trips and activities together | Up to **25** trips and activities together | **Unlimited Listings** |
-| **Team Staff Seats** | **You and 1 helper** | **Unlimited people** | **Unlimited people** |
-| **Custom Domain (`yourbrand.com`)** | 🔒 *Gated* | 🔒 *Gated* | ✅ **Included** |
-| **Google Calendar & Live iCal Feed** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** |
-| **Guest CRM Directory & LTV** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** |
-| **1-Click WhatsApp Dispatch Center** | 🔒 *Gated* | ✅ **Included** | ✅ **Included** |
-| **Payment rails** | EMVI DOKU wallet | EMVI DOKU wallet | EMVI DOKU wallet |
-| **AI Search Discovery (`/llms.txt`)** | 🔒 *Gated* | 🔒 *Gated* | ✅ **Included** |
+Plan prices, limits and features live only in [plans-and-pricing.md](plans-and-pricing.md). Every plan uses the EMVI DOKU wallet with the same 5% guest fee and 0% operator commission.
 
 ---
 
@@ -148,17 +158,16 @@ stateDiagram-v2
 1. **Immediate Upgrade with Linear Proration**: Upgrading from *Growth* to *Agency* takes effect immediately. The exact linear prorated value of unused days on the current cycle is credited towards the new tier invoice.
 2. **3-Day Grace Period & Day 4 Fallback Engine**:
    - `Day 1 - 3`: Retry payment attempt & display warning banner in Operator Portal. Storefront remains fully operational.
-   - `Day 4`: If payment remains uncollected, account automatically falls back to *Starter (Free)*. Custom domains pause to `slug.travelengine.id`, listings > 5 set to *Draft*, and guest fee reverts to 5.0%.
+   - `Day 4`: If payment remains uncollected, account automatically falls back to *Starter (Free)* (`subscriptions:return-unpaid-to-free`). Custom domains pause to `slug.travelengine.id` and live listings over the Starter limit go to *Draft*. The guest fee is 5% on every plan, so it does not change.
 3. **IDR Currency Standardization**: All transactions, checkouts, escrows, and payouts operate strictly in **Indonesian Rupiah (IDR)** for zero FX risk and 100% net operator price guarantee.
 4. **Payout Transfer Fee Policy**: Manual payout disbursements $\ge \text{Rp 500.000}$ are **100% Free** (absorbed by platform margin); payouts $< \text{Rp 500.000}$ incur a flat **Rp 2.500** BI-FAST transfer fee. Minimum payout threshold is **Rp 50.000**.
 5. **Promo Code Cost Absorption Rules**:
-   - **Platform Promo Codes** (Admin-created): 100% absorbed by EMVI fee reserves. Operator receives full 100% net price.
-   - **Operator Promo Codes** (Operator-created): Absorbed by operator earnings; net payout reflects discounted price.
+   - **Platform Promo Codes** (Admin-created): subscription invoices only; never applied to guest checkouts.
+   - **Operator Promo Codes** (Operator-created): Absorbed by operator earnings; net payout reflects discounted price. The guest fee is still calculated on the full subtotal.
 
 ---
 
-## 7. QA Verification & Codebase Integrity
+## 7. Verification
 
-- **Automated Pest Test Suite**: **174 test suites passing** (857 assertions).
-- **PHP Code Formatter**: Formatted with Laravel Pint (`vendor/bin/pint --format agent`).
-- **Database Safety Assertion**: Test suite executes strictly in `:memory:` SQLite.
+- Money paths are covered by Pest feature tests (`tests/Feature/Wallet`, `tests/Feature/Security/MoneyHardeningTest.php`, `tests/Feature/Services/SharedBusinessServicesTest.php`) and run on SQLite and MariaDB.
+- Every scheduled money job runs with `withoutOverlapping()->onOneServer()` on Bali time (WITA).

@@ -38,7 +38,7 @@ class SendDepartureReminderJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $this->reservation->loadMissing(['agent', 'bookable']);
+        $this->reservation->loadMissing(['operator', 'bookable']);
 
         if (empty($this->reservation->guest_email)) {
             Log::info("Departure reminder skipped for #{$this->reservation->code}: No guest email.");
