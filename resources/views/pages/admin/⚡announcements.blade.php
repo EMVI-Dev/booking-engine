@@ -216,17 +216,18 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
         icon="fa-bullhorn"
     >
         <x-slot:actions>
-            <x-button type="button" size="sm" wire:click="openCreateModal">
-                <i class="fa-solid fa-plus text-[10px]"></i>
+            <button type="button" wire:click="openCreateModal"
+                class="h-8 px-3 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] font-medium text-[13px] inline-flex items-center gap-1.5 shadow-none transition cursor-pointer">
+                <i class="fa-solid fa-plus text-xs"></i>
                 <span>{{ __('New notice') }}</span>
-            </x-button>
+            </button>
         </x-slot:actions>
     </x-page-header>
 
     <!-- Feedback Alerts -->
     @if (session()->has('success'))
-        <div class="p-4 rounded-2xl bg-emerald-950/60 text-emerald-300 border border-emerald-800/60 text-xs font-bold flex items-center gap-2">
-            <i class="fa-solid fa-circle-check text-sm text-emerald-400"></i>
+        <div class="p-3.5 rounded-[12px] bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] text-[13px] font-medium flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-sm text-[#059669]"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
@@ -239,46 +240,46 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
             <x-filter-tab wire:click="$set('filter_type', 'critical')" :active="$filter_type === 'critical'">{{ __('Critical') }}</x-filter-tab>
         </x-filter-tabs>
 
-        <p class="text-xs font-medium text-op-subtle">
-            <span class="font-semibold text-op-ink">{{ $activeCount }}</span> {{ __('currently active broadcasts') }}
+        <p class="text-[12px] font-medium text-[#60646C]">
+            <span class="font-semibold text-[#1C2024] dark:text-white">{{ $activeCount }}</span> {{ __('currently active broadcasts') }}
         </p>
     </x-toolbar>
 
-    <!-- Announcements Feed / Table -->
+    <!-- Announcements Feed -->
     <div class="space-y-4">
         @forelse ($announcements as $ann)
             @php
                 $isLive = $ann->is_active && ($ann->starts_at === null || $ann->starts_at->isPast()) && ($ann->ends_at === null || $ann->ends_at->isFuture());
                 $typeClasses = match ($ann->type) {
-                    'critical' => 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200',
-                    'warning' => 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-200',
-                    'success' => 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-200',
-                    default => 'bg-[#FFEF4D]/5 dark:bg-[#FFEF4D]/5 border-slate-200/80 dark:border-[#1e2433] text-slate-800 dark:text-slate-200',
+                    'critical' => 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]',
+                    'warning' => 'bg-[#FFFBEB] border-[#FDE68A] text-[#92400E]',
+                    'success' => 'bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]',
+                    default => 'bg-[#FAFAFB] dark:bg-[#141821] border-[#E4E5E9] dark:border-[#1E2433] text-[#1C2024] dark:text-slate-200',
                 };
                 $badgeClasses = match ($ann->type) {
-                    'critical' => 'bg-rose-950/60 text-rose-400 border border-rose-800/60',
-                    'warning' => 'bg-amber-950/60 text-amber-400 border border-amber-800/60',
-                    'success' => 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60',
-                    default => 'bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30',
+                    'critical' => 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]',
+                    'warning' => 'bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]',
+                    'success' => 'bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]',
+                    default => 'bg-[#FFEF4D]/20 text-[#856404] dark:text-[#FFEF4D] border border-[#FFEF4D]/40',
                 };
             @endphp
-            <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4 transition">
+            <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-3.5 transition">
                 <!-- Top Row: Type, Title, Status, Actions -->
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <div class="flex items-center gap-2.5 flex-wrap">
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ $badgeClasses }}">
+                        <span class="px-2 py-0.5 rounded-[6px] text-[11px] font-medium uppercase tracking-wider {{ $badgeClasses }}">
                             {{ $ann->type }}
                         </span>
-                        <h3 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">
+                        <h3 class="font-semibold text-[15px] text-[#1C2024] dark:text-white">
                             {{ $ann->title }}
                         </h3>
                         @if ($isLive)
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[6px] text-[11px] font-medium bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>
                                 {{ __('Live Broadcast') }}
                             </span>
                         @else
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 dark:bg-[#141821] dark:text-slate-400 border border-slate-200 dark:border-[#1e2433]">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-[6px] text-[11px] font-medium bg-[#FAFAFB] text-[#60646C] dark:bg-[#141821] dark:text-slate-400 border border-[#E4E5E9] dark:border-[#1E2433]">
                                 {{ $ann->is_active ? __('Scheduled / Ended') : __('Inactive') }}
                             </span>
                         @endif
@@ -288,7 +289,7 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
                         <button
                             type="button"
                             wire:click="confirmToggleActive('{{ $ann->id }}')"
-                            class="h-8 px-3 rounded-xl text-xs font-bold transition cursor-pointer {{ $ann->is_active ? 'bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#1e2433]' : 'bg-emerald-600 text-white hover:bg-emerald-700' }}"
+                            class="h-7 px-2.5 rounded-[6px] text-[11px] font-medium transition cursor-pointer shadow-none {{ $ann->is_active ? 'bg-white dark:bg-[#141821] text-[#1C2024] dark:text-slate-300 hover:bg-[#FAFAFB] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433]' : 'bg-[#ECFDF5] text-[#065F46] hover:bg-[#D1FAE5] border border-[#A7F3D0]' }}"
                         >
                             {{ $ann->is_active ? __('Deactivate') : __('Activate') }}
                         </button>
@@ -296,42 +297,42 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
                         <button
                             type="button"
                             wire:click="editAnnouncement('{{ $ann->id }}')"
-                            class="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-[#1e2433] border border-slate-200 dark:border-[#1e2433] text-xs transition cursor-pointer inline-flex items-center justify-center shadow-2xs"
+                            class="h-7 w-7 rounded-[6px] bg-white dark:bg-[#141821] text-[#60646C] hover:bg-[#FAFAFB] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] text-[11px] transition cursor-pointer inline-flex items-center justify-center shadow-none"
                             title="{{ __('Edit Announcement') }}"
                         >
-                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            <i class="fa-solid fa-pen-to-square text-[10px]"></i>
                         </button>
 
                         <button
                             type="button"
                             wire:click="confirmDelete('{{ $ann->id }}')"
-                            class="h-8 w-8 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 hover:bg-rose-100 border border-rose-200 dark:border-rose-900/60 text-xs transition cursor-pointer inline-flex items-center justify-center shadow-2xs"
+                            class="h-7 w-7 rounded-[6px] bg-[#FEF2F2] text-[#991B1B] hover:bg-[#FEE2E2] border border-[#FECACA] text-[11px] transition cursor-pointer inline-flex items-center justify-center shadow-none"
                             title="{{ __('Delete Announcement') }}"
                         >
-                            <i class="fa-solid fa-trash-can text-xs"></i>
+                            <i class="fa-solid fa-trash-can text-[10px]"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Message Preview Box -->
-                <div class="p-4 rounded-2xl border {{ $typeClasses }} text-sm font-medium leading-relaxed">
+                <div class="p-3.5 rounded-[8px] border {{ $typeClasses }} text-[13px] leading-relaxed">
                     {{ $ann->message }}
                 </div>
 
                 <!-- Meta Details Footer -->
-                <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 pt-1">
+                <div class="flex flex-wrap items-center justify-between gap-3 text-[12px] text-[#60646C] dark:text-slate-400 pt-1">
                     <div class="flex items-center gap-4 flex-wrap">
                         <span>
-                            <strong class="text-slate-700 dark:text-slate-300 font-semibold">{{ __('Audience:') }}</strong>
+                            <strong class="text-[#1C2024] dark:text-slate-300 font-medium">{{ __('Audience:') }}</strong>
                             {{ $ann->targetPlan ? $ann->targetPlan->name . ' tier only' : __('All Operator Tiers') }}
                         </span>
                         <span>
-                            <strong class="text-slate-700 dark:text-slate-300 font-semibold">{{ __('Dismissible:') }}</strong>
+                            <strong class="text-[#1C2024] dark:text-slate-300 font-medium">{{ __('Dismissible:') }}</strong>
                             {{ $ann->is_dismissible ? __('Yes') : __('No (Persistent)') }}
                         </span>
                     </div>
 
-                    <div class="flex items-center gap-3 font-mono text-xs">
+                    <div class="flex items-center gap-3 font-mono text-[11px]">
                         @if ($ann->starts_at || $ann->ends_at)
                             <span>
                                 {{ $ann->starts_at?->format('d M Y, H:i') ?? 'Now' }} &rarr; {{ $ann->ends_at?->format('d M Y, H:i') ?? 'Indefinite' }}
@@ -343,10 +344,10 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
                 </div>
             </div>
         @empty
-            <div class="p-12 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] text-center text-slate-400 space-y-2">
-                <i class="fa-solid fa-bullhorn text-4xl mb-2 block opacity-30"></i>
-                <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300">{{ __('No broadcast notices created') }}</h3>
-                <p class="text-xs">{{ __('Click "New Announcement" above to publish a notification to operators.') }}</p>
+            <div class="p-10 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] text-center text-[#8B8D98] space-y-2">
+                <i class="fa-solid fa-bullhorn text-3xl mb-2 block opacity-30"></i>
+                <h3 class="font-medium text-[13px] text-[#60646C] dark:text-slate-300">{{ __('No broadcast notices created') }}</h3>
+                <p class="text-[12px]">{{ __('Click "New notice" above to publish a notification to operators.') }}</p>
             </div>
         @endforelse
     </div>
@@ -354,30 +355,30 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
     <!-- Create / Edit Modal -->
     @if ($show_modal)
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-                <div class="w-full max-w-lg rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-2xl flex flex-col my-8">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#12181E]/60 backdrop-blur-xs overflow-y-auto">
+                <div class="w-full max-w-lg rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none flex flex-col my-8 overflow-hidden">
                     <!-- Modal Header -->
-                    <div class="p-6 border-b border-slate-100 dark:border-[#1e2433] flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-[#10141d] rounded-t-3xl">
-                        <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                    <div class="p-4 sm:p-5 border-b border-[#E4E5E9] dark:border-[#1E2433] flex items-start justify-between gap-3 bg-[#FAFAFB] dark:bg-[#141821]">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-[8px] bg-[#FFEF4D] text-[#12181E] flex items-center justify-center text-sm shadow-none shrink-0 mt-0.5 font-semibold">
                                 <i class="fa-solid fa-bullhorn"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
-                                <h3 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                                <h3 class="font-semibold text-[16px] text-[#1C2024] dark:text-white leading-tight truncate">
                                     {{ $editing_id ? __('Edit Broadcast Announcement') : __('Create New Broadcast') }}
                                 </h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                <p class="text-[12px] text-[#60646C] dark:text-slate-400">
                                     {{ __('Display a notification banner across all active operator dashboards.') }}
                                 </p>
                             </div>
                         </div>
-                        <button type="button" wire:click="closeModal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer shrink-0 -mr-1 -mt-1">
+                        <button type="button" wire:click="closeModal" class="p-1.5 rounded-[6px] text-[#8B8D98] hover:text-[#1C2024] dark:hover:text-white transition cursor-pointer shrink-0">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
 
                     <!-- Modal Body -->
-                    <form wire:submit="saveAnnouncement" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-36">
+                    <form wire:submit="saveAnnouncement" class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
                         <div>
                             <x-label for="title" :value="__('Announcement Title')" required />
                             <x-input id="title" type="text" wire:model="title" placeholder="{{ __('e.g. Scheduled System Maintenance') }}" :error="$errors->has('title')" />
@@ -444,8 +445,8 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-[#1e2433]">
-                            <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-[#E4E5E9] dark:border-[#1E2433]">
+                            <div class="p-2.5 rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821]/40 transition">
                                 <x-checkbox
                                     id="announcement_is_active"
                                     wire:model="is_active"
@@ -454,7 +455,7 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
                                 />
                             </div>
 
-                            <div class="p-3 rounded-2xl border border-slate-200/80 dark:border-[#1e2433] bg-slate-50/50 dark:bg-[#141821]/40 hover:bg-slate-100 dark:hover:bg-[#141821] transition">
+                            <div class="p-2.5 rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821]/40 transition">
                                 <x-checkbox
                                     id="announcement_is_dismissible"
                                     wire:model="is_dismissible"
@@ -465,11 +466,11 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
                         </div>
 
                         <!-- Modal Actions Footer -->
-                        <div class="pt-4 border-t border-slate-100 dark:border-[#1e2433] flex items-center justify-end gap-3">
-                            <button type="button" wire:click="closeModal" class="h-9 px-4 rounded-xl bg-slate-100 dark:bg-[#141821] hover:bg-slate-200 dark:hover:bg-[#1e2433] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#1e2433] text-xs font-bold transition cursor-pointer">
+                        <div class="pt-4 border-t border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-end gap-2.5">
+                            <button type="button" wire:click="closeModal" class="h-8 px-3.5 rounded-[6px] bg-white dark:bg-[#141821] hover:bg-[#FAFAFB] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] text-[#1C2024] dark:text-slate-200 text-[13px] font-medium transition cursor-pointer shadow-none">
                                 {{ __('Cancel') }}
                             </button>
-                            <button type="submit" class="h-9 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer">
+                            <button type="submit" class="h-8 px-3.5 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] font-medium text-[13px] shadow-none transition inline-flex items-center gap-1.5 cursor-pointer">
                                 <i class="fa-solid fa-bullhorn text-xs"></i>
                                 <span>{{ __('Broadcast Notice') }}</span>
                             </button>
@@ -487,40 +488,40 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
             $willBeActive = ! $targetAnn->is_active;
         @endphp
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto" wire:keydown.escape="closeConfirmToggleModal">
-                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-[#0C0E13] shadow-2xl border border-slate-200/80 dark:border-[#1e2433] flex flex-col my-8" @click.outside="$wire.closeConfirmToggleModal()">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#12181E]/60 backdrop-blur-xs overflow-y-auto" wire:keydown.escape="closeConfirmToggleModal">
+                <div class="w-full max-w-md rounded-[12px] bg-white dark:bg-[#10141d] shadow-none border border-[#E4E5E9] dark:border-[#1E2433] flex flex-col my-8 overflow-hidden" @click.outside="$wire.closeConfirmToggleModal()">
                     <!-- Header -->
-                    <div class="p-6 border-b border-slate-100 dark:border-[#1e2433] flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-[#10141d] rounded-t-3xl">
-                        <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl {{ $willBeActive ? 'bg-emerald-600' : 'bg-amber-600' }} text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                    <div class="p-4 sm:p-5 border-b border-[#E4E5E9] dark:border-[#1E2433] flex items-start justify-between gap-3 bg-[#FAFAFB] dark:bg-[#141821]">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-[8px] {{ $willBeActive ? 'bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]' : 'bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]' }} flex items-center justify-center text-sm shadow-none shrink-0 mt-0.5">
                                 <i class="fa-solid {{ $willBeActive ? 'fa-circle-check' : 'fa-pause' }}"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
-                                <h3 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                                <h3 class="font-semibold text-[16px] text-[#1C2024] dark:text-white leading-tight truncate">
                                     {{ $willBeActive ? __('Activate Broadcast Notice') : __('Deactivate Broadcast Notice') }}
                                 </h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                <p class="text-[12px] text-[#60646C] dark:text-slate-400 truncate">
                                     {{ $targetAnn->title }}
                                 </p>
                             </div>
                         </div>
-                        <button type="button" wire:click="closeConfirmToggleModal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer">
+                        <button type="button" wire:click="closeConfirmToggleModal" class="p-1.5 rounded-[6px] text-[#8B8D98] hover:text-[#1C2024] dark:hover:text-white transition cursor-pointer">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
 
                     <!-- Body -->
-                    <div class="p-6 space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                    <div class="p-5 space-y-3 text-[13px] text-[#60646C] dark:text-slate-300">
                         @if ($willBeActive)
                             <p class="leading-relaxed">
                                 {{ __('Are you sure you want to activate') }} <strong>"{{ $targetAnn->title }}"</strong>?
                             </p>
-                            <div class="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-900/50 space-y-1 text-emerald-200">
-                                <div class="font-bold flex items-center gap-1.5">
+                            <div class="p-3 rounded-[8px] bg-[#ECFDF5] border border-[#A7F3D0] space-y-1 text-[#065F46]">
+                                <div class="font-medium flex items-center gap-1.5 text-[12px]">
                                     <i class="fa-solid fa-bullhorn text-xs"></i>
                                     <span>{{ __('Live Audience Broadcast') }}</span>
                                 </div>
-                                <p class="text-[11px] text-emerald-300 leading-normal">
+                                <p class="text-[12px] leading-normal">
                                     {{ __('This notification banner will immediately be displayed across operator portals according to its audience settings.') }}
                                 </p>
                             </div>
@@ -528,12 +529,12 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
                             <p class="leading-relaxed">
                                 {{ __('Are you sure you want to deactivate') }} <strong>"{{ $targetAnn->title }}"</strong>?
                             </p>
-                            <div class="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-900/50 space-y-1 text-amber-200">
-                                <div class="font-bold flex items-center gap-1.5">
+                            <div class="p-3 rounded-[8px] bg-[#FFFBEB] border border-[#FDE68A] space-y-1 text-[#92400E]">
+                                <div class="font-medium flex items-center gap-1.5 text-[12px]">
                                     <i class="fa-solid fa-eye-slash text-xs"></i>
                                     <span>{{ __('Hide From Operators') }}</span>
                                 </div>
-                                <p class="text-[11px] text-amber-300 leading-normal">
+                                <p class="text-[12px] leading-normal">
                                     {{ __('This notice will be hidden from all operator dashboards immediately.') }}
                                 </p>
                             </div>
@@ -541,14 +542,14 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
                     </div>
 
                     <!-- Footer -->
-                    <div class="p-4 border-t border-slate-100 dark:border-[#1e2433] flex items-center justify-end gap-2.5 bg-slate-50/50 dark:bg-[#10141d] rounded-b-3xl">
-                        <button type="button" wire:click="closeConfirmToggleModal" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#141821] transition cursor-pointer">
+                    <div class="p-4 border-t border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-end gap-2.5 bg-[#FAFAFB] dark:bg-[#141821]">
+                        <button type="button" wire:click="closeConfirmToggleModal" class="h-8 px-3.5 rounded-[6px] text-[13px] font-medium text-[#1C2024] dark:text-slate-300 bg-white dark:bg-[#141821] hover:bg-[#FAFAFB] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] transition cursor-pointer shadow-none">
                             {{ __('Cancel') }}
                         </button>
                         <button
                             type="button"
                             wire:click="executeToggleActive"
-                            class="px-4 py-2 rounded-xl text-xs font-bold text-white transition cursor-pointer shadow-xs {{ $willBeActive ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700' }}"
+                            class="h-8 px-3.5 rounded-[6px] text-[13px] font-medium transition cursor-pointer shadow-none {{ $willBeActive ? 'bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0]' : 'bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]' }}"
                         >
                             {{ $willBeActive ? __('Confirm & Activate') : __('Confirm & Deactivate') }}
                         </button>
@@ -564,53 +565,53 @@ new #[Title('Notices')] #[Layout('layouts.admin')] class extends Component {
             $deleteAnn = $this->deleteTargetAnnouncement;
         @endphp
         @teleport('body')
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto" wire:keydown.escape="closeConfirmDeleteModal">
-                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-[#0C0E13] shadow-2xl border border-slate-200/80 dark:border-[#1e2433] flex flex-col my-8" @click.outside="$wire.closeConfirmDeleteModal()">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#12181E]/60 backdrop-blur-xs overflow-y-auto" wire:keydown.escape="closeConfirmDeleteModal">
+                <div class="w-full max-w-md rounded-[12px] bg-white dark:bg-[#10141d] shadow-none border border-[#E4E5E9] dark:border-[#1E2433] flex flex-col my-8 overflow-hidden" @click.outside="$wire.closeConfirmDeleteModal()">
                     <!-- Header -->
-                    <div class="p-6 border-b border-slate-100 dark:border-[#1e2433] flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-[#10141d] rounded-t-3xl">
-                        <div class="flex items-start gap-3.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-base shadow-xs shrink-0 mt-0.5">
+                    <div class="p-4 sm:p-5 border-b border-[#E4E5E9] dark:border-[#1E2433] flex items-start justify-between gap-3 bg-[#FAFAFB] dark:bg-[#141821]">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-[8px] bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA] flex items-center justify-center text-sm shadow-none shrink-0 mt-0.5">
                                 <i class="fa-solid fa-trash-can"></i>
                             </div>
                             <div class="space-y-0.5 min-w-0">
-                                <h3 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                                <h3 class="font-semibold text-[16px] text-[#1C2024] dark:text-white leading-tight truncate">
                                     {{ __('Delete Broadcast Notice') }}
                                 </h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                <p class="text-[12px] text-[#60646C] dark:text-slate-400 truncate">
                                     {{ $deleteAnn->title }}
                                 </p>
                             </div>
                         </div>
-                        <button type="button" wire:click="closeConfirmDeleteModal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer">
+                        <button type="button" wire:click="closeConfirmDeleteModal" class="p-1.5 rounded-[6px] text-[#8B8D98] hover:text-[#1C2024] dark:hover:text-white transition cursor-pointer">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
 
                     <!-- Body -->
-                    <div class="p-6 space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                    <div class="p-5 space-y-3 text-[13px] text-[#60646C] dark:text-slate-300">
                         <p class="leading-relaxed">
                             {{ __('Are you sure you want to permanently delete') }} <strong>"{{ $deleteAnn->title }}"</strong>?
                         </p>
-                        <div class="p-3.5 rounded-2xl bg-rose-950/40 border border-rose-900/50 space-y-1 text-rose-200">
-                            <div class="font-bold flex items-center gap-1.5">
+                        <div class="p-3 rounded-[8px] bg-[#FEF2F2] border border-[#FECACA] space-y-1 text-[#991B1B]">
+                            <div class="font-medium flex items-center gap-1.5 text-[12px]">
                                 <i class="fa-solid fa-triangle-exclamation text-xs"></i>
                                 <span>{{ __('Permanent Action') }}</span>
                             </div>
-                            <p class="text-[11px] text-rose-300 leading-normal">
+                            <p class="text-[12px] leading-normal">
                                 {{ __('This broadcast record and all operator dismissal history will be permanently deleted.') }}
                             </p>
                         </div>
                     </div>
 
                     <!-- Footer -->
-                    <div class="p-4 border-t border-slate-100 dark:border-[#1e2433] flex items-center justify-end gap-2.5 bg-slate-50/50 dark:bg-[#10141d] rounded-b-3xl">
-                        <button type="button" wire:click="closeConfirmDeleteModal" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#141821] transition cursor-pointer">
+                    <div class="p-4 border-t border-[#E4E5E9] dark:border-[#1E2433] flex items-center justify-end gap-2.5 bg-[#FAFAFB] dark:bg-[#141821]">
+                        <button type="button" wire:click="closeConfirmDeleteModal" class="h-8 px-3.5 rounded-[6px] text-[13px] font-medium text-[#1C2024] dark:text-slate-300 bg-white dark:bg-[#141821] hover:bg-[#FAFAFB] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] transition cursor-pointer shadow-none">
                             {{ __('Cancel') }}
                         </button>
                         <button
                             type="button"
                             wire:click="executeDelete"
-                            class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition cursor-pointer shadow-xs"
+                            class="h-8 px-3.5 rounded-[6px] text-[13px] font-medium text-[#991B1B] bg-[#FEF2F2] hover:bg-[#FEE2E2] border border-[#FECACA] transition cursor-pointer shadow-none"
                         >
                             {{ __('Delete Announcement') }}
                         </button>

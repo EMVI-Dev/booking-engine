@@ -61,24 +61,24 @@
         <div
             class="h-10 px-3 sm:px-6 bg-stone-100 dark:bg-zinc-900 border-b border-line dark:border-line-dark text-stone-700 dark:text-zinc-200 text-xs font-semibold flex items-center justify-between gap-2 z-40 shrink-0 select-none">
             <div class="flex items-center gap-2 min-w-0">
-                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-brand-400 text-brand-foreground text-[10px] font-black shrink-0">
+                <span class="flex h-6 w-6 items-center justify-center rounded-[6px] bg-[#FFEF4D] text-[#12181E] text-[10px] font-medium shrink-0">
                     <i class="fa-solid fa-compass"></i>
                 </span>
                 <div class="flex items-center gap-1.5 min-w-0 text-xs truncate">
-                    <span class="hidden sm:inline text-stone-500 dark:text-zinc-400 font-medium whitespace-nowrap">{{ __('Admin Session: Managing Operator') }}</span>
-                    <span class="sm:hidden text-stone-500 dark:text-zinc-400 font-medium whitespace-nowrap">{{ __('Managing:') }}</span>
-                    <strong class="text-stone-800 dark:text-zinc-100 font-bold truncate">{{ $currentOperator->name ?? 'Default Operator' }}</strong>
+                    <span class="hidden sm:inline text-[#60646C] dark:text-slate-400 font-normal whitespace-nowrap">{{ __('Admin Session: Managing Operator') }}</span>
+                    <span class="sm:hidden text-[#60646C] dark:text-slate-400 font-normal whitespace-nowrap">{{ __('Managing:') }}</span>
+                    <strong class="text-[#1C2024] dark:text-white font-medium truncate">{{ $currentOperator->name ?? 'Default Operator' }}</strong>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <a href="{{ route('admin.operators.index') }}" wire:navigate title="{{ __('Switch Operator') }}"
-                    class="h-7 px-2 sm:px-2.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-700 text-stone-700 dark:text-zinc-200 border border-line dark:border-line-dark text-[11px] font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
-                    <i class="fa-solid fa-users-gear text-stone-400 text-[10px]"></i>
+                    class="h-7 px-2 sm:px-2.5 rounded-[6px] bg-white dark:bg-[#141821] hover:bg-[#F4F5F6] text-[#1C2024] dark:text-slate-200 border border-[#E4E5E9] dark:border-[#1E2433] text-[11px] font-medium transition inline-flex items-center gap-1.5 cursor-pointer shadow-none">
+                    <i class="fa-solid fa-users-gear text-[#8B8D98] text-[10px]"></i>
                     <span class="hidden md:inline">{{ __('Switch Operator') }}</span>
                     <span class="md:hidden hidden xs:inline">{{ __('Switch') }}</span>
                 </a>
                 <a href="{{ route('admin.platform.edit') }}" wire:navigate title="{{ __('Platform Admin') }}"
-                    class="h-7 px-2 sm:px-2.5 rounded-lg bg-brand-400 hover:bg-brand-500 text-brand-foreground text-[11px] font-bold transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                    class="h-7 px-2 sm:px-2.5 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-[11px] font-medium transition inline-flex items-center gap-1.5 cursor-pointer shadow-none">
                     <i class="fa-solid fa-arrow-left text-[10px]"></i>
                     <span class="hidden md:inline">{{ __('Platform Admin') }}</span>
                     <span class="md:hidden">{{ __('Admin') }}</span>
@@ -103,13 +103,13 @@
                     wire:navigate>
                     @if ($currentOperator?->logo_url)
                         <div
-                            class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-op-line bg-op-surface p-0.5">
+                            class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-[8px] border border-op-line bg-op-surface p-0.5">
                             <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}"
-                                class="h-full w-full rounded-lg object-contain" />
+                                class="h-full w-full rounded-[6px] object-contain" />
                         </div>
                     @else
                         <span
-                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-400 text-sm font-bold text-brand-foreground">
+                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-xs font-medium text-[#12181E]">
                             {{ strtoupper(substr($currentOperator->name ?? config('app.name', 'T'), 0, 1)) }}
                         </span>
                     @endif
@@ -205,15 +205,15 @@
                 <x-dropdown align="top" width="full">
                     <x-slot name="trigger">
                         <button type="button"
-                            class="group flex w-full cursor-pointer items-center gap-2.5 rounded-xl bg-white/5 p-2.5 text-start hover:bg-white/10">
+                            class="group flex w-full cursor-pointer items-center gap-2.5 rounded-[6px] bg-white/5 p-2 text-start hover:bg-white/10 transition shadow-none">
                             <div
-                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-400 text-xs font-bold text-brand-foreground">
+                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#FFEF4D] text-xs font-medium text-[#12181E]">
                                 {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-semibold leading-tight text-op-ink">
+                                <p class="truncate text-xs font-medium leading-tight text-op-ink">
                                     {{ auth()->user()->name ?? 'User' }}</p>
-                                <p class="mt-0.5 truncate text-xs leading-tight text-op-subtle">
+                                <p class="mt-0.5 truncate text-[11px] leading-tight text-op-subtle">
                                     {{ auth()->user()->email ?? '' }}</p>
                             </div>
                             <i class="fa-solid fa-chevron-up shrink-0 text-[10px] text-op-subtle"></i>
@@ -260,15 +260,15 @@
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 min-w-0" wire:navigate>
                     @if ($currentOperator?->logo_url)
                         <img src="{{ $currentOperator->logo_url }}" alt="{{ $currentOperator->name }}"
-                            class="h-7 w-7 rounded-lg object-contain border border-slate-200 dark:border-[#262d3d] p-0.5 shrink-0 bg-white" />
+                            class="h-7 w-7 rounded-[6px] object-contain border border-slate-200 dark:border-[#262d3d] p-0.5 shrink-0 bg-white" />
                     @else
                         <span
-                            class="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFEF4D] text-[#090d16] font-black text-xs shrink-0">
+                            class="flex h-7 w-7 items-center justify-center rounded-[6px] bg-[#FFEF4D] text-[#12181E] font-medium text-xs shrink-0">
                             {{ strtoupper(substr($currentOperator->name ?? 'T', 0, 1)) }}
                         </span>
                     @endif
                     <span
-                        class="font-bold text-xs truncate text-slate-900 dark:text-white max-w-[180px] xs:max-w-[240px]">
+                        class="font-medium text-xs truncate text-slate-900 dark:text-white max-w-[180px] xs:max-w-[240px]">
                         {{ $currentOperator->name ?? config('app.name', 'TravelEngine') }}
                     </span>
                 </a>
@@ -276,14 +276,14 @@
                 <div class="flex items-center gap-2 shrink-0">
                     @if (request()->routeIs('reservations.*'))
                         <button type="button" @click="$dispatch('open-create-booking-link')"
-                            class="h-8 px-2.5 inline-flex items-center gap-1 rounded-xl bg-brand-400 hover:bg-brand-500 text-brand-foreground text-xs font-semibold shadow-xs cursor-pointer"
+                            class="h-8 px-2.5 inline-flex items-center gap-1 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium shadow-none cursor-pointer"
                             title="{{ __('Create Booking & Payment Link') }}">
                             <i class="fa-solid fa-plus text-[10px]"></i>
                             <span>{{ __('Link') }}</span>
                         </button>
                     @else
                         <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
-                            class="h-8 px-2.5 inline-flex items-center gap-1 rounded-xl bg-brand-400 hover:bg-brand-500 text-brand-foreground text-xs font-semibold shadow-xs cursor-pointer"
+                            class="h-8 px-2.5 inline-flex items-center gap-1 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium shadow-none cursor-pointer"
                             title="{{ __('Create Booking & Payment Link') }}">
                             <i class="fa-solid fa-plus text-[10px]"></i>
                             <span>{{ __('Link') }}</span>
@@ -292,8 +292,8 @@
 
                     @if ($currentOperator)
                         <a href="{{ $storefrontUrl }}" target="_blank" rel="noopener"
-                            class="h-8 px-2.5 inline-flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-stone-700 dark:text-zinc-200 text-xs font-semibold">
-                            <i class="fa-solid fa-store text-xs text-stone-400"></i>
+                            class="h-8 px-2.5 inline-flex items-center gap-1.5 rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-slate-200 text-xs font-medium shadow-none">
+                            <i class="fa-solid fa-store text-xs text-[#8B8D98]"></i>
                             <span>{{ __('Live') }}</span>
                         </a>
                     @endif
@@ -306,41 +306,41 @@
                 <!-- Left: Storefront URL with 1-Click Launch & Copy -->
                 <div class="flex items-center gap-3 min-w-0" x-data="{ copied: false }">
                     <div
-                        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 text-xs font-medium text-stone-700 dark:text-zinc-300">
-                        <i class="fa-solid fa-globe text-[11px] text-stone-400"></i>
+                        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] bg-[#F4F5F6] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] text-xs font-normal text-[#1C2024] dark:text-slate-300 shadow-none">
+                        <i class="fa-solid fa-globe text-[11px] text-[#8B8D98]"></i>
                         <a href="{{ $storefrontUrl }}" target="_blank" rel="noopener"
-                            class="truncate max-w-xs sm:max-w-md text-stone-800 dark:text-zinc-200 hover:text-stone-950 dark:hover:text-white transition font-mono text-xs"
+                            class="truncate max-w-xs sm:max-w-md text-[#1C2024] dark:text-slate-200 hover:text-black dark:hover:text-white transition font-mono text-xs"
                             title="{{ __('Open live storefront in new tab') }}">
                             {{ $storefrontUrl }}
                         </a>
                         <a href="{{ $storefrontUrl }}" target="_blank" rel="noopener"
-                            class="p-0.5 text-stone-400 hover:text-stone-900 dark:hover:text-white transition"
+                            class="p-0.5 text-[#8B8D98] hover:text-[#1C2024] dark:hover:text-white transition"
                             title="{{ __('Open in new tab') }}">
                             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                         </a>
-                        <span class="text-stone-300 dark:text-zinc-700">|</span>
+                        <span class="text-[#E4E5E9] dark:text-[#1E2433]">|</span>
                         <button type="button"
                             @click="navigator.clipboard.writeText('{{ $storefrontUrl }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                            class="p-0.5 hover:text-stone-900 dark:hover:text-white text-stone-400 transition cursor-pointer"
+                            class="p-0.5 hover:text-[#1C2024] dark:hover:text-white text-[#8B8D98] transition cursor-pointer"
                             title="{{ __('Copy link') }}">
                             <i class="fa-solid"
                                 :class="copied ? 'fa-check text-emerald-500' : 'fa-copy text-[11px]'"></i>
                         </button>
                     </div>
                     <span x-show="copied" x-cloak
-                        class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+                        class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 animate-fade-in">
                         {{ __('Copied!') }}
                     </span>
 
                     <!-- Quick Command Search Trigger (⌘K) -->
                     <button type="button" @click="commandPaletteOpen = true"
-                        class="h-9 px-3.5 inline-flex items-center gap-2 rounded-xl bg-stone-100 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 text-stone-500 hover:text-stone-900 dark:hover:text-white text-xs font-medium transition-all cursor-pointer group"
+                        class="h-8 px-3 inline-flex items-center gap-2 rounded-[6px] bg-[#F4F5F6] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] text-[#60646C] hover:text-[#1C2024] dark:hover:text-white text-xs font-normal transition-colors cursor-pointer group shadow-none"
                         title="{{ __('Search pages or actions (⌘K)') }}">
                         <i
-                            class="fa-solid fa-magnifying-glass text-[11px] text-slate-400 group-hover:text-stone-700 dark:group-hover:text-amber-200 transition-colors"></i>
+                            class="fa-solid fa-magnifying-glass text-[11px] text-[#8B8D98] group-hover:text-[#1C2024] dark:group-hover:text-[#FFEF4D] transition-colors"></i>
                         <span class="hidden xl:inline text-xs">{{ __('Search or jump to...') }}</span>
                         <kbd
-                            class="px-1.5 py-0.5 text-[10px] font-mono font-extrabold text-slate-400 dark:text-zinc-400 bg-white dark:bg-[#090b10] border border-slate-200 dark:border-[#262d3d] rounded-md shadow-2xs">⌘K</kbd>
+                            class="px-1.5 py-0.5 text-[10px] font-mono font-medium text-[#8B8D98] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] rounded-[4px] shadow-none">⌘K</kbd>
                     </button>
                 </div>
 
@@ -348,7 +348,7 @@
                 <div class="flex items-center gap-3 shrink-0">
                     @if ($currentOperator && $operatorPlan)
                         <a href="{{ route('settings.plan') }}" wire:navigate
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-800 transition"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium bg-white hover:bg-[#F4F5F6] text-[#1C2024] border border-[#E4E5E9] dark:bg-[#141821] dark:text-slate-200 dark:border-[#1E2433] transition shadow-none"
                             title="{{ __('Manage Subscription Tier') }}">
                             <i class="fa-solid fa-crown text-[10px]"></i>
                             <span>{{ $operatorPlan->name }}</span>
@@ -451,21 +451,21 @@
                         x-transition:leave="transition ease-in duration-200 transform"
                         x-transition:leave-start="translate-y-0 opacity-100"
                         x-transition:leave-end="translate-y-full opacity-0" x-on:click.away="mobileMenuOpen = false"
-                        class="w-full max-w-lg mx-auto rounded-3xl bg-white dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 shadow-2xl p-5 space-y-4">
+                        class="w-full max-w-lg mx-auto rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none p-5 space-y-4">
                         <!-- Header -->
                         <div
-                            class="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-zinc-800">
+                            class="flex items-center justify-between pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                             <div class="flex items-center gap-3 min-w-0">
                                 @if ($currentOperator?->logo_url)
                                     <div
-                                        class="h-10 w-10 rounded-xl overflow-hidden border border-slate-200 dark:border-[#262d3d] bg-white dark:bg-[#141721] p-0.5 shrink-0 flex items-center justify-center">
+                                        class="h-9 w-9 rounded-[8px] overflow-hidden border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] p-0.5 shrink-0 flex items-center justify-center">
                                         <img src="{{ $currentOperator->logo_url }}"
                                             alt="{{ $currentOperator->name }}"
-                                            class="w-full h-full object-contain rounded-lg" />
+                                            class="w-full h-full object-contain rounded-[6px]" />
                                     </div>
                                 @else
                                     <span
-                                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#090d16] font-black text-sm shrink-0">
+                                        class="flex h-9 w-9 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] font-medium text-xs shrink-0">
                                         {{ strtoupper(substr($currentOperator->name ?? 'T', 0, 1)) }}
                                     </span>
                                 @endif
@@ -769,15 +769,15 @@
             <div class="relative flex flex-col items-center">
                 @if (request()->routeIs('reservations.*'))
                     <button type="button" @click="$dispatch('open-create-booking-link')"
-                        class="w-12 h-12 rounded-2xl bg-brand-400 hover:bg-brand-500 active:scale-90 text-brand-foreground shadow-md flex items-center justify-center -mt-5 transition-all cursor-pointer border-2 border-white dark:border-zinc-950"
+                        class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] hover:bg-[#F3E13A] active:scale-95 text-[#12181E] shadow-none flex items-center justify-center -mt-3.5 transition-all cursor-pointer border border-[#12181E]/10"
                         title="{{ __('Create Booking Link') }}">
-                        <i class="fa-solid fa-plus text-base"></i>
+                        <i class="fa-solid fa-plus text-sm"></i>
                     </button>
                 @else
                     <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
-                        class="w-12 h-12 rounded-2xl bg-brand-400 hover:bg-brand-500 active:scale-90 text-brand-foreground shadow-md flex items-center justify-center -mt-5 transition-all cursor-pointer border-2 border-white dark:border-zinc-950"
+                        class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] hover:bg-[#F3E13A] active:scale-95 text-[#12181E] shadow-none flex items-center justify-center -mt-3.5 transition-all cursor-pointer border border-[#12181E]/10"
                         title="{{ __('Create Booking Link') }}">
-                        <i class="fa-solid fa-plus text-base"></i>
+                        <i class="fa-solid fa-plus text-sm"></i>
                     </a>
                 @endif
                 <span

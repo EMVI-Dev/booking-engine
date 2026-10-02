@@ -5,10 +5,10 @@
 ])
 
 @php
-    $baseClasses = 'w-full rounded-xl border px-3.5 py-2.5 text-xs sm:text-sm shadow-xs transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:bg-slate-100 dark:disabled:bg-zinc-800 disabled:cursor-not-allowed';
+    $baseClasses = 'w-full rounded-[6px] border px-3 py-2 text-xs sm:text-[13px] shadow-none transition-colors duration-150 focus:outline-none focus:border-[#FFEF4D] focus:ring-1 focus:ring-[#FFEF4D] disabled:bg-[#F4F5F6] dark:disabled:bg-[#141821] disabled:cursor-not-allowed';
     $stateClasses = $error
         ? 'border-rose-500 text-rose-900 focus:border-rose-500 focus:ring-rose-500/20 dark:border-rose-500 dark:text-rose-400'
-        : 'border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-brand-600 focus:ring-brand-600/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-brand-400 dark:focus:ring-brand-400/10';
+        : 'border-[#E4E5E9] bg-white text-[#1C2024] placeholder-[#8B8D98] dark:border-[#1E2433] dark:bg-[#10141d] dark:text-white dark:placeholder-slate-500';
 
     $classes = "{$baseClasses} {$stateClasses}";
 @endphp

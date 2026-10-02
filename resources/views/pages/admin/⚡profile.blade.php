@@ -210,35 +210,45 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 }; ?>
 
 <div class="space-y-6 w-full">
-    <x-page-header
-        :title="__('Your profile')"
-        :subtitle="__('Name, password, and extra sign-in protection.')"
-        icon="fa-user-shield"
-    >
-        <x-slot:actions>
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-op-muted px-3 py-1 text-xs font-semibold text-op-ink">
+    {{-- Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
+        <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] text-sm">
+                <i class="fa-solid fa-user-shield"></i>
+            </span>
+            <div>
+                <h1 class="text-[20px] font-medium leading-[1.6] text-[#1C2024] dark:text-white">
+                    {{ __('Your profile') }}
+                </h1>
+                <p class="text-[13px] text-[#60646C] dark:text-zinc-400">
+                    {{ __('Name, password, and extra sign-in protection.') }}
+                </p>
+            </div>
+        </div>
+        <div>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[#FFEF4D]/20 text-[#856404] dark:text-[#FFEF4D] border border-[#FFEF4D]/40 text-xs font-medium">
                 <i class="fa-solid fa-crown text-[10px]"></i>
                 <span>{{ __('Admin') }}</span>
             </span>
-        </x-slot:actions>
-    </x-page-header>
+        </div>
+    </div>
 
     <!-- Main Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left: Account, Password, 2FA, Passkeys (2 Cols) -->
         <div class="lg:col-span-2 space-y-6">
             <!-- 1. Administrative Identity Card -->
-            <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-6">
-                <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-[#1e2433]">
+            <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+                <div class="flex items-center justify-between pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <div class="flex items-center gap-2.5">
-                        <span class="p-2 rounded-xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs">
+                        <span class="p-1.5 rounded-[6px] bg-[#FFEF4D]/20 text-[#856404] dark:text-[#FFEF4D] border border-[#FFEF4D]/40 text-xs">
                             <i class="fa-solid fa-id-card"></i>
                         </span>
                         <div>
-                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            <h2 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                                 {{ __('Your details') }}
                             </h2>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            <p class="text-[11px] text-[#60646C] dark:text-zinc-400">
                                 {{ __('The name and email for this admin account.') }}
                             </p>
                         </div>
@@ -247,8 +257,10 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
                 <form wire:submit="updateProfileInformation" class="space-y-4">
                     <div>
-                        <x-label for="admin_name" :value="__('Full Name')" required />
-                        <x-input
+                        <label for="admin_name" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                            {{ __('Full Name') }} <span class="text-rose-500">*</span>
+                        </label>
+                        <input
                             id="admin_name"
                             type="text"
                             wire:model="name"
@@ -256,28 +268,30 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                             autofocus
                             autocomplete="name"
                             placeholder="{{ __('Platform Administrator') }}"
-                            :error="$errors->has('name')"
+                            class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white placeholder-[#60646C]/60 dark:placeholder-zinc-500 focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
                         />
-                        <x-input-error :messages="$errors->get('name')" />
+                        <x-input-error :messages="$errors->get('name')" class="mt-1" />
                     </div>
 
                     <div>
-                        <x-label for="admin_email" :value="__('Admin Email Address')" required />
-                        <x-input
+                        <label for="admin_email" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                            {{ __('Admin Email Address') }} <span class="text-rose-500">*</span>
+                        </label>
+                        <input
                             id="admin_email"
                             type="email"
                             wire:model="email"
                             required
                             autocomplete="email"
                             placeholder="admin@travelengine.id"
-                            :error="$errors->has('email')"
+                            class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white placeholder-[#60646C]/60 dark:placeholder-zinc-500 focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
                         />
-                        <x-input-error :messages="$errors->get('email')" />
+                        <x-input-error :messages="$errors->get('email')" class="mt-1" />
                     </div>
 
                     <div class="flex items-center justify-between pt-2">
                         @if (session('success_profile'))
-                            <div class="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+                            <div class="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                                 <i class="fa-solid fa-circle-check"></i>
                                 <span>{{ session('success_profile') }}</span>
                             </div>
@@ -287,7 +301,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
                         <button
                             type="submit"
-                            class="px-5 py-2.5 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-xs shadow-xs transition flex items-center gap-2 cursor-pointer"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium cursor-pointer transition shadow-none"
                         >
                             <i class="fa-solid fa-floppy-disk text-xs"></i>
                             <span>{{ __('Save') }}</span>
@@ -297,17 +311,17 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
             </div>
 
             <!-- Appearance & Theme Mode Card -->
-            <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+            <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <div class="flex items-center gap-2.5">
-                        <span class="p-2 rounded-xl bg-[#FFEF4D]/15 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs">
+                        <span class="p-1.5 rounded-[6px] bg-[#FFEF4D]/20 text-[#856404] dark:text-[#FFEF4D] border border-[#FFEF4D]/40 text-xs">
                             <i class="fa-solid fa-circle-half-stroke"></i>
                         </span>
                         <div>
-                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            <h2 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                                 {{ __('Appearance') }}
                             </h2>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            <p class="text-[11px] text-[#60646C] dark:text-zinc-400">
                                 {{ __('Light, dark, or match the computer.') }}
                             </p>
                         </div>
@@ -335,53 +349,53 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                     <button
                         type="button"
                         @click="setTheme('light')"
-                        :class="theme === 'light' ? 'ring-2 ring-brand-400 bg-brand-50 border-brand-300' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
-                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-brand-300"
+                        :class="theme === 'light' ? 'border-[#FFEF4D] bg-[#FFEF4D]/10' : 'border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821]'"
+                        class="flex flex-col items-center gap-2 p-3.5 rounded-[8px] border text-xs font-medium cursor-pointer transition shadow-none"
                     >
-                        <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center text-base">
+                        <div class="w-7 h-7 rounded-[6px] bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center text-sm">
                             <i class="fa-solid fa-sun"></i>
                         </div>
-                        <span class="text-slate-900 dark:text-white">{{ __('Light Theme') }}</span>
+                        <span class="text-[#1C2024] dark:text-white">{{ __('Light Theme') }}</span>
                     </button>
 
                     <button
                         type="button"
                         @click="setTheme('dark')"
-                        :class="theme === 'dark' ? 'ring-2 ring-brand-400 bg-brand-50 dark:bg-brand-400/10 border-brand-300' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
-                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-brand-300"
+                        :class="theme === 'dark' ? 'border-[#FFEF4D] bg-[#FFEF4D]/10' : 'border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821]'"
+                        class="flex flex-col items-center gap-2 p-3.5 rounded-[8px] border text-xs font-medium cursor-pointer transition shadow-none"
                     >
-                        <div class="w-8 h-8 rounded-xl bg-brand-400/15 text-brand-700 dark:text-brand-400 border border-brand-400/30 flex items-center justify-center text-base">
+                        <div class="w-7 h-7 rounded-[6px] bg-[#FFEF4D]/20 text-[#856404] dark:text-[#FFEF4D] flex items-center justify-center text-sm">
                             <i class="fa-solid fa-moon"></i>
                         </div>
-                        <span class="text-slate-900 dark:text-white">{{ __('Dark Theme') }}</span>
+                        <span class="text-[#1C2024] dark:text-white">{{ __('Dark Theme') }}</span>
                     </button>
 
                     <button
                         type="button"
                         @click="setTheme('system')"
-                        :class="theme === 'system' ? 'ring-2 ring-brand-400 bg-brand-50 dark:bg-brand-400/10 border-brand-300' : 'border-slate-200 dark:border-[#1e2433] bg-white dark:bg-[#0C0E13]'"
-                        class="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-xs font-semibold cursor-pointer transition-all hover:border-brand-300"
+                        :class="theme === 'system' ? 'border-[#FFEF4D] bg-[#FFEF4D]/10' : 'border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821]'"
+                        class="flex flex-col items-center gap-2 p-3.5 rounded-[8px] border text-xs font-medium cursor-pointer transition shadow-none"
                     >
-                        <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-[#141821] text-slate-500 dark:text-slate-400 flex items-center justify-center text-base">
+                        <div class="w-7 h-7 rounded-[6px] bg-slate-100 dark:bg-[#1E2433] text-[#60646C] dark:text-zinc-400 flex items-center justify-center text-sm">
                             <i class="fa-solid fa-desktop"></i>
                         </div>
-                        <span class="text-slate-900 dark:text-white">{{ __('System Sync') }}</span>
+                        <span class="text-[#1C2024] dark:text-white">{{ __('System Sync') }}</span>
                     </button>
                 </div>
             </div>
 
             <!-- 2. Password Update Card -->
-            <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-6">
-                <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-[#1e2433]">
+            <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+                <div class="flex items-center justify-between pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                     <div class="flex items-center gap-2.5">
-                        <span class="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 text-xs">
+                        <span class="p-1.5 rounded-[6px] bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs">
                             <i class="fa-solid fa-key"></i>
                         </span>
                         <div>
-                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            <h2 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                                 {{ __('Update Password') }}
                             </h2>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            <p class="text-[11px] text-[#60646C] dark:text-zinc-400">
                                 {{ __('Ensure your administrative account uses a long, random password.') }}
                             </p>
                         </div>
@@ -390,49 +404,55 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
                 <form wire:submit="updatePassword" class="space-y-4">
                     <div>
-                        <x-label for="current_password" :value="__('Current Password')" required />
-                        <x-input
+                        <label for="current_password" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                            {{ __('Current Password') }} <span class="text-rose-500">*</span>
+                        </label>
+                        <input
                             id="current_password"
                             type="password"
                             wire:model="current_password"
                             required
                             autocomplete="current-password"
-                            :error="$errors->has('current_password')"
+                            class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white placeholder-[#60646C]/60 dark:placeholder-zinc-500 focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
                         />
-                        <x-input-error :messages="$errors->get('current_password')" />
+                        <x-input-error :messages="$errors->get('current_password')" class="mt-1" />
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <x-label for="password" :value="__('New Password')" required />
-                            <x-input
+                            <label for="password" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                                {{ __('New Password') }} <span class="text-rose-500">*</span>
+                            </label>
+                            <input
                                 id="password"
                                 type="password"
                                 wire:model="password"
                                 required
                                 autocomplete="new-password"
-                                :error="$errors->has('password')"
+                                class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white placeholder-[#60646C]/60 dark:placeholder-zinc-500 focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
                             />
-                            <x-input-error :messages="$errors->get('password')" />
+                            <x-input-error :messages="$errors->get('password')" class="mt-1" />
                         </div>
 
                         <div>
-                            <x-label for="password_confirmation" :value="__('Confirm New Password')" required />
-                            <x-input
+                            <label for="password_confirmation" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                                {{ __('Confirm New Password') }} <span class="text-rose-500">*</span>
+                            </label>
+                            <input
                                 id="password_confirmation"
                                 type="password"
                                 wire:model="password_confirmation"
                                 required
                                 autocomplete="new-password"
-                                :error="$errors->has('password_confirmation')"
+                                class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white placeholder-[#60646C]/60 dark:placeholder-zinc-500 focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
                             />
-                            <x-input-error :messages="$errors->get('password_confirmation')" />
+                            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-1" />
                         </div>
                     </div>
 
                     <div class="flex items-center justify-between pt-2">
                         @if (session('success_password'))
-                            <div class="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+                            <div class="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                                 <i class="fa-solid fa-circle-check"></i>
                                 <span>{{ session('success_password') }}</span>
                             </div>
@@ -442,7 +462,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
                         <button
                             type="submit"
-                            class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-[#12181E] hover:bg-[#1C2024] dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-[#12181E] text-xs font-medium cursor-pointer transition shadow-none"
                         >
                             <i class="fa-solid fa-shield-check text-xs"></i>
                             <span>{{ __('Update Password') }}</span>
@@ -453,30 +473,30 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
             <!-- 3. Two-Factor Authentication (2FA) Card -->
             @if ($canManageTwoFactor)
-                <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-6">
-                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-[#1e2433]">
+                <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                         <div class="flex items-center gap-2.5">
-                            <span class="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 text-xs">
+                            <span class="p-1.5 rounded-[6px] bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 text-xs">
                                 <i class="fa-solid fa-shield-halved"></i>
                             </span>
                             <div>
-                                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                <h2 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                                     {{ __('Two-Factor Authentication (2FA)') }}
                                 </h2>
-                                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                <p class="text-[11px] text-[#60646C] dark:text-zinc-400">
                                     {{ __('Add extra security using TOTP authenticator apps (Google Authenticator, 1Password, etc).') }}
                                 </p>
                             </div>
                         </div>
 
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold {{ $twoFactorEnabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-[#141821] dark:text-slate-400' }}">
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[6px] text-[11px] font-medium {{ $twoFactorEnabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/40' : 'bg-slate-100 text-[#60646C] dark:bg-[#141821] dark:text-zinc-400' }}">
                             <span class="w-1.5 h-1.5 rounded-full {{ $twoFactorEnabled ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
                             {{ $twoFactorEnabled ? __('Active') : __('Disabled') }}
                         </span>
                     </div>
 
                     @if (session('success_2fa'))
-                        <div class="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                        <div class="p-3 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
                             <i class="fa-solid fa-circle-check"></i>
                             <span>{{ session('success_2fa') }}</span>
                         </div>
@@ -484,7 +504,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
                     <div class="space-y-4 text-xs" wire:cloak>
                         @if ($twoFactorEnabled)
-                            <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                            <p class="text-[#60646C] dark:text-zinc-400 leading-relaxed">
                                 {{ __('Two-factor authentication is active on your root account. You will be prompted for a 6-digit TOTP code during administrator logins.') }}
                             </p>
 
@@ -492,18 +512,18 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                                 <button
                                     type="button"
                                     wire:click="disableTwoFactor"
-                                    class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/70 dark:hover:bg-rose-900/70 text-rose-600 dark:text-rose-300 text-xs font-bold transition flex items-center gap-2 cursor-pointer border border-rose-200 dark:border-rose-800"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-300 text-xs font-medium transition cursor-pointer border border-rose-200 dark:border-rose-800 shadow-none"
                                 >
                                     <i class="fa-solid fa-lock-open text-xs"></i>
                                     <span>{{ __('Disable Two-Factor Authentication') }}</span>
                                 </button>
                             </div>
 
-                            <div class="pt-4 border-t border-slate-100 dark:border-[#1e2433]">
+                            <div class="pt-4 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                                 <livewire:pages::settings.two-factor.recovery-codes :$requiresConfirmation />
                             </div>
                         @else
-                            <p class="text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p class="text-[#60646C] dark:text-zinc-400 leading-relaxed">
                                 {{ __('When this is on, sign-in needs your password plus a code from your phone.') }}
                             </p>
 
@@ -511,7 +531,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                                 type="button"
                                 x-data=""
                                 x-on:click="$dispatch('open-modal', 'two-factor-setup-modal'); $wire.dispatch('start-two-factor-setup');"
-                                class="px-4 py-2.5 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] text-xs font-black shadow-xs transition flex items-center gap-2 cursor-pointer"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium cursor-pointer transition shadow-none"
                             >
                                 <i class="fa-solid fa-shield text-xs"></i>
                                 <span>{{ __('Enable Two-Factor Authentication') }}</span>
@@ -525,17 +545,17 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
 
             <!-- 4. Passkeys Card -->
             @if ($canManagePasskeys)
-                <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-6">
-                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-[#1e2433]">
+                <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
                         <div class="flex items-center gap-2.5">
-                            <span class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-xs">
+                            <span class="p-1.5 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs">
                                 <i class="fa-solid fa-fingerprint"></i>
                             </span>
                             <div>
-                                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                <h2 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                                     {{ __('Passkeys') }}
                                 </h2>
-                                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                <p class="text-[11px] text-[#60646C] dark:text-zinc-400">
                                     {{ __('Sign in securely with biometric Touch ID, Face ID, Windows Hello, or hardware security keys.') }}
                                 </p>
                             </div>
@@ -543,28 +563,28 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                     </div>
 
                     @if (session('success_passkey'))
-                        <div class="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                        <div class="p-3 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
                             <i class="fa-solid fa-circle-check"></i>
                             <span>{{ session('success_passkey') }}</span>
                         </div>
                     @endif
 
                     <div class="space-y-4 text-xs" wire:cloak>
-                        <div class="border rounded-2xl border-slate-200/80 dark:border-[#1e2433] overflow-hidden divide-y divide-slate-100 dark:divide-[#1e2433]">
+                        <div class="border rounded-[8px] border-[#E4E5E9] dark:border-[#1E2433] overflow-hidden divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                             @forelse ($passkeys as $passkey)
-                                <div class="flex items-center justify-between p-4 bg-white dark:bg-[#0C0E13] hover:bg-slate-50/50 dark:hover:bg-[#141821]/30 transition">
-                                    <div class="flex items-center gap-3.5">
-                                        <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/60">
-                                            <i class="fa-solid fa-fingerprint text-base"></i>
+                                <div class="flex items-center justify-between p-3.5 bg-white dark:bg-[#10141d] hover:bg-[#FAFAFB] dark:hover:bg-[#141821] transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex size-8 shrink-0 items-center justify-center rounded-[6px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/60">
+                                            <i class="fa-solid fa-fingerprint text-xs"></i>
                                         </div>
                                         <div class="space-y-0.5">
                                             <div class="flex items-center gap-2">
-                                                <p class="font-bold text-slate-900 dark:text-white">{{ $passkey['name'] }}</p>
+                                                <p class="font-medium text-xs text-[#1C2024] dark:text-white">{{ $passkey['name'] }}</p>
                                                 @if ($passkey['authenticator'])
-                                                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#141821] font-semibold text-slate-600 dark:text-slate-300">{{ $passkey['authenticator'] }}</span>
+                                                    <span class="text-[10px] px-1.5 py-0.5 rounded-[4px] bg-[#EFEFF0] dark:bg-[#141821] font-medium text-[#60646C] dark:text-zinc-300">{{ $passkey['authenticator'] }}</span>
                                                 @endif
                                             </div>
-                                            <p class="text-slate-400 text-[11px]">
+                                            <p class="text-[#60646C] dark:text-zinc-400 text-[11px]">
                                                 {{ __('Added :time', ['time' => $passkey['created_at_diff']]) }}
                                                 @if ($passkey['last_used_at_diff'])
                                                     <span class="opacity-50 mx-1">&bull;</span>
@@ -577,17 +597,17 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                                     <button
                                         type="button"
                                         wire:click="confirmDelete({{ $passkey['id'] }})"
-                                        class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
+                                        class="p-1.5 rounded-[6px] text-[#60646C] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
                                         title="{{ __('Remove Passkey') }}"
                                     >
                                         <i class="fa-solid fa-trash-can text-xs"></i>
                                     </button>
                                 </div>
                             @empty
-                                <div class="p-8 text-center bg-white dark:bg-[#0C0E13] space-y-1">
-                                    <i class="fa-solid fa-fingerprint text-2xl text-slate-300 dark:text-zinc-600 mb-1 block"></i>
-                                    <p class="font-bold text-slate-700 dark:text-slate-300">{{ __('No passkeys registered yet') }}</p>
-                                    <p class="text-xs text-slate-400">{{ __('Add a passkey to sign in with Face ID, Touch ID, or a security key.') }}</p>
+                                <div class="p-8 text-center bg-white dark:bg-[#10141d] space-y-1">
+                                    <i class="fa-solid fa-fingerprint text-xl text-[#60646C] dark:text-zinc-600 mb-1 block opacity-40"></i>
+                                    <p class="font-medium text-xs text-[#1C2024] dark:text-white">{{ __('No passkeys registered yet') }}</p>
+                                    <p class="text-[11px] text-[#60646C] dark:text-zinc-400">{{ __('Add a passkey to sign in with Face ID, Touch ID, or a security key.') }}</p>
                                 </div>
                             @endforelse
                         </div>
@@ -603,54 +623,54 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
         <!-- Right: Role Overview & Security Info (1 Col) -->
         <div class="space-y-6">
             <!-- Admin Role Card -->
-            <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
+            <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
                 <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-2xl bg-[#FFEF4D] text-[#090d16] font-black text-base flex items-center justify-center shadow-xs">
+                    <div class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] text-[#12181E] font-semibold text-sm flex items-center justify-center">
                         {{ auth()->user()?->initials() ?? 'AD' }}
                     </div>
                     <div class="min-w-0">
-                        <h3 class="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                        <h3 class="font-medium text-sm text-[#1C2024] dark:text-white truncate">
                             {{ auth()->user()?->name ?? 'Platform Administrator' }}
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-zinc-400 font-mono truncate">
+                        <p class="text-xs text-[#60646C] dark:text-zinc-400 font-mono truncate">
                             {{ auth()->user()?->email }}
                         </p>
                     </div>
                 </div>
 
-                <div class="p-3.5 rounded-2xl bg-[#FFEF4D]/15 border border-[#FFEF4D]/30 space-y-1.5 text-xs">
+                <div class="p-3.5 rounded-[8px] bg-[#FAFAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-2 text-xs">
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('System Role') }}</span>
-                        <span class="font-bold text-[#8a7808] dark:text-[#FFEF4D]">{{ __('Platform Admin') }}</span>
+                        <span class="text-[#60646C] dark:text-zinc-400 font-medium">{{ __('System Role') }}</span>
+                        <span class="font-semibold text-[#856404] dark:text-[#FFEF4D]">{{ __('Platform Admin') }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('Access Level') }}</span>
-                        <span class="font-bold text-slate-800 dark:text-slate-200">{{ __('Full access') }}</span>
+                        <span class="text-[#60646C] dark:text-zinc-400 font-medium">{{ __('Access Level') }}</span>
+                        <span class="font-semibold text-[#1C2024] dark:text-white">{{ __('Full access') }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('2FA Protection') }}</span>
-                        <span class="font-bold {{ $twoFactorEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400' }}">
+                        <span class="text-[#60646C] dark:text-zinc-400 font-medium">{{ __('2FA Protection') }}</span>
+                        <span class="font-semibold {{ $twoFactorEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#60646C] dark:text-zinc-400' }}">
                             {{ $twoFactorEnabled ? __('Active') : __('Disabled') }}
                         </span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('Passkeys') }}</span>
-                        <span class="font-bold text-slate-800 dark:text-slate-200">{{ count($passkeys) }} {{ __('Registered') }}</span>
+                        <span class="text-[#60646C] dark:text-zinc-400 font-medium">{{ __('Passkeys') }}</span>
+                        <span class="font-semibold text-[#1C2024] dark:text-white">{{ count($passkeys) }} {{ __('Registered') }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-500 dark:text-slate-400 font-medium">{{ __('Account Created') }}</span>
-                        <span class="font-mono text-slate-700 dark:text-slate-300">{{ auth()->user()?->created_at?->format('d M Y') }}</span>
+                        <span class="text-[#60646C] dark:text-zinc-400 font-medium">{{ __('Account Created') }}</span>
+                        <span class="font-mono text-[#1C2024] dark:text-zinc-300">{{ auth()->user()?->created_at?->format('d M Y') }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Session & Impersonation Safety -->
-            <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-3">
-                <div class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                    <i class="fa-solid fa-user-lock text-[#8a7808] dark:text-[#FFEF4D]"></i>
+            <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-3">
+                <div class="flex items-center gap-2 text-xs font-semibold text-[#1C2024] dark:text-white">
+                    <i class="fa-solid fa-user-lock text-[#856404] dark:text-[#FFEF4D]"></i>
                     <span>{{ __('This sign-in') }}</span>
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p class="text-xs text-[#60646C] dark:text-zinc-400 leading-relaxed">
                     {{ __('You are in admin. Open any operator from Operators without leaving this account.') }}
                 </p>
                 <div class="pt-2">
@@ -658,7 +678,7 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
                         @csrf
                         <button
                             type="submit"
-                            class="w-full h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer border border-rose-200 dark:border-rose-900/60"
+                            class="w-full h-9 rounded-[6px] bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-medium transition flex items-center justify-center gap-2 cursor-pointer border border-rose-200 dark:border-rose-900/60 shadow-none"
                         >
                             <i class="fa-solid fa-right-from-bracket"></i>
                             <span>{{ __('Log out') }}</span>
@@ -674,19 +694,27 @@ new #[Title('Your profile')] #[Layout('layouts.admin')] class extends Component 
         <x-modal name="delete-passkey-modal" :show="$showDeleteModal" maxWidth="md">
             <div class="p-6 space-y-4">
                 <div class="space-y-1">
-                    <h3 class="text-base font-bold text-slate-900 dark:text-white">{{ __('Remove Passkey') }}</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <h3 class="text-sm font-semibold text-[#1C2024] dark:text-white">{{ __('Remove Passkey') }}</h3>
+                    <p class="text-xs text-[#60646C] dark:text-zinc-400 leading-relaxed">
                         {{ __('Are you sure you want to remove the passkey ":name"? You will no longer be able to use it to sign in.', ['name' => $deletingPasskeyName]) }}
                     </p>
                 </div>
 
-                <div class="flex justify-end gap-2.5 pt-2">
-                    <x-button variant="outline" size="sm" wire:click="closeDeleteModal">
+                <div class="flex justify-end gap-2 pt-2">
+                    <button
+                        type="button"
+                        wire:click="closeDeleteModal"
+                        class="px-3 py-1.5 text-xs font-medium rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white hover:bg-[#FAFAFB] dark:hover:bg-[#1E2433] transition cursor-pointer shadow-none"
+                    >
                         {{ __('Cancel') }}
-                    </x-button>
-                    <x-button variant="danger" size="sm" wire:click="deletePasskey">
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="deletePasskey"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium cursor-pointer transition shadow-none"
+                    >
                         {{ __('Remove Passkey') }}
-                    </x-button>
+                    </button>
                 </div>
             </div>
         </x-modal>

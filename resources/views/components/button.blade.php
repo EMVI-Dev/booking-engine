@@ -9,25 +9,26 @@
 
 @php
     $baseClasses =
-        'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-2 select-none whitespace-nowrap shrink-0';
+        'inline-flex items-center justify-center font-medium rounded-[6px] transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-2 select-none whitespace-nowrap shrink-0 shadow-none';
 
     $sizeClasses = match ($size) {
-        'xs' => 'h-8 px-2.5 text-xs',
-        'sm' => 'h-9 px-3.5 text-xs',
-        'lg' => 'h-11 sm:h-12 px-5 sm:px-6 text-sm sm:text-base rounded-2xl',
-        default => 'h-10 px-4 text-xs sm:text-sm',
+        'xs' => 'h-7 px-2.5 text-[11px]',
+        'sm' => 'h-8 px-3 text-xs',
+        'lg' => 'h-10 px-4 text-sm',
+        default => 'h-8.5 px-3.5 text-xs sm:text-[13px]',
     };
 
     $variantClasses = match ($variant) {
         'secondary'
-            => 'bg-op-muted text-op-ink hover:bg-op-line focus:ring-op-subtle border border-op-line shadow-xs',
+            => 'bg-white dark:bg-[#141821] text-[#1C2024] dark:text-slate-200 hover:bg-[#F4F5F6] dark:hover:bg-[#1E2433] border border-[#E4E5E9] dark:border-[#1E2433] focus:ring-[#FFEF4D]',
         'outline'
-            => 'bg-transparent border border-op-line text-op-ink hover:bg-op-muted focus:ring-brand-400',
-        'danger' => 'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-xs',
+            => 'bg-transparent border border-[#E4E5E9] dark:border-[#1E2433] text-[#1C2024] dark:text-slate-200 hover:bg-[#F4F5F6] dark:hover:bg-[#1E2433] focus:ring-[#FFEF4D]',
+        'danger' => 'bg-rose-600 text-white hover:bg-rose-500 focus:ring-rose-500',
+        'success' => 'bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500',
         'ghost'
-            => 'bg-transparent text-op-subtle hover:bg-op-muted hover:text-op-ink focus:ring-brand-400',
+            => 'bg-transparent text-[#60646C] dark:text-slate-400 hover:text-[#1C2024] dark:hover:text-white hover:bg-[#F4F5F6] dark:hover:bg-[#1E2433] focus:ring-[#FFEF4D]',
         default
-            => 'bg-brand-400 text-brand-foreground hover:bg-brand-500 focus:ring-brand-400 shadow-xs',
+            => 'bg-[#FFEF4D] text-[#12181E] hover:bg-[#F3E13A] focus:ring-[#FFEF4D]',
     };
 
     $classes = "{$baseClasses} {$sizeClasses} {$variantClasses}";

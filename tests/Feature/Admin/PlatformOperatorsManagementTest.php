@@ -154,3 +154,24 @@ test('admin can hold and give back booking money from the operator page', functi
         ->and(WalletTransaction::query()->where('reservation_id', $reservation->id)->where('type', WalletTransactionType::DisputeHold)->count())->toBe(1)
         ->and(WalletTransaction::query()->where('reservation_id', $reservation->id)->where('type', WalletTransactionType::DisputeRelease)->count())->toBe(1);
 });
+
+test('operator show suspend button triggers confirmation modal before suspending', function () {
+    Livewire::actingAs($this->adminUser)
+        ->test('pages::admin.operators.show', ['operator' => $this->operator])
+        ->assertSee('Suspend')
+        ->assertSet('confirming_suspend', false)
+        ->call('requestSuspend')
+        ->assertSet('confirming_suspend', true)
+        ->assertDispatched('open-modal', 'confirm-suspend-operator')
+        ->call('cancelSuspend')
+        ->assertSet('confirming_suspend', false)
+        ->assertDispatched('close-modal', 'confirm-suspend-operator')
+        ->call('requestSuspend')
+        ->assertSet('confirming_suspend', true)
+        ->call('confirmSuspend')
+        ->assertSet('confirming_suspend', false)
+        ->assertDispatched('close-modal', 'confirm-suspend-operator')
+        ->assertDispatched('operator-status-updated');
+
+    expect($this->operator->fresh()->status)->toBe(OperatorStatus::Suspended);
+});

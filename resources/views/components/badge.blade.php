@@ -4,20 +4,20 @@
 ])
 
 @php
-$baseClasses = 'inline-flex items-center font-medium rounded-full';
+$baseClasses = 'inline-flex items-center font-medium rounded-[4px] border border-transparent shadow-none';
 
 $sizeClasses = match($size) {
-    'sm' => 'px-2 py-0.5 text-xs',
-    default => 'px-2.5 py-1 text-xs',
+    'sm' => 'px-1.5 py-0.5 text-[11px]',
+    default => 'px-2 py-0.5 text-xs',
 };
 
 $variantClasses = match($variant) {
-    'success' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800',
-    'warning' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200 dark:border-amber-800',
-    'danger' => 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400 border border-red-200 dark:border-red-800',
-    'info' => 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 border border-blue-200 dark:border-blue-800',
-    'primary' => 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900',
-    default => 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700',
+    'success' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/80',
+    'warning' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border-amber-200 dark:border-amber-800/80',
+    'danger' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 border-rose-200 dark:border-rose-800/80',
+    'info' => 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-400 border-sky-200 dark:border-sky-800/80',
+    'primary' => 'bg-[#FFEF4D] text-[#12181E] border-transparent font-medium',
+    default => 'bg-[#F4F5F6] text-[#60646C] dark:bg-[#141821] dark:text-slate-300 border-[#E4E5E9] dark:border-[#1E2433]',
 };
 
 $classes = "{$baseClasses} {$sizeClasses} {$variantClasses}";

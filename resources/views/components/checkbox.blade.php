@@ -19,19 +19,19 @@
             {{ $name ? 'name='.$name : '' }}
             {{ $checked ? 'checked' : '' }}
             {{ $attributes->merge([
-                'class' => 'h-5 w-5 rounded-md border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-brand-600 dark:text-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:ring-offset-0 dark:focus:ring-offset-zinc-900 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ' . ($error ? 'border-rose-500 dark:border-rose-500 focus:ring-rose-500/20' : '')
+                'class' => 'h-4 w-4 rounded-[4px] border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#10141d] text-[#12181E] focus:ring-1 focus:ring-[#FFEF4D] focus:ring-offset-0 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ' . ($error ? 'border-rose-500' : '')
             ]) }}
         />
     </div>
 
     @if ($label || $description || $slot->isNotEmpty())
-        <label for="{{ $id }}" class="text-xs sm:text-sm font-medium cursor-pointer text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+        <label for="{{ $id }}" class="text-xs sm:text-sm font-medium cursor-pointer text-[#1C2024] dark:text-slate-200 group-hover:text-[#1C2024] dark:group-hover:text-white transition-colors">
             @if ($label)
-                <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ $label }}</span>
+                <span class="block font-medium text-[#1C2024] dark:text-white">{{ $label }}</span>
             @endif
 
             @if ($description)
-                <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-normal mt-0.5 leading-relaxed">{{ $description }}</p>
+                <p class="text-[11px] sm:text-xs text-[#60646C] dark:text-slate-400 font-normal mt-0.5 leading-relaxed">{{ $description }}</p>
             @endif
 
             {{ $slot }}

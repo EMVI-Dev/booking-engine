@@ -230,29 +230,40 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
 }; ?>
 
 <div class="space-y-6">
-    <x-page-header
-        :title="__('Settings')"
-        :subtitle="__('Platform name, guest fee, and how long we hold an unpaid spot.')"
-        icon="fa-sliders"
-    >
-        <x-slot:actions>
-            <span class="text-xs font-semibold text-op-subtle">
+    {{-- Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
+        <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-[#12181E] text-sm">
+                <i class="fa-solid fa-sliders"></i>
+            </span>
+            <div>
+                <h1 class="text-[20px] font-medium leading-[1.6] text-[#1C2024] dark:text-white">
+                    {{ __('Settings') }}
+                </h1>
+                <p class="text-[13px] text-[#60646C] dark:text-zinc-400">
+                    {{ __('Platform name, guest fee, and how long we hold an unpaid spot.') }}
+                </p>
+            </div>
+        </div>
+        <div>
+            <span class="text-xs font-medium text-[#60646C] dark:text-zinc-400 px-2.5 py-1 rounded-[6px] bg-[#EFEFF0] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433]">
                 {{ $approved_operators }}/{{ $total_operators }} {{ __('operators active') }}
             </span>
-        </x-slot:actions>
-    </x-page-header>
+        </div>
+    </div>
 
-    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
+    {{-- Platform Maintenance Card --}}
+    <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-start gap-2.5">
-                <span class="p-1.5 rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/80 dark:border-amber-900/60 text-xs mt-0.5">
+            <div class="flex items-start gap-3">
+                <span class="p-2 rounded-[6px] bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/40 text-xs mt-0.5">
                     <i class="fa-solid fa-pause"></i>
                 </span>
                 <div>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                         {{ __('Platform maintenance') }}
                     </h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <p class="text-xs text-[#60646C] dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
                         @if ($platform_maintenance)
                             {{ __('On. Guests can browse storefronts but cannot book or pay. Operator sign-up is closed. This is not Laravel down — marketing, slugs, and admin stay up.') }}
                         @else
@@ -274,7 +285,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
                         class="absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-slate-300 dark:border-zinc-600 transition-transform {{ $platform_maintenance ? 'translate-x-5' : '' }}"
                     ></span>
                 </span>
-                <span class="ml-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <span class="ml-3 text-xs font-medium text-[#1C2024] dark:text-zinc-300">
                     {{ $platform_maintenance ? __('On') : __('Off') }}
                 </span>
             </button>
@@ -282,17 +293,17 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
     </div>
 
     {{-- System Health Card --}}
-    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100 dark:border-[#1e2433]">
+    <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#E4E5E9] dark:border-[#1E2433]">
             <div class="flex items-start gap-2.5">
-                <span class="p-1.5 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60 text-xs mt-0.5">
+                <span class="p-1.5 rounded-[6px] bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/40 text-xs mt-0.5">
                     <i class="fa-solid fa-server"></i>
                 </span>
                 <div>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                         {{ __('System Health & Queues') }}
                     </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p class="text-xs text-[#60646C] dark:text-zinc-400 mt-0.5">
                         {{ __('Background workers, queue jobs, database connection, and cache status.') }}
                     </p>
                 </div>
@@ -302,7 +313,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
                 <button
                     type="button"
                     wire:click="loadSystemHealth"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-[#141821] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-xs font-medium border border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821] text-[#1C2024] dark:text-zinc-300 hover:bg-[#EFEFF0] dark:hover:bg-[#1A202C] transition cursor-pointer shadow-none"
                 >
                     <i class="fa-solid fa-rotate text-xs" wire:loading.class="animate-spin" wire:target="loadSystemHealth"></i>
                     <span>{{ __('Check status') }}</span>
@@ -311,43 +322,43 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Database') }}</span>
+            <div class="p-3.5 rounded-[8px] bg-[#FAFAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-1">
+                <span class="text-[10px] font-medium uppercase tracking-wider text-[#60646C] dark:text-zinc-400">{{ __('Database') }}</span>
                 <div class="flex items-center gap-2">
                     <span class="h-2 w-2 rounded-full {{ $database_status === 'connected' ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
-                    <span class="text-xs font-bold text-slate-900 dark:text-white capitalize">{{ $database_status }}</span>
+                    <span class="text-xs font-semibold text-[#1C2024] dark:text-white capitalize">{{ $database_status }}</span>
                 </div>
             </div>
 
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Cache Driver') }}</span>
+            <div class="p-3.5 rounded-[8px] bg-[#FAFAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-1">
+                <span class="text-[10px] font-medium uppercase tracking-wider text-[#60646C] dark:text-zinc-400">{{ __('Cache Driver') }}</span>
                 <div class="flex items-center gap-2">
                     <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                    <span class="text-xs font-bold text-slate-900 dark:text-white uppercase font-mono">{{ $cache_driver }}</span>
+                    <span class="text-xs font-semibold text-[#1C2024] dark:text-white uppercase font-mono">{{ $cache_driver }}</span>
                 </div>
             </div>
 
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Failed Queue Jobs') }}</span>
+            <div class="p-3.5 rounded-[8px] bg-[#FAFAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-1">
+                <span class="text-[10px] font-medium uppercase tracking-wider text-[#60646C] dark:text-zinc-400">{{ __('Failed Queue Jobs') }}</span>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="h-2 w-2 rounded-full {{ $failed_jobs_count === 0 ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse' }}"></span>
-                        <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $failed_jobs_count }} {{ __('failed') }}</span>
+                        <span class="text-xs font-semibold text-[#1C2024] dark:text-white">{{ $failed_jobs_count }} {{ __('failed') }}</span>
                     </div>
 
                     @if ($failed_jobs_count > 0)
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1">
                             <button
                                 type="button"
                                 wire:click="retryFailedJobs"
-                                class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500 text-white hover:bg-amber-600 transition cursor-pointer"
+                                class="px-2 py-0.5 rounded-[4px] text-[10px] font-medium bg-amber-500 text-white hover:bg-amber-600 transition cursor-pointer"
                             >
                                 {{ __('Retry all') }}
                             </button>
                             <button
                                 type="button"
                                 wire:click="clearFailedJobs"
-                                class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-300 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                                class="px-2 py-0.5 rounded-[4px] text-[10px] font-medium bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-300 hover:bg-rose-500 hover:text-white transition cursor-pointer"
                             >
                                 {{ __('Clear') }}
                             </button>
@@ -356,19 +367,19 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
                 </div>
             </div>
 
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-[#141821]/50 border border-slate-200/80 dark:border-[#1e2433] space-y-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ __('Operator Slack Alerts') }}</span>
+            <div class="p-3.5 rounded-[8px] bg-[#FAFAFB] dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] space-y-1">
+                <span class="text-[10px] font-medium uppercase tracking-wider text-[#60646C] dark:text-zinc-400">{{ __('Operator Slack Alerts') }}</span>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="h-2 w-2 rounded-full {{ $slack_configured ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
-                        <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $slack_configured ? __('Connected') : __('Not set') }}</span>
+                        <span class="text-xs font-semibold text-[#1C2024] dark:text-white">{{ $slack_configured ? __('Connected') : __('Not set') }}</span>
                     </div>
 
                     @if ($slack_configured)
                         <button
                             type="button"
                             wire:click="testSlackAlert"
-                            class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition cursor-pointer inline-flex items-center gap-1 shadow-xs"
+                            class="px-2 py-0.5 rounded-[4px] text-[10px] font-medium bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] transition cursor-pointer inline-flex items-center gap-1 shadow-none"
                             wire:loading.attr="disabled"
                             title="{{ __('Send a test alert to the Slack channel') }}"
                         >
@@ -382,38 +393,44 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
         </div>
     </div>
 
-    <div class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-4">
-        <div class="flex flex-col gap-3 pb-2 border-b border-slate-100 dark:border-[#1e2433] sm:flex-row sm:items-center sm:justify-between">
+    {{-- Unmatched Payments Card --}}
+    <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-4">
+        <div class="flex flex-col gap-3 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433] sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2.5">
-                <span class="p-1.5 rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 text-xs">
+                <span class="p-1.5 rounded-[6px] bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/40 text-xs">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </span>
-                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                     {{ __('Paid, but not in a wallet yet') }}
                 </h3>
             </div>
-            <x-button type="button" variant="secondary" size="sm" wire:click="checkUnmatchedPayments" wire:loading.attr="disabled">
+            <button
+                type="button"
+                wire:click="checkUnmatchedPayments"
+                wire:loading.attr="disabled"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821] text-[#1C2024] dark:text-zinc-300 hover:bg-[#EFEFF0] dark:hover:bg-[#1A202C] transition cursor-pointer shadow-none"
+            >
                 <i class="fa-solid fa-rotate text-xs" wire:loading.class="animate-spin" wire:target="checkUnmatchedPayments"></i>
                 <span>{{ __('Check again') }}</span>
-            </x-button>
+            </button>
         </div>
 
         @if ($unmatched_payments === [])
-            <p class="text-sm text-slate-500 dark:text-slate-400">
+            <p class="text-xs text-[#60646C] dark:text-zinc-400">
                 {{ __('Every guest payment we checked already reached an operator wallet.') }}
             </p>
         @else
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs text-[#60646C] dark:text-zinc-400">
                 {{ __('These guests paid, but the operator wallet was not credited. Someone on the team should look at each one.') }}
             </p>
-            <ul class="divide-y divide-slate-100 dark:divide-[#1e2433]">
+            <ul class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                 @foreach ($unmatched_payments as $item)
                     <li class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $item['invoice'] }}</p>
-                            <p class="text-xs text-slate-500">{{ $item['reason'] }}</p>
+                            <p class="text-xs font-semibold text-[#1C2024] dark:text-white">{{ $item['invoice'] }}</p>
+                            <p class="text-[11px] text-[#60646C] dark:text-zinc-400">{{ $item['reason'] }}</p>
                         </div>
-                        <p class="text-sm font-bold text-slate-900 dark:text-white">
+                        <p class="text-xs font-semibold text-[#1C2024] dark:text-white font-mono">
                             Rp {{ number_format((float) $item['amount'], 0, ',', '.') }}
                         </p>
                     </li>
@@ -422,115 +439,176 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
         @endif
     </div>
 
-    <!-- Main Settings Form -->
+    {{-- Main Settings Form --}}
     <form wire:submit="updatePlatformSettings" class="w-full space-y-6">
-        <!-- Section: Global Platform Parameters -->
-        <div
-            class="p-6 rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs space-y-5">
-            <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-[#1e2433]">
-                <span
-                    class="p-1.5 rounded-lg bg-[#FFEF4D]/10 text-[#8a7808] dark:text-[#FFEF4D] border border-[#FFEF4D]/30 text-xs">
+        <div class="p-5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none space-y-5">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-[#E4E5E9] dark:border-[#1E2433]">
+                <span class="p-1.5 rounded-[6px] bg-[#FFEF4D]/20 text-[#856404] dark:text-[#FFEF4D] border border-[#FFEF4D]/40 text-xs">
                     <i class="fa-solid fa-globe"></i>
                 </span>
-                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-[#1C2024] dark:text-white">
                     {{ __('Name, fees, and currency') }}
                 </h3>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- Platform Name -->
+                {{-- Platform Name --}}
                 <div>
-                    <x-label for="platform_name" :value="__('Platform name')" required />
-                    <x-input id="platform_name" wire:model="platform_name" type="text" :error="$errors->has('platform_name')" />
-                    <x-input-error :messages="$errors->get('platform_name')" />
+                    <label for="platform_name" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                        {{ __('Platform name') }} <span class="text-rose-500">*</span>
+                    </label>
+                    <input
+                        id="platform_name"
+                        wire:model="platform_name"
+                        type="text"
+                        class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white placeholder-[#60646C]/60 dark:placeholder-zinc-500 focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
+                    />
+                    <x-input-error :messages="$errors->get('platform_name')" class="mt-1" />
                 </div>
 
-                <!-- Support Email -->
+                {{-- Support Email --}}
                 <div>
-                    <x-label for="support_email" :value="__('Operator support email')" required />
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 mb-1.5">
+                    <label for="support_email" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                        {{ __('Operator support email') }} <span class="text-rose-500">*</span>
+                    </label>
+                    <p class="text-[11px] text-[#60646C] dark:text-zinc-400 mb-1.5">
                         {{ __('Operators write here for billing, plans, and account help.') }}
                     </p>
-                    <x-input id="support_email" wire:model="support_email" type="email" :error="$errors->has('support_email')" />
-                    <x-input-error :messages="$errors->get('support_email')" />
+                    <input
+                        id="support_email"
+                        wire:model="support_email"
+                        type="email"
+                        class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white placeholder-[#60646C]/60 dark:placeholder-zinc-500 focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
+                    />
+                    <x-input-error :messages="$errors->get('support_email')" class="mt-1" />
                 </div>
 
-                <!-- Commission Rate (%) -->
+                {{-- Commission Rate (%) --}}
                 <div>
-                    <x-label for="commission_percentage" :value="__('Cut from the listed price (%)')" required />
+                    <label for="commission_percentage" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                        {{ __('Cut from the listed price (%)') }} <span class="text-rose-500">*</span>
+                    </label>
                     <div class="relative">
-                        <x-input id="commission_percentage" wire:model="commission_percentage" type="number"
-                            step="0.1" min="0" max="100" class="pr-8" :error="$errors->has('commission_percentage')" />
-                        <span
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                        <input
+                            id="commission_percentage"
+                            wire:model="commission_percentage"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            class="w-full pl-3 pr-8 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
+                        />
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#60646C] dark:text-zinc-400">%</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">
-                        {{ __('Usually 0. The operator still gets the listed price.') }}</p>
-                    <x-input-error :messages="$errors->get('commission_percentage')" />
+                    <p class="text-[11px] text-[#60646C] dark:text-zinc-400 mt-1">
+                        {{ __('Usually 0. The operator still gets the listed price.') }}
+                    </p>
+                    <x-input-error :messages="$errors->get('commission_percentage')" class="mt-1" />
                 </div>
 
-                <!-- Guest Service Fee (%) -->
+                {{-- Guest Service Fee (%) --}}
                 <div>
-                    <x-label for="guest_service_fee_percentage" :value="__('Guest fee at checkout (%)')" required />
+                    <label for="guest_service_fee_percentage" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                        {{ __('Guest fee at checkout (%)') }} <span class="text-rose-500">*</span>
+                    </label>
                     <div class="relative">
-                        <x-input id="guest_service_fee_percentage" wire:model="guest_service_fee_percentage"
-                            type="number" step="0.1" min="0" max="100" class="pr-8"
-                            :error="$errors->has('guest_service_fee_percentage')" />
-                        <span
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                        <input
+                            id="guest_service_fee_percentage"
+                            wire:model="guest_service_fee_percentage"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            class="w-full pl-3 pr-8 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
+                        />
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#60646C] dark:text-zinc-400">%</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">
-                        {{ __('Added on top of the listed price. The operator still gets 100% of that listed price.') }}</p>
-                    <x-input-error :messages="$errors->get('guest_service_fee_percentage')" />
+                    <p class="text-[11px] text-[#60646C] dark:text-zinc-400 mt-1">
+                        {{ __('Added on top of the listed price. The operator still gets 100% of that listed price.') }}
+                    </p>
+                    <x-input-error :messages="$errors->get('guest_service_fee_percentage')" class="mt-1" />
                 </div>
 
-                <!-- Unpaid Booking Hold Window -->
+                {{-- Unpaid Booking Hold Window --}}
                 <div>
-                    <x-label for="booking_hold_minutes" :value="__('Hold an unpaid spot for (minutes)')" required />
+                    <label for="booking_hold_minutes" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                        {{ __('Hold an unpaid spot for (minutes)') }} <span class="text-rose-500">*</span>
+                    </label>
                     <div class="relative">
-                        <x-input id="booking_hold_minutes" wire:model="booking_hold_minutes" type="number"
-                            min="5" max="1440" class="pr-12" :error="$errors->has('booking_hold_minutes')" />
-                        <span
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">mins</span>
+                        <input
+                            id="booking_hold_minutes"
+                            wire:model="booking_hold_minutes"
+                            type="number"
+                            min="5"
+                            max="1440"
+                            class="w-full pl-3 pr-12 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
+                        />
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#60646C] dark:text-zinc-400">mins</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">
-                        {{ __('How long we keep a spot while the guest pays.') }}</p>
-                    <x-input-error :messages="$errors->get('booking_hold_minutes')" />
+                    <p class="text-[11px] text-[#60646C] dark:text-zinc-400 mt-1">
+                        {{ __('How long we keep a spot while the guest pays.') }}
+                    </p>
+                    <x-input-error :messages="$errors->get('booking_hold_minutes')" class="mt-1" />
                 </div>
 
-                <!-- Currency Code -->
+                {{-- Currency Code --}}
                 <div>
-                    <x-label for="currency_code" :value="__('Currency')" required />
-                    <x-input id="currency_code" wire:model="currency_code" type="text"
-                        class="font-mono text-xs uppercase" :error="$errors->has('currency_code')" />
-                    <x-input-error :messages="$errors->get('currency_code')" />
+                    <label for="currency_code" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                        {{ __('Currency') }} <span class="text-rose-500">*</span>
+                    </label>
+                    <input
+                        id="currency_code"
+                        wire:model="currency_code"
+                        type="text"
+                        class="w-full px-3 py-1.5 text-xs font-mono uppercase rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
+                    />
+                    <x-input-error :messages="$errors->get('currency_code')" class="mt-1" />
                 </div>
 
-                <!-- Currency Symbol -->
+                {{-- Currency Symbol --}}
                 <div>
-                    <x-label for="currency_symbol" :value="__('Currency symbol')" required />
-                    <x-input id="currency_symbol" wire:model="currency_symbol" type="text" :error="$errors->has('currency_symbol')" />
-                    <x-input-error :messages="$errors->get('currency_symbol')" />
+                    <label for="currency_symbol" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                        {{ __('Currency symbol') }} <span class="text-rose-500">*</span>
+                    </label>
+                    <input
+                        id="currency_symbol"
+                        wire:model="currency_symbol"
+                        type="text"
+                        class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
+                    />
+                    <x-input-error :messages="$errors->get('currency_symbol')" class="mt-1" />
                 </div>
 
-                <!-- Slack Webhook URL -->
+                {{-- Slack Webhook URL --}}
                 <div class="sm:col-span-2">
-                    <x-label for="slack_webhook_url" :value="__('Operator Slack Webhook URL')" />
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 mb-1.5">
+                    <label for="slack_webhook_url" class="block text-xs font-medium text-[#1C2024] dark:text-white mb-1.5">
+                        {{ __('Operator Slack Webhook URL') }}
+                    </label>
+                    <p class="text-[11px] text-[#60646C] dark:text-zinc-400 mb-1.5">
                         {{ __('Incoming webhook URL for registration, plan changes, and status alerts. Overrides SLACK_OPERATOR_WEBHOOK_URL from .env.') }}
                     </p>
-                    <x-input id="slack_webhook_url" wire:model="slack_webhook_url" type="url" placeholder="https://hooks.slack.com/services/..." :error="$errors->has('slack_webhook_url')" />
-                    <x-input-error :messages="$errors->get('slack_webhook_url')" />
+                    <input
+                        id="slack_webhook_url"
+                        wire:model="slack_webhook_url"
+                        type="url"
+                        placeholder="https://hooks.slack.com/services/..."
+                        class="w-full px-3 py-1.5 text-xs rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white placeholder-[#60646C]/60 dark:placeholder-zinc-500 focus:outline-hidden focus:border-[#FFEF4D] shadow-none"
+                    />
+                    <x-input-error :messages="$errors->get('slack_webhook_url')" class="mt-1" />
                 </div>
             </div>
         </div>
 
-        <!-- Submit Button & Success Toast -->
+        {{-- Submit Button & Success Toast --}}
         <div class="flex items-center gap-4 pt-2">
-            <x-button type="submit" data-test="save-platform-settings-button">
+            <button
+                type="submit"
+                data-test="save-platform-settings-button"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium cursor-pointer transition shadow-none"
+            >
                 <i class="fa-solid fa-floppy-disk text-xs"></i>
-                {{ __('Save') }}
-            </x-button>
+                <span>{{ __('Save') }}</span>
+            </button>
 
             <div x-data="{ shown: false, timeout: null }" x-init="@this.on('platform-settings-saved', () => {
                 clearTimeout(timeout);
@@ -539,7 +617,7 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
             })"
                 x-show.transition.out.opacity.duration.1500ms="shown" x-transition:leave.opacity.duration.1500ms
                 style="display: none;"
-                class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 <i class="fa-solid fa-circle-check"></i>
                 {{ __('Platform settings updated successfully.') }}
             </div>
@@ -548,15 +626,15 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
 
     <x-modal name="confirm-platform-maintenance" :show="$confirming_maintenance" maxWidth="md">
         <div class="p-6 space-y-4 text-center">
-            <div class="w-12 h-12 rounded-2xl {{ $pending_maintenance ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300' }} flex items-center justify-center mx-auto text-lg">
+            <div class="w-10 h-10 rounded-[8px] {{ $pending_maintenance ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' }} flex items-center justify-center mx-auto text-base">
                 <i class="fa-solid {{ $pending_maintenance ? 'fa-pause' : 'fa-play' }}"></i>
             </div>
 
-            <div class="space-y-1.5">
-                <h3 class="text-base font-bold text-slate-900 dark:text-white">
+            <div class="space-y-1">
+                <h3 class="text-sm font-semibold text-[#1C2024] dark:text-white">
                     {{ $pending_maintenance ? __('Turn on platform maintenance?') : __('Turn off platform maintenance?') }}
                 </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                <p class="text-xs text-[#60646C] dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
                     @if ($pending_maintenance)
                         {{ __('Guests on every storefront will not be able to book, pay, or cancel. Operator sign-up will close. Catalogs, operator log in, and admin stay up. This is not Laravel down.') }}
                     @else
@@ -565,23 +643,21 @@ new #[Title('Settings')] #[Layout('layouts.admin')] class extends Component
                 </p>
             </div>
 
-            <div class="flex items-center justify-center gap-3 pt-3">
-                <x-button
+            <div class="flex items-center justify-center gap-2 pt-2">
+                <button
                     type="button"
-                    variant="secondary"
                     wire:click="cancelMaintenanceToggle"
-                    class="font-semibold text-xs"
+                    class="px-3 py-1.5 text-xs font-medium rounded-[6px] border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#141821] text-[#1C2024] dark:text-white hover:bg-[#FAFAFB] dark:hover:bg-[#1E2433] transition cursor-pointer shadow-none"
                 >
                     {{ __('Cancel') }}
-                </x-button>
-                <x-button
+                </button>
+                <button
                     type="button"
-                    variant="{{ $pending_maintenance ? 'danger' : 'primary' }}"
                     wire:click="confirmMaintenanceToggle"
-                    class="font-semibold text-xs shadow-xs"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] {{ $pending_maintenance ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E]' }} text-xs font-medium cursor-pointer transition shadow-none"
                 >
                     {{ $pending_maintenance ? __('Pause bookings') : __('Resume bookings') }}
-                </x-button>
+                </button>
             </div>
         </div>
     </x-modal>

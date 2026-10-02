@@ -35,14 +35,14 @@
             {{ $label }}
         </span>
         @if ($icon)
-            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl text-xs {{ $iconWell }}">
+            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-xs {{ $iconWell }}">
                 <i class="fa-solid {{ $icon }}"></i>
             </span>
         @endif
     </div>
 
     <div class="flex min-w-0 items-baseline gap-1.5">
-        <p @class(['op-metric-value truncate text-2xl font-bold sm:text-3xl', 'text-op-ink' => ! $featured])>
+        <p @class(['op-metric-value truncate text-2xl font-medium sm:text-3xl', 'text-op-ink' => ! $featured])>
             {{ $value ?? $slot }}
         </p>
         @isset($suffix)

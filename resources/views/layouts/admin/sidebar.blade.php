@@ -10,7 +10,7 @@
     class="op-shell op-palette-ebony flex min-h-dvh flex-col bg-canvas text-stone-900 antialiased selection:bg-brand-400 selection:text-brand-foreground dark:bg-canvas-dark dark:text-zinc-100"
     x-data="{ sidebarOpen: false }">
     <a href="#main-content"
-        class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-slate-900 focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-brand-500">
+        class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-[6px] focus:bg-white focus:px-4 focus:py-2 focus:text-xs focus:font-semibold focus:text-slate-900 focus:shadow-none focus:outline-2 focus:outline-offset-2 focus:outline-[#FFEF4D]">
         {{ __('Skip to main content') }}
     </a>
 
@@ -29,29 +29,31 @@
     <div class="flex min-h-0 w-full flex-1">
     <aside
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-        class="op-sidebar fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 select-none flex-col border-r border-op-line bg-op-sidebar transition-transform duration-200 ease-in-out print:hidden lg:sticky lg:top-0 lg:translate-x-0"
+        class="op-sidebar fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 select-none flex-col border-r border-op-line bg-[#12181e] transition-transform duration-200 ease-in-out print:hidden lg:sticky lg:top-0 lg:translate-x-0"
     >
-        <div class="flex h-16 shrink-0 items-center justify-between border-b border-op-line px-4">
-            <a href="{{ route('admin.dashboard') }}" class="group flex min-w-0 items-center gap-3 text-sm font-semibold" wire:navigate>
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-400 text-sm font-bold text-brand-foreground">
+        {{-- Brand Header --}}
+        <div class="flex h-14 shrink-0 items-center justify-between border-b border-white/[0.08] px-4">
+            <a href="{{ route('admin.dashboard') }}" class="group flex min-w-0 items-center gap-2.5 text-sm font-semibold" wire:navigate>
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#FFEF4D] text-xs font-bold text-[#12181E] shadow-none">
                     <i class="fa-solid fa-compass"></i>
                 </span>
                 <div class="flex min-w-0 flex-col">
-                    <span class="truncate text-sm font-bold leading-tight text-op-ink">
+                    <span class="truncate text-xs font-semibold leading-tight text-white">
                         {{ config('app.name', 'TravelEngine') }}
                     </span>
-                    <span class="truncate text-[11px] font-normal text-op-subtle">
+                    <span class="truncate text-[10px] font-medium text-white/50">
                         {{ __('Admin') }}
                     </span>
                 </div>
             </a>
             <button x-on:click="sidebarOpen = false" type="button"
-                class="rounded-lg p-1.5 text-op-subtle hover:text-op-ink lg:hidden">
-                <i class="fa-solid fa-xmark text-base"></i>
+                class="rounded-[6px] p-1 text-white/50 hover:text-white lg:hidden">
+                <i class="fa-solid fa-xmark text-sm"></i>
             </button>
         </div>
 
-        <nav class="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4 select-none">
+        {{-- Nav Links --}}
+        <nav class="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-3 select-none">
             <x-nav-section :title="__('Overview')">
                 <x-nav-link :href="route('admin.dashboard')" icon="fa-chart-pie" :active="request()->routeIs('admin.dashboard')">
                     {{ __('Dashboard') }}
@@ -99,29 +101,30 @@
             </x-nav-section>
         </nav>
 
-        <div class="relative z-20 shrink-0 p-3">
+        {{-- Footer Controls & User Menu --}}
+        <div class="relative z-20 shrink-0 border-t border-white/[0.08] p-3">
             <a href="{{ route('dashboard') }}" wire:navigate
-                class="mb-2 flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-white/5 text-xs font-semibold text-op-ink hover:bg-white/10">
-                <i class="fa-solid fa-arrow-right-arrow-left text-xs"></i>
+                class="mb-2 flex h-8 w-full items-center justify-center gap-2 rounded-[6px] border border-white/10 bg-white/5 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition shadow-none">
+                <i class="fa-solid fa-arrow-right-arrow-left text-[11px]"></i>
                 <span>{{ __('Operator Portal') }}</span>
             </a>
 
             <x-dropdown align="top" width="full">
                 <x-slot name="trigger">
                     <button type="button"
-                        class="group flex w-full cursor-pointer items-center gap-2.5 rounded-xl bg-white/5 p-2.5 text-start hover:bg-white/10">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-400 text-xs font-bold text-brand-foreground">
+                        class="group flex w-full cursor-pointer items-center gap-2.5 rounded-[6px] border border-white/10 bg-white/5 p-2 text-start hover:bg-white/10 transition shadow-none">
+                        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] bg-[#FFEF4D] text-xs font-semibold text-[#12181E] shadow-none">
                             {{ auth()->user()?->initials() ?? 'AD' }}
                         </div>
                         <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-semibold leading-tight text-op-ink">
+                            <p class="truncate text-xs font-medium leading-tight text-white">
                                 {{ auth()->user()?->name ?? 'Platform Admin' }}
                             </p>
-                            <p class="mt-0.5 truncate text-xs leading-tight text-op-subtle">
+                            <p class="mt-0.5 truncate text-[11px] leading-tight text-white/50">
                                 {{ auth()->user()?->email }}
                             </p>
                         </div>
-                        <i class="fa-solid fa-chevron-up shrink-0 text-[10px] text-op-subtle"></i>
+                        <i class="fa-solid fa-chevron-up shrink-0 text-[10px] text-white/40"></i>
                     </button>
                 </x-slot>
                 <x-slot name="content">
@@ -147,15 +150,15 @@
     </aside>
 
     <div class="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header class="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-op-line px-4 lg:hidden">
+        <header class="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#10141d] px-4 lg:hidden">
             <button x-on:click="sidebarOpen = true" type="button"
-                class="flex h-10 w-10 items-center justify-center rounded-xl text-op-subtle hover:bg-op-muted hover:text-op-ink">
-                <i class="fa-solid fa-bars text-base"></i>
+                class="flex h-9 w-9 items-center justify-center rounded-[6px] text-[#60646C] hover:bg-[#FAFAFB] dark:hover:bg-[#141821] hover:text-[#1C2024] dark:hover:text-white">
+                <i class="fa-solid fa-bars text-sm"></i>
             </button>
-            <span class="truncate px-2 text-sm font-bold text-op-ink">
+            <span class="truncate px-2 text-xs font-semibold text-[#1C2024] dark:text-white">
                 {{ __('Admin') }}
             </span>
-            <div class="w-10"></div>
+            <div class="w-9"></div>
         </header>
 
         <main id="main-content" tabindex="-1" class="w-full flex-1 px-3 py-4 pb-16 sm:p-6 sm:pb-16 lg:p-8 lg:pb-16">
@@ -165,13 +168,13 @@
         </main>
 
         <footer
-            class="sticky bottom-0 z-30 mt-auto flex h-11 items-center border-t border-op-line bg-op-sidebar/90 px-4 text-xs text-op-subtle select-none backdrop-blur-md sm:px-6 lg:px-8 print:hidden">
+            class="sticky bottom-0 z-30 mt-auto flex h-10 items-center border-t border-[#E4E5E9] dark:border-[#1E2433] bg-white/95 dark:bg-[#10141d]/95 px-4 text-xs text-[#60646C] dark:text-zinc-400 select-none backdrop-blur-md sm:px-6 lg:px-8 print:hidden">
             <div class="mx-auto flex w-full max-w-7xl items-center justify-between">
-                <span class="font-semibold text-op-ink">
+                <span class="font-medium text-[#1C2024] dark:text-white">
                     {{ config('app.name', 'TravelEngine') }}
-                    <span class="font-normal text-op-subtle">{{ __('by EMVI Technologies') }}</span>
+                    <span class="font-normal text-[#60646C] dark:text-zinc-400">{{ __('by EMVI Technologies') }}</span>
                 </span>
-                <span>&copy; {{ date('Y') }}</span>
+                <span class="text-[11px]">&copy; {{ date('Y') }}</span>
             </div>
         </footer>
     </div>

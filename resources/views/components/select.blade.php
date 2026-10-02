@@ -125,7 +125,7 @@
             x-transition:leave="transition ease-in duration-100"
             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
             x-transition:leave-end="opacity-0 translate-y-1 scale-98"
-            class="absolute left-0 right-0 z-50 mt-1.5 overflow-hidden rounded-2xl border border-op-line bg-op-surface shadow-xl animate-fade-in"
+            class="absolute left-0 right-0 z-50 mt-1.5 overflow-hidden rounded-[8px] border border-op-line bg-op-surface shadow-none animate-fade-in"
             style="display: none;"
         >
             @if ($showSearchBox)
@@ -138,7 +138,7 @@
                             type="text"
                             x-model="search"
                             placeholder="{{ __('Search...') }}"
-                            class="h-8 w-full rounded-lg border border-op-line bg-op-inset pl-8 pr-3 text-xs text-op-ink placeholder:text-op-subtle focus:outline-none focus:ring-1 focus:ring-brand-400"
+                            class="h-8 w-full rounded-[6px] border border-op-line bg-op-inset pl-8 pr-3 text-xs text-op-ink placeholder:text-op-subtle focus:outline-none focus:border-[#FFEF4D] focus:ring-1 focus:ring-[#FFEF4D]"
                         />
                     </div>
                 </div>
@@ -150,9 +150,9 @@
                     <button
                         type="button"
                         x-on:click="selectOption(item.value)"
-                        class="w-full px-3 py-2 rounded-xl text-left text-xs sm:text-sm font-medium flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                        class="w-full px-3 py-1.5 rounded-[6px] text-left text-xs font-medium flex items-center justify-between gap-2 transition-colors cursor-pointer"
                         :class="String(value) === String(item.value)
-                            ? 'bg-amber-50 text-stone-900 font-semibold dark:bg-amber-400/10 dark:text-amber-50'
+                            ? 'bg-[#FFEF4D]/20 text-[#1C2024] font-medium dark:text-white'
                             : 'text-op-ink hover:bg-op-muted'"
                     >
                         <span class="flex min-w-0 flex-1 items-center gap-2">
@@ -171,7 +171,7 @@
                                 x-text="item.hint"
                                 class="text-[10px] font-semibold uppercase tracking-wide text-op-subtle"
                             ></span>
-                            <i x-show="String(value) === String(item.value)" class="fa-solid fa-check text-xs text-amber-600 dark:text-amber-300"></i>
+                            <i x-show="String(value) === String(item.value)" class="fa-solid fa-check text-xs text-[#856404] dark:text-[#FFEF4D]"></i>
                         </span>
                     </button>
                 </template>

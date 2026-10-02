@@ -109,9 +109,9 @@ new #[Title('Subscription Invoices')] #[Layout('layouts.admin')] class extends C
             <button
                 type="button"
                 wire:click="exportCsv"
-                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#141821] border border-slate-200 dark:border-[#1e2433] hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 transition cursor-pointer shadow-2xs"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[13px] font-medium bg-white dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] hover:bg-[#FAFAFB] dark:hover:bg-[#1E2433] text-[#1C2024] dark:text-white transition cursor-pointer shadow-none"
             >
-                <i class="fa-solid fa-download text-xs text-slate-400"></i>
+                <i class="fa-solid fa-download text-xs text-[#8B8D98]"></i>
                 <span>{{ __('Export CSV') }}</span>
             </button>
         </x-slot:actions>
@@ -152,14 +152,14 @@ new #[Title('Subscription Invoices')] #[Layout('layouts.admin')] class extends C
     </div>
 
     {{-- Filter & Search Toolbar --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none">
         <div class="relative flex-1 max-w-sm">
-            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#8B8D98]"></i>
             <input
                 type="text"
                 wire:model.live.debounce.300ms="search"
                 placeholder="{{ __('Search invoice # or operator...') }}"
-                class="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#141821] border border-slate-200 dark:border-[#1e2433] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:border-brand-500"
+                class="w-full h-8 pl-8 pr-3 rounded-[6px] text-[13px] bg-white dark:bg-[#141821] border border-[#E4E5E9] dark:border-[#1E2433] text-[#1C2024] dark:text-white placeholder-[#8B8D98] focus:border-[#FFEF4D] focus:ring-1 focus:ring-[#FFEF4D] shadow-none"
             />
         </div>
 
@@ -182,67 +182,67 @@ new #[Title('Subscription Invoices')] #[Layout('layouts.admin')] class extends C
     </div>
 
     {{-- Invoices Table --}}
-    <div class="rounded-3xl bg-white dark:bg-[#0C0E13] border border-slate-200/80 dark:border-[#1e2433] shadow-xs overflow-hidden">
+    <div class="rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1E2433] shadow-none overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs sm:text-sm">
+            <table class="w-full text-left text-[13px]">
                 <thead>
-                    <tr class="bg-slate-50 dark:bg-[#10141d] border-b border-slate-200/80 dark:border-[#1e2433] text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        <th class="py-3.5 px-4 sm:px-6">{{ __('Invoice #') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Operator') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Plan') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Amount') }}</th>
-                        <th class="py-3.5 px-4">{{ __('Status') }}</th>
-                        <th class="py-3.5 px-4 sm:px-6 text-right">{{ __('Date') }}</th>
+                    <tr class="bg-[#FAFAFB] dark:bg-[#141821] border-b border-[#E4E5E9] dark:border-[#1E2433] text-[11px] font-medium uppercase tracking-wider text-[#60646C]">
+                        <th class="py-3 px-4 sm:px-5">{{ __('Invoice #') }}</th>
+                        <th class="py-3 px-4">{{ __('Operator') }}</th>
+                        <th class="py-3 px-4">{{ __('Plan') }}</th>
+                        <th class="py-3 px-4">{{ __('Amount') }}</th>
+                        <th class="py-3 px-4">{{ __('Status') }}</th>
+                        <th class="py-3 px-4 sm:px-5 text-right">{{ __('Date') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-[#1e2433]">
+                <tbody class="divide-y divide-[#E4E5E9] dark:divide-[#1E2433]">
                     @forelse ($this->invoices as $invoice)
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-[#141824]/80 transition">
-                            <td class="py-3.5 px-4 sm:px-6 font-mono text-xs font-bold text-slate-900 dark:text-white">
+                        <tr class="hover:bg-[#FAFAFB] dark:hover:bg-[#141821]/60 transition">
+                            <td class="py-3 px-4 sm:px-5 font-mono text-[12px] font-medium text-[#1C2024] dark:text-white">
                                 {{ $invoice->invoice_number }}
                                 @if ($invoice->gateway_ref)
-                                    <span class="block font-mono text-[10px] text-slate-400 font-normal">{{ $invoice->gateway_ref }}</span>
+                                    <span class="block font-mono text-[10px] text-[#8B8D98]">{{ $invoice->gateway_ref }}</span>
                                 @endif
                             </td>
-                            <td class="py-3.5 px-4">
+                            <td class="py-3 px-4">
                                 @if ($invoice->operator)
-                                    <a href="{{ route('admin.operators.show', $invoice->operator->id) }}" wire:navigate class="font-bold text-slate-900 dark:text-white hover:text-brand-500 transition">
+                                    <a href="{{ route('admin.operators.show', $invoice->operator->id) }}" wire:navigate class="font-medium text-[13px] text-[#1C2024] dark:text-white hover:text-[#856404] dark:hover:text-[#FFEF4D] transition">
                                         {{ $invoice->operator->name }}
                                     </a>
                                 @else
-                                    <span class="text-slate-400">{{ __('Deleted Operator') }}</span>
+                                    <span class="text-[#8B8D98]">{{ __('Deleted Operator') }}</span>
                                 @endif
                             </td>
-                            <td class="py-3.5 px-4">
-                                <span class="font-semibold text-xs text-slate-700 dark:text-slate-300">
+                            <td class="py-3 px-4">
+                                <span class="font-medium text-[13px] text-[#1C2024] dark:text-slate-200">
                                     {{ $invoice->plan?->name ?? 'Plan' }}
                                 </span>
-                                <span class="text-[10px] text-slate-400 uppercase block">
+                                <span class="text-[10px] text-[#8B8D98] uppercase block">
                                     {{ $invoice->billing_interval ?? 'monthly' }}
                                 </span>
                             </td>
-                            <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
+                            <td class="py-3 px-4 font-mono font-medium text-[13px] text-[#1C2024] dark:text-white">
                                 Rp {{ number_format((float) $invoice->net_amount_paid, 0, ',', '.') }}
                             </td>
-                            <td class="py-3.5 px-4">
+                            <td class="py-3 px-4">
                                 <span @class([
-                                    'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase',
-                                    'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' => $invoice->status === 'completed',
-                                    'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' => $invoice->status === 'pending',
-                                    'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' => $invoice->status === 'failed',
+                                    'inline-flex items-center px-2 py-0.5 rounded-[6px] text-[11px] font-medium uppercase',
+                                    'bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]' => $invoice->status === 'completed',
+                                    'bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]' => $invoice->status === 'pending',
+                                    'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]' => $invoice->status === 'failed',
                                 ])>
                                     {{ $invoice->status }}
                                 </span>
                             </td>
-                            <td class="py-3.5 px-4 sm:px-6 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
+                            <td class="py-3 px-4 sm:px-5 text-right font-mono text-[12px] text-[#60646C] dark:text-slate-400">
                                 {{ ($invoice->paid_at ?? $invoice->created_at)?->format('d M Y, H:i') }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-12 text-center text-slate-400">
-                                <i class="fa-solid fa-file-invoice text-3xl mb-2 block opacity-40"></i>
-                                <p class="font-bold text-sm text-slate-600 dark:text-slate-300">{{ __('No subscription invoices found.') }}</p>
+                            <td colspan="6" class="py-10 text-center text-[#8B8D98]">
+                                <i class="fa-solid fa-file-invoice text-2xl mb-2 block opacity-40"></i>
+                                <p class="font-medium text-[13px] text-[#60646C] dark:text-slate-300">{{ __('No subscription invoices found.') }}</p>
                             </td>
                         </tr>
                     @endforelse
@@ -251,7 +251,7 @@ new #[Title('Subscription Invoices')] #[Layout('layouts.admin')] class extends C
         </div>
 
         @if ($this->invoices->hasPages())
-            <div class="p-4 border-t border-slate-100 dark:border-[#1e2433]">
+            <div class="p-3.5 border-t border-[#E4E5E9] dark:border-[#1E2433]">
                 {{ $this->invoices->links() }}
             </div>
         @endif

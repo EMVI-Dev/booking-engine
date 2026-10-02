@@ -2,7 +2,7 @@
     'align' => 'right',
     'position' => null,
     'width' => '56',
-    'contentClasses' => 'py-1.5 bg-white dark:bg-zinc-900'
+    'contentClasses' => 'py-1 bg-white dark:bg-[#10141d]'
 ])
 
 @php
@@ -45,10 +45,10 @@ $containerClasses = $width === 'full' ? 'relative w-full' : 'relative inline-blo
          x-transition:leave="transition ease-in duration-100"
          x-transition:leave-start="opacity-100 translate-y-0 scale-100"
          x-transition:leave-end="opacity-0 translate-y-1 scale-98"
-         class="absolute z-50 {{ $widthClasses }} min-w-[13rem] rounded-2xl shadow-xl shadow-slate-900/10 dark:shadow-black/50 border border-slate-200 dark:border-zinc-800 {{ $alignmentClasses }}"
+         class="absolute z-50 {{ $widthClasses }} min-w-[13rem] rounded-[8px] shadow-none border border-[#E4E5E9] dark:border-[#1E2433] bg-white dark:bg-[#10141d] {{ $alignmentClasses }}"
          style="display: none;"
     >
-        <div class="rounded-2xl ring-1 ring-black/5 overflow-hidden {{ $contentClasses }}">
+        <div class="rounded-[8px] overflow-hidden {{ $contentClasses }}">
             {{ $content }}
         </div>
     </div>

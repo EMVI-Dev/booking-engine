@@ -9,7 +9,7 @@
 <a
     href="{{ $href }}"
     wire:navigate
-    {{ $attributes->class('op-nav-item relative flex h-10 items-center rounded-xl px-2.5 text-sm font-semibold shadow-none') }}
+    {{ $attributes->class('op-nav-item relative flex h-8 items-center rounded-[6px] px-2.5 text-[13px] font-medium shadow-none') }}
     @if ($active) aria-current="page" @endif
 >
     <div class="flex min-w-0 flex-1 items-center gap-2.5">

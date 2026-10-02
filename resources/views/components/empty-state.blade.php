@@ -6,17 +6,17 @@
 ])
 
 <div {{ $attributes->class([
-    'flex flex-col items-center justify-center rounded-2xl border border-dashed border-op-line bg-op-muted/50 text-center',
+    'flex flex-col items-center justify-center rounded-[12px] border border-dashed border-op-line bg-op-muted/30 text-center',
     $compact ? 'px-6 py-10' : 'px-6 py-16',
 ]) }}>
     <span
-        class="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-op-surface text-op-subtle"
+        class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-[8px] border border-op-line bg-op-surface text-op-subtle"
         aria-hidden="true"
     >
-        <i class="fa-solid {{ $icon }} text-xl"></i>
+        <i class="fa-solid {{ $icon }} text-lg"></i>
     </span>
 
-    <h3 class="text-sm font-bold text-op-ink sm:text-base">{{ $title }}</h3>
+    <h3 class="text-sm font-medium text-op-ink sm:text-base">{{ $title }}</h3>
 
     @if ($description)
         <p class="mt-1.5 max-w-sm text-xs leading-relaxed text-op-subtle sm:text-sm">

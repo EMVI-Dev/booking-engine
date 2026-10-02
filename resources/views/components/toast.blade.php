@@ -63,17 +63,17 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0 -translate-y-1"
-            class="pointer-events-auto w-full sm:w-auto sm:min-w-80 sm:max-w-md flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-sm"
+            class="pointer-events-auto w-full sm:w-auto sm:min-w-80 sm:max-w-md flex items-start gap-2.5 rounded-[8px] border px-3.5 py-2.5 shadow-none backdrop-blur-sm"
             :class="tone(toast.type)"
             role="alert"
             aria-live="polite"
         >
             <i class="fa-solid mt-0.5 shrink-0 text-sm" :class="icon(toast.type)" aria-hidden="true"></i>
-            <p class="flex-1 text-xs font-semibold leading-relaxed" x-text="toast.message"></p>
+            <p class="flex-1 text-xs font-medium leading-relaxed" x-text="toast.message"></p>
             <button
                 type="button"
                 @click="dismiss(toast.id)"
-                class="shrink-0 rounded-lg p-1 opacity-60 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer"
+                class="shrink-0 rounded-[4px] p-1 opacity-60 transition hover:opacity-100 focus-visible:outline-1 focus-visible:outline-offset-1 cursor-pointer"
                 aria-label="{{ __('Dismiss notification') }}"
             >
                 <i class="fa-solid fa-xmark text-xs" aria-hidden="true"></i>
