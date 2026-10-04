@@ -14,6 +14,7 @@ use App\Enums\WalletTransactionType;
 use App\Models\Guest;
 use App\Models\Operator;
 use App\Models\OperatorDomain;
+use App\Models\OperatorGalleryPhoto;
 use App\Models\Package;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -23,10 +24,13 @@ use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\DomainResolverService;
 use App\Services\MediaStore;
+use App\Services\StorefrontGalleryService;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 class DemoOperatorSeeder extends Seeder
@@ -58,6 +62,9 @@ class DemoOperatorSeeder extends Seeder
         User::query()->where('email', 'baliridetours@gmail.com')->delete();
     }
 
+    /** @var list<string> */
+    protected array $wipedOperatorIds = [];
+
     protected function wipeDemoOperators(): void
     {
         $media = app(MediaStore::class);
@@ -68,6 +75,8 @@ class DemoOperatorSeeder extends Seeder
                     ->orWhere('slug', config('demo.slug', 'demo'));
             })
             ->pluck('id');
+
+        $this->wipedOperatorIds = $ids->all();
 
         foreach ($ids as $id) {
             $media->deleteDirectory($media->directoryFor($id));
@@ -150,7 +159,7 @@ class DemoOperatorSeeder extends Seeder
             ],
         ]);
 
-        $logoPath = $this->storeDemoImage($operator, $this->unsplash('1544644181-1484b3fdfc62', 400), MediaStore::LOGO_MAX_WIDTH, 'brand');
+        $logoPath = $this->storeDemoImage($operator, $this->unsplash('1518065896235-a4c93e088e7a', 400), MediaStore::LOGO_MAX_WIDTH, 'brand');
         $bannerPath = $this->storeDemoImage($operator, $this->unsplash('1507525428034-b723cf961d3e', 1600), MediaStore::COVER_MAX_WIDTH, 'brand');
         // Store paths only; URLs are built from the media disk when shown.
         $operator->update([
@@ -187,6 +196,8 @@ class DemoOperatorSeeder extends Seeder
         $products = $this->seedActivities($operator);
         $packages = $this->seedPackages($operator, $products);
         $this->seedSampleBookings($operator, $packages);
+        $this->seedGalleryPhotos($operator);
+        $this->migrateAdminSessions($operator);
     }
 
     /**
@@ -424,8 +435,8 @@ class DemoOperatorSeeder extends Seeder
                 'location' => 'Crystal Bay',
                 'capacity' => 24,
                 'price' => 175000.00,
-                'photo' => '1544551763-46a013bb70d5',
-                'gallery' => ['1682687220063-4742bd7fd538'],
+                'photo' => '1708649290066-5f617003b93f',
+                'gallery' => ['1437622368342-7a3d73a34c8f'],
                 'description' => 'A two-hour guided snorkel with gear, a life jacket, and a local spotter.',
                 'inclusions' => ['Mask and snorkel', 'Life jacket', 'Guide'],
                 'exclusions' => ['Hotel transfer'],
@@ -437,8 +448,8 @@ class DemoOperatorSeeder extends Seeder
                 'location' => 'Sanur Harbour',
                 'capacity' => 40,
                 'price' => 175000.00,
-                'photo' => '1544644181-1484b3fdfc62',
-                'gallery' => ['1506929562872-bb421503ef21'],
+                'photo' => '1552160757-52790c6f4faf',
+                'gallery' => ['1528719953625-3e95efad84da'],
                 'description' => 'One-way fastboat seat with port tax and a 20kg bag.',
                 'inclusions' => ['Fastboat ticket', 'Port tax'],
                 'exclusions' => ['Hotel pickup'],
@@ -451,7 +462,7 @@ class DemoOperatorSeeder extends Seeder
                 'capacity' => 8,
                 'price' => 650000.00,
                 'photo' => '1533473359331-0135ef1b58bf',
-                'gallery' => ['1518548419970-58e3b4079ab2'],
+                'gallery' => ['1720670272553-d352388d54d0'],
                 'description' => 'Air-conditioned car and driver for a full day of viewpoints.',
                 'inclusions' => ['Private car', 'Driver', 'Fuel and parking'],
                 'exclusions' => ['Entry tickets', 'Lunch'],
@@ -463,8 +474,8 @@ class DemoOperatorSeeder extends Seeder
                 'location' => 'On the boat',
                 'capacity' => 12,
                 'price' => 150000.00,
-                'photo' => '1527864550417-7fd91fc51a46',
-                'gallery' => ['1544551763-46a013bb70d5'],
+                'photo' => '1682687982502-1529b3b33f85',
+                'gallery' => ['1602101319087-18d00e6109c0'],
                 'description' => 'A dedicated underwater camera session. Guests keep the memory card.',
                 'inclusions' => ['GoPro session', 'Floating grip', '64GB card'],
                 'exclusions' => ['Video editing'],
@@ -476,8 +487,8 @@ class DemoOperatorSeeder extends Seeder
                 'location' => 'Island bays',
                 'capacity' => 10,
                 'price' => 250000.00,
-                'photo' => '1537996194471-e657df975ab4',
-                'gallery' => ['1544644181-1484b3fdfc62'],
+                'photo' => '1654414882149-8417f5de3a63',
+                'gallery' => ['1539635278303-d4002c07eae3'],
                 'description' => 'Certified local guide for marine encounters, navigation, and guest safety.',
                 'inclusions' => ['Certified guide', 'Safety briefing'],
                 'exclusions' => ['Guide tip'],
@@ -489,8 +500,8 @@ class DemoOperatorSeeder extends Seeder
                 'location' => 'Island coast',
                 'capacity' => 3,
                 'price' => 4500000.00,
-                'photo' => '1567899378494-47b22a2ae96a',
-                'gallery' => ['1540555700478-4be289fbecef'],
+                'photo' => '1575224639406-b218af1ee31e',
+                'gallery' => ['1567899378494-47b22a2ae96a'],
                 'description' => 'Private boat with skipper, shaded seating, and a cooler for the day.',
                 'inclusions' => ['Private boat', 'Skipper and crew', 'Fuel'],
                 'exclusions' => ['Meals', 'Drinks'],
@@ -502,8 +513,8 @@ class DemoOperatorSeeder extends Seeder
                 'location' => 'Calm bay',
                 'capacity' => 20,
                 'price' => 175000.00,
-                'photo' => '1493558103817-58b2924bce98',
-                'gallery' => ['1507525428034-b723cf961d3e'],
+                'photo' => '1526188717906-ab4a2f949f26',
+                'gallery' => ['1582391564016-801999ec01d1'],
                 'description' => 'Two-hour stand-up paddle session with a leash, life jacket, and instructor.',
                 'inclusions' => ['Board and paddle', 'Life jacket', 'Instructor'],
                 'exclusions' => ['Personal photos'],
@@ -536,8 +547,8 @@ class DemoOperatorSeeder extends Seeder
                 'category' => 'Day Experience',
                 'location' => 'Three island bays',
                 'price' => 650000.00,
-                'photo' => '1544644181-1484b3fdfc62',
-                'gallery' => ['1544551763-46a013bb70d5', '1682687220063-4742bd7fd538'],
+                'photo' => '1682686581663-179efad3cd2f',
+                'gallery' => ['1707327956851-30a531b70cda', '1589634749362-a8ef3056cbe9'],
                 'description' => 'A full-day boat trip with three snorkel stops, lunch, and a guide.',
                 'itinerary' => "07:30 — Harbour check-in\n08:00 — Boat out\n09:00 — First bay\n12:30 — Lunch\n16:00 — Return",
                 'inclusions' => ['Return boat', 'Snorkel gear', 'Lunch and water', 'Guide'],
@@ -554,8 +565,8 @@ class DemoOperatorSeeder extends Seeder
                 'category' => 'Island Tour',
                 'location' => 'West coast viewpoints',
                 'price' => 750000.00,
-                'photo' => '1518548419970-58e3b4079ab2',
-                'gallery' => ['1573790387438-4da905039392', '1537996194471-e657df975ab4'],
+                'photo' => '1566987827971-f2c40e748a54',
+                'gallery' => ['1604500693431-647f9e76dafc', '1685521298875-40e5bb0ec0ed'],
                 'description' => 'Boat across, then a private car to the main cliff viewpoints and a swim stop.',
                 'itinerary' => "07:00 — Boat out\n09:30 — First viewpoint\n12:00 — Lunch\n15:30 — Swim stop\n17:00 — Return boat",
                 'inclusions' => ['Return boat', 'Private car', 'Lunch'],
@@ -571,8 +582,8 @@ class DemoOperatorSeeder extends Seeder
                 'category' => 'Private Tour',
                 'location' => 'Island coast',
                 'price' => 3500000.00,
-                'photo' => '1567899378494-47b22a2ae96a',
-                'gallery' => ['1540555700478-4be289fbecef', '1507525428034-b723cf961d3e'],
+                'photo' => '1559494007-9f5847c49d94',
+                'gallery' => ['1783255166377-86fa436a2d7a', '1503803548695-c2a7b4a5b875'],
                 'description' => 'Private afternoon boat, a snorkel stop, and sunset on the way home.',
                 'itinerary' => "13:30 — Private boarding\n14:30 — Snorkel stop\n17:45 — Sunset cruise\n19:00 — Return",
                 'inclusions' => ['Private boat', 'Snorkel gear', 'Fruit platter'],
@@ -589,8 +600,8 @@ class DemoOperatorSeeder extends Seeder
                 'category' => 'Island Tour',
                 'location' => 'East coast beaches',
                 'price' => 800000.00,
-                'photo' => '1589308078059-be1415eab4c3',
-                'gallery' => ['1552465011-b4e21bf6e79a', '1507525428034-b723cf961d3e'],
+                'photo' => '1604500943879-80a4da030905',
+                'gallery' => ['1644027621303-238332ad53f4', '1634337385991-9c28ad464e88'],
                 'description' => 'White-sand beaches, a treehouse viewpoint, and a hilltop lunch.',
                 'itinerary' => "06:30 — Early boat\n09:00 — Viewpoint\n11:00 — Beach swim\n13:00 — Lunch\n16:45 — Return boat",
                 'inclusions' => ['Return boat', 'Private car', 'Lunch'],
@@ -606,8 +617,8 @@ class DemoOperatorSeeder extends Seeder
                 'category' => 'Scuba Diving',
                 'location' => 'Manta Point',
                 'price' => 1250000.00,
-                'photo' => '1682687220063-4742bd7fd538',
-                'gallery' => ['1544551763-46a013bb70d5', '1544644181-1484b3fdfc62'],
+                'photo' => '1618265909156-0507770ef0d0',
+                'gallery' => ['1544551763-46a013bb70d5', '1682687220063-4742bd7fd538'],
                 'description' => 'Two-tank boat dive for certified divers at the manta cleaning station.',
                 'itinerary' => "07:45 — Gear check\n08:30 — Dive 1\n12:00 — Dive 2\n13:30 — Lunch and return",
                 'inclusions' => ['Two boat dives', 'Tanks and weights', 'Lunch'],
@@ -623,8 +634,8 @@ class DemoOperatorSeeder extends Seeder
                 'category' => 'Island Tour',
                 'location' => 'East and west highlights',
                 'price' => 950000.00,
-                'photo' => '1577717903315-1691ae25ab3f',
-                'gallery' => ['1518548419970-58e3b4079ab2', '1589308078059-be1415eab4c3'],
+                'photo' => '1550664255-94d114340500',
+                'gallery' => ['1770838126263-9621f332c0d4', '1544644181-1484b3fdfc62'],
                 'description' => 'One private car day covering the main east and west viewpoints.',
                 'itinerary' => "06:30 — Boat out\n07:45 — East coast\n13:00 — West coast\n16:30 — Return boat",
                 'inclusions' => ['Return boat', 'Private car', 'Entry tickets', 'Lunch'],
@@ -640,8 +651,8 @@ class DemoOperatorSeeder extends Seeder
                 'category' => 'Private Tour',
                 'location' => 'Four island bays',
                 'price' => 4800000.00,
-                'photo' => '1500530855697-b586d89ba3ee',
-                'gallery' => ['1567899378494-47b22a2ae96a', '1493558103817-58b2924bce98'],
+                'photo' => '1702564502101-ff72bea956e9',
+                'gallery' => ['1575224639551-12afa3e701d9', '1588604079477-8d41a2b025d4'],
                 'description' => 'Private boat, snorkel, paddle, and camera service for a small group.',
                 'itinerary' => "08:30 — Private boarding\n09:15 — First bay\n12:30 — Beach lunch\n14:00 — Paddle stop\n16:00 — Return",
                 'inclusions' => ['Private boat', 'Snorkel gear', 'Paddleboards', 'Lunch'],
@@ -652,6 +663,70 @@ class DemoOperatorSeeder extends Seeder
                     'gopro-underwater-photo' => 1,
                     'paddleboard-session' => 2,
                 ],
+            ],
+        ];
+    }
+
+    protected function seedGalleryPhotos(Operator $operator): void
+    {
+        foreach ($this->galleryPhotoDefinitions() as $index => $item) {
+            $path = $this->storeDemoImage(
+                $operator,
+                $this->unsplash($item['photo'], 1600),
+                StorefrontGalleryService::MAX_WIDTH,
+                'gallery',
+            );
+
+            OperatorGalleryPhoto::query()->create([
+                'operator_id' => $operator->id,
+                'path' => $path,
+                'caption' => $item['caption'],
+                'sort_order' => $index + 1,
+            ]);
+        }
+    }
+
+    /**
+     * @return list<array{photo: string, caption: string}>
+     */
+    protected function galleryPhotoDefinitions(): array
+    {
+        return [
+            [
+                'photo' => '1507525428034-b723cf961d3e',
+                'caption' => 'Morning stillness at Crystal Bay',
+            ],
+            [
+                'photo' => '1708649290066-5f617003b93f',
+                'caption' => 'Snorkeling with vibrant coral and marine life',
+            ],
+            [
+                'photo' => '1566987827971-f2c40e748a54',
+                'caption' => 'Dramatic coastal cliffs of Kelingking',
+            ],
+            [
+                'photo' => '1618265909156-0507770ef0d0',
+                'caption' => 'Swimming alongside majestic manta rays',
+            ],
+            [
+                'photo' => '1503803548695-c2a7b4a5b875',
+                'caption' => 'Golden hour over the western ocean horizon',
+            ],
+            [
+                'photo' => '1544644181-1484b3fdfc62',
+                'caption' => 'Cultural sanctuary amidst lush tropical hills',
+            ],
+            [
+                'photo' => '1552160757-52790c6f4faf',
+                'caption' => 'Private speedboat heading out across the bay',
+            ],
+            [
+                'photo' => '1526188717906-ab4a2f949f26',
+                'caption' => 'Paddleboarding in a calm turquoise lagoon',
+            ],
+            [
+                'photo' => '1555400038-63f5ba517a47',
+                'caption' => 'Emerald rice terrace trek in early morning light',
             ],
         ];
     }
@@ -669,12 +744,29 @@ class DemoOperatorSeeder extends Seeder
     }
 
     /**
-     * Download a demo photo, resize it, and store it as WebP under the operator folder.
+     * Download or load cached demo photo, resize it, and store it as WebP under the operator folder.
+     * In local / development environments, raw downloaded images are cached locally on disk
+     * (in storage/app/demo-cache/) so subsequent seeds are instant, 100% local, and offline-safe.
      */
     protected function storeDemoImage(Operator $operator, string $url, int $maxWidth = MediaStore::COVER_MAX_WIDTH, string $within = 'catalog'): string
     {
         $media = app(MediaStore::class);
         $directory = $media->directoryFor($operator, $within);
+        $contents = $this->resolveDemoImageContents($url);
+
+        return $media->storeImageContents($contents, $directory, $maxWidth);
+    }
+
+    protected function resolveDemoImageContents(string $url): string
+    {
+        $cacheFile = $this->localDemoImageCachePath($url);
+
+        if ($cacheFile !== null && file_exists($cacheFile) && filesize($cacheFile) > 0) {
+            $cached = @file_get_contents($cacheFile);
+            if ($cached !== false && $cached !== '') {
+                return $cached;
+            }
+        }
 
         if ($this->shouldDownloadDemoImages()) {
             try {
@@ -684,14 +776,62 @@ class DemoOperatorSeeder extends Seeder
                     ->get($url);
 
                 if ($response->successful() && str_starts_with(strtolower((string) $response->header('Content-Type')), 'image/')) {
-                    return $media->storeImageContents($response->body(), $directory, $maxWidth);
+                    $body = $response->body();
+
+                    if ($cacheFile !== null) {
+                        @file_put_contents($cacheFile, $body);
+                    }
+
+                    return $body;
                 }
             } catch (ConnectionException) {
-                // No outbound access (firewalled server): fall back to the placeholder so seeding never fails.
+                // Outbound failure: fall back to placeholder
             }
         }
 
-        return $media->storeImageContents($this->placeholderJpeg(), $directory, $maxWidth);
+        return $this->placeholderJpeg();
+    }
+
+    protected function localDemoImageCachePath(string $url): ?string
+    {
+        $cacheDir = storage_path('app/demo-cache');
+
+        if (! is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+        }
+
+        if (! is_dir($cacheDir) || ! is_writable($cacheDir)) {
+            return null;
+        }
+
+        return $cacheDir.'/'.md5($url).'.jpg';
+    }
+
+    protected function migrateAdminSessions(Operator $newOperator): void
+    {
+        if (empty($this->wipedOperatorIds) || ! Schema::hasTable('sessions')) {
+            return;
+        }
+
+        DB::table('sessions')->get()->each(function ($session) use ($newOperator): void {
+            $payload = @base64_decode((string) $session->payload, true);
+            if (! $payload) {
+                return;
+            }
+
+            $data = json_decode($payload, true);
+            if (! is_array($data)) {
+                return;
+            }
+
+            if (isset($data[User::IMPERSONATION_SESSION_KEY]) && in_array($data[User::IMPERSONATION_SESSION_KEY], $this->wipedOperatorIds, true)) {
+                $data[User::IMPERSONATION_SESSION_KEY] = $newOperator->id;
+                $data[User::IMPERSONATION_STARTED_KEY] = now()->getTimestamp();
+                DB::table('sessions')->where('id', $session->id)->update([
+                    'payload' => base64_encode((string) json_encode($data)),
+                ]);
+            }
+        });
     }
 
     protected function placeholderJpeg(): string

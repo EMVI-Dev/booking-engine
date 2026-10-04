@@ -131,7 +131,15 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             return null;
         }
 
-        return Operator::query()->whereKey(session(self::IMPERSONATION_SESSION_KEY))->first();
+        $operator = Operator::query()->whereKey(session(self::IMPERSONATION_SESSION_KEY))->first();
+
+        if (! $operator) {
+            session()->forget([self::IMPERSONATION_SESSION_KEY, self::IMPERSONATION_STARTED_KEY]);
+
+            return null;
+        }
+
+        return $operator;
     }
 
     /**

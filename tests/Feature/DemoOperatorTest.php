@@ -6,6 +6,7 @@ use App\Enums\ListingStatus;
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\OperatorDomain;
+use App\Models\OperatorGalleryPhoto;
 use App\Models\Package;
 use App\Models\Product;
 use App\Models\Reservation;
@@ -63,7 +64,14 @@ test('the demo catalog has seven packages, seven activities, and local cover pho
         ->and($operator->logo_path)->toEndWith('.webp')
         ->and($operator->banner_path)->toStartWith('operators/'.$operator->id.'/')
         ->and($operator->banner_path)->toEndWith('.webp')
-        ->and($operator->logo_url)->toContain('/storage/operators/'.$operator->id.'/');
+        ->and($operator->logo_url)->toContain('/storage/operators/'.$operator->id.'/')
+        ->and($operator->galleryPhotos()->count())->toBe(9);
+
+    $operator->galleryPhotos()->each(function (OperatorGalleryPhoto $photo) use ($operator): void {
+        expect($photo->path)->toStartWith('operators/'.$operator->id.'/gallery/')
+            ->and($photo->path)->toEndWith('.webp')
+            ->and($photo->caption)->toBeString();
+    });
 });
 
 test('refreshing the demo operator replaces catalog data and keeps one account', function () {
