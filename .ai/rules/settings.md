@@ -28,19 +28,19 @@ Brand, storefront, activity, and package create/edit must work on a phone. Do no
 Brand logo preview is w-full h-36 on phones, sm:w-24 sm:h-24 from sm up. Upload New Logo is w-full sm:w-auto. Do not restore a 96px square as the phone layout.
 
 ## Google listing connect on Reviews
-The Reviews tab can connect a public Google listing by pasting a Maps link or searching a business name, then confirming. Store the snapshot on settings.google_place. Do not overwrite an existing Review Platform URL. Do not copy the listing into review_url. There is still no reviews desk page or in-app guest form.
+The Reviews tab connects a Google listing by Place ID only: the operator follows the on-page steps (Google's Place ID Finder), pastes the ID, and confirms. The ID is checked with Google's free id-only request; there is no name search or share-link lookup (both billed). Store only settings.google_place = {place_id, connected_at}. This page never calls the billed Place Details: it shows Google's free Maps Embed card (when GOOGLE_MAPS_EMBED_KEY is set) and a Google Maps link to check. Do not overwrite an existing Review Platform URL or copy the listing into review_url.
 
-## Google listing lookup on finish
-Reviews tab Google listing search runs when the operator finishes the input: blur or Enter. Enter must set google_place_query from the field value, not only blur the input. Show the hint Press Enter to show the listing. Do not restore a Find listing button. Confirm still saves the listing.
+## Google listing check on finish
+The Place ID check runs when the operator finishes the input: blur or Enter. Enter must set google_place_query from the field value, not only blur the input. The steps tell them to press Enter. Do not restore a Find listing button.
 
 ## Google listing connect needs a modal
-Connect this listing opens confirm-google-listing. The modal shows the selected listing name, address, and Google rating. confirmGooglePlace is the save action. Do not connect from the preview card without that modal.
+Connect this listing opens confirm-google-listing. The modal shows the Place ID and an Open on Google Maps link so the operator checks it is their business. confirmGooglePlace is the save action. Do not connect from the preview card without that modal.
 
 ## Google listing is Agency only
 Only one Google listing per operator, and only the Agency plan (google_reviews) may connect it. Other plans see only the Review Platform URL. Do not show the lookup, confirm modal, or slider without that feature. Post-trip review mail uses the connected listing for Agency, and the Review Platform URL for every other plan.
 
 ## Hide Google search while a listing is connected
-Agency has one Google listing. Hide the Maps search field, Enter hint, and connect preview while a listing is connected. Show them again only after Disconnect. Do not look up a second listing until the current one is cleared.
+Agency has one Google listing. Hide the Place ID field, steps, and connect preview while a listing is connected. Show them again only after Disconnect. Do not look up a second listing until the current one is cleared.
 
 ## Agency without a listing may use a review link
 Agency with no listing chooses Connect a Google listing or Use a review link. Do not show the Review Platform field until they choose the link. Do not copy a connected listing into review_url. Other plans keep only the manual field. Dashboard setup calls the Agency step Reviews.

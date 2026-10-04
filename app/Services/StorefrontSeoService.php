@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Operator;
+use App\Models\OperatorGalleryPhoto;
 use App\Models\Package;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\Paginator;
@@ -161,6 +162,35 @@ class StorefrontSeoService
     }
 
     /**
+     * FAQPage for the storefront FAQ (generated + operator questions), so answers can show in
+     * search. It lives on /faq only: one FAQPage per site, on the page that shows the answers.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function faqPage(Operator $operator): ?array
+    {
+        $items = app(StorefrontFaqService::class)->itemsFor($operator);
+
+        if ($items === []) {
+            return null;
+        }
+
+        return [
+            '@type' => 'FAQPage',
+            '@id' => route('storefront.faq').'#webpage',
+            'url' => route('storefront.faq'),
+            'name' => __('Frequently asked questions — :name', ['name' => $operator->name]),
+            'isPartOf' => ['@id' => url('/').'#website'],
+            'about' => ['@id' => url('/').'#agency'],
+            'mainEntity' => array_map(fn (array $item): array => [
+                '@type' => 'Question',
+                'name' => $item['question'],
+                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item['answer']],
+            ], $items),
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function packageGraph(Operator $operator, Package $package): array
@@ -272,6 +302,82 @@ class StorefrontSeoService
     }
 
     /**
+     * Gallery page: an ImageGallery listing every visible photo as an ImageObject.
+     *
+     * @param  iterable<int, OperatorGalleryPhoto>  $photos
+     * @return array<string, mixed>
+     */
+    public function galleryGraph(Operator $operator, iterable $photos): array
+    {
+        $images = collect($photos)
+            ->map(fn (OperatorGalleryPhoto $photo): ?array => ($url = $this->absoluteMediaUrl($photo->path)) === null ? null : $this->withoutEmpty([
+                '@type' => 'ImageObject',
+                'contentUrl' => $url,
+                'url' => $url,
+                'caption' => $photo->caption,
+                'creditText' => $operator->name,
+                'copyrightNotice' => $operator->name,
+            ]))
+            ->filter()
+            ->values();
+
+        return $this->graph([
+            $this->breadcrumbs([
+                ['name' => __('Home'), 'url' => url('/')],
+                ['name' => __('Gallery'), 'url' => route('storefront.gallery')],
+            ]),
+            $this->travelAgency($operator, $images->first()['contentUrl'] ?? $this->shareImage($operator)['url']),
+            [
+                '@type' => 'ImageGallery',
+                '@id' => route('storefront.gallery').'#webpage',
+                'url' => route('storefront.gallery'),
+                'name' => __('Photo gallery — :name', ['name' => $operator->name]),
+                'isPartOf' => ['@id' => url('/').'#website'],
+                'about' => ['@id' => url('/').'#agency'],
+                'primaryImageOfPage' => $images->first(),
+                'image' => $images->all() ?: null,
+            ],
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function faqGraph(Operator $operator): array
+    {
+        return $this->graph([
+            $this->breadcrumbs([
+                ['name' => __('Home'), 'url' => url('/')],
+                ['name' => __('FAQ'), 'url' => route('storefront.faq')],
+            ]),
+            $this->travelAgency($operator, $this->shareImage($operator)['url']),
+            $this->faqPage($operator),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function contactGraph(Operator $operator): array
+    {
+        return $this->graph([
+            $this->breadcrumbs([
+                ['name' => __('Home'), 'url' => url('/')],
+                ['name' => __('Contact'), 'url' => route('storefront.contact')],
+            ]),
+            $this->travelAgency($operator, $this->shareImage($operator)['url']),
+            [
+                '@type' => 'ContactPage',
+                '@id' => route('storefront.contact').'#webpage',
+                'url' => route('storefront.contact'),
+                'name' => __('Contact :name', ['name' => $operator->name]),
+                'isPartOf' => ['@id' => url('/').'#website'],
+                'mainEntity' => ['@id' => url('/').'#agency'],
+            ],
+        ]);
+    }
+
+    /**
      * @return array{url: string, alt: string, card: string, width: int, height: int}
      */
     private function largeCard(string $url, string $alt): array
@@ -301,7 +407,6 @@ class StorefrontSeoService
             'image' => $imageUrl ?: $logo,
             'logo' => $logo,
             'telephone' => $operator->contact_whatsapp,
-            'email' => $operator->booking_notification_email,
             'priceRange' => 'Rp',
             'areaServed' => [
                 '@type' => 'Country',

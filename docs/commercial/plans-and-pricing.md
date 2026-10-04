@@ -1,6 +1,6 @@
 # Plans and pricing
 
-_Last reviewed: 2026-10-02_
+_Last reviewed: 2026-10-05_
 
 This is the one home for plan names, prices, limits and the guest service fee. Money handling (ledger, escrow, payouts, refunds) is in [money-rules-and-settlement.md](money-rules-and-settlement.md). The seeded values live in `Plan::seedDefaultPlans()` and must match this page.
 
@@ -21,6 +21,8 @@ There is **no bring-your-own gateway** on any plan. Every booking checks out thr
 | Who | Solo freelance guide | Freelancer with more tools, or a small group | Small to mid travel agency |
 | Trips and activities (live) | 5 | 25 | Unlimited |
 | People on the team | You and 1 helper | Unlimited | Unlimited |
+| Storefront gallery photos | 9 | 18 | 36 |
+| Contact and private/group enquiry form | | ✓ | ✓ |
 | Operator commission | 0% | 0% | 0% |
 | Guest service fee | 5% (cap Rp 250.000) | 5% (cap Rp 250.000) | 5% (cap Rp 250.000) |
 | Shop address | `slug.travelengine.id` | `slug.travelengine.id` | slug **plus own domain** |

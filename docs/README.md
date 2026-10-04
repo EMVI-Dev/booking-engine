@@ -23,6 +23,7 @@ Docs are grouped by who reads them. Start with **Product**. If a doc and the cod
 | [features/operator-portal-coupons-billing.md](features/operator-portal-coupons-billing.md) | Coupons and reports, login handoff, billing and invoices, guest CRM |
 | [features/vendor-dispatch.md](features/vendor-dispatch.md) | Vendors (suppliers) and automatic booking dispatch |
 | [features/custom-domains.md](features/custom-domains.md) | Slug storefronts and Agency custom domains on Laravel Cloud |
+| [features/storefront-website.md](features/storefront-website.md) | Website extras: gallery, FAQ, contact and group enquiries, cookie notice, Google listing (with the UI brief for Antigravity) |
 
 ## Engineering: how it is built and run
 | Doc | What |

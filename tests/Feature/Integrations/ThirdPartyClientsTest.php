@@ -82,22 +82,20 @@ test('slack client only ever posts to hooks.slack.com', function () {
 
 // ── Google ───────────────────────────────────────────────────────────────────
 
-test('a pasted link is only followed when it is a google maps link', function () {
+test('a pasted place id is only checked with an id-only request; other input sends nothing', function () {
     config(['services.google.places_key' => 'test-key']);
-    Http::fake();
+    Http::fake(['places.googleapis.com/*' => Http::response(['id' => 'ChIJsunrise1234567890'])]);
 
-    $client = app(GooglePlacesClient::class);
+    $places = app(GooglePlacesService::class);
 
-    expect($client->isMapsLink('https://maps.app.goo.gl/abc123'))->toBeTrue()
-        ->and($client->isMapsLink('https://www.google.com/maps/place/x'))->toBeTrue()
-        ->and($client->isMapsLink('http://maps.app.goo.gl/abc123'))->toBeFalse()
-        ->and($client->isMapsLink('https://maps.app.goo.gl:8080/abc'))->toBeFalse()
-        ->and($client->isMapsLink('https://127.0.0.1/admin'))->toBeFalse()
-        ->and($client->isMapsLink('https://evil.test/maps'))->toBeFalse();
-
-    expect(app(GooglePlacesService::class)->lookup('https://internal.service.local/secret'))->toBeNull();
+    expect($places->checkPastedPlaceId('https://internal.service.local/secret')['status'])->toBe(GooglePlacesClient::PLACE_MISSING)
+        ->and($places->checkPastedPlaceId('EMVI')['status'])->toBe(GooglePlacesClient::PLACE_MISSING);
 
     Http::assertNothingSent();
+
+    expect($places->checkPastedPlaceId('  ChIJsunrise1234567890 '))->toBe(['status' => GooglePlacesClient::PLACE_FOUND, 'place_id' => 'ChIJsunrise1234567890']);
+
+    Http::assertSent(fn ($request) => $request->hasHeader('X-Goog-FieldMask', 'id'));
 });
 
 // ── Domain names ─────────────────────────────────────────────────────────────

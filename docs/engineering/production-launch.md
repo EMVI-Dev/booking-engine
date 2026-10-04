@@ -1,6 +1,6 @@
 # Production launch checklist (Laravel Cloud, fresh database)
 
-_Last reviewed: 2026-10-03_
+_Last reviewed: 2026-10-05_
 
 Use this for the first production deploy, and again after any change to hosting. Hosting background is in [`stack-and-hosting.md`](stack-and-hosting.md). Service details are in [`integrations.md`](integrations.md).
 
@@ -41,17 +41,19 @@ Use this for the first production deploy, and again after any change to hosting.
 | `DOKU_MODE` | `sandbox` until the live checklist below is done, then `live` |
 | `DOKU_LIVE_CLIENT_ID` / `DOKU_LIVE_SECRET_KEY` | **secret**; live merchant credentials |
 | `DOKU_SIMULATOR_ENABLED` | `false` |
-| `GOOGLE_PLACES_API_KEY` | **secret**; server key restricted to the Places API |
+| `GOOGLE_PLACES_API_KEY` | **secret**; server key, Places API (New) only; used only for the free ID check |
+| `GOOGLE_MAPS_EMBED_KEY` | public browser key, **Maps Embed API only**; shows the Google listing card |
 | `SLACK_OPERATOR_WEBHOOK_URL` | **secret**; optional; a `https://hooks.slack.com/...` URL |
 
 Secrets (marked **secret** below) go in Cloud's environment variables or Secrets Manager, never in a committed file. `.env.example` lists the same keys in its GENERAL and SECRETS blocks.
 
 ## 3. First deploy
-1. Merge to the production branch so Cloud deploys. The deploy command runs `migrate --force` on the empty database, with one create migration per table.
-2. Run `php artisan media:check` from Cloud **Commands**. It must say the disk is `r2`, finish the write test, and show `https://storage.travelengine.id/...` URLs. Fix the R2 variables and redeploy before going on.
-3. Run `php artisan db:seed --force` from Cloud **Commands**. This creates the plans, the platform admin and the demo shop. It runs once only.
-4. Run `php artisan cloud:environments` and confirm the token works and the environment id matches.
-5. Log in at `https://travelengine.id/admin/login` and turn on 2FA for the admin.
+1. Merge to the production branch so Cloud deploys. The deploy command runs `migrate --force` on the empty database, with one create migration per table. To rebuild a database that already has tables, run `php artisan migrate:fresh --force` once from Cloud **Commands** (this wipes it).
+2. Run `php artisan db:seed --force` from Cloud **Commands**. It creates the plans, the platform admin and the demo shop.
+   - **Storage is checked first.** Before the demo uploads its photos, the seeder tests media storage: production must use R2, and a test file must write, read back and delete. If R2 is misconfigured it stops with a message saying what to fix, before any upload. `php artisan media:check` remains for checking storage on its own.
+   - **Safe to re-run.** Anything that already exists is skipped: the admin keeps their password, plan edits from Admin → Plans are kept, and the demo shop isn't touched. Use `php artisan demo:refresh` to rebuild only the demo shop. It also runs nightly and never resets plans.
+3. Run `php artisan cloud:environments` and confirm the token works and the environment id matches.
+4. Log in at `https://travelengine.id/admin/login` and turn on 2FA for the admin.
 
 ## 4. Smoke test
 - [ ] `https://travelengine.id` loads over HTTPS, and sign-up sends a verification email.

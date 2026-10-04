@@ -563,6 +563,50 @@
                 </div>
             </section>
         @endif
+
+        @php
+            $storefrontPages = app(\App\Services\StorefrontPagesService::class)->pagesFor($agent);
+            $hasGallery = $storefrontPages['gallery'];
+            $hasFaq = $storefrontPages['faq'];
+            $hasContact = $storefrontPages['contact'];
+        @endphp
+        @if ($hasGallery || $hasFaq || $hasContact)
+            <section class="pt-2">
+                <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="space-y-0.5">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                            {{ __('Explore more about :name', ['name' => $agent->name]) }}
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            {{ __('Browse tour photos, read frequently asked questions, or get in touch for custom bookings.') }}
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                        @if ($hasGallery)
+                            <a href="{{ route('storefront.gallery') }}"
+                                class="h-9 px-3.5 rounded-xl border border-slate-200/80 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 font-bold text-xs inline-flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-camera text-brand-700 dark:text-brand-400 text-xs"></i>
+                                <span>{{ __('Photos') }}</span>
+                            </a>
+                        @endif
+                        @if ($hasFaq)
+                            <a href="{{ route('storefront.faq') }}"
+                                class="h-9 px-3.5 rounded-xl border border-slate-200/80 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 font-bold text-xs inline-flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-circle-question text-brand-700 dark:text-brand-400 text-xs"></i>
+                                <span>{{ __('FAQ') }}</span>
+                            </a>
+                        @endif
+                        @if ($hasContact)
+                            <a href="{{ route('storefront.contact') }}"
+                                class="h-9 px-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-brand-foreground font-bold text-xs inline-flex items-center gap-1.5 transition shadow-xs">
+                                <i class="fa-solid fa-envelope-open-text text-xs"></i>
+                                <span>{{ __('Contact') }}</span>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </section>
+        @endif
     </main>
 
 

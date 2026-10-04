@@ -43,6 +43,9 @@ test('folded columns live in their create migrations', function () {
         ->and(Schema::hasIndex('platform_coupons', ['scope', 'operator_id', 'code'], 'unique'))->toBeTrue()
         ->and(Schema::hasIndex('platform_coupons', ['code'], 'unique'))->toBeFalse()
         ->and(Schema::hasTable('admin_audit_logs'))->toBeTrue()
+        ->and(Schema::hasColumn('plans', 'gallery_photo_limit'))->toBeTrue()
+        ->and(Schema::hasTable('operator_gallery_photos'))->toBeTrue()
+        ->and(Schema::hasTable('enquiries'))->toBeTrue()
         ->and(Schema::hasTable('product_availability'))->toBeFalse();
 
     $commissionDefault = collect(Schema::getColumns('plans'))->firstWhere('name', 'commission_rate')['default'] ?? null;

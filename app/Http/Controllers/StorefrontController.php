@@ -15,8 +15,12 @@ use App\Models\Reservation;
 use App\Services\CapacityService;
 use App\Services\DokuPaymentService;
 use App\Services\DomainResolverService;
+use App\Services\EnquiryService;
 use App\Services\PlatformSeoService;
 use App\Services\ReservationLifecycleService;
+use App\Services\StorefrontFaqService;
+use App\Services\StorefrontGalleryService;
+use App\Services\StorefrontPagesService;
 use App\Services\VendorDispatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -321,6 +325,100 @@ class StorefrontController extends Controller
         return view('storefront.terms', [
             'agent' => $agent,
         ]);
+    }
+
+    /**
+     * Photo gallery page. 404 while the shop has no visible photos, so it is never indexed empty.
+     */
+    public function showGallery(Request $request, StorefrontPagesService $pages, StorefrontGalleryService $gallery): View|\Symfony\Component\HttpFoundation\Response
+    {
+        $agent = $this->storefrontPageOperator($request, $pages, StorefrontPagesService::GALLERY);
+
+        if (! $agent instanceof Operator) {
+            return $agent;
+        }
+
+        return view('storefront.gallery', [
+            'agent' => $agent,
+            'photos' => $gallery->visiblePhotos($agent),
+        ]);
+    }
+
+    /**
+     * FAQ page (the only page carrying FAQPage markup). 404 when every answer is hidden.
+     */
+    public function showFaq(Request $request, StorefrontPagesService $pages, StorefrontFaqService $faq): View|\Symfony\Component\HttpFoundation\Response
+    {
+        $agent = $this->storefrontPageOperator($request, $pages, StorefrontPagesService::FAQ);
+
+        if (! $agent instanceof Operator) {
+            return $agent;
+        }
+
+        return view('storefront.faq', [
+            'agent' => $agent,
+            'faqItems' => $faq->itemsFor($agent),
+        ]);
+    }
+
+    /**
+     * Contact page: the enquiry form when it is open, otherwise WhatsApp. 404 when the shop has neither.
+     */
+    public function showContact(Request $request, StorefrontPagesService $pages, EnquiryService $enquiries): View|\Symfony\Component\HttpFoundation\Response
+    {
+        $agent = $this->storefrontPageOperator($request, $pages, StorefrontPagesService::CONTACT);
+
+        if (! $agent instanceof Operator) {
+            return $agent;
+        }
+
+        return view('storefront.contact', [
+            'agent' => $agent,
+            'isOpen' => $enquiries->isOpen($agent),
+        ]);
+    }
+
+    /**
+     * The shop for an optional storefront page, or the response to send instead
+     * (404 off a shop or when the page has nothing to show; the status page when not open).
+     */
+    private function storefrontPageOperator(Request $request, StorefrontPagesService $pages, string $page): Operator|\Symfony\Component\HttpFoundation\Response
+    {
+        $agent = $this->resolveCurrentOperator($request);
+
+        if (! $agent) {
+            abort(404);
+        }
+
+        if ($statusResponse = $this->checkOperatorStatus($agent)) {
+            return $statusResponse;
+        }
+
+        abort_unless($pages->has($agent, $page), 404);
+
+        return $agent;
+    }
+
+    /**
+     * llms.txt links to the Gallery, FAQ and Contact pages the shop actually has.
+     */
+    private function llmsStorefrontPageLinks(Operator $agent, string $baseUrl): string
+    {
+        $labels = [
+            StorefrontPagesService::FAQ => 'Frequently Asked Questions',
+            StorefrontPagesService::CONTACT => 'Contact & Private / Group Enquiries',
+            StorefrontPagesService::GALLERY => 'Photo Gallery',
+        ];
+        $pages = app(StorefrontPagesService::class)->pagesFor($agent);
+        $lines = '';
+
+        foreach ($labels as $page => $label) {
+            if ($pages[$page]) {
+                $lines .= "- [{$label}]({$baseUrl}/{$page})\n";
+            }
+        }
+
+        return $lines;
     }
 
     /**
@@ -696,6 +794,13 @@ class StorefrontController extends Controller
                 $xml .= "  <url>\n    <loc>{$baseUrl}/services</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n";
             }
 
+            // Gallery, FAQ and Contact, only when they have something to show
+            foreach (app(StorefrontPagesService::class)->pagesFor($agent) as $page => $available) {
+                if ($available) {
+                    $xml .= "  <url>\n    <loc>{$baseUrl}/{$page}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n";
+                }
+            }
+
             // Terms
             $xml .= "  <url>\n    <loc>{$baseUrl}/terms</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n";
 
@@ -808,6 +913,7 @@ class StorefrontController extends Controller
 
         $content .= "## Policies & Booking Details\n";
         $content .= "- [Terms & Cancellation Policies]({$baseUrl}/terms)\n";
+        $content .= $this->llmsStorefrontPageLinks($agent, $baseUrl);
         $content .= "- [Complete Detailed Knowledge Base (LLMs Full)]({$baseUrl}/llms-full.txt)\n";
 
         return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
@@ -921,6 +1027,15 @@ class StorefrontController extends Controller
                 $content .= '- **Inclusions**: '.implode(', ', $prod->inclusions)."\n";
             }
             $content .= "\n";
+        }
+
+        $faqItems = app(StorefrontFaqService::class)->itemsFor($agent);
+
+        if ($faqItems !== []) {
+            $content .= "## Frequently Asked Questions\n";
+            foreach ($faqItems as $item) {
+                $content .= "### {$item['question']}\n{$item['answer']}\n\n";
+            }
         }
 
         return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);

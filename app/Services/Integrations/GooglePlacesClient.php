@@ -4,24 +4,23 @@ namespace App\Services\Integrations;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
 /**
- * The only class that talks to Google: the Places API (New) and Google Maps share links.
- * Returns Google's raw place arrays; GooglePlacesService turns them into listing snapshots.
+ * The only class that talks to Google's Places API (New). It makes only the free
+ * id-only Place Details request; nothing billed is ever called.
  */
 class GooglePlacesClient
 {
     private const PLACES_URL = 'https://places.googleapis.com/v1/';
 
-    /**
-     * Hosts a pasted Maps link may point at. Anything else is never fetched, so an
-     * operator cannot make the server call internal or arbitrary addresses.
-     *
-     * @var list<string>
-     */
-    private const MAPS_LINK_HOSTS = ['maps.app.goo.gl', 'goo.gl', 'g.page', 'maps.google.com', 'www.google.com', 'google.com', 'share.google'];
+    public const PLACE_FOUND = 'found';
+
+    public const PLACE_MISSING = 'missing';
+
+    public const GOOGLE_UNAVAILABLE = 'unavailable';
 
     public function isConfigured(): bool
     {
@@ -29,97 +28,53 @@ class GooglePlacesClient
     }
 
     /**
-     * @return array<string, mixed>|null
+     * Whether Google knows a place id, using an id-only request (Google's free
+     * "Place Details Essentials (IDs Only)" SKU). Google may answer with a newer id
+     * for the same place.
+     *
+     * @return array{status: string, id: string|null}
      */
-    public function placeDetails(string $placeId): ?array
+    public function checkPlaceId(string $placeId): array
     {
         $response = $this->client()
-            ->withHeaders([
-                'X-Goog-FieldMask' => 'id,displayName,formattedAddress,rating,userRatingCount,googleMapsUri,reviews',
-            ])
+            ->withHeaders(['X-Goog-FieldMask' => 'id'])
             ->get(self::PLACES_URL.'places/'.rawurlencode($placeId));
 
-        if ($response->failed()) {
-            return null;
+        if ($response->status() === 404 || $response->status() === 400) {
+            return ['status' => self::PLACE_MISSING, 'id' => null];
         }
 
-        $place = $response->json();
+        $id = $response->json('id');
 
-        return is_array($place) ? $place : null;
+        if ($response->failed() || ! is_string($id) || $id === '') {
+            return ['status' => self::GOOGLE_UNAVAILABLE, 'id' => null];
+        }
+
+        return ['status' => self::PLACE_FOUND, 'id' => $id];
     }
 
     /**
-     * Best match place id for a business name, or null.
+     * The id Google uses for a stored place id today, or null when the place no longer
+     * exists. When Google cannot be reached the stored id is kept, never dropped.
      */
-    public function searchPlaceId(string $query): ?string
+    public function currentPlaceId(string $placeId): ?string
     {
-        $response = $this->client()
-            ->withHeaders([
-                'X-Goog-FieldMask' => 'places.id,places.displayName,places.formattedAddress',
-            ])
-            ->post(self::PLACES_URL.'places:searchText', [
-                'textQuery' => $query,
-                'pageSize' => 1,
-            ]);
+        $check = $this->checkPlaceId($placeId);
 
-        if ($response->failed()) {
-            return null;
-        }
-
-        $placeId = $response->json('places.0.id');
-
-        return is_string($placeId) && $placeId !== '' ? $placeId : null;
-    }
-
-    /**
-     * Follow a Google Maps share link (e.g. maps.app.goo.gl/...) to its final URL.
-     * Returns null for non-Google links or when the link cannot be opened.
-     */
-    public function expandMapsLink(string $url): ?string
-    {
-        if (! $this->isMapsLink($url)) {
-            return null;
-        }
-
-        try {
-            $response = Http::timeout(8)
-                ->connectTimeout(3)
-                ->withOptions([
-                    'allow_redirects' => [
-                        'max' => 5,
-                        'track_redirects' => true,
-                        'protocols' => ['https'],
-                        'on_redirect' => function ($request, $response, $uri): void {
-                            if (! $this->isMapsLink((string) $uri)) {
-                                throw new ConnectionException('Maps link redirected off Google.');
-                            }
-                        },
-                    ],
-                ])
-                ->get($url);
-        } catch (Throwable) {
-            return null;
-        }
-
-        return (string) ($response->effectiveUri() ?? $url);
-    }
-
-    public function isMapsLink(string $url): bool
-    {
-        $parts = parse_url($url);
-
-        if (! is_array($parts) || ($parts['scheme'] ?? '') !== 'https' || isset($parts['port']) || isset($parts['user'])) {
-            return false;
-        }
-
-        return in_array(strtolower((string) ($parts['host'] ?? '')), self::MAPS_LINK_HOSTS, true);
+        return match ($check['status']) {
+            self::PLACE_FOUND => $check['id'],
+            self::PLACE_MISSING => null,
+            default => $placeId,
+        };
     }
 
     private function client(): PendingRequest
     {
-        return Http::timeout(8)
+        return Http::timeout(5)
             ->connectTimeout(3)
-            ->retry(2, 200, throw: false)
+            // Retry only network errors and Google-side failures, never "not found".
+            ->retry(2, 200, fn (Throwable $e): bool => $e instanceof ConnectionException
+                || ($e instanceof RequestException && $e->response->serverError()), throw: false)
             ->withHeaders([
                 'X-Goog-Api-Key' => (string) config('services.google.places_key'),
             ])

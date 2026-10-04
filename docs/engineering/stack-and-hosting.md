@@ -1,6 +1,6 @@
 # Stack and hosting
 
-_Last reviewed: 2026-10-03_
+_Last reviewed: 2026-10-05_
 
 TravelEngine is a Laravel booking app for tour operators, built by EMVI Technologies. Guests book on the operator's own site. Operators and platform admins use the main domain.
 
@@ -84,6 +84,7 @@ Guest / operator
   - `subscriptions:return-unpaid-to-free` runs daily at 00:45
   - `platform:match-payments` runs daily at 03:00
 - **Custom domains:** `domains:check` runs every 5 minutes.
+- **Google listings:** `google:check-listings` runs monthly (only place IDs are stored; the listing is shown with Google's free embed).
 - **Time zone:** `APP_TIMEZONE=Asia/Makassar` (WITA, UTC+8). "Today", trip days, free-cancellation cutoffs, escrow release and the scheduler all follow Bali time. DOKU request timestamps and iCal stamps are written in UTC explicitly.
 
 ## Local vs production vs tests
@@ -108,7 +109,7 @@ Guest / operator
 | Business logic | `app/Services/` (one service per job; see `.ai/rules/app.md`) |
 | Third-party clients | `app/Services/Integrations/` ([`integrations.md`](integrations.md)) |
 | Hosts and domains | `app/Services/DomainResolverService.php`, `app/Services/CustomDomainService.php` |
-| Schema | `database/migrations/`: one create migration per table, in its final shape |
+| Schema | `database/migrations/`: one create migration per table, in its final shape (production is rebuilt fresh until launch; after launch with real data, use additive migrations) |
 
 Primary keys are ULIDs. Guest reservation URLs use `public_token`, never the row id.
 

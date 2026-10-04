@@ -46,3 +46,9 @@ Only the platform root host renders the welcome page. An unknown slug or externa
 
 ## Receipt analytics never see the guest link
 On the receipt page GA gets a neutral page_location (/booking-confirmed). Tracking values are printed with @js.
+
+## Google listing section is free Google only
+storefront/partials/google-reviews shows Google's Maps Embed card plus Read our reviews on Google and Leave a review links for Agency shops with a connected place ID. No Places API call on page views and no review slider: those are billed.
+
+## Gallery, FAQ and Contact pages
+Separate pages /gallery, /faq, /contact. Whether a shop has each page comes only from StorefrontPagesService::pagesFor() (navbar, footer, home links, routes 404, sitemap, llms.txt). Never recompute it in a view. FAQPage JSON-LD lives on /faq only, never on home. Never print booking_notification_email on a public page or in JSON-LD; it is a private inbox.

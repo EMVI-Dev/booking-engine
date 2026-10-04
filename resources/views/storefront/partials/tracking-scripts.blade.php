@@ -18,9 +18,11 @@
         <meta name="google-site-verification" content="{{ $agent->google_site_verification }}" />
     @endif
 
+    {{-- Tracking scripts are inert until the guest accepts cookies (partials.cookie-consent). --}}
+
     {{-- Google Tag Manager Container --}}
     @if ($gtmId)
-        <script>
+        <script type="text/plain" data-consent="analytics">
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -31,8 +33,8 @@
 
     {{-- Google Analytics 4 (gtag.js) --}}
     @if ($gaId)
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
-        <script>
+        <script type="text/plain" data-consent="analytics" data-src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
+        <script type="text/plain" data-consent="analytics">
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
@@ -50,7 +52,7 @@
 
     {{-- Meta / Facebook Pixel --}}
     @if ($metaPixelId)
-        <script>
+        <script type="text/plain" data-consent="analytics">
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -69,9 +71,9 @@
                 });
             @endif
         </script>
-        <noscript>
-            <img height="1" width="1" style="display:none"
-                 src="https://www.facebook.com/tr?id={{ $metaPixelId }}&ev=PageView&noscript=1" />
-        </noscript>
+    @endif
+
+    @if ($gtmId || $gaId || $metaPixelId)
+        @include('partials.cookie-consent')
     @endif
 @endif

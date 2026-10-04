@@ -5,8 +5,10 @@ use App\Enums\OperatorUserRole;
 use App\Models\Operator;
 use App\Models\Plan;
 use App\Models\User;
+use App\Services\GooglePlacesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -36,7 +38,7 @@ function fakeReviewGooglePlaceLookup(): void
     Http::fake([
         'places.googleapis.com/v1/places:searchText' => Http::response([
             'places' => [
-                ['id' => 'ChIJsunrise1234567890'],
+                ['id' => 'ChIJsunrise1234567890', 'displayName' => ['text' => 'Sunrise Reef Tours'], 'formattedAddress' => 'Jimbaran, Bali'],
             ],
         ]),
         'places.googleapis.com/v1/places/*' => Http::response([
@@ -124,9 +126,9 @@ test('an operator can connect a Google listing without overwriting the review pl
     Livewire::test('pages::settings.reviews')
         ->assertDontSee('Press Enter to show the listing.')
         ->call('chooseReviewSource', 'listing')
-        ->set('google_place_query', 'Sunrise Reef Tours Jimbaran')
+        ->set('google_place_query', 'ChIJsunrise1234567890')
         ->assertHasNoErrors()
-        ->assertSet('googlePlacePreview.name', 'Sunrise Reef Tours')
+        ->assertSet('googlePlacePreviewId', 'ChIJsunrise1234567890')
         ->assertSee('Connect this listing?')
         ->call('promptConnectGooglePlace')
         ->assertDispatched('open-modal', 'confirm-google-listing')
@@ -136,7 +138,7 @@ test('an operator can connect a Google listing without overwriting the review pl
     $settings = $this->operator->fresh()->settings;
 
     expect($settings['google_place']['place_id'])->toBe('ChIJsunrise1234567890')
-        ->and($settings['google_place']['reviews'][0]['text'])->toBe('Clear water and a kind crew.')
+        ->and($settings['google_place'])->not->toHaveKey('reviews')
         ->and($this->operator->fresh()->getReviewUrl())->toBe('https://g.page/r/keep-this');
 
     Livewire::test('pages::settings.reviews')
@@ -189,4 +191,91 @@ test('disconnecting Google clears the cached listing and asks again', function (
 
     expect($this->operator->fresh()->googlePlaceId())->toBeNull()
         ->and($this->operator->fresh()->getReviewUrl())->toBe('https://g.page/r/keep-this');
+});
+
+test('a business name is not searched; the operator is asked for the place id', function () {
+    putReviewOperatorOnAgencyPlan($this->operator);
+    fakeReviewGooglePlaceLookup();
+
+    Livewire::test('pages::settings.reviews')
+        ->call('chooseReviewSource', 'listing')
+        ->assertSee('How to find your Place ID')
+        ->assertSee(GooglePlacesService::PLACE_ID_FINDER_URL)
+        ->set('google_place_query', 'EMVI')
+        ->assertHasErrors(['google_place_query'])
+        ->assertSet('googlePlacePreviewId', null);
+
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'places:searchText'));
+});
+
+test('connecting a listing stores only its place id', function () {
+    putReviewOperatorOnAgencyPlan($this->operator);
+    fakeReviewGooglePlaceLookup();
+
+    Livewire::test('pages::settings.reviews')
+        ->call('chooseReviewSource', 'listing')
+        ->set('google_place_query', 'ChIJsunrise1234567890')
+        ->assertSet('googlePlacePreviewId', 'ChIJsunrise1234567890')
+        ->call('confirmGooglePlace')
+        ->assertHasNoErrors();
+
+    expect(array_keys($this->operator->fresh()->settings['google_place']))->toBe(['place_id', 'connected_at']);
+});
+
+test('a pasted place id is checked with the free id-only request, never a billed search', function () {
+    putReviewOperatorOnAgencyPlan($this->operator);
+    fakeReviewGooglePlaceLookup();
+
+    Livewire::test('pages::settings.reviews')
+        ->call('chooseReviewSource', 'listing')
+        ->set('google_place_query', 'Place ID: ChIJsunrise1234567890')
+        ->assertSet('googlePlacePreviewId', 'ChIJsunrise1234567890')
+        ->assertSee('Open on Google Maps');
+
+    Http::assertSentCount(1);
+    Http::assertSent(fn ($request) => $request->hasHeader('X-Goog-FieldMask', 'id'));
+});
+
+test('an unknown place id is refused', function () {
+    putReviewOperatorOnAgencyPlan($this->operator);
+    config(['services.google.places_key' => 'test-places-key']);
+    Http::fake(['places.googleapis.com/*' => Http::response(['error' => ['status' => 'NOT_FOUND']], 404)]);
+
+    Livewire::test('pages::settings.reviews')
+        ->call('chooseReviewSource', 'listing')
+        ->set('google_place_query', 'ChIJdoesNotExist0000000')
+        ->assertHasErrors(['google_place_query'])
+        ->assertSet('googlePlacePreviewId', null);
+});
+
+test('the reviews settings page never calls the billed Google details', function () {
+    putReviewOperatorOnAgencyPlan($this->operator);
+    fakeReviewGooglePlaceLookup();
+    $this->operator->update(['settings' => array_merge($this->operator->settings ?? [], ['google_place' => ['place_id' => 'ChIJsunrise1234567890']])]);
+
+    Livewire::test('pages::settings.reviews')
+        ->assertSee('Google listing connected')
+        ->assertSee('ChIJsunrise1234567890')
+        ->assertSee('View on Google Maps');
+
+    Http::assertNothingSent();
+});
+
+test('the confirmed place id cannot be swapped from the browser', function () {
+    putReviewOperatorOnAgencyPlan($this->operator);
+
+    expect(fn () => Livewire::test('pages::settings.reviews')
+        ->set('googlePlacePreviewId', 'ChIJfake1234567890'))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+});
+
+test('after a valid place id the operator sees Google\'s free card to check the business', function () {
+    putReviewOperatorOnAgencyPlan($this->operator);
+    fakeReviewGooglePlaceLookup();
+    config(['services.google.maps_embed_key' => 'public-embed-key']);
+
+    Livewire::test('pages::settings.reviews')
+        ->call('chooseReviewSource', 'listing')
+        ->set('google_place_query', 'ChIJsunrise1234567890')
+        ->assertSeeHtml('https://www.google.com/maps/embed/v1/place?key=public-embed-key&amp;q=place_id:ChIJsunrise1234567890');
 });

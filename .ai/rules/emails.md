@@ -13,3 +13,6 @@ Post-trip review mail for Agency with a connected Google listing uses that listi
 
 ## Review mail follows the Reviews tab choice
 Agency with a connected Google listing uses that listing write-a-review URL and names the listing. Agency without a listing, and every other plan, use the Review Platform URL from the Reviews tab. CTA stays Leave a review.
+
+## Email verification chrome and mail customization
+Email verification uses VerifyEmail::toMailUsing in AppServiceProvider and renders emails.verify-email with platform chrome (#FFEF4D, #101730, platform favicon, and x-email.brand-header). Keep ->action('Verify Email Address', $url) on the MailMessage for test compatibility.

@@ -13,6 +13,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('settings/brand', 'pages::settings.brand')->name('brand.edit');
     Route::livewire('settings/storefront', 'pages::settings.storefront')->name('storefront-settings.edit');
     Route::livewire('settings/reviews', 'pages::settings.reviews')->name('review-settings.edit');
+    Route::livewire('settings/website', 'pages::settings.website')->name('website-settings.edit');
+    Route::redirect('settings/gallery', '/settings/website?tab=gallery')->name('gallery-settings.edit');
+    Route::redirect('settings/faq', '/settings/website?tab=faq')->name('faq-settings.edit');
+    Route::redirect('settings/contact', '/settings/website?tab=contact')->name('contact-settings.edit');
     Route::livewire('settings/payments', 'pages::settings.payments')->name('payments.edit');
     Route::livewire('settings/team', 'pages::settings.team')->name('settings.team');
     Route::livewire('settings/plan', 'pages::settings.plan')->name('settings.plan');

@@ -21,6 +21,7 @@ return new class extends Migration
             $table->decimal('commission_rate', 5, 4)->default(0); // operators keep 100% of the base price; the platform earns the guest service fee
             $table->integer('package_limit')->nullable(); // null = unlimited
             $table->integer('team_member_limit')->nullable(); // null = unlimited
+            $table->unsignedSmallInteger('gallery_photo_limit')->default(9); // storefront gallery photos
             $table->json('features')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_popular')->default(false);

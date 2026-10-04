@@ -35,7 +35,10 @@ return [
     ],
 
     'google' => [
+        // Server key: only Google's free id-only Place Details check (connect + monthly check).
         'places_key' => env('GOOGLE_PLACES_API_KEY'),
+        // Public browser key, Maps Embed API only (free, unlimited). Shown in page source by design.
+        'maps_embed_key' => env('GOOGLE_MAPS_EMBED_KEY'),
         'platform_analytics_id' => env('PLATFORM_GOOGLE_ANALYTICS_ID'),
     ],
 

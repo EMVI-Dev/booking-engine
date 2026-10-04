@@ -8,7 +8,7 @@ Every outside service has exactly **one client class** in `app/Services/Integrat
 | :--- | :--- | :--- | :--- |
 | DOKU Jokul (payments, refunds, payouts) | `DokuClient` | `DokuPaymentService`, `WalletService` | `DOKU_MODE`; client id and secret key per mode (secrets) in `config/doku.php`; endpoints fixed per mode |
 | Laravel Cloud API (custom domains) | `LaravelCloudClient` | `CustomDomainService` via `LaravelCloudDomainProvider` | `LARAVEL_CLOUD_API_TOKEN`, `LARAVEL_CLOUD_ENVIRONMENT_ID` |
-| Google Places (Agency Google listing) | `GooglePlacesClient` | `GooglePlacesService` | `GOOGLE_PLACES_API_KEY` |
+| Google listing (Agency) | `GooglePlacesClient` (free ID check) + Maps Embed | `GooglePlacesService` (only the place ID is stored) | `GOOGLE_PLACES_API_KEY`, `GOOGLE_MAPS_EMBED_KEY` |
 | Slack (operator activity alerts) | `SlackClient` | `OperatorActivitySlackNotifier` | Admin → Settings webhook, or `SLACK_OPERATOR_WEBHOOK_URL` |
 | Cloudflare R2 (media) | Laravel `r2` disk (S3 driver) | `MediaStore` | `MEDIA_DISK=r2`, `R2_*` |
 | Mail | Laravel mailer | queued mailables in `app/Mail` | `MAIL_*` |
@@ -33,9 +33,23 @@ Every key, token and password in the table above is a secret: set it in Laravel 
 - **Errors:** a 422 from Cloud (bad or already-used name) reaches the operator as a form error. Any other failure keeps nothing half-connected, and the operator sees "try again in a few minutes".
 - Flow details are in [`../features/custom-domains.md`](../features/custom-domains.md).
 
-## Google Places (`GooglePlacesClient`)
-- **Endpoints:** Places API (New) place details and text search. Results are cached on the operator as a snapshot and refreshed daily (`google:refresh-reviews`).
-- **Pasted links:** a "Maps link" an operator pastes is only followed when it is an https Google Maps host, and every redirect is checked too. Any other URL is never fetched, which prevents server-side request forgery.
+## Google listing (`GooglePlacesClient` + Maps Embed): free by design
+Agency shops connect one Google listing. Every part uses a Google service that is free without limit, so the feature never adds a Google bill.
+
+| Part | Google service | Cost |
+| :--- | :--- | :--- |
+| Check a pasted Place ID (connect, and the monthly check) | Place Details, `id` field only ("Essentials, IDs Only") | Free, unlimited |
+| Listing card on the storefront and in settings (name, address, stars, review count, map) | Maps Embed iframe | Free, unlimited |
+| "Read our reviews on Google" / "Leave a review" / review emails | Plain Google Maps and write-review links | Free (no API call) |
+
+- **Stored:** only `settings.google_place = {place_id, connected_at}`, the one Places value Google allows storing.
+- **Connecting:** the operator pastes their Place ID, following the steps on the page that link to Google's [Place ID Finder](https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder). We check it with the free ID-only request, then show Google's card so they can confirm it's their business.
+- **Not used (billed):** name search, share-link lookup, business name, rating or review texts through the Places API. Do not add them back without a budget decision.
+- **Keys:**
+  - `GOOGLE_PLACES_API_KEY` is a **secret** server key. It needs only Places API (New) enabled, and is used only for the ID check.
+  - `GOOGLE_MAPS_EMBED_KEY` is a **public** browser key. It needs only the Maps Embed API enabled. Without it, the card is hidden and the buttons still show.
+- **Monthly check:** `google:check-listings` (1st of the month, 04:00) follows IDs Google replaced, disconnects IDs that no longer exist, and strips content that older versions stored.
+- **Nothing pasted is fetched:** only a Place ID is sent to Google, so pasted URLs can never make the server call other addresses.
 
 ## Slack (`SlackClient`)
 - Posts only to `https://hooks.slack.com/...`. Any other URL is refused without a request.

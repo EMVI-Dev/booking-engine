@@ -113,7 +113,9 @@ it('sends agency review mail to the connected listing even when a manual review 
     Mail::fake();
     Plan::seedDefaultPlans();
 
+    // Only the place id is stored (Google Places policy); the mail uses the shop's own name.
     $operator = Operator::factory()->create([
+        'name' => 'Sunrise Reef Tours',
         'plan_id' => Plan::where('slug', 'agency')->value('id'),
         'settings' => [
             'marketing' => [
@@ -121,10 +123,6 @@ it('sends agency review mail to the connected listing even when a manual review 
             ],
             'google_place' => [
                 'place_id' => 'ChIJsunrise1234567890',
-                'name' => 'Sunrise Reef Tours',
-                'write_review_url' => 'https://search.google.com/local/writereview?placeid=ChIJsunrise1234567890',
-                'fetched_at' => now()->toIso8601String(),
-                'reviews' => [],
             ],
         ],
     ]);

@@ -83,10 +83,11 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - Bottom-right floating chat with customizable pre-filled inquiry messages.
 - **Reviews (`/settings/reviews`)**:
     - Its own Storefront tab. Not on Brand. No in-app guest review form, reviews table, or `/reviews` desk.
-    - Starter and Growth: one **Review Platform** link (Google, Tripadvisor, or any URL). Required before post-trip review mail sends. No Google listing connect, no slider.
+    - Starter and Growth: one **Review Platform** link (Google, Tripadvisor, or any URL). Required before post-trip review mail sends. No Google listing connect.
     - Agency (`google_reviews`): choose one path when nothing is connected.
-        - **Connect a Google listing** — paste a Maps link or search the business name, confirm in a modal, one listing only. Up to 5 public Google reviews show on the booking page. Review emails use that listing's write-a-review URL and name the listing. Disconnect also confirms in a modal. Do not copy the listing into the Review Platform URL.
-        - **Use a review link** — same manual Review Platform field as other plans. No slider. Review emails use that URL.
+        - **Connect a Google listing** — paste the Place ID (steps on the page link to Google's Place ID Finder), check it on Google's card or Google Maps, confirm in a modal. One listing only. The booking page shows Google's embedded listing card (name, address, stars, review count) with **Read our reviews on Google** and **Leave a review** buttons. Review emails use the listing's write-a-review URL. Disconnect also confirms in a modal. Do not copy the listing into the Review Platform URL.
+        - **Free of Google charges by design:** only the place ID is stored, it is checked with Google's free id-only request, and the card is the free Maps Embed. No billed Places request is made.
+        - **Use a review link** — same manual Review Platform field as other plans. Review emails use that URL.
     - A connected listing hides the choice and the manual field. After disconnect, Agency can choose again. If a manual URL was already saved, it stays and is used only when no listing is connected.
 - **Agency White-Label (hide-name)**:
     - Agency (`remove_branding`) hides the platform name on every guest-facing channel. Starter and Growth still credit the platform.

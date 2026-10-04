@@ -49,6 +49,42 @@ class MediaStore
         }
     }
 
+    /**
+     * Prove media storage works before relying on it (seeding, media:check): production must
+     * use object storage, and a test file must write, read back and delete.
+     *
+     * @return array{disk: string, driver: string, base_url: string, sample_url: string}
+     *
+     * @throws RuntimeException with a message saying what to fix
+     */
+    public static function verifyWritable(): array
+    {
+        static::assertDurableDisk();
+
+        $disk = static::disk();
+        $path = 'healthchecks/'.Str::ulid().'.txt';
+
+        try {
+            $disk->put($path, 'ok', ['mimetype' => 'text/plain']);
+            $readBack = $disk->get($path);
+            $sampleUrl = $disk->url($path);
+            $disk->delete($path);
+        } catch (\Throwable $e) {
+            throw new RuntimeException('Media storage ('.static::diskName().') failed a write test: '.$e->getMessage().' Check R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET and R2_ENDPOINT, then redeploy.', 0, $e);
+        }
+
+        if ($readBack !== 'ok') {
+            throw new RuntimeException('Media storage ('.static::diskName().') wrote a test file but could not read it back.');
+        }
+
+        return [
+            'disk' => static::diskName(),
+            'driver' => (string) config('filesystems.disks.'.static::diskName().'.driver'),
+            'base_url' => $disk->url(''),
+            'sample_url' => $sampleUrl,
+        ];
+    }
+
     public function url(?string $path): ?string
     {
         if (! filled($path)) {

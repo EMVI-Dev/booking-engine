@@ -20,6 +20,10 @@
     }
     $packagesCount = $agent?->published_packages_count ?? 0;
     $productsCount = $agent?->standalone_products_count ?? 0;
+    $storefrontPages = $agent ? app(\App\Services\StorefrontPagesService::class)->pagesFor($agent) : ['gallery' => false, 'faq' => false, 'contact' => false];
+    $hasGallery = $storefrontPages['gallery'];
+    $hasFaq = $storefrontPages['faq'];
+    $hasContact = $storefrontPages['contact'];
 @endphp
 
 <footer
@@ -46,6 +50,27 @@
                     <span>{{ __('Single Activities') }}</span>
                 </a>
             @endif
+            @if ($hasGallery)
+                <a href="{{ route('storefront.gallery') }}"
+                    class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-camera text-[11px] text-slate-400"></i>
+                    <span>{{ __('Gallery') }}</span>
+                </a>
+            @endif
+            @if ($hasFaq)
+                <a href="{{ route('storefront.faq') }}"
+                    class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-question text-[11px] text-slate-400"></i>
+                    <span>{{ __('FAQ') }}</span>
+                </a>
+            @endif
+            @if ($hasContact)
+            <a href="{{ route('storefront.contact') }}"
+                class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-envelope-open-text text-[11px] text-slate-400"></i>
+                <span>{{ __('Contact') }}</span>
+            </a>
+            @endif
             <a href="{{ route('storefront.find-booking') }}"
                 class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-ticket text-[11px] text-slate-400"></i>
@@ -56,6 +81,13 @@
                 <i class="fa-solid fa-shield-halved text-[11px] text-slate-400"></i>
                 <span>{{ __('Terms & Policies') }}</span>
             </a>
+            @if ($agent->getGoogleAnalyticsId() || $agent->getGoogleTagManagerId() || $agent->getMetaPixelId())
+                <button type="button" onclick="window.teConsent && window.teConsent.reset()"
+                    class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-cookie-bite text-[11px] text-slate-400"></i>
+                    <span>{{ __('Cookie settings') }}</span>
+                </button>
+            @endif
             @if ($waUrl)
                 <a href="{{ $waUrl }}" target="_blank" rel="noopener"
                     class="px-3 py-1.5 rounded-xl text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition inline-flex items-center gap-1.5 font-bold">

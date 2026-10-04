@@ -6,51 +6,27 @@ use App\Services\MediaStore;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
-use Throwable;
+use RuntimeException;
 
 #[Signature('media:check')]
-#[Description('Show which disk media uploads use and test a write, public URL and delete on it (run on Cloud after setting R2).')]
+#[Description('Show which disk media uploads use and test a write, public URL and delete on it. db:seed runs the same check.')]
 class CheckMediaStorageCommand extends Command
 {
     public function handle(): int
     {
-        $diskName = MediaStore::diskName();
-        $driver = (string) config("filesystems.disks.{$diskName}.driver");
-
-        $this->line("Media disk: {$diskName} ({$driver})");
-        $this->line('Public URL base: '.MediaStore::disk()->url(''));
+        $this->line('Media disk: '.MediaStore::diskName().' ('.config('filesystems.disks.'.MediaStore::diskName().'.driver').')');
 
         try {
-            MediaStore::assertDurableDisk();
-        } catch (Throwable $e) {
+            $result = MediaStore::verifyWritable();
+        } catch (RuntimeException $e) {
             $this->error($e->getMessage());
 
             return self::FAILURE;
         }
 
-        $path = 'healthchecks/'.Str::ulid().'.txt';
-
-        try {
-            MediaStore::disk()->put($path, 'ok', ['mimetype' => 'text/plain']);
-            $readBack = MediaStore::disk()->get($path);
-            $url = MediaStore::disk()->url($path);
-            MediaStore::disk()->delete($path);
-        } catch (Throwable $e) {
-            $this->error('Write test failed: '.$e->getMessage());
-            $this->line('Check R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET and R2_ENDPOINT, then redeploy.');
-
-            return self::FAILURE;
-        }
-
-        if ($readBack !== 'ok') {
-            $this->error('The test file was written but could not be read back.');
-
-            return self::FAILURE;
-        }
-
+        $this->line('Public URL base: '.$result['base_url']);
         $this->info('Write, read and delete worked.');
-        $this->line("Files will be served like: {$url}");
+        $this->line('Files will be served like: '.$result['sample_url']);
 
         return self::SUCCESS;
     }

@@ -11,8 +11,9 @@
 
 @if ($platformGaId)
     <!-- Google Analytics 4 - Platform (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $platformGaId }}"></script>
-    <script>
+    {{-- Inert until the visitor accepts cookies (partials.cookie-consent). --}}
+    <script type="text/plain" data-consent="analytics" data-src="https://www.googletagmanager.com/gtag/js?id={{ $platformGaId }}"></script>
+    <script type="text/plain" data-consent="analytics">
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
@@ -36,4 +37,5 @@
             });
         })();
     </script>
+    @include('partials.cookie-consent')
 @endif

@@ -32,11 +32,13 @@ use RuntimeException;
 class DemoOperatorSeeder extends Seeder
 {
     /**
-     * Seed the public demo operator. Safe to re-run: only this operator is wiped.
+     * Seed the public demo operator. Safe to re-run (demo:refresh): only this operator is wiped.
+     * Media storage is checked first, so a broken R2 setup stops here before anything is wiped.
      */
     public function run(): void
     {
-        Plan::seedDefaultPlans();
+        MediaStore::verifyWritable();
+        Plan::ensureDefaultPlans();
 
         $this->forgetRetiredSampleOperators();
         $this->wipeDemoOperators();

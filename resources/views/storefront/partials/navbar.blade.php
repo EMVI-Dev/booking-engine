@@ -16,6 +16,10 @@
     }
     $packagesCount = $agent?->published_packages_count ?? 0;
     $productsCount = $agent?->standalone_products_count ?? 0;
+    $storefrontPages = $agent ? app(\App\Services\StorefrontPagesService::class)->pagesFor($agent) : ['gallery' => false, 'faq' => false, 'contact' => false];
+    $hasGallery = $storefrontPages['gallery'];
+    $hasFaq = $storefrontPages['faq'];
+    $hasContact = $storefrontPages['contact'];
     $operatorLoginUrl = url('/login');
 @endphp
 
@@ -59,7 +63,7 @@
         </a>
 
         <!-- Desktop Segmented Navigation Pills -->
-        <nav class="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-slate-100/70 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/60 text-xs font-bold">
+        <nav class="hidden lg:flex items-center gap-1 p-1 rounded-2xl bg-slate-100/70 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/60 text-xs font-bold">
             @php
                 $navActive = 'bg-brand-600 text-brand-foreground shadow-xs';
                 $navIdle = 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-zinc-900/50';
@@ -68,7 +72,7 @@
             @endphp
             <a
                 href="{{ route('home') }}"
-                class="px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('home') ? $navActive : $navIdle }}"
+                class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('home') ? $navActive : $navIdle }}"
             >
                 <i class="fa-solid fa-compass text-[11px]"></i>
                 <span>{{ __('Catalog') }}</span>
@@ -77,7 +81,7 @@
             @if ($packagesCount > 0)
                 <a
                     href="{{ route('storefront.packages') }}"
-                    class="px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.packages') || request()->routeIs('storefront.package') ? $navActive : $navIdle }}"
+                    class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.packages') || request()->routeIs('storefront.package') ? $navActive : $navIdle }}"
                 >
                     <i class="fa-solid fa-cubes text-[11px]"></i>
                     <span>{{ __('Tour Packages') }}</span>
@@ -90,7 +94,7 @@
             @if ($productsCount > 0)
                 <a
                     href="{{ route('storefront.products') }}"
-                    class="px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.products') || request()->routeIs('storefront.product') ? $navActive : $navIdle }}"
+                    class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.products') || request()->routeIs('storefront.product') ? $navActive : $navIdle }}"
                 >
                     <i class="fa-solid fa-compass text-[11px]"></i>
                     <span>{{ __('Single Activities') }}</span>
@@ -100,20 +104,42 @@
                 </a>
             @endif
 
+            @if ($hasGallery)
+                <a
+                    href="{{ route('storefront.gallery') }}"
+                    class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.gallery') ? $navActive : $navIdle }}"
+                >
+                    <i class="fa-solid fa-camera text-[11px]"></i>
+                    <span>{{ __('Gallery') }}</span>
+                </a>
+            @endif
+
+            @if ($hasFaq)
+                <a
+                    href="{{ route('storefront.faq') }}"
+                    class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.faq') ? $navActive : $navIdle }}"
+                >
+                    <i class="fa-solid fa-circle-question text-[11px]"></i>
+                    <span>{{ __('FAQ') }}</span>
+                </a>
+            @endif
+
+            @if ($hasContact)
+            <a
+                href="{{ route('storefront.contact') }}"
+                class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.contact') ? $navActive : $navIdle }}"
+            >
+                <i class="fa-solid fa-envelope-open-text text-[11px]"></i>
+                <span>{{ __('Contact') }}</span>
+            </a>
+            @endif
+
             <a
                 href="{{ route('storefront.find-booking') }}"
-                class="px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.find-booking') ? $navActive : $navIdle }}"
+                class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.find-booking') ? $navActive : $navIdle }}"
             >
                 <i class="fa-solid fa-ticket text-[11px]"></i>
                 <span>{{ __('Find Booking') }}</span>
-            </a>
-
-            <a
-                href="{{ route('storefront.terms') }}"
-                class="px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.terms') ? $navActive : $navIdle }}"
-            >
-                <i class="fa-solid fa-shield-halved text-[11px]"></i>
-                <span>{{ __('Terms') }}</span>
             </a>
         </nav>
 
@@ -146,7 +172,7 @@
             <button
                 type="button"
                 @click="mobileMenuOpen = !mobileMenuOpen"
-                class="md:hidden h-9 w-9 inline-flex items-center justify-center rounded-xl border border-slate-200/80 dark:border-zinc-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer"
+                class="lg:hidden h-9 w-9 inline-flex items-center justify-center rounded-xl border border-slate-200/80 dark:border-zinc-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer"
                 aria-label="Toggle navigation menu"
             >
                 <i class="fa-solid text-sm" :class="mobileMenuOpen ? 'fa-xmark' : 'fa-bars'"></i>
@@ -165,7 +191,7 @@
         x-transition:leave-start="opacity-100 translate-y-0"
         x-transition:leave-end="opacity-0 -translate-y-2"
         @click.away="mobileMenuOpen = false"
-        class="md:hidden border-b border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-4 py-4 space-y-3 shadow-2xl"
+        class="lg:hidden border-b border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-4 py-4 space-y-3 shadow-2xl"
     >
         <!-- Nav Links Group -->
         <div class="space-y-1">
@@ -214,6 +240,48 @@
                         {{ $productsCount }}
                     </span>
                 </a>
+            @endif
+
+            @if ($hasGallery)
+                @php $galleryActive = request()->routeIs('storefront.gallery'); @endphp
+                <a
+                    href="{{ route('storefront.gallery') }}"
+                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ $galleryActive ? $drawerActive : $drawerIdle }}"
+                >
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-camera w-4 text-center {{ $galleryActive ? '' : 'text-brand-800 dark:text-brand-400' }}"></i>
+                        <span>{{ __('Photo Gallery') }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[10px] {{ $galleryActive ? 'text-brand-foreground/70' : 'text-slate-400' }}"></i>
+                </a>
+            @endif
+
+            @if ($hasFaq)
+                @php $faqActive = request()->routeIs('storefront.faq'); @endphp
+                <a
+                    href="{{ route('storefront.faq') }}"
+                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ $faqActive ? $drawerActive : $drawerIdle }}"
+                >
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-circle-question w-4 text-center {{ $faqActive ? '' : 'text-brand-800 dark:text-brand-400' }}"></i>
+                        <span>{{ __('Frequently Asked Questions') }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[10px] {{ $faqActive ? 'text-brand-foreground/70' : 'text-slate-400' }}"></i>
+                </a>
+            @endif
+
+            @if ($hasContact)
+            @php $contactActive = request()->routeIs('storefront.contact'); @endphp
+            <a
+                href="{{ route('storefront.contact') }}"
+                class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ $contactActive ? $drawerActive : $drawerIdle }}"
+            >
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-envelope-open-text w-4 text-center {{ $contactActive ? '' : 'text-brand-800 dark:text-brand-400' }}"></i>
+                    <span>{{ __('Contact Us') }}</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] {{ $contactActive ? 'text-brand-foreground/70' : 'text-slate-400' }}"></i>
+            </a>
             @endif
 
             <a

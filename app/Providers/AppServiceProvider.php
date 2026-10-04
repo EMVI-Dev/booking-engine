@@ -11,12 +11,14 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\CustomDomains\LaravelCloudDomainProvider;
 use App\Services\CustomDomains\LocalDomainProvider;
+use App\Services\StorefrontPagesService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\Facades\Date;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
 
         // One settings query per request / queued job instead of one per call.
         $this->app->scoped(PlatformSetting::CURRENT_BINDING, fn (): PlatformSetting => PlatformSetting::loadCurrent());
+        $this->app->scoped(StorefrontPagesService::class);
     }
 
     /**
@@ -56,7 +59,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Livewire re-runs only "persistent" middleware on component actions. Without this,
         // admin-only and platform-only checks ran on page load but not on later button clicks.
-        $this->configureEmailVerificationLinks();
+        $this->configureEmailVerification();
         $this->configureTrustedProxies();
 
         Livewire::addPersistentMiddleware([
@@ -80,10 +83,12 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * Configure email verification URL generation and branded email notification.
+     *
      * Operators are signed in on their slug host, not the platform host they registered on,
      * so the verification link must open there or it would land on a logged-out session.
      */
-    protected function configureEmailVerificationLinks(): void
+    protected function configureEmailVerification(): void
     {
         VerifyEmail::createUrlUsing(function (User $notifiable): string {
             $parameters = [
@@ -103,6 +108,20 @@ class AppServiceProvider extends ServiceProvider
             $generator->setKeyResolver(fn (): array => [config('app.key'), ...(config('app.previous_keys') ?? [])]);
 
             return $generator->temporarySignedRoute('verification.verify', $expires, $parameters);
+        });
+
+        VerifyEmail::toMailUsing(function (object $notifiable, string $url): MailMessage {
+            $appName = (string) config('app.name', 'TravelEngine');
+            $operator = $notifiable instanceof User ? $notifiable->currentOperator() : null;
+
+            return (new MailMessage)
+                ->subject("Verify Email Address - {$appName}")
+                ->view('emails.verify-email', [
+                    'url' => $url,
+                    'user' => $notifiable,
+                    'operator' => $operator,
+                ])
+                ->action(__('Verify Email Address'), $url);
         });
     }
 

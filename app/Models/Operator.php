@@ -251,6 +251,22 @@ class Operator extends Model
     }
 
     /**
+     * @return HasMany<OperatorGalleryPhoto, $this>
+     */
+    public function galleryPhotos(): HasMany
+    {
+        return $this->hasMany(OperatorGalleryPhoto::class)->orderBy('sort_order')->orderBy('created_at');
+    }
+
+    /**
+     * @return HasMany<Enquiry, $this>
+     */
+    public function enquiries(): HasMany
+    {
+        return $this->hasMany(Enquiry::class);
+    }
+
+    /**
      * @return HasMany<Package, $this>
      */
     public function packages(): HasMany
@@ -1216,7 +1232,8 @@ class Operator extends Model
     }
 
     /**
-     * Listing name used in Agency review mail. Null unless that plan has a connected listing.
+     * Name used in Agency review mail ("leave a review for ..."). The shop's own name: Google
+     * listing details are never stored, and a mail should not wait on a live Google call.
      */
     public function reviewInvitationListingName(): ?string
     {
@@ -1224,45 +1241,37 @@ class Operator extends Model
             return null;
         }
 
-        $name = trim((string) ($this->settings['google_place']['name'] ?? ''));
-
-        return $name !== '' ? $name : null;
-    }
-
-    public function googleListingReviewUrl(): ?string
-    {
-        $place = $this->settings['google_place'] ?? null;
-        if (! is_array($place)) {
-            return null;
-        }
-
-        $url = trim((string) ($place['write_review_url'] ?? ''));
-
-        return $url !== '' ? $url : null;
+        return filled($this->name) ? (string) $this->name : null;
     }
 
     /**
-     * Cached public Google listing used for the storefront review slider.
-     *
-     * @return array<string, mixed>|null
+     * Google's "write a review" page, built from the stored place id.
      */
-    public function googlePlace(): ?array
+    public function googleListingReviewUrl(): ?string
     {
-        $place = $this->settings['google_place'] ?? null;
-        if (! is_array($place) || blank($place['place_id'] ?? null)) {
-            return null;
-        }
+        $placeId = $this->googlePlaceId();
 
-        $fetchedAt = $place['fetched_at'] ?? null;
-        if (! is_string($fetchedAt) || $fetchedAt === '') {
-            return null;
-        }
+        return $placeId === null ? null : app(GooglePlacesService::class)->writeReviewUrl($placeId);
+    }
 
-        if (now()->diffInDays(Carbon::parse($fetchedAt), true) > GooglePlacesService::CACHE_DAYS) {
-            return null;
-        }
+    /**
+     * The connected listing on Google Maps, where guests read the reviews. Free link.
+     */
+    public function googleListingMapsUrl(): ?string
+    {
+        $placeId = $this->googlePlaceId();
 
-        return $place;
+        return $placeId === null ? null : app(GooglePlacesService::class)->mapsUrl($placeId, (string) $this->name);
+    }
+
+    /**
+     * Google's free embedded card for the connected listing, or null without an embed key.
+     */
+    public function googleListingEmbedUrl(): ?string
+    {
+        $placeId = $this->googlePlaceId();
+
+        return $placeId === null ? null : app(GooglePlacesService::class)->embedUrl($placeId);
     }
 
     public function googlePlaceId(): ?string
@@ -1270,21 +1279,5 @@ class Operator extends Model
         $placeId = trim((string) ($this->settings['google_place']['place_id'] ?? ''));
 
         return $placeId !== '' ? $placeId : null;
-    }
-
-    /**
-     * Google reviews ready to show on the shop. Never in-app guest ratings.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    public function googleReviews(): array
-    {
-        if (! $this->hasFeature('google_reviews')) {
-            return [];
-        }
-
-        $reviews = $this->googlePlace()['reviews'] ?? [];
-
-        return is_array($reviews) ? array_values($reviews) : [];
     }
 }

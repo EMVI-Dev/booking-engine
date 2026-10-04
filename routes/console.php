@@ -47,8 +47,8 @@ Schedule::command('platform:match-payments')->dailyAt('03:00')->withoutOverlappi
 // 11. Re-check operator website addresses waiting for DNS or their padlock (Laravel Cloud)
 Schedule::command('domains:check')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 
-// 12. Refresh cached Google listing reviews so the shop does not call Google on each page view
-Schedule::command('google:refresh-reviews')->dailyAt('04:00')->withoutOverlapping()->onOneServer();
+// 12. Re-check stored Google place ids (only the id is stored; reviews are fetched live)
+Schedule::command('google:check-listings')->monthlyOn(1, '04:00')->withoutOverlapping()->onOneServer();
 
 // 13. Reset the public demo operator so look-around data stays clean
 Schedule::command('demo:refresh')->dailyAt('03:30')->withoutOverlapping()->onOneServer();

@@ -10,6 +10,9 @@ use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Plan;
 use App\Models\Reservation;
+use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Notifications\Messages\MailMessage;
 
 beforeEach(function () {
     Plan::seedDefaultPlans();
@@ -80,4 +83,47 @@ test('subscription reminder uses platform colour and logo', function () {
         ->assertSeeInHtml('favicon.png')
         ->assertDontSeeInHtml('#1e1b4b')
         ->assertDontSeeInHtml('#7e22ce');
+});
+
+test('email verification notification uses platform colour and logo', function () {
+    $user = User::factory()->create([
+        'name' => 'Wayan Operator',
+        'email' => 'wayan@example.com',
+    ]);
+    $this->operator->users()->attach($user->id, ['role' => 'owner']);
+
+    $notification = new VerifyEmail;
+    $mail = $notification->toMail($user);
+
+    expect($mail)->toBeInstanceOf(MailMessage::class);
+
+    $html = (string) $mail->render();
+    expect($html)->toContain('#FFEF4D')
+        ->and($html)->toContain('favicon.png')
+        ->and($html)->toContain('Wayan Operator')
+        ->and($html)->toContain('wayan@example.com')
+        ->and($html)->toContain('Whitebox Reef Tours')
+        ->and($html)->toContain('Verify Email Address')
+        ->and($html)->not->toContain('#1e1b4b')
+        ->and($html)->not->toContain('#4f46e5')
+        ->and($html)->not->toContain('#7e22ce');
+});
+
+test('email verification notification renders cleanly when user has no operator', function () {
+    $user = User::factory()->create([
+        'name' => 'Solo User',
+        'email' => 'solo@example.com',
+    ]);
+
+    $notification = new VerifyEmail;
+    $mail = $notification->toMail($user);
+
+    expect($mail)->toBeInstanceOf(MailMessage::class);
+
+    $html = (string) $mail->render();
+    expect($html)->toContain('#FFEF4D')
+        ->and($html)->toContain('favicon.png')
+        ->and($html)->toContain('Solo User')
+        ->and($html)->toContain('solo@example.com')
+        ->and($html)->toContain('Verify Email Address');
 });

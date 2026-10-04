@@ -23,6 +23,9 @@ Route::get('/auth/login-handoff', LoginHandoffController::class)
     ->name('auth.login-handoff');
 Route::get('/tours', [StorefrontController::class, 'allPackages'])->name('storefront.packages');
 Route::get('/services', [StorefrontController::class, 'allProducts'])->name('storefront.products');
+Route::get('/gallery', [StorefrontController::class, 'showGallery'])->name('storefront.gallery');
+Route::get('/faq', [StorefrontController::class, 'showFaq'])->name('storefront.faq');
+Route::get('/contact', [StorefrontController::class, 'showContact'])->name('storefront.contact');
 Route::get('/terms', [StorefrontController::class, 'showTerms'])->name('storefront.terms');
 Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');
 Route::get('/legal', [LegalController::class, 'terms'])->name('legal.terms');
@@ -70,6 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('reservations', 'pages::reservations.index')->name('reservations.index');
     Route::livewire('reservations/{reservation:code}', 'pages::reservations.show')->name('reservations.show');
+    Route::livewire('enquiries', 'pages::enquiries.index')->name('enquiries.index');
     Route::livewire('guests', 'pages::guests.index')->name('guests.index');
     Route::livewire('guests/{guest}', 'pages::guests.show')->name('guests.show');
     Route::livewire('calendar', 'pages::calendar.index')->name('calendar.index');

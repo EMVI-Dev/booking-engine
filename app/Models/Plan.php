@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property float $commission_rate
  * @property int|null $package_limit
  * @property int|null $team_member_limit
+ * @property int $gallery_photo_limit
  * @property array<string, bool>|null $features
  * @property bool $is_active
  * @property bool $is_popular
@@ -38,6 +39,7 @@ class Plan extends Model
         'commission_rate',
         'package_limit',
         'team_member_limit',
+        'gallery_photo_limit',
         'features',
         'is_active',
         'is_popular',
@@ -52,6 +54,7 @@ class Plan extends Model
             'commission_rate' => 'float',
             'package_limit' => 'integer',
             'team_member_limit' => 'integer',
+            'gallery_photo_limit' => 'integer',
             'features' => 'array',
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
@@ -156,6 +159,23 @@ class Plan extends Model
     }
 
     /**
+     * Create the standard plans only when there are none, so seeding (and the nightly demo
+     * reset) never overwrites prices, limits or features edited in Admin → Plans.
+     *
+     * @return bool whether plans were created
+     */
+    public static function ensureDefaultPlans(): bool
+    {
+        if (self::query()->exists()) {
+            return false;
+        }
+
+        self::seedDefaultPlans();
+
+        return true;
+    }
+
+    /**
      * Seed initial standard subscription plans.
      */
     public static function seedDefaultPlans(): void
@@ -173,6 +193,7 @@ class Plan extends Model
             'commission_rate' => 0.0000,
             'package_limit' => 5,
             'team_member_limit' => 2,
+            'gallery_photo_limit' => 9,
             'features' => self::featureFlags(),
             'is_active' => true,
             'is_popular' => false,
@@ -187,7 +208,9 @@ class Plan extends Model
             'commission_rate' => 0.0000,
             'package_limit' => 25,
             'team_member_limit' => null,
+            'gallery_photo_limit' => 18,
             'features' => self::featureFlags([
+                'contact_form' => true,
                 'advanced_calendar' => true,
                 'daily_manifest_export' => true,
                 'google_calendar' => true,
@@ -209,7 +232,9 @@ class Plan extends Model
             'commission_rate' => 0.0000,
             'package_limit' => null,
             'team_member_limit' => null,
+            'gallery_photo_limit' => 36,
             'features' => self::featureFlags([
+                'contact_form' => true,
                 'advanced_calendar' => true,
                 'daily_manifest_export' => true,
                 'capacity_heatmap' => true,
@@ -252,6 +277,7 @@ class Plan extends Model
     {
         return [
             ['key' => 'quick_booking_links', 'label' => __('Create Booking Link')],
+            ['key' => 'contact_form', 'label' => __('Contact & group enquiry form')],
             ['key' => 'promotional_coupons', 'label' => __('Coupons')],
             ['key' => 'google_calendar', 'label' => __('Calendar')],
             ['key' => 'whatsapp_dispatch', 'label' => __('WhatsApp tickets and reminders')],
@@ -308,6 +334,7 @@ class Plan extends Model
             'custom_domain' => false,
             'byo_gateway' => false,
             'priority_support' => false,
+            'contact_form' => false,
             'ai_discovery' => false,
             'remove_branding' => false,
             'qr_checkin' => false,

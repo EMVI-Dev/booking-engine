@@ -32,6 +32,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
     public float $commission_percentage = 10.0;
     public ?int $package_limit = null;
     public ?int $team_member_limit = null;
+    public int $gallery_photo_limit = 9;
     public bool $is_active = true;
     public bool $is_popular = false;
     public int $sort_order = 0;
@@ -53,6 +54,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
         'custom_domain' => false,
         'byo_gateway' => false,
         'priority_support' => false,
+        'contact_form' => false,
         'advanced_calendar' => false,
         'daily_manifest_export' => false,
         'capacity_heatmap' => false,
@@ -80,6 +82,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
         $this->commission_percentage = (float) ($plan->commission_rate * 100);
         $this->package_limit = $plan->package_limit;
         $this->team_member_limit = $plan->team_member_limit;
+        $this->gallery_photo_limit = (int) $plan->gallery_photo_limit;
         $this->is_active = $plan->is_active;
         $this->is_popular = $plan->is_popular;
         $this->sort_order = $plan->sort_order;
@@ -102,6 +105,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
         $this->commission_percentage = 10.0;
         $this->package_limit = null;
         $this->team_member_limit = null;
+        $this->gallery_photo_limit = 9;
         $this->is_active = true;
         $this->is_popular = false;
         $this->sort_order = Plan::count() + 1;
@@ -131,6 +135,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
             'commission_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'package_limit' => ['nullable', 'integer', 'min:1'],
             'team_member_limit' => ['nullable', 'integer', 'min:1'],
+            'gallery_photo_limit' => ['required', 'integer', 'min:0', 'max:200'],
             'is_active' => ['boolean'],
             'is_popular' => ['boolean'],
             'sort_order' => ['integer'],
@@ -145,6 +150,7 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
             'commission_rate' => round($this->commission_percentage / 100, 4),
             'package_limit' => $this->package_limit ?: null,
             'team_member_limit' => $this->team_member_limit ?: null,
+            'gallery_photo_limit' => $this->gallery_photo_limit,
             'features' => array_merge($this->features, ['byo_gateway' => false]),
             'is_active' => $this->is_active,
             'is_popular' => $this->is_popular,
@@ -975,6 +981,12 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
                                     placeholder="{{ __('Unlimited') }}" :error="$errors->has('team_member_limit')" />
                                 <x-input-error :messages="$errors->get('team_member_limit')" />
                             </div>
+                            <div>
+                                <x-label for="gallery_photo_limit" :value="__('Storefront Gallery Photos (0 = No Gallery)')" />
+                                <x-input id="gallery_photo_limit" type="number" wire:model="gallery_photo_limit"
+                                    :error="$errors->has('gallery_photo_limit')" />
+                                <x-input-error :messages="$errors->get('gallery_photo_limit')" />
+                            </div>
                         </div>
 
                         <!-- Feature Toggles -->
@@ -1010,6 +1022,12 @@ new #[Title('Plans')] #[Layout('layouts.admin')] class extends Component {
                                     class="p-2.5 rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821]/40 transition">
                                     <x-checkbox id="feat_heatmap" wire:model="features.capacity_heatmap"
                                         :label="__('Capacity Heatmap')" :description="__('Monthly capacity utilization analytics')" />
+                                </div>
+
+                                <div
+                                    class="p-2.5 rounded-[8px] border border-[#E4E5E9] dark:border-[#1E2433] bg-[#FAFAFB] dark:bg-[#141821]/40 transition">
+                                    <x-checkbox id="feat_contact_form" wire:model="features.contact_form"
+                                        :label="__('Contact & Group Enquiry Form')" :description="__('Storefront contact form; enquiries in the desk')" />
                                 </div>
 
                                 <div

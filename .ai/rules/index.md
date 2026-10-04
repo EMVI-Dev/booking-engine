@@ -11,12 +11,12 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/components/settings-nav.blade.php, resources/views/components/billing-nav.blade.php, resources/views/components/back-link.blade.php, resources/views/components/date-picker.blade.php, resources/views/components/operator-setup-banner.blade.php | .ai/rules/components.md |
 | resources/views/pages/coupons/** | .ai/rules/coupons.md |
 | resources/css/app.css | .ai/rules/css.md |
+| docs/** | .ai/rules/docs.md |
 | resources/views/emails/** | .ai/rules/emails.md |
 | resources/views/pages/guests/** | .ai/rules/guests.md |
 | resources/views/layouts/app/sidebar.blade.php | .ai/rules/layouts-app.md |
 | app/Http/Middleware/** | .ai/rules/middleware.md |
 | app/Models/PlatformSetting.php, app/Models/Plan.php, app/Models/Operator.php | .ai/rules/models.md |
-| docs/** | .ai/rules/docs.md |
 | resources/views/pages/packages/** | .ai/rules/packages.md |
 | resources/views/storefront/partials/navbar.blade.php | .ai/rules/partials.md |
 | resources/views/pages/products/** | .ai/rules/products.md |

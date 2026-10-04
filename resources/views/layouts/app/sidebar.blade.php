@@ -45,6 +45,9 @@
             ? \App\Models\PlatformCoupon::forGuest()->where('operator_id', $currentOperator->id)->active()->count()
             : 0;
         $reservationsCount = $currentOperator?->open_reservations_count ?? 0;
+        // Enquiries show when the plan has the contact form, or old ones are still there.
+        $enquiriesUnread = $currentOperator ? $currentOperator->enquiries()->unread()->count() : 0;
+        $showEnquiries = $currentOperator && ($currentOperator->hasFeature('contact_form') || $currentOperator->enquiries()->exists());
         $operatorSupportEmail = \App\Models\PlatformSetting::current()->getOperatorSupportEmail();
         $availableBalance = $currentOperator ? $currentOperator->getAvailableBalance() : 0;
         $canManageTeam = $currentOperator && auth()->user()?->roleOn($currentOperator)?->allows('manageTeam');
@@ -148,6 +151,12 @@
                         {{ __('Bookings') }}
                     </x-nav-link>
 
+                    @if ($showEnquiries)
+                        <x-nav-link :href="route('enquiries.index')" icon="fa-envelope-open-text" :active="request()->routeIs('enquiries.*')" :badge="$enquiriesUnread ?: null" :title="__('Website enquiries')">
+                            {{ __('Enquiries') }}
+                        </x-nav-link>
+                    @endif
+
                     <x-nav-link :href="route('calendar.index')" icon="fa-calendar-days" :active="request()->routeIs('calendar.*')" :title="__('Calendar & Schedule')">
                         {{ __('Calendar') }}
                     </x-nav-link>
@@ -191,7 +200,7 @@
                         </x-nav-link>
                     @endif
 
-                    <x-nav-link :href="route('brand.edit')" icon="fa-sliders" :active="request()->routeIs('brand.edit', 'storefront-settings.edit', 'review-settings.edit')" :title="__('Storefront Settings')">
+                    <x-nav-link :href="route('brand.edit')" icon="fa-sliders" :active="request()->routeIs('brand.edit', 'storefront-settings.edit', 'review-settings.edit', 'website-settings.edit', 'gallery-settings.edit', 'faq-settings.edit', 'contact-settings.edit')" :title="__('Storefront Settings')">
                         {{ __('Storefront') }}
                     </x-nav-link>
 
@@ -320,7 +329,7 @@
                         </a>
                         <span class="text-[#E4E5E9] dark:text-[#1E2433]">|</span>
                         <button type="button"
-                            @click="navigator.clipboard.writeText('{{ $storefrontUrl }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                            @click="navigator.clipboard.writeText({{ \Illuminate\Support\Js::from($storefrontUrl) }}); copied = true; setTimeout(() => copied = false, 2000)"
                             class="p-0.5 hover:text-[#1C2024] dark:hover:text-white text-[#8B8D98] transition cursor-pointer"
                             title="{{ __('Copy link') }}">
                             <i class="fa-solid"
@@ -581,6 +590,25 @@
                             </a>
 
                         </div>
+
+                        @if ($showEnquiries)
+                            <!-- Enquiries -->
+                            <a href="{{ route('enquiries.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-envelope-open-text"></i>
+                                    </span>
+                                    <div>
+                                        <span class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Enquiries') }}</span>
+                                        <span class="text-[10px] text-slate-400 block">{{ __('Questions and group requests') }}</span>
+                                    </div>
+                                </div>
+                                @if ($enquiriesUnread > 0)
+                                    <span class="rounded-full bg-[#FFEF4D] px-2 py-0.5 text-[10px] font-bold text-[#12181E]">{{ $enquiriesUnread }}</span>
+                                @endif
+                            </a>
+                        @endif
 
                         <!-- Guest CRM -->
                         <a href="{{ route('guests.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
