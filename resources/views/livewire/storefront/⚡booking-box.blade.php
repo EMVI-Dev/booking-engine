@@ -9,6 +9,7 @@ use App\Services\BookingPricingService;
 use App\Services\BookingQuote;
 use App\Services\CapacityService;
 use App\Services\ReservationBookingService;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -117,11 +118,34 @@ new class extends Component {
     }
 
     /**
+     * Per-visitor limit on coupon guessing and hold creation (holds block real seats).
+     */
+    private function withinGuestLimit(string $action, int $perMinute): bool
+    {
+        $key = 'storefront-'.$action.':'.$this->operator->id.':'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($key, $perMinute)) {
+            return false;
+        }
+
+        RateLimiter::hit($key, 60);
+
+        return true;
+    }
+
+    /**
      * Validate and apply entered promotional coupon code.
      */
     public function applyCoupon(): void
     {
         PlatformSetting::current()->assertStorefrontTransactionsAllowed();
+
+        if (! $this->withinGuestLimit('coupon', 10)) {
+            $this->couponMessage = __('Too many attempts. Please wait a minute and try again.');
+            $this->couponValid = false;
+
+            return;
+        }
 
         $cleanCode = strtoupper(trim($this->couponCode));
 
@@ -244,7 +268,13 @@ new class extends Component {
         PlatformSetting::current()->assertStorefrontTransactionsAllowed();
         $this->operator->assertCheckoutAllowed();
 
-        $minDate = now()->startOfDay()->addHours($this->bookable->getAdvanceBookingHours());
+        if (! $this->withinGuestLimit('checkout', 5)) {
+            $this->addError('requested_date', __('Too many attempts. Please wait a minute and try again.'));
+
+            return;
+        }
+
+        $minDate = $this->bookable->earliestBookableDate();
 
         $this->validate([
             'requested_date' => ['required', 'date', 'after_or_equal:' . $minDate->toDateString()],
@@ -337,7 +367,7 @@ new class extends Component {
             <x-date-picker
                 id="requested_date"
                 wire:model.live="requested_date"
-                min="{{ now()->addHours($bookable->advance_booking_hours ?? 0)->format('Y-m-d') }}"
+                min="{{ $bookable->earliestBookableDate()->format('Y-m-d') }}"
                 :blackout-dates="$this->blackoutDates"
                 :placeholder="__('Choose trip departure date...')"
                 :error="$errors->has('requested_date')"

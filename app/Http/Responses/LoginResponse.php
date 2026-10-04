@@ -3,9 +3,9 @@
 namespace App\Http\Responses;
 
 use App\Models\User;
+use App\Services\AuthHandoffService;
 use App\Services\DomainResolverService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Fortify;
 use Symfony\Component\HttpFoundation\Response;
@@ -71,23 +71,13 @@ class LoginResponse implements LoginResponseContract
             }
         }
 
-        $handoffParams = [
-            'user' => $user->getAuthIdentifier(),
-            'remember' => $request->boolean('remember') ? 1 : 0,
-        ];
+        $handoffParams = ['remember' => $request->boolean('remember') ? 1 : 0];
 
         if ($intendedPath) {
             $handoffParams['intended'] = $intendedPath;
         }
 
-        $relativeHandoff = URL::temporarySignedRoute(
-            'auth.login-handoff',
-            now()->addMinutes(5),
-            $handoffParams,
-            absolute: false,
-        );
-
-        $deskUrl = $operator->slugDeskRoot($platformDomain).$relativeHandoff;
+        $deskUrl = app(AuthHandoffService::class)->url('auth.login-handoff', $user, $operator, $platformDomain, $handoffParams);
 
         return redirect()->away($deskUrl);
     }

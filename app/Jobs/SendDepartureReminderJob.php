@@ -60,7 +60,7 @@ class SendDepartureReminderJob implements ShouldQueue
             'departure_reminder_sent_at' => now(),
         ]);
 
-        Log::info("Departure reminder successfully sent to {$this->reservation->guest_email} for #{$this->reservation->code}");
+        Log::info("Departure reminder successfully sent for #{$this->reservation->code}");
     }
 
     /**

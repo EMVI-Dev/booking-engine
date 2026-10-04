@@ -56,7 +56,7 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'Name', 'Slug', 'Status', 'Plan', 'Email', 'WhatsApp', 'Bank Provider', 'Bank Account', 'Bank Account Name', 'Created At']);
+            \App\Services\CsvExportService::writeRow($handle, ['ID', 'Name', 'Slug', 'Status', 'Plan', 'Email', 'WhatsApp', 'Bank Provider', 'Bank Account', 'Bank Account Name', 'Created At']);
 
             Operator::query()
                 ->with(['plan'])
@@ -73,7 +73,7 @@ new #[Title('Operators')] #[Layout('layouts.admin')] class extends Component
                 ->latest()
                 ->chunk(100, function ($operators) use ($handle) {
                     foreach ($operators as $operator) {
-                        fputcsv($handle, [
+                        \App\Services\CsvExportService::writeRow($handle, [
                             $operator->id,
                             $operator->name,
                             $operator->slug,

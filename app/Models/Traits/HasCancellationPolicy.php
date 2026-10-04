@@ -17,13 +17,21 @@ trait HasCancellationPolicy
     }
 
     /**
+     * The first trip date a guest may book: the date reached after the advance-booking hours
+     * from now. The single rule used by the date picker, the booking box and createHold().
+     */
+    public function earliestBookableDate(?CarbonInterface $fromTime = null): CarbonInterface
+    {
+        $now = $fromTime ?? now();
+
+        return $now->copy()->addHours($this->getAdvanceBookingHours())->startOfDay();
+    }
+
+    /**
      * Check if a booking on the given date meets advance booking hours requirement.
      */
     public function meetsAdvanceBookingRequirement(CarbonInterface $requestedDate, ?CarbonInterface $fromTime = null): bool
     {
-        $now = $fromTime ? Carbon::instance($fromTime) : now();
-        $earliestAllowed = $now->copy()->addHours($this->getAdvanceBookingHours());
-
-        return Carbon::instance($requestedDate)->startOfDay()->gte($earliestAllowed);
+        return Carbon::instance($requestedDate)->startOfDay()->gte($this->earliestBookableDate($fromTime));
     }
 }

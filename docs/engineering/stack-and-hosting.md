@@ -1,6 +1,6 @@
 # Stack and hosting
 
-_Last reviewed: 2026-10-02_
+_Last reviewed: 2026-10-03_
 
 TravelEngine is a Laravel booking app for tour operators, built by EMVI Technologies. Guests book on the operator's own site. Operators and platform admins use the main domain.
 
@@ -30,7 +30,9 @@ There is no React or Vue SPA. The operator UI is Livewire. The guest storefront 
 
 `IdentifyOperatorDomain` reads the `Host` header and binds the operator, or leaves platform mode. Admin routes run only on the platform host (`EnsureOnPlatformDomain`, re-checked on every Livewire action). Reserved names such as `admin`, `www`, `api` and `demo` can never be a shop slug (`Operator::RESERVED_SLUGS`).
 
-Operator sign-up and storefront booking follow platform maintenance only (Admin → Settings, or `PLATFORM_MAINTENANCE`). This is not Laravel's `down` mode.
+Every web response carries baseline security headers (`AddSecurityHeaders`: no framing, `nosniff`, a strict referrer policy, and HSTS over HTTPS in production). Fortify's sign-up and password-reset posts are rate limited by `ThrottleAuthForms`, because Fortify cannot limit them through config.
+
+Operator sign-up and storefront booking follow platform maintenance only (Admin → Settings, or `PLATFORM_MAINTENANCE`). This is not Laravel's `down` mode, and there is no separate registration switch.
 
 ## Production on Laravel Cloud
 

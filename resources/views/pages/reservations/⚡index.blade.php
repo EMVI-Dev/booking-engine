@@ -351,6 +351,7 @@ new #[Title('Bookings & Reservations')] class extends Component {
                     'notes' => $this->createNotes,
                 ],
                 notifyGuest: false,
+                enforceAdvanceBooking: false,
             );
         } catch (\App\Exceptions\CapacityUnavailableException $e) {
             $this->addError('createRequestedDate', $e->getMessage());

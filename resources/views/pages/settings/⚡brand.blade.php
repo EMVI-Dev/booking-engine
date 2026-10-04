@@ -7,6 +7,7 @@ use App\Services\CustomDomainService;
 use App\Services\MediaStore;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -17,6 +18,7 @@ new #[Title('Brand Settings')] class extends Component {
 
     // Brand Logo
     public $logo;
+    #[Locked]
     public ?string $existing_logo_path = null;
 
     // Business & Brand identity fields
@@ -69,6 +71,8 @@ new #[Title('Brand Settings')] class extends Component {
      */
     public function mount(): void
     {
+        $this->authorizeAbility('manageSettings');
+
         $user = Auth::user();
 
         /** @var Operator|null $operator */
@@ -143,6 +147,8 @@ new #[Title('Brand Settings')] class extends Component {
      */
     public function removeLogo(): void
     {
+        $this->authorizeAbility('manageSettings');
+
         $this->logo = null;
         $this->existing_logo_path = null;
 
@@ -168,11 +174,38 @@ new #[Title('Brand Settings')] class extends Component {
     }
 
     /**
+     * Tidy what operators usually paste: links without https://, lower-case tag IDs,
+     * and the whole Search Console meta tag instead of just its code.
+     */
+    private function normalizeLinksAndTrackingIds(): void
+    {
+        foreach (['instagram_url', 'facebook_url', 'tiktok_url', 'youtube_url'] as $field) {
+            $url = trim($this->{$field});
+            if ($url !== '' && ! preg_match('#^[a-z][a-z0-9+.-]*:#i', $url)) {
+                $url = 'https://'.ltrim($url, '/');
+            }
+            $this->{$field} = $url;
+        }
+
+        $this->google_analytics_id = strtoupper(trim($this->google_analytics_id));
+        $this->google_tag_manager_id = strtoupper(trim($this->google_tag_manager_id));
+        $this->meta_pixel_id = trim($this->meta_pixel_id);
+
+        $verification = trim($this->google_site_verification);
+        if (preg_match('/content\s*=\s*["\']([^"\']+)["\']/i', $verification, $match) === 1) {
+            $verification = $match[1];
+        }
+        $this->google_site_verification = $verification;
+    }
+
+    /**
      * Update agent brand identity, logo, WhatsApp schedule, social links, and notifications.
      */
     public function updateBrandSettings(): void
     {
         $this->authorizeAbility('manageSettings');
+
+        $this->normalizeLinksAndTrackingIds();
 
         $user = Auth::user();
 
@@ -189,14 +222,14 @@ new #[Title('Brand Settings')] class extends Component {
             'brand_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/'],
             'reservation_code_prefix' => ['required', 'string', 'max:8', 'regex:/^[A-Za-z0-9]+$/'],
             'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,gif', 'max:10240'],
-            'instagram_url' => ['nullable', 'string', 'max:255'],
-            'facebook_url' => ['nullable', 'string', 'max:255'],
-            'tiktok_url' => ['nullable', 'string', 'max:255'],
-            'youtube_url' => ['nullable', 'string', 'max:255'],
-            'google_analytics_id' => ['nullable', 'string', 'max:50'],
-            'meta_pixel_id' => ['nullable', 'string', 'max:50'],
-            'google_tag_manager_id' => ['nullable', 'string', 'max:50'],
-            'google_site_verification' => ['nullable', 'string', 'max:255'],
+            'instagram_url' => ['nullable', 'url:https', 'max:255'],
+            'facebook_url' => ['nullable', 'url:https', 'max:255'],
+            'tiktok_url' => ['nullable', 'url:https', 'max:255'],
+            'youtube_url' => ['nullable', 'url:https', 'max:255'],
+            'google_analytics_id' => ['nullable', 'string', 'regex:'.Operator::TRACKING_ID_PATTERNS['google_analytics_id']],
+            'meta_pixel_id' => ['nullable', 'string', 'regex:'.Operator::TRACKING_ID_PATTERNS['meta_pixel_id']],
+            'google_tag_manager_id' => ['nullable', 'string', 'regex:'.Operator::TRACKING_ID_PATTERNS['google_tag_manager_id']],
+            'google_site_verification' => ['nullable', 'string', 'regex:'.Operator::TRACKING_ID_PATTERNS['google_site_verification']],
             'booking_notification_email' => ['required', 'email', 'max:255'],
             'billing_email' => ['required', 'email', 'max:255'],
             'custom_domain' => ['nullable', 'string', 'max:255'],

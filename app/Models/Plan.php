@@ -256,12 +256,15 @@ class Plan extends Model
             ['key' => 'google_calendar', 'label' => __('Calendar')],
             ['key' => 'whatsapp_dispatch', 'label' => __('WhatsApp tickets and reminders')],
             ['key' => 'daily_manifest_export', 'label' => __('Daily guest lists')],
+            ['key' => 'capacity_heatmap', 'label' => __('Capacity Heatmap')],
             ['key' => 'guest_crm', 'label' => __('Guest CRM')],
             ['key' => 'automated_review_requests', 'label' => __('Ask for a review after the trip')],
             ['key' => 'google_reviews', 'label' => __('Google reviews on your booking page')],
+            ['key' => 'tracking_pixels', 'label' => __('Marketing Tracking Pixels')],
             ['key' => 'custom_domain', 'label' => __('Your own website address (yourbrand.com)')],
             ['key' => 'remove_branding', 'label' => __('Guests see only your name, not ours')],
             ['key' => 'ai_discovery', 'label' => __('Show up when people ask ChatGPT about tours')],
+            ['key' => 'priority_support', 'label' => __('Priority support')],
         ];
     }
 

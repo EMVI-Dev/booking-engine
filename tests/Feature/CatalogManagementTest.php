@@ -115,13 +115,13 @@ test('operator can edit product and delete gallery photos', function () {
     $product = Product::factory()->create([
         'operator_id' => $this->operator->id,
         'name' => 'Original Kayak',
-        'cover_photo' => 'products/covers/sample.jpg',
-        'gallery' => ['products/gallery/img1.jpg', 'products/gallery/img2.jpg'],
+        'cover_photo' => 'operators/'.$this->operator->id.'/products/covers/sample.jpg',
+        'gallery' => ['operators/'.$this->operator->id.'/products/gallery/img1.jpg', 'operators/'.$this->operator->id.'/products/gallery/img2.jpg'],
     ]);
 
-    Storage::disk(MediaStore::diskName())->put('products/covers/sample.jpg', 'fake image content');
-    Storage::disk(MediaStore::diskName())->put('products/gallery/img1.jpg', 'fake image content 1');
-    Storage::disk(MediaStore::diskName())->put('products/gallery/img2.jpg', 'fake image content 2');
+    Storage::disk(MediaStore::diskName())->put('operators/'.$this->operator->id.'/products/covers/sample.jpg', 'fake image content');
+    Storage::disk(MediaStore::diskName())->put('operators/'.$this->operator->id.'/products/gallery/img1.jpg', 'fake image content 1');
+    Storage::disk(MediaStore::diskName())->put('operators/'.$this->operator->id.'/products/gallery/img2.jpg', 'fake image content 2');
 
     Livewire::test('pages::products.edit', ['product' => $product])
         ->assertSet('name', 'Original Kayak')
@@ -134,9 +134,9 @@ test('operator can edit product and delete gallery photos', function () {
     $product->refresh();
     expect($product->name)->toBe('Updated Clear Kayak')
         ->and(count($product->gallery))->toBe(1)
-        ->and($product->gallery[0])->toBe('products/gallery/img2.jpg');
+        ->and($product->gallery[0])->toBe('operators/'.$this->operator->id.'/products/gallery/img2.jpg');
 
-    Storage::disk(MediaStore::diskName())->assertMissing('products/gallery/img1.jpg');
+    Storage::disk(MediaStore::diskName())->assertMissing('operators/'.$this->operator->id.'/products/gallery/img1.jpg');
 });
 
 test('package creation is blocked if profile and terms are incomplete', function () {
@@ -479,16 +479,16 @@ test('operator can delete product from inside edit page and index modal', functi
     $product = Product::factory()->create([
         'operator_id' => $this->operator->id,
         'name' => 'To Delete Product',
-        'cover_photo' => 'products/covers/sample.jpg',
+        'cover_photo' => 'operators/'.$this->operator->id.'/products/covers/sample.jpg',
     ]);
-    Storage::disk(MediaStore::diskName())->put('products/covers/sample.jpg', 'content');
+    Storage::disk(MediaStore::diskName())->put('operators/'.$this->operator->id.'/products/covers/sample.jpg', 'content');
 
     Livewire::test('pages::products.edit', ['product' => $product])
         ->call('delete')
         ->assertRedirect(route('products.index'));
 
     expect(Product::where('id', $product->id)->exists())->toBeFalse();
-    Storage::disk(MediaStore::diskName())->assertMissing('products/covers/sample.jpg');
+    Storage::disk(MediaStore::diskName())->assertMissing('operators/'.$this->operator->id.'/products/covers/sample.jpg');
 
     // Test index modal deletion
     $product2 = Product::factory()->create(['operator_id' => $this->operator->id, 'name' => 'Index Delete Product']);
@@ -506,16 +506,16 @@ test('operator can delete package from inside edit page and index modal', functi
     $package = Package::factory()->create([
         'operator_id' => $this->operator->id,
         'title' => 'To Delete Package',
-        'cover_photo' => 'packages/covers/sample.jpg',
+        'cover_photo' => 'operators/'.$this->operator->id.'/packages/covers/sample.jpg',
     ]);
-    Storage::disk(MediaStore::diskName())->put('packages/covers/sample.jpg', 'content');
+    Storage::disk(MediaStore::diskName())->put('operators/'.$this->operator->id.'/packages/covers/sample.jpg', 'content');
 
     Livewire::test('pages::packages.edit', ['package' => $package])
         ->call('delete')
         ->assertRedirect(route('packages.index'));
 
     expect(Package::where('id', $package->id)->exists())->toBeFalse();
-    Storage::disk(MediaStore::diskName())->assertMissing('packages/covers/sample.jpg');
+    Storage::disk(MediaStore::diskName())->assertMissing('operators/'.$this->operator->id.'/packages/covers/sample.jpg');
 
     // Test index modal deletion
     $package2 = Package::factory()->create(['operator_id' => $this->operator->id, 'title' => 'Index Delete Package']);

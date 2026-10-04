@@ -2,7 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Profile stays open before email verification, so a mistyped address can be corrected.
 Route::middleware(['auth'])->group(function () {
+    Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('settings', 'settings/brand');
 
     Route::livewire('settings/brand', 'pages::settings.brand')->name('brand.edit');
@@ -13,7 +18,6 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('settings/plan', 'pages::settings.plan')->name('settings.plan');
     Route::livewire('settings/plan/checkout/{payment}', 'pages::settings.plan-checkout')->name('settings.plan.checkout');
     Route::livewire('settings/billing', 'pages::settings.billing')->name('settings.billing');
-    Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

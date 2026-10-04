@@ -3,7 +3,6 @@
 use App\Models\User;
 
 test('register page stays open when maintenance is off even if the old registration flag is off', function () {
-    config(['fortify.registration_enabled' => false]);
 
     $this->get(route('register'))
         ->assertOk()
@@ -13,7 +12,6 @@ test('register page stays open when maintenance is off even if the old registrat
 });
 
 test('login offers create account when maintenance is off', function () {
-    config(['fortify.registration_enabled' => false]);
 
     $this->get(route('login'))
         ->assertOk()
@@ -23,7 +21,6 @@ test('login offers create account when maintenance is off', function () {
 });
 
 test('new operator accounts can be created when maintenance is off', function () {
-    config(['fortify.registration_enabled' => false]);
 
     $response = $this->post(route('register.store'), [
         'name' => 'Wayan Sudarma',
@@ -43,7 +40,6 @@ test('new operator accounts can be created when maintenance is off', function ()
 });
 
 test('operators can log in when sign-up is closed', function () {
-    config(['fortify.registration_enabled' => false]);
 
     $user = User::factory()->create();
 
@@ -56,7 +52,6 @@ test('operators can log in when sign-up is closed', function () {
 });
 
 test('homepage still offers sign-up when registration is closed but maintenance is off', function () {
-    config(['fortify.registration_enabled' => false]);
 
     $this->get(route('home'))
         ->assertOk()
@@ -66,7 +61,6 @@ test('homepage still offers sign-up when registration is closed but maintenance 
 });
 
 test('platform admin login still works when operator registration is disabled', function () {
-    config(['fortify.registration_enabled' => false]);
 
     $this->get(route('admin.login'))
         ->assertOk()

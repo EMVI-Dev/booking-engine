@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('reservations', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('code', 32)->nullable()->unique();
-            $table->string('public_token', 64)->unique();
+            $table->string('public_token', 64)->unique(); // guest receipt, e-ticket, pay and cancel links
+            $table->string('vendor_token', 64)->nullable()->unique(); // read-only supplier dispatch sheet, never the guest link
             $table->string('bookable_type');
             $table->char('bookable_id', 26);
             $table->foreignUlid('operator_id')->constrained('operators')->cascadeOnDelete();

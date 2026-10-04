@@ -526,7 +526,7 @@
                         </p>
 
                         @php
-                            $socialLinks = $agent->settings['social_links'] ?? [];
+                            $socialLinks = $agent->getSocialLinks();
                         @endphp
                         @if (! empty($socialLinks['instagram']) || ! empty($socialLinks['facebook']) || $agent->contact_whatsapp)
                             <div class="flex flex-wrap items-center gap-3 pt-2">

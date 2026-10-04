@@ -30,6 +30,8 @@ new #[Title('Storefront Settings')] class extends Component {
      */
     public function mount(): void
     {
+        $this->authorizeAbility('manageSettings');
+
         /** @var Operator|null $operator */
         $operator = $this->currentOperator;
         if ($operator) {
@@ -64,6 +66,8 @@ new #[Title('Storefront Settings')] class extends Component {
      */
     public function updateStorefrontSettings(): void
     {
+        $this->authorizeAbility('manageSettings');
+
         $validated = $this->validate([
             'allow_standalone_products' => ['boolean'],
             'show_inclusions_preview' => ['boolean'],

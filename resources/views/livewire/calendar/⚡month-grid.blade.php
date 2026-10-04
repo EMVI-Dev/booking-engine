@@ -41,6 +41,14 @@ new class extends Component {
         $this->blockEndDate = $now->toDateString();
     }
 
+    /**
+     * Blocking dates changes what guests can book, so it needs catalog rights.
+     */
+    protected function authorizeBlackouts(): void
+    {
+        abort_unless(auth()->user()?->canOperate($this->currentOperator, 'manageCatalog'), 403, __('You do not have permission to do this.'));
+    }
+
     #[Computed]
     public function currentOperator(): ?Operator
     {
@@ -114,6 +122,10 @@ new class extends Component {
 
     public function saveBlackoutBlock(): void
     {
+        $this->authorizeBlackouts();
+
+        $operatorId = $this->currentOperator?->id;
+
         $this->validate(
             [
                 'blockStartDate' => 'required|date',
@@ -121,9 +133,9 @@ new class extends Component {
                 'blockReason' => 'nullable|string|max:255',
                 'blockTargetType' => 'required|in:all,package,product',
                 'blockPackageIds' => 'required_if:blockTargetType,package|array',
-                'blockPackageIds.*' => 'exists:packages,id',
+                'blockPackageIds.*' => [\Illuminate\Validation\Rule::exists('packages', 'id')->where('operator_id', $operatorId)],
                 'blockProductIds' => 'required_if:blockTargetType,product|array',
-                'blockProductIds.*' => 'exists:products,id',
+                'blockProductIds.*' => [\Illuminate\Validation\Rule::exists('products', 'id')->where('operator_id', $operatorId)],
             ],
             [
                 'blockPackageIds.required_if' => __('Please select at least one tour package to block.'),
@@ -192,6 +204,8 @@ new class extends Component {
 
     public function deleteBlackoutBlock(?string $blockId = null): void
     {
+        $this->authorizeBlackouts();
+
         if (!$this->currentOperator) {
             return;
         }

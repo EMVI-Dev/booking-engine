@@ -162,7 +162,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
 
         return response()->streamDownload(function () use ($rows): void {
             $out = fopen('php://output', 'w');
-            fputcsv($out, [
+            \App\Services\CsvExportService::writeRow($out, [
                 'Booking Reference',
                 'Date Booked',
                 'Experience Date',
@@ -183,7 +183,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Coupon Performance Report - Operat
                 $subtotal = (float) ($snap['subtotal'] ?? 0);
                 $net = $r->getChargedAmount();
 
-                fputcsv($out, [
+                \App\Services\CsvExportService::writeRow($out, [
                     $r->code,
                     $r->created_at?->format('Y-m-d H:i:s') ?? '',
                     $r->requested_date?->format('Y-m-d') ?? '',

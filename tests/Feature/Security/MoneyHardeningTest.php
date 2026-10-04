@@ -410,3 +410,18 @@ test('pay link does not reopen a cancelled booking', function (ReservationStatus
     'expired' => ReservationStatus::Expired,
     'completed' => ReservationStatus::Completed,
 ]);
+
+test('stored media paths on catalog and brand forms cannot be changed from the browser', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->create();
+    $operator->users()->attach($user->id, ['role' => 'owner']);
+    $package = Package::factory()->create(['operator_id' => $operator->id]);
+
+    $this->actingAs($user);
+
+    expect(fn () => Livewire::test('pages::packages.edit', ['package' => $package])->set('existingCoverPhoto', 'operators/other/catalog/x.webp'))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+
+    expect(fn () => Livewire::test('pages::settings.brand')->set('existing_logo_path', 'operators/other/brand/x.webp'))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+});

@@ -34,12 +34,7 @@ test('new user registers as operator with storefront and subdomain automatically
 
     $this->assertAuthenticated();
 
-    $parts = parse_url($location);
-    $handoffPath = ($parts['path'] ?? '').(isset($parts['query']) ? '?'.$parts['query'] : '');
-
-    $this->withServerVariables([
-        'HTTP_HOST' => $parts['host'] ?? 'baliocean.'.config('app.platform_domain', 'booking.test'),
-    ])->get($handoffPath)
+    $this->get($location)
         ->assertRedirect(route('dashboard', absolute: false))
         ->assertSessionHas('welcome_onboarding', true);
 

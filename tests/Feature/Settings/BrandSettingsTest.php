@@ -148,3 +148,25 @@ test('brand settings validation enforces required fields and valid hex color', f
         ->call('updateBrandSettings')
         ->assertHasErrors(['agency_name', 'booking_notification_email', 'brand_color']);
 });
+
+test('malformed tracking ids and social links are refused or never printed', function () {
+    $operator = Operator::factory()->create([
+        'settings' => [
+            'tracking' => ['google_analytics_id' => "G-1');alert(1);//", 'meta_pixel_id' => '12345678'],
+            'social_links' => ['instagram' => 'javascript:alert(1)', 'facebook' => 'https://facebook.com/x'],
+        ],
+    ]);
+
+    expect($operator->getGoogleAnalyticsId())->toBeNull()
+        ->and($operator->getMetaPixelId())->toBe('12345678')
+        ->and($operator->getSocialLinks())->toBe(['facebook' => 'https://facebook.com/x']);
+});
+
+test('social links get https added and non-https schemes are refused', function () {
+    Livewire::test('pages::settings.brand')
+        ->set('instagram_url', 'instagram.com/sunrise')
+        ->set('facebook_url', 'javascript:alert(1)')
+        ->call('updateBrandSettings')
+        ->assertHasErrors(['facebook_url'])
+        ->assertSet('instagram_url', 'https://instagram.com/sunrise');
+});

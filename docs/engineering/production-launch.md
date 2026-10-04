@@ -1,6 +1,6 @@
 # Production launch checklist (Laravel Cloud, fresh database)
 
-_Last reviewed: 2026-10-02_
+_Last reviewed: 2026-10-03_
 
 Use this for the first production deploy, and again after any change to hosting. Hosting background is in [`stack-and-hosting.md`](stack-and-hosting.md). Service details are in [`integrations.md`](integrations.md).
 
@@ -28,7 +28,8 @@ Use this for the first production deploy, and again after any change to hosting.
 | `MAIL_*` | real mailer (`MAIL_USERNAME` / `MAIL_PASSWORD` **secret**); `MAIL_FROM_ADDRESS="no-reply@travelengine.id"` (SPF and DKIM set for the domain) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | first platform admin; the password is **secret** (seeding refuses to run without it) |
 | `DEMO_OPERATOR_EMAIL` / `DEMO_OPERATOR_PASSWORD` | the public demo shop login; the password is **secret** |
-| `REGISTRATION_ENABLED` / `PLATFORM_MAINTENANCE` | open sign-up when ready / `false` |
+| `PLATFORM_MAINTENANCE` | `false` to open sign-up and bookings; `true` pauses both (Admin → Settings can switch it too) |
+| `PLATFORM_GOOGLE_ANALYTICS_ID` | GA4 id for the marketing and sign-in pages; empty = no tracking |
 | `MEDIA_DISK` | `r2` |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | **secret**; R2 API token with read and write access to the bucket |
 | `R2_BUCKET` | bucket name |

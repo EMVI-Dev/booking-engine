@@ -138,21 +138,14 @@ test('a bookings teammate cannot change the payout bank account or the plan', fu
 
     $this->actingAs($bookings);
 
-    Livewire::test('pages::settings.payments')
-        ->set('bank_provider', 'Mandiri')
-        ->set('bank_account_name', 'Not Allowed')
-        ->set('bank_account_number', '9999888877')
-        ->call('updatePaymentSettings')
-        ->assertForbidden();
+    // The payout bank and wallet pages do not even open for a bookings teammate.
+    Livewire::test('pages::settings.payments')->assertForbidden();
 
     Livewire::test('pages::settings.plan')
         ->call('confirmPlanSwitch')
         ->assertForbidden();
 
-    Livewire::test('pages::wallet.index')
-        ->set('payoutAmount', '100000')
-        ->call('submitPayoutRequest')
-        ->assertForbidden();
+    Livewire::test('pages::wallet.index')->assertForbidden();
 
     Livewire::test('pages::settings.team')->assertForbidden();
 
@@ -227,4 +220,24 @@ test('a pro owner can invite more than one helper', function () {
         ->assertHasNoErrors();
 
     expect($this->operator->users()->count())->toBe(3);
+});
+
+test('a person who already runs another business cannot be pulled into this team', function () {
+    Notification::fake();
+
+    $otherShop = Operator::factory()->create(['status' => OperatorStatus::Approved]);
+    $stranger = User::factory()->create(['email' => 'owner@othershop.com']);
+    $otherShop->users()->attach($stranger->id, ['role' => OperatorUserRole::Owner]);
+
+    $this->actingAs($this->owner);
+
+    Livewire::test('pages::settings.team')
+        ->set('invite_name', 'Someone Else')
+        ->set('invite_email', 'Owner@OtherShop.com')
+        ->set('invite_role', OperatorUserRole::Reservation->value)
+        ->call('inviteTeammate')
+        ->assertHasErrors(['invite_email']);
+
+    expect($stranger->operators()->count())->toBe(1);
+    Notification::assertNothingSent();
 });

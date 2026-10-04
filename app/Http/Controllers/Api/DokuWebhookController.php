@@ -33,7 +33,7 @@ class DokuWebhookController extends Controller
 
         $payload = $request->all();
 
-        $processed = $this->paymentService->processNotification($payload);
+        $processed = $this->paymentService->processNotification($payload, requireAmount: true);
 
         if (! $processed) {
             return response()->json([

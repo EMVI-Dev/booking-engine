@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\DomainType;
+use App\Models\OperatorDomain;
 use App\Services\DomainResolverService;
 use Closure;
 use Illuminate\Http\Request;
@@ -27,6 +29,10 @@ class IdentifyOperatorDomain
             app()->instance('current_operator', $operator);
             app()->instance('current_agent', $operator);
         } else {
+            if ($redirect = $this->redirectFromInactiveCustomDomain($request)) {
+                return $redirect;
+            }
+
             $request->attributes->remove('current_operator');
             $request->attributes->remove('current_agent');
             app()->forgetInstance('current_operator');
@@ -34,5 +40,31 @@ class IdentifyOperatorDomain
         }
 
         return $next($request);
+    }
+
+    /**
+     * A custom domain that is no longer live (plan downgrade, failed check) still points here:
+     * send guests to the same page on the operator's slug address instead of the platform site.
+     */
+    private function redirectFromInactiveCustomDomain(Request $request): ?Response
+    {
+        $host = strtolower($request->getHost());
+
+        if ($this->domainResolver->isPlatformHost($host)) {
+            return null;
+        }
+
+        $operator = OperatorDomain::query()
+            ->where('domain', $host)
+            ->where('type', DomainType::Custom)
+            ->with('operator')
+            ->first()
+            ?->operator;
+
+        if (! $operator) {
+            return null;
+        }
+
+        return redirect()->away($operator->slugDeskRoot().$request->getRequestUri(), 302);
     }
 }

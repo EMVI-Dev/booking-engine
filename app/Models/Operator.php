@@ -63,6 +63,18 @@ class Operator extends Model
      *
      * @var list<string>
      */
+    /**
+     * Accepted shape of each storefront tracking setting.
+     *
+     * @var array<string, string>
+     */
+    public const TRACKING_ID_PATTERNS = [
+        'google_analytics_id' => '/^G-[A-Z0-9]{4,20}$/',
+        'google_tag_manager_id' => '/^GTM-[A-Z0-9]{4,12}$/',
+        'meta_pixel_id' => '/^\d{6,20}$/',
+        'google_site_verification' => '/^[A-Za-z0-9_\-]{10,100}$/',
+    ];
+
     public const RESERVED_SLUGS = [
         'admin', 'administrator', 'api', 'app', 'assets', 'auth', 'billing', 'blog', 'cdn', 'dashboard',
         'demo', 'dev', 'docs', 'help', 'login', 'mail', 'register', 'root', 'smtp', 'staging', 'static',
@@ -291,17 +303,21 @@ class Operator extends Model
     }
 
     /**
-     * Demo storefronts may be browsed, but they must never take a real payment.
+     * Only approved, non-demo shops may take a payment (storefront, pay links, retries).
      */
     public function assertCheckoutAllowed(): void
     {
-        if (! $this->isDemo()) {
-            return;
+        if ($this->isDemo()) {
+            throw ValidationException::withMessages([
+                'checkout' => __('Checkout is off on the sample shop so nothing is charged.'),
+            ]);
         }
 
-        throw ValidationException::withMessages([
-            'checkout' => __('Checkout is off on the sample shop so nothing is charged.'),
-        ]);
+        if ($this->status !== OperatorStatus::Approved) {
+            throw ValidationException::withMessages([
+                'checkout' => __('This shop is not taking bookings right now.'),
+            ]);
+        }
     }
 
     /**
@@ -1045,6 +1061,19 @@ class Operator extends Model
     }
 
     /**
+     * Replace the iCal feed token, so every previously shared feed URL stops working.
+     * Called when the operator asks for a new link and when a teammate is removed.
+     */
+    public function rotateCalendarFeedToken(): string
+    {
+        $settings = $this->settings ?? [];
+        $settings['calendar_feed_token'] = bin2hex(random_bytes(16));
+        $this->update(['settings' => $settings]);
+
+        return $settings['calendar_feed_token'];
+    }
+
+    /**
      * Get the full absolute URL for the operator's live iCal calendar feed.
      */
     public function getCalendarFeedUrl(): string
@@ -1077,10 +1106,7 @@ class Operator extends Model
      */
     public function getGoogleAnalyticsId(): ?string
     {
-        $tracking = $this->settings['tracking'] ?? [];
-        $id = trim((string) ($tracking['google_analytics_id'] ?? ''));
-
-        return $id !== '' ? $id : null;
+        return $this->trackingValue('google_analytics_id');
     }
 
     /**
@@ -1088,10 +1114,7 @@ class Operator extends Model
      */
     public function getMetaPixelId(): ?string
     {
-        $tracking = $this->settings['tracking'] ?? [];
-        $id = trim((string) ($tracking['meta_pixel_id'] ?? ''));
-
-        return $id !== '' ? $id : null;
+        return $this->trackingValue('meta_pixel_id');
     }
 
     /**
@@ -1099,21 +1122,54 @@ class Operator extends Model
      */
     public function getGoogleTagManagerId(): ?string
     {
-        $tracking = $this->settings['tracking'] ?? [];
-        $id = trim((string) ($tracking['google_tag_manager_id'] ?? ''));
-
-        return $id !== '' ? $id : null;
+        return $this->trackingValue('google_tag_manager_id');
     }
 
     /**
-     * Get Google Search Console Site Verification Meta Tag / Code.
+     * Get Google Search Console Site Verification code.
      */
     public function getGoogleSiteVerification(): ?string
     {
-        $tracking = $this->settings['tracking'] ?? [];
-        $code = trim((string) ($tracking['google_site_verification'] ?? ''));
+        return $this->trackingValue('google_site_verification');
+    }
 
-        return $code !== '' ? $code : null;
+    /**
+     * A stored tracking value, or null when it is empty or not in the expected shape.
+     * The values are printed inside storefront scripts, so a malformed one is never output.
+     */
+    private function trackingValue(string $key): ?string
+    {
+        $value = trim((string) (($this->settings['tracking'] ?? [])[$key] ?? ''));
+
+        return $value !== '' && preg_match(self::TRACKING_ID_PATTERNS[$key], $value) === 1 ? $value : null;
+    }
+
+    /**
+     * Social profile links shown on the storefront, keyed by network. Only https URLs are kept.
+     *
+     * @return array<string, string>
+     */
+    public function getSocialLinks(): array
+    {
+        $links = [];
+
+        foreach ((array) ($this->settings['social_links'] ?? []) as $network => $url) {
+            if (is_string($url) && self::isSafeExternalUrl($url)) {
+                $links[(string) $network] = $url;
+            }
+        }
+
+        return $links;
+    }
+
+    /**
+     * Whether a URL an operator typed is safe to link to: https only, with a real host.
+     */
+    public static function isSafeExternalUrl(string $url): bool
+    {
+        return str_starts_with(strtolower($url), 'https://')
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && filled(parse_url($url, PHP_URL_HOST));
     }
 
     /**

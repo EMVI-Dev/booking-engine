@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Operator;
 use App\Services\GoogleCalendarService;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 
 class CalendarFeedController extends Controller
 {
@@ -13,13 +14,15 @@ class CalendarFeedController extends Controller
      */
     public function feed(string $token, GoogleCalendarService $calendarService): Response
     {
-        // Strip trailing .ics if passed
-        $cleanToken = str_replace('.ics', '', $token);
+        $cleanToken = Str::chopEnd($token, '.ics');
+
+        if (preg_match('/^[a-f0-9]{32}$/', $cleanToken) !== 1) {
+            abort(404, 'Calendar feed not found or invalid subscription token.');
+        }
 
         /** @var Operator|null $operator */
         $operator = Operator::query()
             ->where('settings->calendar_feed_token', $cleanToken)
-            ->orWhereJsonContains('settings->calendar_feed_token', $cleanToken)
             ->first();
 
         if (! $operator) {
@@ -34,8 +37,7 @@ class CalendarFeedController extends Controller
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',
             'Expires' => '0',
-            'Access-Control-Allow-Origin' => '*',
-            'Access-Control-Allow-Methods' => 'GET, HEAD, OPTIONS',
+            'X-Robots-Tag' => 'noindex, nofollow',
         ]);
     }
 }

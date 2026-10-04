@@ -4,6 +4,7 @@ use App\Enums\DomainStatus;
 use App\Enums\DomainType;
 use App\Enums\OperatorStatus;
 use App\Enums\ReservationStatus;
+use App\Mail\VendorBookingNotificationMail;
 use App\Models\Operator;
 use App\Models\OperatorDomain;
 use App\Models\Product;
@@ -58,8 +59,8 @@ beforeEach(function () {
     ]);
 });
 
-test('vendor can view dispatch sheet with valid token', function () {
-    $url = "http://sunset-bali.booking.test/find-booking/{$this->reservation->public_token}/vendor?token={$this->reservation->public_token}";
+test('vendor can view dispatch sheet with the vendor token', function () {
+    $url = "http://sunset-bali.booking.test/vendor-dispatch/{$this->reservation->vendor_token}";
 
     $response = $this->get($url, ['Host' => 'sunset-bali.booking.test']);
 
@@ -74,12 +75,17 @@ test('vendor can view dispatch sheet with valid token', function () {
         ->assertDontSee('750000'); // Customer retail price hidden
 });
 
-test('vendor view is forbidden without valid token', function () {
-    $urlNoToken = "http://sunset-bali.booking.test/find-booking/{$this->reservation->public_token}/vendor";
-    $this->get($urlNoToken, ['Host' => 'sunset-bali.booking.test'])->assertForbidden();
+test('the vendor sheet does not open with the guest token or a wrong token', function () {
+    $this->get("http://sunset-bali.booking.test/vendor-dispatch/{$this->reservation->public_token}", ['Host' => 'sunset-bali.booking.test'])->assertNotFound();
+    $this->get('http://sunset-bali.booking.test/vendor-dispatch/invalid_token_123', ['Host' => 'sunset-bali.booking.test'])->assertNotFound();
+});
 
-    $urlInvalidToken = "http://sunset-bali.booking.test/find-booking/{$this->reservation->public_token}/vendor?token=invalid_token_123";
-    $this->get($urlInvalidToken, ['Host' => 'sunset-bali.booking.test'])->assertForbidden();
+test('vendor emails carry the vendor token, never the guest token', function () {
+    $html = (new VendorBookingNotificationMail($this->reservation, $this->vendor, [$this->product]))->render();
+
+    expect($this->reservation->vendor_token)->not->toBe($this->reservation->public_token)
+        ->and($html)->toContain($this->reservation->vendor_token)
+        ->and($html)->not->toContain($this->reservation->public_token);
 });
 
 test('guest lookup on find-booking redirects to e-ticket', function () {

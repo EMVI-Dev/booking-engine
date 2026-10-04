@@ -19,18 +19,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Operator registration
-    |--------------------------------------------------------------------------
-    |
-    | Default for operator log in and sign-up. Admin Settings maintenance
-    | also closes sign-up (and all storefront checkout). /admin still works.
-    |
-    */
-
-    'registration_enabled' => filter_var(env('REGISTRATION_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
-
-    /*
-    |--------------------------------------------------------------------------
     | Fortify Password Broker
     |--------------------------------------------------------------------------
     |

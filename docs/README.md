@@ -34,6 +34,7 @@ Docs are grouped by who reads them. Start with **Product**. If a doc and the cod
 ## Audits: point-in-time reviews (not specs)
 | Doc | What |
 | --- | --- |
+| [audits/2026-10-storefront-and-landing-audit.md](audits/2026-10-storefront-and-landing-audit.md) | Security pass, guest storefront and landing page audit with fixes and the Antigravity UI list (Oct 2026) |
 | [audits/2026-10-backend-audit.md](audits/2026-10-backend-audit.md) | Backend, DRY, security, admin and MVP audit with fix log (Oct 2026) |
 | [audits/2026-09-storefront-pre-prod-audit.md](audits/2026-09-storefront-pre-prod-audit.md) | Guest storefront pre-production review (Sep 2026) |
 | [audits/archive/](audits/archive/) | Superseded audits, kept for history only. Do not build from them |

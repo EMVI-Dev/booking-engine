@@ -113,6 +113,7 @@ test('doku webhook notification marks payment as paid and reservation as confirm
     $response = $this->postJson(route('doku.webhook'), [
         'order' => [
             'invoice_number' => 'INV-TEST-998877',
+            'amount' => (float) $payment->amount,
         ],
         'transaction' => [
             'status' => 'SUCCESS',

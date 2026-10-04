@@ -102,4 +102,7 @@
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-@include('partials.platform-tracking')
+{{-- Platform analytics: marketing and auth pages only, never the operator desk or admin. --}}
+@if ($platformTracking ?? true)
+    @include('partials.platform-tracking')
+@endif

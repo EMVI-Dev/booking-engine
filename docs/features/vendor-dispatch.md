@@ -1,6 +1,6 @@
 # Vendor Management & Automated Dispatch Specification
 
-_Last reviewed: 2026-10-02_
+_Last reviewed: 2026-10-03_
 
 ## Overview
 
@@ -88,9 +88,9 @@ All three go through [`BookingNotificationService`](../../app/Services/BookingNo
 * **Guest Manifest:** Lead guest name, contact, party size, and special requests.
 * **Call to Action:** **"View Full Booking Details →"** button linking to the tokenized dispatch sheet.
 
-### Token-Secured Vendor Dispatch View (`/find-booking/{reservation}/vendor`)
-* **URL:** `GET /find-booking/{reservation->public_token}/vendor?token={public_token}`
-* **Security:** Secured by matching `token === reservation.public_token` (no vendor login required; 403 on missing or invalid token).
+### Token-Secured Vendor Dispatch View (`/vendor-dispatch/{vendor_token}`)
+* **URL:** `GET /vendor-dispatch/{reservation->vendor_token}` on the operator's storefront host.
+* **Security:** `vendor_token` is a separate 48-character random token made for each booking. It is not the guest's `public_token`, so a vendor link cannot open the guest receipt, pay or cancel. Unknown tokens, and tokens for another shop's booking, get a 404. No vendor login is needed.
 * **Display:**
   * Booker / Operator Card (with 1-tap WhatsApp and Call buttons).
   * Guest Manifest & Special Requests.

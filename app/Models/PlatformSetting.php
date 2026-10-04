@@ -30,7 +30,29 @@ class PlatformSetting extends Model
     /**
      * Get the singleton or latest platform settings instance.
      */
+    public const CURRENT_BINDING = 'platform.settings.current';
+
+    /**
+     * The platform settings row, loaded once per request or queued job (a scoped binding,
+     * see AppServiceProvider) and reloaded after any save.
+     */
     public static function current(): self
+    {
+        return app(self::CURRENT_BINDING);
+    }
+
+    protected static function booted(): void
+    {
+        $forget = fn () => app()->forgetInstance(self::CURRENT_BINDING);
+
+        static::saved($forget);
+        static::deleted($forget);
+    }
+
+    /**
+     * Load (or create on first boot) the singleton settings row.
+     */
+    public static function loadCurrent(): self
     {
         return static::firstOrCreate([], [
             'settings' => [
@@ -68,7 +90,8 @@ class PlatformSetting extends Model
      */
     public function calculateGuestServiceFee(float $subtotal, ?Operator $operator = null): float
     {
-        $rawFee = round($subtotal * $this->getGuestServiceFeeRate(), 2);
+        // Rupiah has no cents and DOKU takes whole amounts only.
+        $rawFee = round($subtotal * $this->getGuestServiceFeeRate());
         $cap = $this->getGuestServiceFeeCap();
 
         return $cap > 0 ? min($rawFee, $cap) : $rawFee;
@@ -158,8 +181,7 @@ class PlatformSetting extends Model
     }
 
     /**
-     * Existing operators and the demo desk stay available even when
-     * REGISTRATION_ENABLED=false (sign-up can stay closed).
+     * Existing operators and the demo desk can always sign in, even during maintenance.
      */
     public function operatorLoginAllowed(): bool
     {

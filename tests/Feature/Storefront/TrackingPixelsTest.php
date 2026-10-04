@@ -74,4 +74,5 @@ it('renders purchase conversion tracking on booking confirmation receipt', funct
     $response->assertSee("fbq('track', 'Purchase'", false);
     $response->assertSee('1500000', false);
     $response->assertSee("gtag('event', 'purchase'", false);
+    $response->assertSee('booking-confirmed', false);
 });

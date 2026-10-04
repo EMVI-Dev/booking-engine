@@ -54,7 +54,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Reference', 'Operator', 'Bank Provider', 'Bank Account Number', 'Bank Account Name', 'Amount', 'Status', 'Notes', 'Rejection Reason', 'Requested At', 'Processed At']);
+            \App\Services\CsvExportService::writeRow($handle, ['Reference', 'Operator', 'Bank Provider', 'Bank Account Number', 'Bank Account Name', 'Amount', 'Status', 'Notes', 'Rejection Reason', 'Requested At', 'Processed At']);
 
             PayoutRequest::query()
                 ->with('operator')
@@ -74,7 +74,7 @@ new #[Title('Payouts')] #[Layout('layouts.admin')] class extends Component
                 ->latest()
                 ->chunk(100, function ($payouts) use ($handle) {
                     foreach ($payouts as $payout) {
-                        fputcsv($handle, [
+                        \App\Services\CsvExportService::writeRow($handle, [
                             $payout->reference_number,
                             $payout->operator?->name ?? 'Deleted Operator',
                             $payout->bank_provider,

@@ -8,6 +8,7 @@ use App\Concerns\UsesMediaStore;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -40,6 +41,7 @@ new #[Title('Create Tour Package')] class extends Component {
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
     public $coverPhoto = null;
 
+    #[Locked]
     public ?string $existingCoverPhoto = null;
 
     /** @var array<\Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
@@ -50,6 +52,7 @@ new #[Title('Create Tour Package')] class extends Component {
      *
      * @var list<string>
      */
+    #[Locked]
     public array $existingGallery = [];
 
     #[Computed]

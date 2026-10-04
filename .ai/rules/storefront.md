@@ -40,3 +40,9 @@ Product and package detail pages prefer listing cancellation_terms, then listing
 
 ## Detail pages: meta, gallery, share, breadcrumb
 Detail pages show book-ahead tiles when advance_booking_hours > 0, breadcrumbs (Home › Tour Packages|Single Activities › title), Copy link + Ask about this trip (WhatsApp) via listing-share, and Alpine lightbox via listing-gallery. Package detail lists bundled activities from getRequiredProducts (link when published + standalone). Package location uses location, not destination.
+
+## Unknown hosts are 404; dead custom domains redirect
+Only the platform root host renders the welcome page. An unknown slug or external host returns 404. A custom domain that is no longer live 302s to the same path on the operator's slug address (IdentifyOperatorDomain).
+
+## Receipt analytics never see the guest link
+On the receipt page GA gets a neutral page_location (/booking-confirmed). Tracking values are printed with @js.

@@ -22,6 +22,8 @@ new #[Title('Payout bank account')] class extends Component {
      */
     public function mount(): void
     {
+        $this->authorizeAbility('manageBilling');
+
         /** @var Operator|null $operator */
         $operator = $this->currentOperator;
         if ($operator) {

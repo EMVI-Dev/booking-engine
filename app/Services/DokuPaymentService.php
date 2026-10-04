@@ -158,7 +158,7 @@ class DokuPaymentService
             invoiceNumber: $invoiceNumber,
             amount: (float) $payment->amount,
             callbackUrl: route('storefront.reservation.receipt', $reservation),
-            dueMinutes: 30,
+            dueMinutes: $this->checkoutDueMinutes($reservation),
             customer: [
                 'name' => $reservation->guest_name,
                 'email' => $reservation->guest_email ?: 'guest@travelengine.id',
@@ -166,6 +166,19 @@ class DokuPaymentService
             ],
             operator: $reservation->operator,
         );
+    }
+
+    /**
+     * How long the DOKU payment page stays open: the time left on the seat hold, so a guest
+     * cannot pay after the seats were released.
+     */
+    private function checkoutDueMinutes(Reservation $reservation): int
+    {
+        if ($reservation->hold_expires_at === null) {
+            return PlatformSetting::current()->getBookingHoldMinutes();
+        }
+
+        return max(1, (int) ceil(now()->diffInSeconds($reservation->hold_expires_at, false) / 60));
     }
 
     /**
@@ -253,8 +266,10 @@ class DokuPaymentService
      * Process an incoming notification / webhook callback from DOKU.
      *
      * @param  array<string, mixed>  $payload
+     * @param  bool  $requireAmount  Webhook callbacks must state the paid amount; status syncs
+     *                               (our own DOKU status query) carry no amount.
      */
-    public function processNotification(array $payload): bool
+    public function processNotification(array $payload, bool $requireAmount = false): bool
     {
         Log::info('DOKU payment notification received', [
             'invoice_number' => (string) (
@@ -293,6 +308,12 @@ class DokuPaymentService
             ?? $payload['amount']
             ?? null;
         $paidAmount = is_numeric($rawAmount) ? (float) $rawAmount : null;
+
+        if ($requireAmount && $paidAmount === null && in_array(strtoupper($transactionStatus), ['SUCCESS', 'PAID', '00'], true)) {
+            Log::warning('DOKU notification rejected: a success callback without an amount');
+
+            return false;
+        }
         $channelId = (string) (
             $payload['channel']['id']
             ?? $payload['payment']['payment_method_type']

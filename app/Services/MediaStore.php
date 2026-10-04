@@ -13,6 +13,12 @@ use RuntimeException;
 
 class MediaStore
 {
+    /**
+     * When set, every delete and copy must stay inside this operator's folder
+     * ("operators/{id}/"), so one tenant can never touch another tenant's files.
+     */
+    protected ?string $scopePrefix = null;
+
     public const int COVER_MAX_WIDTH = 1600;
 
     public const int LOGO_MAX_WIDTH = 800;
@@ -40,9 +46,40 @@ class MediaStore
         return static::disk()->url($path);
     }
 
+    /**
+     * A copy of the store limited to one operator's media folder.
+     */
+    public function scopedTo(Operator|string $operator): static
+    {
+        $scoped = clone $this;
+        $scoped->scopePrefix = $this->directoryFor($operator).'/';
+
+        return $scoped;
+    }
+
+    /**
+     * Whether a stored path may be touched by this (possibly scoped) store.
+     */
+    public function owns(string $path): bool
+    {
+        if ($this->scopePrefix === null) {
+            return true;
+        }
+
+        $normalized = ltrim(str_replace('\\', '/', $path), '/');
+
+        return ! str_contains($normalized, '..') && str_starts_with($normalized, $this->scopePrefix);
+    }
+
     public function delete(?string $path): void
     {
         if (! filled($path) || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return;
+        }
+
+        if (! $this->owns($path)) {
+            report(new RuntimeException("Refused to delete media outside the operator folder: {$path}"));
+
             return;
         }
 
@@ -61,6 +98,10 @@ class MediaStore
 
     public function deleteDirectory(string $directory): void
     {
+        if (! $this->owns(rtrim($directory, '/').'/')) {
+            throw new InvalidArgumentException('That media folder does not belong to this operator.');
+        }
+
         static::disk()->deleteDirectory($directory);
     }
 
@@ -71,6 +112,10 @@ class MediaStore
     {
         if (! filled($path) || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
             throw new InvalidArgumentException('A stored media path is required to copy.');
+        }
+
+        if (! $this->owns($path)) {
+            throw new InvalidArgumentException('That media file does not belong to this operator.');
         }
 
         if (! static::disk()->exists($path)) {

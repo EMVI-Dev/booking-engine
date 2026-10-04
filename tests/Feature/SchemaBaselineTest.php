@@ -93,12 +93,8 @@ test('production admin seeder requires an admin password', function () {
 test('production seed creates plans and an admin without sample operators', function () {
     $this->app['env'] = 'production';
 
-    putenv('ADMIN_EMAIL=admin@travelengine.id');
-    $_ENV['ADMIN_EMAIL'] = 'admin@travelengine.id';
-    $_SERVER['ADMIN_EMAIL'] = 'admin@travelengine.id';
-    putenv('ADMIN_PASSWORD=secret-admin-pass');
-    $_ENV['ADMIN_PASSWORD'] = 'secret-admin-pass';
-    $_SERVER['ADMIN_PASSWORD'] = 'secret-admin-pass';
+    // Production reads cached config, never env(), so the seeder must work from config alone.
+    config(['platform.admin_email' => 'admin@travelengine.id', 'platform.admin_password' => 'secret-admin-pass']);
 
     $this->artisan('db:seed', [
         '--class' => DatabaseSeeder::class,
@@ -114,9 +110,6 @@ test('production seed creates plans and an admin without sample operators', func
         ->and(Operator::query()->where('slug', 'bali-ride-tours')->exists())->toBeFalse();
 
     $this->app['env'] = 'testing';
-    putenv('ADMIN_EMAIL');
-    putenv('ADMIN_PASSWORD');
-    unset($_ENV['ADMIN_EMAIL'], $_SERVER['ADMIN_EMAIL'], $_ENV['ADMIN_PASSWORD'], $_SERVER['ADMIN_PASSWORD']);
 });
 
 test('local seed includes the demo operator catalog', function () {

@@ -16,7 +16,6 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     Cache::flush();
-    config(['fortify.registration_enabled' => true]);
 
     $this->operator = Operator::factory()->create([
         'name' => 'Quiet Harbor Tours',

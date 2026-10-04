@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\OperatorActivitySlackNotifier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -93,6 +94,16 @@ new #[Title('Your team')] class extends Component {
         $operator = $this->currentOperator;
         abort_unless($operator, 403);
 
+        // Each invite sends an email; cap it so the form cannot be used to spam inboxes.
+        $inviteKey = 'team-invite:'.$operator->id;
+        if (RateLimiter::tooManyAttempts($inviteKey, 20)) {
+            $this->dispatch('close-modal', 'confirm-team-invite');
+            $this->addError('invite_email', __('Too many invites for now. Please try again in an hour.'));
+
+            return;
+        }
+        RateLimiter::hit($inviteKey, 3600);
+
         if (! $operator->canAddTeamMember()) {
             $this->dispatch('close-modal', 'confirm-team-invite');
             $this->addError('invite_email', __('Your free plan includes you and one helper. Move to Pro to add more people.'));
@@ -100,8 +111,20 @@ new #[Title('Your team')] class extends Component {
             return;
         }
 
-        $user = User::query()->firstOrCreate(
-            ['email' => strtolower(trim($validated['invite_email']))],
+        $email = strtolower(trim($validated['invite_email']));
+        $existing = User::query()->where('email', $email)->first();
+
+        // One login belongs to one business. Never pull someone else's account (or a platform
+        // admin) into this team without their say.
+        if ($existing && ($existing->isAdmin() || $existing->operators()->whereKeyNot($operator->id)->exists())) {
+            $this->dispatch('close-modal', 'confirm-team-invite');
+            $this->addError('invite_email', __('This email already has its own TravelEngine account. Ask them for a different email to join your team.'));
+
+            return;
+        }
+
+        $user = $existing ?? User::query()->firstOrCreate(
+            ['email' => $email],
             [
                 'name' => $validated['invite_name'],
                 'password' => Str::password(32),
@@ -175,6 +198,7 @@ new #[Title('Your team')] class extends Component {
         }
 
         $operator->users()->detach($userId);
+        $operator->rotateCalendarFeedToken();
         unset($this->teammates);
 
         $this->dispatch(

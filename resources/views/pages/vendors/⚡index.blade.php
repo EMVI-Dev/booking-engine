@@ -40,6 +40,11 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
     /**
      * Get current operator for authenticated user.
      */
+    public function mount(): void
+    {
+        $this->authorizeAbility('manageCatalog');
+    }
+
     public function getOperatorProperty(): ?Operator
     {
         /** @var \App\Models\User $user */
@@ -70,6 +75,8 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
      */
     public function createVendor(): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $this->resetErrorBag();
         $this->editing_id = null;
         $this->name = '';
@@ -88,6 +95,8 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
      */
     public function editVendor(string $id): void
     {
+        $this->authorizeAbility('manageCatalog');
+
         $this->resetErrorBag();
         $operator = $this->operator;
 

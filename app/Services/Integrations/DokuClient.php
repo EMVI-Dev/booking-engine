@@ -120,7 +120,7 @@ class DokuClient
             Log::error('DOKU checkout session creation failed', [
                 'status' => $response->status(),
                 'invoice_number' => $invoiceNumber,
-                'error' => $response->json() ?? $response->body(),
+                'error' => $this->errorSummary($response),
             ]);
 
             return null;
@@ -171,7 +171,7 @@ class DokuClient
             Log::warning('DOKU refund was rejected', [
                 'invoice_number' => $invoiceNumber,
                 'status' => $response->status(),
-                'error' => $response->json() ?? $response->body(),
+                'error' => $this->errorSummary($response),
             ]);
         }
 
@@ -210,7 +210,7 @@ class DokuClient
             Log::warning('DOKU payout was rejected', [
                 'reference' => $reference,
                 'status' => $response->status(),
-                'error' => $response->json() ?? $response->body(),
+                'error' => $this->errorSummary($response),
             ]);
         }
 
@@ -339,5 +339,19 @@ class DokuClient
 
             return null;
         }
+    }
+
+    /**
+     * Only DOKU's error code and message, never the whole body: DOKU can echo the request
+     * back, which carries guest names, phone numbers and bank accounts.
+     *
+     * @return array{code: mixed, message: mixed}
+     */
+    private function errorSummary(Response $response): array
+    {
+        return [
+            'code' => $response->json('error.code') ?? $response->json('response_code') ?? $response->json('code'),
+            'message' => Str::limit((string) json_encode($response->json('error.message') ?? $response->json('message') ?? $response->json('response_message')), 200),
+        ];
     }
 }

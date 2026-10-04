@@ -27,6 +27,11 @@ new #[Title('Wallet & Payouts')] class extends Component {
     public string $payoutAmount = '';
     public string $payoutNotes = '';
 
+    public function mount(): void
+    {
+        $this->authorizeAbility('manageWallet');
+    }
+
     public function updatedActiveTab(): void
     {
         $this->resetPage();

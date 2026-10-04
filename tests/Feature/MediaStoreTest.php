@@ -69,3 +69,25 @@ test('uploads are stored under the operator folder', function () {
 test('the r2 disk public url is the storage subdomain', function () {
     expect(config('filesystems.disks.r2.url'))->toBe('https://storage.travelengine.id');
 });
+
+test('a store scoped to one operator never deletes or copies another operator\'s files', function () {
+    $mine = Operator::factory()->create();
+    $theirs = Operator::factory()->create();
+    $disk = Storage::disk(MediaStore::diskName());
+
+    $theirPath = $this->media->directoryFor($theirs, 'catalog').'/cover.webp';
+    $myPath = $this->media->directoryFor($mine, 'catalog').'/cover.webp';
+    $disk->put($theirPath, 'x');
+    $disk->put($myPath, 'x');
+
+    $scoped = $this->media->scopedTo($mine);
+
+    $scoped->delete($theirPath);
+    $scoped->delete('operators/'.$mine->id.'/../'.$theirs->id.'/catalog/cover.webp');
+    $disk->assertExists($theirPath);
+
+    expect(fn () => $scoped->copy($theirPath, $this->media->directoryFor($mine, 'catalog')))->toThrow(InvalidArgumentException::class);
+
+    $scoped->delete($myPath);
+    $disk->assertMissing($myPath);
+});

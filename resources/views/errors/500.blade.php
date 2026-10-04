@@ -4,7 +4,7 @@
 @section('code', '500')
 @section('icon', 'fa-solid fa-triangle-exclamation')
 @section('heading', __('Something went wrong'))
-@section('message', ! empty($exception?->getMessage()) ? $exception->getMessage() : __('An unexpected error occurred. Try again in a moment, or message the team if it keeps happening.'))
+@section('message', __('An unexpected error occurred. Try again in a moment, or message the team if it keeps happening.'))
 
 @section('actions')
     <button type="button"

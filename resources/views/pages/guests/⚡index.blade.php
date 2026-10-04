@@ -206,6 +206,8 @@ new #[Title('Guest CRM')] class extends Component {
 
     public function exportCsv(): StreamedResponse
     {
+        $this->authorizeAbility('manageReservations');
+
         abort_unless($this->currentOperator?->hasFeature('guest_crm') ?? false, 403);
 
         $filename = 'guests-'.now()->format('Y-m-d').'.csv';
@@ -213,7 +215,7 @@ new #[Title('Guest CRM')] class extends Component {
 
         return response()->streamDownload(function () use ($rows): void {
             $out = fopen('php://output', 'w');
-            fputcsv($out, [
+            \App\Services\CsvExportService::writeRow($out, [
                 'Name',
                 'Email',
                 'Phone',
@@ -226,7 +228,7 @@ new #[Title('Guest CRM')] class extends Component {
             ]);
 
             foreach ($rows as $guest) {
-                fputcsv($out, [
+                \App\Services\CsvExportService::writeRow($out, [
                     $guest->name,
                     $guest->email,
                     $guest->phone,

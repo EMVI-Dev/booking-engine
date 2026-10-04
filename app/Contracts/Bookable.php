@@ -4,6 +4,7 @@ namespace App\Contracts;
 
 use App\Models\Operator;
 use App\Models\Product;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -22,6 +23,11 @@ interface Bookable
     public function getFreeCancellationHours(): int;
 
     public function getAdvanceBookingHours(): int;
+
+    /**
+     * The first trip date a guest may book (advance-booking hours from now, as a date).
+     */
+    public function earliestBookableDate(?CarbonInterface $fromTime = null): CarbonInterface;
 
     /**
      * @return array<int, string>

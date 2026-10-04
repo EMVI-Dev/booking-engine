@@ -3,14 +3,17 @@
 namespace App\Services;
 
 use App\Contracts\Bookable;
+use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Exceptions\CapacityUnavailableException;
 use App\Models\Operator;
-use App\Models\PlatformCoupon;
+use App\Models\Payment;
 use App\Models\PlatformSetting;
 use App\Models\Reservation;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * The only way a booking hold is created: storefront checkout and operator booking links both
@@ -28,7 +31,8 @@ class ReservationBookingService
     /**
      * Hold seats for 30 minutes (platform setting) and open a payment session.
      *
-     * Validation errors use the keys `requested_date`, `coupon_code` and `bookable`.
+     * Validation errors use the keys `requested_date`, `coupon_code`, `bookable` and `payment`
+     * (the payment page could not be opened; the hold is released).
      *
      * @param  Bookable&Model  $bookable
      * @param  array{name: string, contact: string, email?: ?string, notes?: ?string}  $guest
@@ -45,8 +49,18 @@ class ReservationBookingService
         array $guest,
         ?string $couponCode = null,
         bool $notifyGuest = true,
+        bool $enforceAdvanceBooking = true,
     ): array {
         $operator->assertCheckoutAllowed();
+
+        $earliest = $enforceAdvanceBooking ? $bookable->earliestBookableDate() : now()->startOfDay();
+        if (Carbon::parse($requestedDate)->startOfDay()->lt($earliest)) {
+            throw ValidationException::withMessages([
+                'requested_date' => $enforceAdvanceBooking && $bookable->getAdvanceBookingHours() > 0
+                    ? __('Please choose a date at least :hours hours in advance.', ['hours' => $bookable->getAdvanceBookingHours()])
+                    : __('Please choose today or a later date.'),
+            ]);
+        }
 
         if ($bookable->getOperatorId() !== (string) $operator->id || ! $bookable->isPublished()) {
             throw ValidationException::withMessages([
@@ -92,11 +106,17 @@ class ReservationBookingService
             ]),
         );
 
-        if ($quote->couponCode !== null) {
-            PlatformCoupon::findForGuest($quote->couponCode, $operator)?->incrementUsage();
-        }
+        // The coupon is counted when the booking is paid (ReservationLifecycleService).
+        try {
+            $session = $this->payments->createPaymentSession($reservation, $quote->total);
+        } catch (Throwable $e) {
+            report($e);
+            $this->releaseUnpayableHold($reservation);
 
-        $session = $this->payments->createPaymentSession($reservation, $quote->total);
+            throw ValidationException::withMessages([
+                'payment' => __('We could not open the payment page right now. Nothing was charged. Please try again in a few minutes.'),
+            ]);
+        }
 
         if ($notifyGuest) {
             $this->notifications->holdCreated($reservation);
@@ -107,5 +127,22 @@ class ReservationBookingService
             'quote' => $quote,
             'checkout_url' => $session['checkout_url'],
         ];
+    }
+
+    /**
+     * The payment page could not be opened: free the seats straight away instead of keeping
+     * them blocked until the hold runs out.
+     */
+    private function releaseUnpayableHold(Reservation $reservation): void
+    {
+        Reservation::query()
+            ->whereKey($reservation->id)
+            ->where('status', ReservationStatus::PaymentPending)
+            ->update(['status' => ReservationStatus::Expired, 'hold_expires_at' => null, 'updated_at' => now()]);
+
+        Payment::query()
+            ->where('reservation_id', $reservation->id)
+            ->where('status', PaymentStatus::Pending)
+            ->update(['status' => PaymentStatus::Failed, 'updated_at' => now()]);
     }
 }

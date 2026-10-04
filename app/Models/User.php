@@ -105,7 +105,11 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             return $this->impersonatedOperator();
         }
 
-        return $this->operators()->first();
+        // A person belongs to one business; if older data has more, always pick the first joined.
+        return $this->operators()
+            ->orderBy('operator_users.created_at')
+            ->orderBy('operators.id')
+            ->first();
     }
 
     /**

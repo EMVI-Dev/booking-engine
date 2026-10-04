@@ -57,6 +57,19 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
         }
     }
 
+    /**
+     * Issue a new feed link; calendars subscribed to the old link stop updating.
+     */
+    public function regenerateFeedUrl(): void
+    {
+        $this->authorizeAbility('manageCatalog');
+
+        $this->currentOperator?->rotateCalendarFeedToken();
+        unset($this->currentOperator);
+
+        $this->dispatch('toast', message: __('New calendar link created. Re-subscribe with the new link.'), type: 'success');
+    }
+
     public function openGoogleSyncModal(): void
     {
         if ($this->hasGoogleCalendarFeature) {
@@ -305,6 +318,16 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                             <span x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy') }}'">{{ __('Copy') }}</span>
                         </button>
                     </div>
+                    @if (auth()->user()?->canOperate($this->currentOperator, 'manageCatalog'))
+                        <button
+                            type="button"
+                            wire:click="regenerateFeedUrl"
+                            wire:confirm="{{ __('Calendars using the current link will stop updating. Continue?') }}"
+                            class="mt-2 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
+                        >
+                            {{ __('Create a new link (stops the old one)') }}
+                        </button>
+                    @endif
                 </div>
 
                 <!-- How to Add Steps -->

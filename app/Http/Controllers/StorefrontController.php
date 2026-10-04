@@ -94,26 +94,23 @@ class StorefrontController extends Controller
     {
         $agent = $this->resolveCurrentOperator($request);
 
-        // If no agent domain is active, render central platform landing page
+        // No operator: the platform landing page, but only on the platform's own host.
+        // Any other host pointed here (unknown or removed domain) is a 404, not a copy of the site.
         if (! $agent) {
-            $registrationOpen = ! PlatformSetting::current()->isPlatformMaintenance();
-            $plans = Plan::catalog();
-            if ($plans->isEmpty()) {
-                Plan::seedDefaultPlans();
-                $plans = Plan::catalog();
-            }
+            abort_unless($this->domainResolver->isPlatformRoot($request->getHost()), 404);
+
+            // Plans come from the seeder on deploy; never write them from a page view.
             $platformDomain = $this->domainResolver->getPlatformDomain();
             $demoStorefrontUrl = $request->getScheme().'://'.config('demo.slug', 'demo').'.'.$platformDomain;
-            $demoOperatorLoginUrl = $demoStorefrontUrl.'/login';
-            $planFeatureRows = Plan::featureCatalog();
 
             return view('welcome', [
-                'registrationOpen' => $registrationOpen,
-                'plans' => $plans,
+                'registrationOpen' => PlatformSetting::current()->operatorRegistrationAllowed(),
+                'plans' => Plan::catalog(),
                 'platformDomain' => $platformDomain,
                 'demoStorefrontUrl' => $demoStorefrontUrl,
-                'demoOperatorLoginUrl' => $demoOperatorLoginUrl,
-                'planFeatureRows' => $planFeatureRows,
+                'demoOperatorLoginUrl' => $demoStorefrontUrl.'/login',
+                'planFeatureRows' => Plan::featureCatalog(),
+                'guestFeeSummary' => app(PlatformSeoService::class)->guestFeeSummary(),
             ]);
         }
 
@@ -472,25 +469,36 @@ class StorefrontController extends Controller
             if ($reservation->bookable->isBlackedOutOn($reservation->requested_date)) {
                 return redirect()->route('home')->with('error', __('This date is no longer available. Please choose another date.'));
             }
+        }
 
-            try {
-                app(CapacityService::class)->assertCanAccommodate(
+        $newHoldEnd = now()->addMinutes(PlatformSetting::current()->getBookingHoldMinutes());
+
+        try {
+            // Guest is retrying payment: re-check the seats and refresh the hold window under the capacity lock.
+            if ($reservation->bookable instanceof Bookable) {
+                app(CapacityService::class)->reserve(
                     $reservation->bookable,
                     $reservation->requested_date,
                     $reservation->pax_count,
+                    fn () => $reservation->update(['hold_expires_at' => $newHoldEnd]),
                     $reservation->id,
                 );
-            } catch (CapacityUnavailableException $e) {
-                return redirect()->route('home')->with('error', $e->getMessage());
+            } else {
+                $reservation->update(['hold_expires_at' => $newHoldEnd]);
             }
+        } catch (CapacityUnavailableException $e) {
+            return redirect()->route('home')->with('error', $e->getMessage());
         }
 
-        // Guest is retrying payment: refresh the hold window
-        $reservation->update([
-            'hold_expires_at' => now()->addMinutes(PlatformSetting::current()->getBookingHoldMinutes()),
-        ]);
+        try {
+            $session = $paymentService->createPaymentSession($reservation, $totalAmount);
+        } catch (\Throwable $e) {
+            report($e);
 
-        $session = $paymentService->createPaymentSession($reservation, $totalAmount);
+            return redirect()
+                ->route('storefront.reservation.receipt', $reservation)
+                ->with('error', __('We could not open the payment page right now. Nothing was charged. Please try again in a few minutes.'));
+        }
 
         return redirect($session['checkout_url']);
     }
@@ -574,15 +582,17 @@ class StorefrontController extends Controller
     /**
      * Show tokenized vendor dispatch sheet for a reservation.
      */
-    public function showVendorDispatch(Request $request, Reservation $reservation): View
+    public function showVendorDispatch(Request $request, string $vendorToken): View
     {
-        $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
+        $reservation = strlen($vendorToken) === 48
+            ? Reservation::query()->where('vendor_token', $vendorToken)->first()
+            : null;
 
-        $token = (string) $request->query('token', '');
-
-        if (empty($token) || ! hash_equals((string) $reservation->public_token, $token)) {
-            abort(403, __('Invalid or missing vendor access token.'));
+        if ($reservation === null) {
+            abort(404);
         }
+
+        $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
 
         $reservation->loadMissing(['operator', 'bookable']);
         $vendorsData = app(VendorDispatchService::class)->resolveVendorsForReservation($reservation);
@@ -616,8 +626,12 @@ class StorefrontController extends Controller
         }
 
         $content .= "Allow: /\n";
-        $content .= "Disallow: /admin/\n";
-        $content .= "Disallow: /dashboard/\n";
+        // No trailing slash: "/dashboard" also covers the bare /dashboard page.
+        $content .= "Disallow: /admin\n";
+        $content .= "Disallow: /dashboard\n";
+        $content .= "Disallow: /settings\n";
+        $content .= "Disallow: /auth/\n";
+        $content .= "Disallow: /vendor-dispatch/\n";
         $content .= "Disallow: /checkout/\n";
         $content .= "Disallow: /reservations/\n";
         $content .= "Disallow: /api/\n";

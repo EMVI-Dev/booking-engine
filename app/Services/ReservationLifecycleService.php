@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Exceptions\CapacityUnavailableException;
 use App\Models\Payment;
+use App\Models\PlatformCoupon;
 use App\Models\Reservation;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +42,7 @@ class ReservationLifecycleService
             return null;
         }
 
-        if (! $this->canStillHonour($reservation)) {
+        if (! $this->canStillHonour($reservation, $lockedPayment)) {
             Log::warning('Payment arrived for a booking that can no longer be honoured; refunding.', [
                 'reservation' => $reservation->code,
                 'status' => $reservation->status->value,
@@ -58,8 +59,27 @@ class ReservationLifecycleService
         ]);
 
         $this->wallet->creditBookingPayment($lockedPayment);
+        $this->countCouponRedemption($reservation);
 
         return $reservation;
+    }
+
+    /**
+     * A guest coupon is counted once the booking is paid, so abandoned checkouts never use it up.
+     */
+    private function countCouponRedemption(Reservation $reservation): void
+    {
+        $code = $reservation->terms_snapshot['coupon_code'] ?? null;
+
+        if (! is_string($code) || $code === '') {
+            return;
+        }
+
+        PlatformCoupon::query()
+            ->where('operator_id', $reservation->operator_id)
+            ->where('code', strtoupper($code))
+            ->first()
+            ?->incrementUsage();
     }
 
     /**
@@ -400,17 +420,26 @@ class ReservationLifecycleService
     /**
      * A late payment can still be honoured while the hold is live, or when the seats are still free.
      */
-    private function canStillHonour(Reservation $reservation): bool
+    private function canStillHonour(Reservation $reservation, Payment $lockedPayment): bool
     {
-        if (in_array($reservation->status, [
-            ReservationStatus::PaymentPending,
-            ReservationStatus::PendingConfirmation,
-            ReservationStatus::Confirmed,
-        ], true)) {
+        // Already paid by another payment (guest paid twice): refund this one.
+        if (in_array($reservation->status, [ReservationStatus::PendingConfirmation, ReservationStatus::Confirmed], true)) {
+            return ! $reservation->payments()
+                ->whereKeyNot($lockedPayment->id)
+                ->where('status', PaymentStatus::Paid)
+                ->exists();
+        }
+
+        $holdIsLive = $reservation->status === ReservationStatus::PaymentPending
+            && ($reservation->hold_expires_at === null || $reservation->hold_expires_at->isFuture());
+
+        if ($holdIsLive) {
             return true;
         }
 
-        if (! in_array($reservation->status, [ReservationStatus::Expired, ReservationStatus::Declined], true)) {
+        // A hold that ran out (whether or not the expiry job has run yet) is honoured only
+        // while the seats are still free.
+        if (! in_array($reservation->status, [ReservationStatus::PaymentPending, ReservationStatus::Expired, ReservationStatus::Declined], true)) {
             return false;
         }
 
@@ -419,7 +448,9 @@ class ReservationLifecycleService
         }
 
         try {
-            $this->capacity->assertCanAccommodate($reservation->bookable, $reservation->requested_date, $reservation->pax_count, $reservation->id);
+            // Runs inside the payment transaction: lock the activities and read the latest seats.
+            $this->capacity->lockActivities($reservation->bookable);
+            $this->capacity->assertCanAccommodate($reservation->bookable, $reservation->requested_date, $reservation->pax_count, $reservation->id, locking: true);
         } catch (CapacityUnavailableException) {
             return false;
         }

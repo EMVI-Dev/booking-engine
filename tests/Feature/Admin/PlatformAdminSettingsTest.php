@@ -142,7 +142,6 @@ test('platform admin can update global platform settings', function () {
 });
 
 test('platform admin must confirm before turning on platform maintenance', function () {
-    config(['fortify.registration_enabled' => true]);
 
     $this->actingAs($this->adminUser);
 

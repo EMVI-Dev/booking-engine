@@ -6,6 +6,7 @@ use App\Contracts\CustomDomainProvider;
 use App\Http\Middleware\EnsureOnPlatformDomain;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\Package;
+use App\Models\PlatformSetting;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\CustomDomains\LaravelCloudDomainProvider;
@@ -37,6 +38,9 @@ class AppServiceProvider extends ServiceProvider
             'laravel_cloud' => $app->make(LaravelCloudDomainProvider::class),
             default => $app->make(LocalDomainProvider::class),
         });
+
+        // One settings query per request / queued job instead of one per call.
+        $this->app->scoped(PlatformSetting::CURRENT_BINDING, fn (): PlatformSetting => PlatformSetting::loadCurrent());
     }
 
     /**

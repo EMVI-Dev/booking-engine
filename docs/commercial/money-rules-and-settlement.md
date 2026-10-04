@@ -1,6 +1,6 @@
 # EMVI Booking Engine Platform — Canonical V1 Money Rules & Settlement Specification (Rev. 17)
 
-_Last reviewed: 2026-10-02_
+_Last reviewed: 2026-10-03_
 
 > **Authoritative source of truth** for engineering, finance, platform operations, merchant legal terms and support accounting. Prices and plan limits live in [plans-and-pricing.md](plans-and-pricing.md).
 
@@ -11,6 +11,13 @@ This spec describes the target rules. The table shows what the code does today, 
 | Rule | Status in code |
 | :--- | :--- |
 | 100% of listed price to operator; 5% guest fee capped at Rp 250.000 | **Done.** `BookingPricingService`, `WalletService::creditBookingPayment()` |
+| Amounts are whole rupiah (fee, discount, total), as DOKU takes no cents | **Done.** `BookingPricingService`, `PlatformSetting::calculateGuestServiceFee()` |
+| Guest coupon use is counted when the booking is paid, not when the hold is made | **Done.** `ReservationLifecycleService::applyPaidPayment()` |
+| A second payment on an already paid booking is refunded, never credited twice | **Done.** `ReservationLifecycleService::canStillHonour()` |
+| A payment after the hold ran out is honoured only while the seats are still free; otherwise refunded | **Done.** Same check, with a locked capacity read |
+| DOKU payment page closes when the seat hold ends | **Done.** `dueMinutes` = time left on the hold |
+| Payment page cannot be opened: hold released at once, nothing charged | **Done.** `ReservationBookingService::createHold()` |
+| Only approved shops take payments (not pending, suspended or demo) | **Done.** `Operator::assertCheckoutAllowed()` |
 | Escrow until trip day, then cleared | **Done.** `wallet:release-escrows`, hourly; clears from 00:00 WITA on the trip day |
 | Payouts: minimum Rp 50.000; Rp 2.500 fee under Rp 500.000; auto BI-FAST up to Rp 10.000.000, larger amounts wait for an admin | **Done.** `WalletService` (`createPayoutRequest`, `disbursePayout`, approve or reject) |
 | Payout claim is atomic (no double send) and a failed bank transfer returns to pending | **Done** |

@@ -4,7 +4,7 @@
 @section('code', '401')
 @section('icon', 'fa-solid fa-user-lock')
 @section('heading', __('Authentication required'))
-@section('message', ! empty($exception?->getMessage()) ? $exception->getMessage() : __('You must be signed in with an authorized account to view this page.'))
+@section('message', ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface && $exception->getPrevious() === null && filled($exception->getMessage())) ? $exception->getMessage() : __('You must be signed in with an authorized account to view this page.'))
 
 @section('actions')
     <a href="{{ route('login') }}"

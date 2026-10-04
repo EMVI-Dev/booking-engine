@@ -1,6 +1,6 @@
 # Operator Portal, Coupons & Financial Operations Spec
 
-_Version: 2026-09-27 · Last reviewed: 2026-10-02 · TravelEngine Core Platform_
+_Version: 2026-09-27 · Last reviewed: 2026-10-03 · TravelEngine Core Platform_
 
 This document specifies the architecture, security isolation, and operational workflows for promotional coupons, dedicated analytics reporting, billing invoices, guest CRM profiles, and subdomain desk authentication handoffs.
 
@@ -61,9 +61,10 @@ Operators frequently sign in from the marketing landing page on the platform ape
 
 ### 2.2 Secure Signed Handoff Flow
 1. Upon successful authentication (password, passkey, or 2FA challenge), `App\Http\Responses\LoginResponse`, `PasskeyLoginResponse`, and `TwoFactorLoginResponse` detect if the user has an active operator.
-2. If the user is currently on the platform apex, the system generates a cryptographically signed, short-lived (5-minute) handoff URL:
-   `https://{slug}.travelengine.id/auth/login-handoff?signature=...&intended=...&remember=...`
-3. The destination subdomain controller (`LoginHandoffController`) validates the signature, signs the user into that subdomain's session, preserves remember cookies, and redirects them to their intended desk URL (defaulting to `/dashboard`).
+2. If the user is currently on the platform apex, `AuthHandoffService` builds a one-time link to their slug desk:
+   `https://{slug}.travelengine.id/auth/login-handoff?user=...&host=...&nonce=...&expires=...&signature=...`
+   It is signed, expires in 5 minutes, works only on the host it was made for, and can be used once (the nonce is consumed from the cache).
+3. The destination controller (`LoginHandoffController`) consumes the link, checks the user belongs to that shop, signs them in, keeps "remember me", and redirects to the intended desk URL (default `/dashboard`). A used, expired or foreign link gets a 403 asking them to log in.
 4. Operators already logging in from their own subdomain desk remain on that host without unnecessary redirects.
 5. Registration uses the same signed handoff. New operators must verify their email; the verification link is built for the slug host (`Operator::slugDeskRoot()`), where their session lives.
 

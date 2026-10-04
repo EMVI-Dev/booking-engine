@@ -8,6 +8,8 @@
     $conversionAmount = $conversionAmount ?? 0;
     $conversionCurrency = $conversionCurrency ?? 'IDR';
     $conversionTransactionId = $conversionTransactionId ?? '';
+    // Receipt URLs carry the guest's private link token; analytics gets a neutral URL instead.
+    $redactedPageLocation = $redactedPageLocation ?? null;
 @endphp
 
 @if ($agent)
@@ -23,7 +25,7 @@
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','{{ $gtmId }}');
+            })(window,document,'script','dataLayer',@js($gtmId));
         </script>
     @endif
 
@@ -34,13 +36,13 @@
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', '{{ $gaId }}');
+            gtag('config', @js($gaId){!! $redactedPageLocation ? ', '.\Illuminate\Support\Js::from(['page_location' => $redactedPageLocation, 'page_referrer' => '']) : '' !!});
 
             @if ($isConversion && $conversionAmount > 0)
                 gtag('event', 'purchase', {
-                    transaction_id: '{{ $conversionTransactionId }}',
-                    value: {{ $conversionAmount }},
-                    currency: '{{ $conversionCurrency }}'
+                    transaction_id: @js($conversionTransactionId),
+                    value: @js((float) $conversionAmount),
+                    currency: @js($conversionCurrency)
                 });
             @endif
         </script>
@@ -57,13 +59,13 @@
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '{{ $metaPixelId }}');
+            fbq('init', @js($metaPixelId));
             fbq('track', 'PageView');
 
             @if ($isConversion && $conversionAmount > 0)
                 fbq('track', 'Purchase', {
-                    value: {{ $conversionAmount }},
-                    currency: '{{ $conversionCurrency }}'
+                    value: @js((float) $conversionAmount),
+                    currency: @js($conversionCurrency)
                 });
             @endif
         </script>

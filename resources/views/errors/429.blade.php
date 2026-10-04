@@ -4,7 +4,7 @@
 @section('code', '429')
 @section('icon', 'fa-solid fa-gauge-high')
 @section('heading', __('Too many requests'))
-@section('message', ! empty($exception?->getMessage()) ? $exception->getMessage() : __('You have made too many requests recently. Please pause for a moment before trying again.'))
+@section('message', ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface && $exception->getPrevious() === null && filled($exception->getMessage())) ? $exception->getMessage() : __('You have made too many requests recently. Please pause for a moment before trying again.'))
 
 @section('actions')
     <button type="button"

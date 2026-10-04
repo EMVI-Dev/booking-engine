@@ -193,12 +193,7 @@ test('operators logging in on platform host are redirected to their own slug des
         ->and($location)->toContain('://blue-reef.')
         ->and($location)->toContain('/auth/login-handoff');
 
-    $parts = parse_url($location);
-    $handoffPath = ($parts['path'] ?? '').(isset($parts['query']) ? '?'.$parts['query'] : '');
-
-    $this->withServerVariables([
-        'HTTP_HOST' => $parts['host'] ?? 'blue-reef.booking.test',
-    ])->get($handoffPath)
+    $this->get($location)
         ->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticatedAs($owner);
@@ -225,12 +220,7 @@ test('operator login handoff preserves remember me', function () {
     $location = $response->headers->get('Location');
     expect($location)->toContain('remember=1');
 
-    $parts = parse_url($location);
-    $handoffPath = ($parts['path'] ?? '').(isset($parts['query']) ? '?'.$parts['query'] : '');
-
-    $this->withServerVariables([
-        'HTTP_HOST' => $parts['host'] ?? 'coral-bay.booking.test',
-    ])->get($handoffPath)
+    $this->get($location)
         ->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticatedAs($owner);
@@ -243,4 +233,27 @@ test('tampered login handoff url is rejected', function () {
 
     $response = $this->get('/auth/login-handoff?user='.$owner->id.'&signature=invalid');
     $response->assertForbidden();
+});
+
+test('login handoff link works only once and only on its own host', function () {
+    Cache::flush();
+
+    $operator = Operator::factory()->create(['slug' => 'reef-one', 'status' => OperatorStatus::Approved]);
+    $owner = User::factory()->create();
+    $operator->users()->attach($owner->id, ['role' => OperatorUserRole::Owner]);
+
+    $location = $this->post(route('login.store'), [
+        'email' => $owner->email,
+        'password' => 'password',
+    ])->headers->get('Location');
+
+    auth()->logout();
+
+    $otherHost = str_replace('://reef-one.', '://someone-else.', $location);
+    $this->get($otherHost)->assertForbidden();
+
+    $this->get($location)->assertRedirect(route('dashboard', absolute: false));
+
+    auth()->logout();
+    $this->get($location)->assertForbidden();
 });

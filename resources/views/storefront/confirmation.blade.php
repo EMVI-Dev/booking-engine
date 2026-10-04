@@ -22,6 +22,7 @@
         'isConversion' => $isPaid,
         'conversionAmount' => (float) ($latestPayment?->amount ?? $totalAmount),
         'conversionTransactionId' => $reservationCode,
+        'redactedPageLocation' => url('/booking-confirmed'),
     ])
 </head>
 <body class="min-h-screen sf-canvas dark:bg-ebony text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-brand-600 selection:text-brand-foreground antialiased">

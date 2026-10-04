@@ -102,6 +102,7 @@ class VendorDispatchService
                 'bookable_id' => $product->id,
                 'code' => 'DEMO-VND-'.rand(1000, 9999),
                 'public_token' => (string) Str::random(48),
+                'vendor_token' => (string) Str::random(48),
                 'guest_name' => 'Jane Doe (Sample Guest)',
                 'guest_email' => 'sample.guest@example.com',
                 'guest_contact' => '+62 812-3456-7890',

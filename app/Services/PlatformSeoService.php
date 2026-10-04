@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Plan;
+use App\Models\PlatformSetting;
 
 class PlatformSeoService
 {
@@ -34,7 +35,22 @@ class PlatformSeoService
 
     public function homeDescription(): string
     {
-        return 'Website + Booking Engine + Payment in one platform. Add your trips, share one link, and let guests pick a date and pay. QRIS or bank transfer, WhatsApp tickets, and you keep 100% of the listed price.';
+        return 'Website + Booking Engine + Payment in one platform. Add your trips, share one link, and let guests pick a date and pay with QRIS, bank transfer or card, and you keep 100% of the listed price.';
+    }
+
+    /**
+     * The guest service fee as marketing copy, from the live platform setting,
+     * e.g. "5% (max Rp 250.000)". Use this instead of writing the rate into a page.
+     */
+    public function guestFeeSummary(): string
+    {
+        $platform = PlatformSetting::current();
+        $rate = rtrim(rtrim(number_format($platform->getGuestServiceFeeRate() * 100, 2, '.', ''), '0'), '.').'%';
+        $cap = $platform->getGuestServiceFeeCap();
+
+        return $cap > 0
+            ? $rate.' (max '.$platform->getCurrencySymbol().' '.number_format($cap, 0, ',', '.').')'
+            : $rate;
     }
 
     /**
@@ -155,34 +171,12 @@ class PlatformSeoService
                 'Website + Booking Engine + Payment in one platform',
                 'Your own tour shop website',
                 'Direct booking and reservation engine',
-                'QRIS and Indonesian bank transfers',
-                'Tickets on WhatsApp',
+                'QRIS, Indonesian bank transfers and cards',
+                'E-tickets by email, and one-tap WhatsApp messages to guests',
                 'Daily pickup lists for drivers and guides',
                 'You keep 100% of the listed price',
             ],
-            'offers' => [
-                [
-                    '@type' => 'Offer',
-                    'name' => 'Starter Plan',
-                    'price' => '0',
-                    'priceCurrency' => 'IDR',
-                    'description' => 'Free Starter plan forever. Tour website and 24/7 direct booking.',
-                ],
-                [
-                    '@type' => 'Offer',
-                    'name' => 'Growth Plan',
-                    'price' => '299000',
-                    'priceCurrency' => 'IDR',
-                    'description' => 'WhatsApp tickets, daily guest lists, and calendar integration.',
-                ],
-                [
-                    '@type' => 'Offer',
-                    'name' => 'Agency Plan',
-                    'price' => '799000',
-                    'priceCurrency' => 'IDR',
-                    'description' => 'Custom domain (yourbrand.com), remove branding, and AI discovery.',
-                ],
-            ],
+            'offers' => $this->planOffers(),
             'publisher' => [
                 '@id' => url('/').'#organization',
             ],
@@ -190,10 +184,40 @@ class PlatformSeoService
     }
 
     /**
+     * Schema.org offers built from the live plan catalog, so prices never drift from the admin.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function planOffers(): array
+    {
+        $currency = PlatformSetting::current()->getCurrencyCode();
+        $offers = [];
+
+        foreach (Plan::catalog() as $plan) {
+            $offer = [
+                '@type' => 'Offer',
+                'name' => $plan->name.' Plan',
+                'price' => number_format((float) $plan->price_monthly, 0, '.', ''),
+                'priceCurrency' => $currency,
+            ];
+
+            if (filled($plan->tagline)) {
+                $offer['description'] = (string) $plan->tagline;
+            }
+
+            $offers[] = $offer;
+        }
+
+        return $offers;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function faqPage(): array
     {
+        $fee = $this->guestFeeSummary();
+
         $faqs = [
             [
                 'q' => 'What does “Website + Booking Engine + Payment in one platform” mean?',
@@ -201,19 +225,19 @@ class PlatformSeoService
             ],
             [
                 'q' => 'How do I receive payouts from my tour bookings?',
-                'a' => 'When a guest pays with QRIS, a bank transfer, or a card, the money sits in your TravelEngine wallet. After the bank has settled it, we send it to your Indonesian account (BCA, Mandiri, BRI, BNI, and more).',
+                'a' => 'When a guest pays with QRIS, a bank transfer, or a card, the money is held in your TravelEngine wallet until the trip date. From the trip day it becomes available, and you request a payout to your Indonesian bank account (BCA, Mandiri, BRI, BNI, and more). Transfers are sent once the payment has settled with the bank.',
             ],
             [
                 'q' => 'Do I need a designer or a website person?',
-                'a' => 'No. Add photos, prices, and your WhatsApp number. Share the link. That is the whole setup — usually under five minutes.',
+                'a' => 'No. Add photos, prices, and your WhatsApp number, then share the link. Payouts need your bank details too.',
             ],
             [
                 'q' => 'How does “you keep 100%” work?',
-                'a' => 'Your listed price is yours. We take 0% from the ticket — travel websites often take 15% to 30% from you instead. A 5% platform fee is added at checkout, the same idea as other booking apps, so you still receive 100% of the price you listed.',
+                'a' => 'Your listed price is yours. We take 0% from the ticket — travel websites often take 15% to 30% from you instead. A platform fee of '.$fee.' is added at checkout, the same idea as other booking apps, so you still receive 100% of the price you listed.',
             ],
             [
                 'q' => 'What is the platform fee?',
-                'a' => 'It is a small 5% fee added at checkout so you can keep the full ticket price while the shop stays simple to run. Guests see it on the payment screen before they confirm. It does not come out of your payout, and nothing is added later.',
+                'a' => 'It is a small fee of '.$fee.' added at checkout so you can keep the full ticket price while the shop stays simple to run. Guests see it on the payment screen before they confirm. It does not come out of your payout, and nothing is added later.',
             ],
             [
                 'q' => 'Can guests open mybrand.com instead of a long link?',
@@ -269,10 +293,10 @@ class PlatformSeoService
     {
         return [
             '@context' => 'https://schema.org',
-            '@graph' => array_values(array_map(
+            '@graph' => array_map(
                 fn (array $node): array => $this->withoutEmpty($node),
                 array_values(array_filter($nodes)),
-            )),
+            ),
         ];
     }
 

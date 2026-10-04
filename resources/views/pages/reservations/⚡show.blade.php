@@ -69,6 +69,8 @@ new #[Title('Reservation Details')] class extends Component {
 
     public function saveNotes(): void
     {
+        $this->authorizeAbility('manageReservations');
+
         $this->reservation->update([
             'notes' => trim($this->agentNote) !== '' ? trim($this->agentNote) : null,
         ]);
@@ -80,6 +82,8 @@ new #[Title('Reservation Details')] class extends Component {
 
     public function syncPaymentStatus(): void
     {
+        $this->authorizeAbility('manageReservations');
+
         $payment = $this->reservation->latestPayment;
 
         if (!$payment) {
@@ -106,7 +110,7 @@ new #[Title('Reservation Details')] class extends Component {
             }
         } catch (\Throwable $e) {
             report($e);
-            $this->dispatch('toast', message: __('Unable to connect to payment gateway: :msg', ['msg' => $e->getMessage()]), type: 'danger');
+            $this->dispatch('toast', message: __('Could not reach the payment gateway. Please try again in a few minutes.'), type: 'danger');
         }
     }
 

@@ -84,8 +84,8 @@ class DemoOperatorSeeder extends Seeder
         $slug = (string) config('demo.slug', 'demo');
 
         if (! is_string($password) || $password === '') {
-            if (app()->isProduction()) {
-                throw new RuntimeException('Set DEMO_OPERATOR_PASSWORD in .env before seeding the demo operator.');
+            if (! app()->environment(['local', 'testing'])) {
+                throw new RuntimeException('Set DEMO_OPERATOR_PASSWORD before seeding the demo operator outside local and testing.');
             }
 
             $password = 'password';
@@ -326,6 +326,7 @@ class DemoOperatorSeeder extends Seeder
             'status' => ReservationStatus::Confirmed,
             'hold_expires_at' => null,
             'public_token' => Reservation::generateUniquePublicToken(),
+            'vendor_token' => Reservation::generateUniqueVendorToken(),
         ]);
 
         Payment::query()->create([
@@ -370,6 +371,7 @@ class DemoOperatorSeeder extends Seeder
             'status' => ReservationStatus::Confirmed,
             'hold_expires_at' => null,
             'public_token' => Reservation::generateUniquePublicToken(),
+            'vendor_token' => Reservation::generateUniqueVendorToken(),
         ]);
 
         Payment::query()->create([

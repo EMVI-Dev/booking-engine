@@ -3,6 +3,7 @@
 use App\Enums\OperatorStatus;
 use App\Models\Operator;
 use App\Models\Package;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 
@@ -15,7 +16,7 @@ test('platform homepage renders platform Google Analytics tag when configured', 
 
     $response->assertOk();
     $response->assertSee('https://www.googletagmanager.com/gtag/js?id=G-WBQZPFT82S');
-    $response->assertSee("gtag('config', 'G-WBQZPFT82S');", false);
+    $response->assertSee("gtag('config', 'G-WBQZPFT82S')", false);
     $response->assertSee('livewire:navigated');
 });
 
@@ -26,7 +27,7 @@ test('platform login page renders platform Google Analytics tag', function () {
 
     $response->assertOk();
     $response->assertSee('https://www.googletagmanager.com/gtag/js?id=G-WBQZPFT82S');
-    $response->assertSee("gtag('config', 'G-WBQZPFT82S');", false);
+    $response->assertSee("gtag('config', 'G-WBQZPFT82S')", false);
 });
 
 test('platform pages do not render tracking tag when analytics id is not set', function () {
@@ -63,4 +64,13 @@ test('storefront pages do not render platform analytics id', function () {
     $response->assertOk();
     $response->assertSee('G-OPERATOR99');
     $response->assertDontSee('G-WBQZPFT82S');
+});
+
+test('the operator desk and admin never load platform analytics', function () {
+    Config::set('services.google.platform_analytics_id', 'G-WBQZPFT82S');
+
+    $admin = User::factory()->create(['is_admin' => true]);
+    $this->actingAs($admin);
+
+    $this->get(route('admin.dashboard'))->assertOk()->assertDontSee('G-WBQZPFT82S');
 });

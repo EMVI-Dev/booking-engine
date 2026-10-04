@@ -7,9 +7,16 @@ use RuntimeException;
 
 trait UsesMediaStore
 {
+    /**
+     * The media store, limited to the current operator's folder when there is one.
+     */
     protected function media(): MediaStore
     {
-        return app(MediaStore::class);
+        $operator = $this->currentOperator ?? null;
+
+        return $operator === null
+            ? app(MediaStore::class)
+            : app(MediaStore::class)->scopedTo($operator);
     }
 
     public function mediaUrl(?string $path): ?string

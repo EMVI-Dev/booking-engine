@@ -61,7 +61,7 @@ class ProcessReviewRequestJob implements ShouldQueue
             'review_request_sent_at' => now(),
         ]);
 
-        Log::info("Review request email sent to {$this->reservation->guest_email} for #{$this->reservation->code}");
+        Log::info("Review request email sent for #{$this->reservation->code}");
     }
 
     /**

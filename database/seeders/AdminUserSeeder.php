@@ -15,13 +15,14 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Config first: production caches config, and env() is empty once it is cached.
-        $email = (string) (config('platform.admin_email') ?: env('ADMIN_EMAIL', 'admin@travelengine.id'));
-        $password = config('platform.admin_password') ?: env('ADMIN_PASSWORD');
+        $email = (string) (config('platform.admin_email') ?: 'admin@travelengine.id');
+        $password = config('platform.admin_password');
 
+        // The well-known fallback password is only for local machines and tests; staging,
+        // preview and production must set a real one.
         if (! is_string($password) || $password === '') {
-            if (app()->environment('production')) {
-                throw new RuntimeException('Set ADMIN_PASSWORD in .env before seeding production.');
+            if (! app()->environment(['local', 'testing'])) {
+                throw new RuntimeException('Set ADMIN_PASSWORD before seeding this environment.');
             }
 
             $password = 'password';

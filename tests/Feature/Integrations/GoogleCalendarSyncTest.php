@@ -1,12 +1,15 @@
 <?php
 
 use App\Enums\OperatorStatus;
+use App\Enums\OperatorUserRole;
 use App\Enums\ReservationStatus;
 use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Reservation;
+use App\Models\User;
 use App\Services\GoogleCalendarService;
 use Illuminate\Support\Facades\Cache;
+use Livewire\Livewire;
 
 beforeEach(function () {
     Cache::flush();
@@ -95,4 +98,45 @@ test('generates valid 1-click google calendar subscription url', function () {
     $subUrl = $service->buildGoogleCalendarSubscriptionUrl($feedUrl);
 
     expect($subUrl)->toBe('https://calendar.google.com/calendar/r?cid='.urlencode('webcal://example.com/calendar/feed/abc123xyz.ics'));
+});
+
+test('feed has no wildcard CORS header', function () {
+    $token = $this->operator->getCalendarFeedToken();
+
+    $this->get(route('calendar.feed', ['token' => $token]))
+        ->assertOk()
+        ->assertHeaderMissing('Access-Control-Allow-Origin');
+});
+
+test('rotating the feed token kills the old link', function () {
+    $old = $this->operator->getCalendarFeedToken();
+    $new = $this->operator->rotateCalendarFeedToken();
+
+    expect($new)->not->toBe($old);
+    $this->get(route('calendar.feed', ['token' => $old]))->assertNotFound();
+    $this->get(route('calendar.feed', ['token' => $new]))->assertOk();
+});
+
+test('removing a teammate rotates the feed token', function () {
+    $owner = User::factory()->create();
+    $guide = User::factory()->create();
+    $this->operator->users()->attach($owner->id, ['role' => OperatorUserRole::Owner]);
+    $this->operator->users()->attach($guide->id, ['role' => OperatorUserRole::Reservation]);
+    $old = $this->operator->getCalendarFeedToken();
+
+    $this->actingAs($owner);
+    Livewire::test('pages::settings.team')->call('removeTeammate', $guide->id);
+
+    expect($this->operator->fresh()->getCalendarFeedToken())->not->toBe($old);
+});
+
+test('only catalog managers can regenerate the feed link', function () {
+    $finance = User::factory()->create();
+    $this->operator->users()->attach($finance->id, ['role' => OperatorUserRole::Finance]);
+    $old = $this->operator->getCalendarFeedToken();
+
+    $this->actingAs($finance);
+    Livewire::test('pages::calendar.index')->call('regenerateFeedUrl')->assertForbidden();
+
+    expect($this->operator->fresh()->getCalendarFeedToken())->toBe($old);
 });

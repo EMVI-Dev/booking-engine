@@ -139,7 +139,7 @@ test('doku webhook rejects a notification whose signature does not match the bod
     config()->set('doku.sandbox.client_id', 'BRN-CLIENT');
     config()->set('doku.sandbox.secret_key', 'super-secret');
 
-    $body = json_encode(['order' => ['invoice_number' => 'INV-SECURE-1'], 'transaction' => ['status' => 'SUCCESS']]);
+    $body = json_encode(['order' => ['invoice_number' => 'INV-SECURE-1', 'amount' => 1500000], 'transaction' => ['status' => 'SUCCESS']]);
     $headers = dokuSignedHeaders($body, 'BRN-CLIENT', 'the-wrong-secret');
 
     $this->call('POST', route('doku.webhook'), [], [], [], $headers, $body)
@@ -153,7 +153,7 @@ test('doku webhook accepts a correctly signed notification and confirms the rese
     config()->set('doku.sandbox.secret_key', 'super-secret');
     Mail::fake();
 
-    $body = json_encode(['order' => ['invoice_number' => 'INV-SECURE-1'], 'transaction' => ['status' => 'SUCCESS']]);
+    $body = json_encode(['order' => ['invoice_number' => 'INV-SECURE-1', 'amount' => 1500000], 'transaction' => ['status' => 'SUCCESS']]);
     $headers = dokuSignedHeaders($body, 'BRN-CLIENT', 'super-secret');
 
     $this->call('POST', route('doku.webhook'), [], [], [], $headers, $body)
@@ -170,7 +170,7 @@ test('replaying a settled payment notification does not resend the e-voucher or 
     config()->set('doku.sandbox.secret_key', 'super-secret');
     Mail::fake();
 
-    $body = json_encode(['order' => ['invoice_number' => 'INV-SECURE-1'], 'transaction' => ['status' => 'SUCCESS']]);
+    $body = json_encode(['order' => ['invoice_number' => 'INV-SECURE-1', 'amount' => 1500000], 'transaction' => ['status' => 'SUCCESS']]);
 
     foreach (range(1, 3) as $attempt) {
         $this->call('POST', route('doku.webhook'), [], [], [], dokuSignedHeaders($body, 'BRN-CLIENT', 'super-secret'), $body)->assertOk();

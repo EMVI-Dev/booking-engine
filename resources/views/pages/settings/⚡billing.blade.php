@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\ResolvesCurrentOperator;
 use App\Models\Operator;
 use App\Models\SubscriptionPayment;
 use Carbon\Carbon;
@@ -10,6 +11,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Component {
+    use ResolvesCurrentOperator;
     use WithPagination;
 
     public ?string $selected_invoice_id = null;
@@ -25,6 +27,8 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
      */
     public function mount(): void
     {
+        $this->authorizeAbility('manageBilling');
+
         $operator = auth()->user()?->currentOperator();
 
         if ($operator) {
@@ -39,6 +43,8 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
      */
     public function updateBillingInfo(): void
     {
+        $this->authorizeAbility('manageBilling');
+
         $this->validate([
             'billing_email' => ['required', 'email', 'max:255'],
             'company_legal_name' => ['required', 'string', 'max:255'],

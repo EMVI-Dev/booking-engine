@@ -73,14 +73,14 @@ new #[Title('Subscription Invoices')] #[Layout('layouts.admin')] class extends C
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Invoice Number', 'Operator', 'Plan', 'Interval', 'Amount Paid', 'Status', 'Gateway', 'Paid At', 'Created At']);
+            \App\Services\CsvExportService::writeRow($handle, ['Invoice Number', 'Operator', 'Plan', 'Interval', 'Amount Paid', 'Status', 'Gateway', 'Paid At', 'Created At']);
 
             SubscriptionPayment::query()
                 ->with(['operator', 'plan'])
                 ->latest()
                 ->chunk(100, function ($payments) use ($handle) {
                     foreach ($payments as $payment) {
-                        fputcsv($handle, [
+                        \App\Services\CsvExportService::writeRow($handle, [
                             $payment->invoice_number,
                             $payment->operator?->name ?? 'Deleted Operator',
                             $payment->plan?->name ?? 'Custom Plan',

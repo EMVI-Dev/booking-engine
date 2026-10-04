@@ -1,5 +1,7 @@
 <?php
 
+use App\Concerns\ResolvesCurrentOperator;
+use App\Concerns\ShowsSafeErrors;
 use App\Models\Plan;
 use App\Models\PlatformCoupon;
 use App\Models\SubscriptionPayment;
@@ -12,6 +14,9 @@ use Livewire\Component;
 
 new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Component
 {
+    use ResolvesCurrentOperator;
+    use ShowsSafeErrors;
+
     public SubscriptionPayment $payment;
 
     public string $payment_method = 'doku'; // 'doku' | 'cc' | 'qris' | 'va' | 'direct'
@@ -57,6 +62,8 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function mount(SubscriptionPayment $payment): void
     {
+        $this->authorizeAbility('manageBilling');
+
         $operator = auth()->user()?->currentOperator();
 
         if (! $operator || $payment->operator_id !== $operator->id) {
@@ -101,6 +108,8 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function applyCoupon(): void
     {
+        $this->authorizeAbility('manageBilling');
+
         if ($this->payment->status !== SubscriptionPayment::STATUS_PENDING) {
             return;
         }
@@ -190,6 +199,8 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function payWithDoku(DokuPaymentService $dokuService, SubscriptionProrationService $prorationService): void
     {
+        $this->authorizeAbility('manageBilling');
+
         $this->is_processing = true;
         $this->error_message = null;
 
@@ -208,10 +219,11 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
                 return;
             }
 
-            throw new Exception(__('Unable to initialize payment session. Please check gateway configuration.'));
+            $this->is_processing = false;
+            $this->error_message = __('We could not open the payment page right now. Please try again in a few minutes.');
         } catch (Throwable $e) {
             $this->is_processing = false;
-            $this->error_message = $e->getMessage();
+            $this->error_message = $this->safeErrorMessage($e, __('We could not open the payment page right now. Please try again in a few minutes.'));
         }
     }
 
@@ -220,6 +232,8 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function completeZeroAmountPayment(SubscriptionProrationService $prorationService): void
     {
+        $this->authorizeAbility('manageBilling');
+
         if ($this->payment->net_amount_paid > 0) {
             abort(400, __('Payment required.'));
         }
@@ -241,7 +255,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             $this->redirectRoute('settings.plan', navigate: true);
         } catch (Throwable $e) {
             $this->is_processing = false;
-            $this->error_message = $e->getMessage();
+            $this->error_message = $this->safeErrorMessage($e);
         }
     }
 
@@ -250,6 +264,8 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function processCreditCardPayment(SubscriptionProrationService $prorationService, DokuPaymentService $dokuService): void
     {
+        $this->authorizeAbility('manageBilling');
+
         if (! DokuPaymentService::simulatorEnabled()) {
             $this->payWithDoku($dokuService, $prorationService);
 
@@ -294,7 +310,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             $this->redirectRoute('settings.plan', navigate: true);
         } catch (Throwable $e) {
             $this->is_processing = false;
-            $this->error_message = $e->getMessage();
+            $this->error_message = $this->safeErrorMessage($e);
         }
     }
 
@@ -303,6 +319,8 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
      */
     public function processSimulatedPayment(SubscriptionProrationService $prorationService): void
     {
+        $this->authorizeAbility('manageBilling');
+
         if (! DokuPaymentService::simulatorEnabled()) {
             abort(403, __('Payment simulation is disabled in production.'));
         }
@@ -327,7 +345,7 @@ new #[Title('Subscription Checkout')] #[Layout('layouts.app')] class extends Com
             $this->redirectRoute('settings.plan', navigate: true);
         } catch (Throwable $e) {
             $this->is_processing = false;
-            $this->error_message = $e->getMessage();
+            $this->error_message = $this->safeErrorMessage($e);
         }
     }
 }; ?>

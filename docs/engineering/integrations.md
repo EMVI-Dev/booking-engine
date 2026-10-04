@@ -1,6 +1,6 @@
 # Third-party integrations
 
-_Last reviewed: 2026-10-02_
+_Last reviewed: 2026-10-03_
 
 Every outside service has exactly **one client class** in `app/Services/Integrations/`. Only that class talks to the service over HTTP. The business services call the client and own the rules. Add a new client rather than calling a vendor API from a service, Livewire component or job (rule in `.ai/rules/app.md`).
 
@@ -23,7 +23,8 @@ Every key, token and password in the table above is a secret: set it in Laravel 
 - **Mode:** `DokuClient::mode()` reads `DOKU_MODE`. Credentials are read only by `DokuClient::credentials()`.
 - **Demo shop:** the demo operator always uses sandbox and never sends real payouts or refunds.
 - **Failures fail closed:** when credentials exist, a refused refund or payout is never treated as done. The offline simulator only runs where it is allowed (local and testing by default, or `DOKU_SIMULATOR_ENABLED`).
-- **Webhook:** `POST /api/v1/payments/doku/notify` is CSRF-exempt and must pass `verifyNotificationSignature()`.
+- **Webhook:** `POST /api/v1/payments/doku/notify` is CSRF-exempt and must pass `verifyNotificationSignature()`. A success callback must carry the paid amount, and an amount below the invoice is refused. Processing is idempotent (the payment row is locked and only an open invoice can become paid), so a replayed callback changes nothing.
+- **Logs:** DOKU error responses are logged as code and message only (`errorSummary()`), never the full body, which can echo guest and bank details.
 - **Open with DOKU before go-live:** see "Payment Gateway Engine" in [`../product/scope-and-features.md`](../product/scope-and-features.md). The refund and payout products enabled on the merchant account must be confirmed with the account manager.
 
 ## Laravel Cloud (`LaravelCloudClient`)

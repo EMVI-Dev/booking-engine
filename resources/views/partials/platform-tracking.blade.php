@@ -1,5 +1,12 @@
 @php
     $platformGaId = config('services.google.platform_analytics_id');
+    // Only on the platform's own host: slug and custom-domain pages belong to operators.
+    if ($platformGaId && ! app(\App\Services\DomainResolverService::class)->isPlatformRoot(request()->getHost())) {
+        $platformGaId = null;
+    }
+    if ($platformGaId && preg_match('/^G-[A-Z0-9]{4,20}$/', (string) $platformGaId) !== 1) {
+        $platformGaId = null;
+    }
 @endphp
 
 @if ($platformGaId)
@@ -9,7 +16,7 @@
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', '{{ $platformGaId }}');
+        gtag('config', @js($platformGaId));
 
         // Track virtual pageviews on Livewire SPA navigation
         (function() {

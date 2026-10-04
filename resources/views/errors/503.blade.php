@@ -4,7 +4,7 @@
 @section('code', '503')
 @section('icon', 'fa-solid fa-screwdriver-wrench')
 @section('heading', __('Under maintenance'))
-@section('message', ! empty($exception?->getMessage()) ? $exception->getMessage() : __('We are currently performing scheduled maintenance or quick updates. We will be back shortly.'))
+@section('message', ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface && $exception->getPrevious() === null && filled($exception->getMessage())) ? $exception->getMessage() : __('We are currently performing scheduled maintenance or quick updates. We will be back shortly.'))
 
 @section('actions')
     <button type="button"

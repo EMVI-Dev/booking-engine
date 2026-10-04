@@ -36,3 +36,9 @@ After registration, stay on the operator desk. A persistent setup banner stays v
 
 ## Toast after save; modal before undo
 Stay-on-page operator saves dispatch toast (named message, type success/error), not session flash. Irreversible actions keep open-modal (or wire:confirm) first, then toast after. Save buttons show Saving… via wire:loading. Do not ask Are you sure? on ordinary Save.
+
+## Views never write to the database
+No seeding or model saves from Blade (welcome once called Plan::seedDefaultPlans()). Plans are created by the seeder on deploy.
+
+## Platform analytics only on marketing and auth pages
+partials.head loads platform GA unless platformTracking is false (operator desk and admin layouts pass false) and only on the platform root host. PLATFORM_GOOGLE_ANALYTICS_ID has no default.

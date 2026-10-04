@@ -3,7 +3,7 @@
     $brandColor = $operator->brand_color ?? '#FFEF4D';
     $brandForeground = $operator->brand_foreground_color ?? '#101730';
     $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
-    $vendorUrl = route('storefront.reservation.vendor-view', ['reservation' => $reservation, 'token' => $reservation->public_token]);
+    $vendorUrl = route('storefront.reservation.vendor-view', ['vendorToken' => $reservation->vendor_token]);
     $activityList = ! empty($activities) ? implode(', ', $activities) : ($reservation->bookable?->name ?? ($reservation->bookable?->title ?? 'Activity'));
 @endphp
 <!DOCTYPE html>

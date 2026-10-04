@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
  * @property string $id
  * @property string $code
  * @property string $public_token
+ * @property string|null $vendor_token
  * @property string|null $guest_id
  * @property string $bookable_type
  * @property string $bookable_id
@@ -49,6 +50,7 @@ class Reservation extends Model
     protected $fillable = [
         'code',
         'public_token',
+        'vendor_token',
         'guest_id',
         'bookable_type',
         'bookable_id',
@@ -79,6 +81,10 @@ class Reservation extends Model
 
             if (empty($reservation->public_token)) {
                 $reservation->public_token = static::generateUniquePublicToken();
+            }
+
+            if (empty($reservation->vendor_token)) {
+                $reservation->vendor_token = static::generateUniqueVendorToken();
             }
 
             if (empty($reservation->guest_id) && ! empty($reservation->operator_id)) {
@@ -118,6 +124,19 @@ class Reservation extends Model
         }
 
         return substr($clean, 0, 8);
+    }
+
+    /**
+     * Separate token for the supplier dispatch sheet. It only opens that read-only sheet, so a
+     * forwarded vendor email can never reach the guest's receipt, payment or cancel links.
+     */
+    public static function generateUniqueVendorToken(): string
+    {
+        do {
+            $token = Str::random(48);
+        } while (static::where('vendor_token', $token)->exists());
+
+        return $token;
     }
 
     /**

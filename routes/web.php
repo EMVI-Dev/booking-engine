@@ -80,7 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Vendor Dispatch View (Token-secured, no login required)
-Route::get('/find-booking/{reservation}/vendor', [StorefrontController::class, 'showVendorDispatch'])->name('storefront.reservation.vendor-view');
+Route::get('/vendor-dispatch/{vendorToken}', [StorefrontController::class, 'showVendorDispatch'])->name('storefront.reservation.vendor-view');
 
 // Public Storefront Item Details (Wildcard Slugs)
 Route::get('/packages/{slug}', [StorefrontController::class, 'showPackage'])->name('storefront.package');

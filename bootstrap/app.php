@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureOnPlatformDomain;
 use App\Http\Middleware\EnsureOperatorPortalOpen;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\IdentifyOperatorDomain;
 use App\Http\Middleware\PreventDemoIndexing;
+use App\Http\Middleware\ThrottleAuthForms;
 use App\Http\Middleware\TrackOperatorActivity;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -31,6 +33,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
+            AddSecurityHeaders::class,
+            ThrottleAuthForms::class,
             IdentifyOperatorDomain::class,
             PreventDemoIndexing::class,
             EnsureOperatorPortalOpen::class,

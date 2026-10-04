@@ -36,7 +36,7 @@ class BookingPricingService
 
             if ($coupon !== null && $result['valid'] && $offered > 0) {
                 $appliedCode = $coupon->code;
-                $discount = $offered;
+                $discount = round($offered);
             } else {
                 $couponError = (string) ($result['reason'] ?? __('Promo code cannot be applied.'));
             }
@@ -50,7 +50,7 @@ class BookingPricingService
             serviceFee: $serviceFee,
             couponCode: $appliedCode,
             discount: $discount,
-            total: max(0.0, $subtotal + $serviceFee - $discount),
+            total: max(0.0, round($subtotal + $serviceFee - $discount)),
             couponError: $couponError,
         );
     }

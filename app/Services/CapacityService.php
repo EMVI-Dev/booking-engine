@@ -49,7 +49,7 @@ class CapacityService
      *
      * @return array<string, int> Keyed by "{type}:{id}"
      */
-    public function committedPaxByBookable(string $operatorId, Carbon|string $date, ?string $excludeReservationId = null): array
+    public function committedPaxByBookable(string $operatorId, Carbon|string $date, ?string $excludeReservationId = null, bool $locking = false): array
     {
         $query = Reservation::query()
             ->where('operator_id', $operatorId)
@@ -57,6 +57,12 @@ class CapacityService
 
         if ($excludeReservationId !== null) {
             $query->whereKeyNot($excludeReservationId);
+        }
+
+        // A locking read always sees the latest committed bookings, even when the surrounding
+        // transaction already took its snapshot (MySQL / MariaDB REPEATABLE READ).
+        if ($locking) {
+            $query->sharedLock();
         }
 
         return $this->applyBlockingStatuses($query)
@@ -93,7 +99,7 @@ class CapacityService
      * Returns null when the item has no underlying activities and is therefore
      * not capacity constrained.
      */
-    public function remainingCapacity(Bookable $bookable, Carbon|string $date, ?string $excludeReservationId = null): ?int
+    public function remainingCapacity(Bookable $bookable, Carbon|string $date, ?string $excludeReservationId = null, bool $locking = false): ?int
     {
         $this->eagerLoadCapacityRelations($bookable);
 
@@ -106,7 +112,8 @@ class CapacityService
         $committedPax = $this->committedPaxByBookable(
             $bookable->getOperatorId(),
             $date,
-            $excludeReservationId
+            $excludeReservationId,
+            $locking,
         );
 
         $remaining = null;
@@ -181,29 +188,40 @@ class CapacityService
      */
     public function reserve(Bookable $bookable, Carbon|string $date, int $paxCount, callable $callback, ?string $excludeReservationId = null): mixed
     {
+        // Relations are loaded before the transaction so the activity lock is its first statement.
+        $this->eagerLoadCapacityRelations($bookable);
+
         return DB::transaction(function () use ($bookable, $date, $paxCount, $callback, $excludeReservationId) {
-            $this->eagerLoadCapacityRelations($bookable);
-
-            $productIds = $bookable->getRequiredProducts()
-                ->map(fn (array $requirement): string => $requirement['product']->id)
-                ->all();
-
-            if ($productIds !== []) {
-                Product::query()->whereIn('id', $productIds)->lockForUpdate()->get();
-            }
-
-            $this->assertCanAccommodate($bookable, $date, $paxCount, $excludeReservationId);
+            $this->lockActivities($bookable);
+            $this->assertCanAccommodate($bookable, $date, $paxCount, $excludeReservationId, locking: true);
 
             return $callback();
         });
     }
 
     /**
+     * Lock the activity rows behind a bookable for the rest of the current transaction, so
+     * capacity checks for the same activities run one at a time.
+     */
+    public function lockActivities(Bookable $bookable): void
+    {
+        $this->eagerLoadCapacityRelations($bookable);
+
+        $productIds = $bookable->getRequiredProducts()
+            ->map(fn (array $requirement): string => $requirement['product']->id)
+            ->all();
+
+        if ($productIds !== []) {
+            Product::query()->whereIn('id', $productIds)->lockForUpdate()->get(['id']);
+        }
+    }
+
+    /**
      * @throws CapacityUnavailableException
      */
-    public function assertCanAccommodate(Bookable $bookable, Carbon|string $date, int $paxCount, ?string $excludeReservationId = null): void
+    public function assertCanAccommodate(Bookable $bookable, Carbon|string $date, int $paxCount, ?string $excludeReservationId = null, bool $locking = false): void
     {
-        $remaining = $this->remainingCapacity($bookable, $date, $excludeReservationId);
+        $remaining = $this->remainingCapacity($bookable, $date, $excludeReservationId, $locking);
 
         if ($remaining === null || $remaining >= $paxCount) {
             return;

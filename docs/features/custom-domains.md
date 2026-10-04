@@ -1,6 +1,6 @@
 # Storefront addresses and custom domains
 
-_Last reviewed: 2026-10-02_
+_Last reviewed: 2026-10-03_
 
 Every operator gets `{slug}.travelengine.id`. Agency operators (`custom_domain` feature) can also connect their own address, e.g. `tours.yourbrand.com` or `yourbrand.com`.
 
@@ -31,6 +31,8 @@ All logic lives in `App\Services\CustomDomainService`. Brand settings call it, a
 4. **Routing:**
    - A `Verifying` or `Active` custom domain already resolves to the operator's shop.
    - Storefront links (`Operator::getStorefrontUrl()`) switch to the custom domain only once it is `Active`.
+   - A custom domain that is no longer live (`Pending` after a downgrade, or `Failed`) 302-redirects to the same path on the slug address.
+   - Any other unknown host, or an unknown slug, gets a 404. Only the platform root shows the marketing site.
 5. **Change or clear:** the old address is removed at the provider first, then deleted here. If the provider is unreachable, the row stays and the operator is asked to retry, so no address is left counting toward the Cloud allowance.
 6. **Downgrade:** a plan without `custom_domain` puts the address back to `Pending`, and the shop falls back to the slug.
 
