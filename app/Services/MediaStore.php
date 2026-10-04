@@ -33,6 +33,22 @@ class MediaStore
         return Storage::disk(static::diskName());
     }
 
+    /**
+     * Production runs on Laravel Cloud, whose local disk is wiped on every deploy, so media
+     * must go to object storage (R2). Refuse a local disk there instead of saving files
+     * that will vanish and URLs that point at /storage on the app host.
+     */
+    public static function assertDurableDisk(): void
+    {
+        if (! app()->isProduction()) {
+            return;
+        }
+
+        if (config('filesystems.disks.'.static::diskName().'.driver') === 'local') {
+            throw new RuntimeException('MEDIA_DISK is "'.static::diskName().'" in production. Set MEDIA_DISK=r2 and the R2_* variables in Laravel Cloud, then redeploy.');
+        }
+    }
+
     public function url(?string $path): ?string
     {
         if (! filled($path)) {
@@ -158,6 +174,8 @@ class MediaStore
         $extension = strtolower((string) $file->getClientOriginalExtension());
         $mime = (string) $file->getMimeType();
 
+        static::assertDurableDisk();
+
         if ($mime === 'application/pdf' && $extension === 'pdf') {
             $path = $file->store($directory, ['disk' => static::diskName()] + $this->writeOptions('application/pdf'));
 
@@ -207,6 +225,8 @@ class MediaStore
         }
 
         $path = trim($directory, '/').'/'.Str::ulid().'.webp';
+
+        static::assertDurableDisk();
 
         if (! static::disk()->put($path, $webp, $this->writeOptions('image/webp'))) {
             throw new RuntimeException('Could not store the image.');

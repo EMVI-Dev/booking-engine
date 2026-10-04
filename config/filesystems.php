@@ -104,12 +104,13 @@ return [
     | Public media (covers, galleries, logos)
     |--------------------------------------------------------------------------
     |
-    | Raster uploads are resized and stored as WebP. Locally this is the public
-    | disk. Production can point at Cloudflare R2 with MEDIA_DISK=r2.
+    | Raster uploads are resized and stored as WebP. Production defaults to
+    | Cloudflare R2 (Laravel Cloud's local disk is wiped on deploy); everywhere
+    | else defaults to the public disk. MEDIA_DISK overrides both.
     |
     */
 
-    'media' => env('MEDIA_DISK', 'public'),
+    'media' => env('MEDIA_DISK') ?: (env('APP_ENV') === 'production' ? 'r2' : 'public'),
     'media_quality' => 80,
 
 ];

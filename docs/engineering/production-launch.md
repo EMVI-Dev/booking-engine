@@ -30,7 +30,7 @@ Use this for the first production deploy, and again after any change to hosting.
 | `DEMO_OPERATOR_EMAIL` / `DEMO_OPERATOR_PASSWORD` | the public demo shop login; the password is **secret** |
 | `PLATFORM_MAINTENANCE` | `false` to open sign-up and bookings; `true` pauses both (Admin → Settings can switch it too) |
 | `PLATFORM_GOOGLE_ANALYTICS_ID` | GA4 id for the marketing and sign-in pages; empty = no tracking |
-| `MEDIA_DISK` | `r2` |
+| `MEDIA_DISK` | `r2` (the production default; a local disk is refused in production) |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | **secret**; R2 API token with read and write access to the bucket |
 | `R2_BUCKET` | bucket name |
 | `R2_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` |
@@ -48,9 +48,10 @@ Secrets (marked **secret** below) go in Cloud's environment variables or Secrets
 
 ## 3. First deploy
 1. Merge to the production branch so Cloud deploys. The deploy command runs `migrate --force` on the empty database, with one create migration per table.
-2. Run `php artisan db:seed --force` from Cloud **Commands**. This creates the plans, the platform admin and the demo shop. It runs once only.
-3. Run `php artisan cloud:environments` and confirm the token works and the environment id matches.
-4. Log in at `https://travelengine.id/admin/login` and turn on 2FA for the admin.
+2. Run `php artisan media:check` from Cloud **Commands**. It must say the disk is `r2`, finish the write test, and show `https://storage.travelengine.id/...` URLs. Fix the R2 variables and redeploy before going on.
+3. Run `php artisan db:seed --force` from Cloud **Commands**. This creates the plans, the platform admin and the demo shop. It runs once only.
+4. Run `php artisan cloud:environments` and confirm the token works and the environment id matches.
+5. Log in at `https://travelengine.id/admin/login` and turn on 2FA for the admin.
 
 ## 4. Smoke test
 - [ ] `https://travelengine.id` loads over HTTPS, and sign-up sends a verification email.

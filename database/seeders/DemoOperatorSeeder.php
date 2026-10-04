@@ -144,20 +144,16 @@ class DemoOperatorSeeder extends Seeder
                     'booking_confirmation_mode' => 'automatic',
                     'hero_headline' => 'See how a tour operator looks on TravelEngine',
                     'hero_tagline' => 'Browse trips and the operator desk. Checkout stays off so nothing is charged.',
-                    'hero_image_url' => null,
                 ],
             ],
         ]);
 
         $logoPath = $this->storeDemoImage($operator, $this->unsplash('1544644181-1484b3fdfc62', 400), MediaStore::LOGO_MAX_WIDTH, 'brand');
         $bannerPath = $this->storeDemoImage($operator, $this->unsplash('1507525428034-b723cf961d3e', 1600), MediaStore::COVER_MAX_WIDTH, 'brand');
-        $settings = $operator->settings ?? [];
-        $settings['storefront']['hero_image_url'] = app(MediaStore::class)->url($bannerPath);
-
+        // Store paths only; URLs are built from the media disk when shown.
         $operator->update([
             'logo_path' => $logoPath,
             'banner_path' => $bannerPath,
-            'settings' => $settings,
         ]);
 
         $operator->users()->syncWithoutDetaching([

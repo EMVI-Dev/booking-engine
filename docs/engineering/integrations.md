@@ -45,6 +45,7 @@ Every key, token and password in the table above is a secret: set it in Laravel 
 - **Package:** needs `league/flysystem-aws-s3-v3` (installed).
 - **No ACL:** R2 has no object ACLs, so the disk has no `visibility` and `MediaStore` only sets visibility on local disks. Public URLs come from `R2_URL`, the bucket's public domain.
 - **Errors throw:** `throw` is on, so a failed upload is never saved as a broken image path.
+- **Production guard:** production defaults to `r2`, and `MediaStore` refuses a local disk there (Cloud's disk is wiped on deploy). `php artisan media:check` shows the active disk and tests a write, read and delete.
 - **Endpoint:** `R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `R2_REGION=auto`.
 
 ## Adding a new integration

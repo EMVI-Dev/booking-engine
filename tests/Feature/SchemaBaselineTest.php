@@ -9,6 +9,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 test('every table has exactly one create migration and no alter or drop migrations', function () {
     $creates = [];
@@ -92,6 +93,9 @@ test('production admin seeder requires an admin password', function () {
 
 test('production seed creates plans and an admin without sample operators', function () {
     $this->app['env'] = 'production';
+    // Production stores media on R2 (faked here), never the local disk.
+    config(['filesystems.media' => 'r2']);
+    Storage::fake('r2');
 
     // Production reads cached config, never env(), so the seeder must work from config alone.
     config(['platform.admin_email' => 'admin@travelengine.id', 'platform.admin_password' => 'secret-admin-pass']);
