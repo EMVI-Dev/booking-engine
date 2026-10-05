@@ -7,7 +7,7 @@
     $platformDomain = app(\App\Services\DomainResolverService::class)->getPlatformDomain();
     $waService = app(\App\Services\WhatsAppDispatchService::class);
     $cleanPhone = !empty($agent->contact_whatsapp) ? $waService->normalizePhoneNumber($agent->contact_whatsapp) : null;
-    $waMessage = 'Hello ' . ($agent->name ?? 'Tour Operator') . ', I have an inquiry regarding your tour packages.';
+    $waMessage = 'Hello ' . ($agent->name ?? 'Tour Operator') . ', I have an enquiry regarding your tour packages.';
     $waUrl = $cleanPhone ? $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage) : null;
 
     if ($agent) {
@@ -65,11 +65,11 @@
                 </a>
             @endif
             @if ($hasContact)
-            <a href="{{ route('storefront.contact') }}"
-                class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
-                <i class="fa-solid fa-envelope-open-text text-[11px] text-slate-400"></i>
-                <span>{{ __('Contact') }}</span>
-            </a>
+                <a href="{{ route('storefront.contact') }}"
+                    class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-envelope-open-text text-[11px] text-slate-400"></i>
+                    <span>{{ __('Contact') }}</span>
+                </a>
             @endif
             <a href="{{ route('storefront.find-booking') }}"
                 class="px-3 py-1.5 rounded-xl hover:text-brand-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-semibold flex items-center gap-1.5">

@@ -15,9 +15,9 @@ use App\Services\DokuPaymentService;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoOperatorSeeder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
-use RuntimeException;
 
 test('the demo seeder creates one marked demo operator and drops bali ride tours', function () {
     Operator::factory()->create([
@@ -86,6 +86,37 @@ test('refreshing the demo operator replaces catalog data and keeps one account',
         ->and(Package::query()->where('title', 'Edited by a visitor')->exists())->toBeFalse()
         ->and(Package::query()->where('title', 'Three-Bay Snorkel Safari')->exists())->toBeTrue()
         ->and(Reservation::query()->where('code', 'RSV-DEMO-001')->value('public_token'))->toBeString();
+});
+
+test('a demo refresh moves an admin managing the demo to the new shop without extending the time limit', function () {
+    config(['session.driver' => 'database']);
+    $this->seed(DemoOperatorSeeder::class);
+    $old = Operator::query()->where('is_demo', true)->first();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $guest = User::factory()->create();
+    $startedAt = now()->subMinutes(30)->getTimestamp();
+
+    $session = fn (string $id, int|string $userId) => DB::table('sessions')->insert([
+        'id' => $id,
+        'user_id' => $userId,
+        'payload' => base64_encode(json_encode([
+            User::IMPERSONATION_SESSION_KEY => $old->id,
+            User::IMPERSONATION_STARTED_KEY => $startedAt,
+        ])),
+        'last_activity' => now()->getTimestamp(),
+    ]);
+    $session('admin-session', $admin->id);
+    $session('other-session', $guest->id);
+
+    $this->artisan('demo:refresh')->assertSuccessful();
+
+    $new = Operator::query()->where('is_demo', true)->first();
+    $read = fn (string $id): array => json_decode(base64_decode(DB::table('sessions')->where('id', $id)->value('payload')), true);
+
+    expect($new->id)->not->toBe($old->id)
+        ->and($read('admin-session')[User::IMPERSONATION_SESSION_KEY])->toBe($new->id)
+        ->and($read('admin-session')[User::IMPERSONATION_STARTED_KEY])->toBe($startedAt)
+        ->and($read('other-session')[User::IMPERSONATION_SESSION_KEY])->toBe($old->id);
 });
 
 test('demo storefront shows a disabled checkout button and rejects booking', function () {

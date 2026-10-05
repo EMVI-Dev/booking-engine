@@ -567,6 +567,17 @@ new class extends Component {
             <x-input-error :messages="$errors->get('agreed_terms')" />
         </div>
 
+        @if ($errors->has('requested_date') || $errors->has('payment') || $errors->has('booking'))
+            <div class="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 flex items-start gap-2.5" role="alert">
+                <i class="fa-solid fa-circle-exclamation mt-0.5 text-rose-500 shrink-0 text-sm" aria-hidden="true"></i>
+                <div class="space-y-0.5">
+                    @foreach (array_unique(array_merge($errors->get('requested_date'), $errors->get('payment'), $errors->get('booking'))) as $message)
+                        <p>{{ $message }}</p>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         <!-- Submit Button with Loading State -->
         <button
             type="submit"

@@ -557,7 +557,7 @@ class StorefrontController extends Controller
 
         // If hold has expired, redirect with error
         if ($reservation->hold_expires_at && $reservation->hold_expires_at->isPast()) {
-            return redirect()->route('home')->with('error', __('This booking hold has expired. Please create a new reservation.'));
+            return redirect()->route('storefront.reservation.receipt', $reservation)->with('error', __('This booking hold has expired. Please create a new reservation.'));
         }
 
         $totalAmount = $reservation->getQuotedTotal();
@@ -565,7 +565,7 @@ class StorefrontController extends Controller
         // Extending a hold re-claims inventory, so the date must still be open and have room for this party
         if ($reservation->bookable instanceof Bookable) {
             if ($reservation->bookable->isBlackedOutOn($reservation->requested_date)) {
-                return redirect()->route('home')->with('error', __('This date is no longer available. Please choose another date.'));
+                return redirect()->route('storefront.reservation.receipt', $reservation)->with('error', __('This date is no longer available. Please choose another date.'));
             }
         }
 
@@ -585,7 +585,7 @@ class StorefrontController extends Controller
                 $reservation->update(['hold_expires_at' => $newHoldEnd]);
             }
         } catch (CapacityUnavailableException $e) {
-            return redirect()->route('home')->with('error', $e->getMessage());
+            return redirect()->route('storefront.reservation.receipt', $reservation)->with('error', $e->getMessage());
         }
 
         try {

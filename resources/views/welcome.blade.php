@@ -120,12 +120,14 @@
                         wire:navigate>
                         {{ __('Operator log in') }}
                     </a>
-                    <a href="{{ route('register') }}"
-                        class="hidden sm:inline-flex h-9 px-4 cursor-pointer items-center justify-center rounded-lg bg-[#FFEF4D] text-[#090d16] hover:bg-[#fae639] text-xs font-black transition gap-2 shadow-sm"
-                        wire:navigate>
-                        <span>{{ $registrationOpen ? __('Start Free') : __('Coming soon') }}</span>
-                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                    </a>
+                    @if ($registrationOpen)
+                        <a href="{{ route('register') }}"
+                            class="hidden sm:inline-flex h-9 px-4 cursor-pointer items-center justify-center rounded-lg bg-[#FFEF4D] text-[#090d16] hover:bg-[#fae639] text-xs font-black transition gap-2 shadow-sm"
+                            wire:navigate>
+                            <span>{{ __('Start Free') }}</span>
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </a>
+                    @endif
                 @endauth
 
                 <!-- Mobile Hamburger Toggle Button -->
@@ -178,10 +180,12 @@
                         <span>{{ __('Open Operator Console') }}</span>
                     </a>
                 @else
-                    <a href="{{ route('register') }}" class="w-full h-11 rounded-lg bg-[#FFEF4D] text-[#090d16] font-black text-xs flex items-center justify-center gap-2 shadow-sm" wire:navigate>
-                        <span>{{ $registrationOpen ? __('Start free') : __('Coming soon') }}</span>
-                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                    </a>
+                    @if ($registrationOpen)
+                        <a href="{{ route('register') }}" class="w-full h-11 rounded-lg bg-[#FFEF4D] text-[#090d16] font-black text-xs flex items-center justify-center gap-2 shadow-sm" wire:navigate>
+                            <span>{{ __('Start free') }}</span>
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </a>
+                    @endif
                     <a href="{{ route('login') }}" class="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-zinc-300 font-medium text-xs flex items-center justify-center" wire:navigate>
                         {{ __('Operator Log in') }}
                     </a>
@@ -228,12 +232,14 @@
 
                 <!-- Dual Action CTAs -->
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 sm:pt-3">
-                    <a href="{{ route('register') }}"
-                        class="w-full sm:w-auto h-12 px-8 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
-                        wire:navigate>
-                        <span>{{ $registrationOpen ? __('Start free') : __('Coming soon') }}</span>
-                        <i class="fa-solid fa-arrow-right text-xs transition-transform group-hover:translate-x-0.5"></i>
-                    </a>
+                    @if ($registrationOpen)
+                        <a href="{{ route('register') }}"
+                            class="w-full sm:w-auto h-12 px-8 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
+                            wire:navigate>
+                            <span>{{ __('Start free') }}</span>
+                            <i class="fa-solid fa-arrow-right text-xs transition-transform group-hover:translate-x-0.5"></i>
+                        </a>
+                    @endif
                     
                     <a href="#sandbox"
                         class="w-full sm:w-auto h-12 px-6 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.12] font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer">
@@ -271,19 +277,19 @@
                     <div class="text-[10px] sm:text-[11px] text-zinc-400 truncate">{{ __('Keep 100% listed price') }}</div>
                 </div>
                 <div class="p-3.5 sm:p-5 text-center space-y-1 border-b md:border-b-0 md:border-r border-white/[0.08]">
-                    <div class="text-[9px] sm:text-[11px] font-mono uppercase tracking-wider text-zinc-500">{{ __('PAYMENT GATEWAY') }}</div>
-                    <div class="text-xl sm:text-3xl font-black text-white tabular-nums tracking-tight">INSTANT</div>
-                    <div class="text-[10px] sm:text-[11px] text-zinc-400 truncate">{{ __('Direct domestic bank') }}</div>
+                    <div class="text-[9px] sm:text-[11px] font-mono uppercase tracking-wider text-zinc-500">{{ __('BANK PAYOUTS') }}</div>
+                    <div class="text-xl sm:text-3xl font-black text-white tabular-nums tracking-tight">100%</div>
+                    <div class="text-[10px] sm:text-[11px] text-zinc-400 truncate">{{ __('Held safely until trip') }}</div>
                 </div>
                 <div class="p-3.5 sm:p-5 text-center space-y-1 border-r border-white/[0.08]">
                     <div class="text-[9px] sm:text-[11px] font-mono uppercase tracking-wider text-zinc-500">{{ __('CHECKOUT SPEED') }}</div>
                     <div class="text-2xl sm:text-3xl font-black text-emerald-400 tabular-nums">&lt; 1.2s</div>
-                    <div class="text-[10px] sm:text-[11px] text-zinc-400 truncate">{{ __('Instant QRIS & Cards') }}</div>
+                    <div class="text-[10px] sm:text-[11px] text-zinc-400 truncate">{{ __('QRIS & Cards') }}</div>
                 </div>
                 <div class="p-3.5 sm:p-5 text-center space-y-1">
                     <div class="text-[9px] sm:text-[11px] font-mono uppercase tracking-wider text-zinc-500">{{ __('SETUP TIMELINE') }}</div>
-                    <div class="text-2xl sm:text-3xl font-black text-white tabular-nums">5 Mins</div>
-                    <div class="text-[10px] sm:text-[11px] text-zinc-400 truncate">{{ __('Tour website + 24/7 booking') }}</div>
+                    <div class="text-2xl sm:text-3xl font-black text-white tabular-nums">Fast</div>
+                    <div class="text-[10px] sm:text-[11px] text-zinc-400 truncate">{{ __('Shop setup + bank details') }}</div>
                 </div>
             </div>
         </section>
@@ -366,7 +372,7 @@
                     {{ __('Your website, bookings, and payments working as one.') }}
                 </h2>
                 <p class="text-sm sm:text-base text-zinc-400 max-w-xl mx-auto">
-                    {{ __('Experience the complete flow: your live tour website, instant WhatsApp guest tickets, daily crew passenger list, and direct bank payouts.') }}
+                    {{ __('Experience the complete flow: your live tour website, e-tickets by email with one-tap WhatsApp messages, daily crew passenger list, and payouts requested after the trip.') }}
                 </p>
             </div>
 
@@ -396,7 +402,7 @@
                             :class="activeTab === 'whatsapp' ? 'bg-[#FFEF4D] text-[#090d16] font-bold' : 'text-zinc-400 hover:text-white bg-white/[0.04] border border-white/[0.06]'"
                             class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono transition flex items-center gap-1.5 shrink-0 cursor-pointer">
                             <i class="fa-brands fa-whatsapp text-[11px]"></i>
-                            <span><span class="hidden sm:inline">02 · </span>WHATSAPP TICKET</span>
+                            <span><span class="hidden sm:inline">02 · </span>GUEST PASS & CHAT</span>
                         </button>
                         <button type="button" @click="activeTab = 'manifest'"
                             :class="activeTab === 'manifest' ? 'bg-[#FFEF4D] text-[#090d16] font-bold' : 'text-zinc-400 hover:text-white bg-white/[0.04] border border-white/[0.06]'"
@@ -504,8 +510,9 @@
 
                             <!-- Right: Live Financial Breakdown & Simulation -->
                             <div class="lg:col-span-5 rounded-xl border border-white/[0.08] bg-[#090b10] p-3.5 sm:p-5 space-y-3 sm:space-y-4">
-                                <div class="text-xs font-mono uppercase tracking-wider text-zinc-400 border-b border-white/[0.08] pb-2">
-                                    {{ __('Zero Commission Breakdown') }}
+                                <div class="text-xs font-mono uppercase tracking-wider text-zinc-400 border-b border-white/[0.08] pb-2 flex items-center justify-between">
+                                    <span>{{ __('Zero Commission Breakdown') }}</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] bg-white/[0.06] text-zinc-400 border border-white/[0.08]">{{ __('Example') }}</span>
                                 </div>
 
                                 <div class="space-y-2 text-xs">
@@ -514,7 +521,7 @@
                                         <span class="font-mono text-zinc-200" x-text="formatIdr(tours[selectedTour].price * guests)"></span>
                                     </div>
                                     <div class="flex justify-between text-zinc-400">
-                                        <span>{{ __('Platform fee at checkout (Paid by guest)') }}</span>
+                                        <span>{{ __('Platform fee added at checkout') }}</span>
                                         <span class="font-mono text-zinc-400" x-text="formatIdr(Math.min((tours[selectedTour].price * guests) * 0.05, 250000))"></span>
                                     </div>
                                     <div class="flex justify-between text-zinc-400">
@@ -530,7 +537,7 @@
                                         <span class="text-base font-black text-[#FFEF4D] font-mono" x-text="formatIdr(tours[selectedTour].price * guests)"></span>
                                     </div>
                                     <div class="text-[10px] text-zinc-400">
-                                        {{ __('100% goes to your Indonesian bank account via automated bank settlement.') }}
+                                        {{ __('100% held safely until trip date, then paid out directly to your Indonesian bank.') }}
                                     </div>
                                 </div>
 
@@ -541,7 +548,7 @@
                                     <template x-if="!bookingSimulated">
                                         <span class="flex items-center gap-2">
                                             <i class="fa-solid fa-bolt text-[11px]"></i>
-                                            <span>{{ __('Simulate Instant Guest Booking') }}</span>
+                                            <span>{{ __('Simulate Guest Booking') }}</span>
                                         </span>
                                     </template>
                                     <template x-if="bookingSimulated">
@@ -564,9 +571,9 @@
                                 <div class="flex items-center justify-between text-xs border-b border-white/[0.08] pb-2 text-zinc-400 font-mono">
                                     <div class="flex items-center gap-2 text-emerald-400">
                                         <i class="fa-brands fa-whatsapp text-sm"></i>
-                                        <span class="font-bold text-white">WhatsApp Chat Engine</span>
+                                        <span class="font-bold text-white">One-Tap WhatsApp</span>
                                     </div>
-                                    <span class="text-[10px]">AUTO-DISPATCH • 09:12 AM</span>
+                                    <span class="text-[10px]">ONE-TAP SEND • 09:12 AM</span>
                                 </div>
 
                                 <div class="bg-[#121c17] border border-emerald-500/20 p-3.5 rounded-lg text-xs space-y-2 text-zinc-300">
@@ -583,7 +590,7 @@
                                 </div>
 
                                 <p class="text-[11px] text-zinc-500 font-mono">
-                                    {{ __('Guest opens link on phone — no app download or sign-up needed.') }}
+                                    {{ __('E-tickets are emailed automatically; send digital boarding passes to guests in WhatsApp with one tap.') }}
                                 </p>
                             </div>
 
@@ -741,9 +748,9 @@
                     <div x-show="activeTab === 'payouts'" x-cloak class="space-y-6">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="p-4 rounded-xl bg-[#090b10] border border-white/[0.08] space-y-1">
-                                <span class="text-[11px] font-mono uppercase text-zinc-500 block">SETTLED IN WALLET</span>
+                                <span class="text-[11px] font-mono uppercase text-zinc-500 block">{{ __('SETTLED IN WALLET (EXAMPLE)') }}</span>
                                 <span class="text-xl sm:text-2xl font-black font-mono text-emerald-400 block">Rp 14.850.000</span>
-                                <span class="text-[10px] text-zinc-400 block">Ready for 1-tap withdrawal to bank</span>
+                                <span class="text-[10px] text-zinc-400 block">{{ __('Requested after trip date') }}</span>
                             </div>
                             <div class="p-4 rounded-xl bg-[#090b10] border border-white/[0.08] space-y-1">
                                 <span class="text-[11px] font-mono uppercase text-zinc-500 block">DESTINATION ACCOUNT</span>
@@ -760,15 +767,15 @@
                         <!-- Recent Completed Bookings & Payouts -->
                         <div class="space-y-2">
                             <div class="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                                {{ __('Recent Completed Payments (Last 24 Hours):') }}
+                                {{ __('Example Completed Payments (Post-Trip Cleared):') }}
                             </div>
                             <div class="space-y-2 font-mono text-xs">
                                 <div class="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] flex items-center justify-between">
                                     <div class="flex items-center gap-3">
                                         <i class="fa-solid fa-arrow-down text-emerald-400 text-xs"></i>
                                         <div>
-                                            <span class="text-white font-bold">QRIS Instant Payment (#NUSA-882)</span>
-                                            <span class="text-zinc-500 text-[11px] block">Paid via QRIS • 2 mins ago</span>
+                                            <span class="text-white font-bold">QRIS Payment (#NUSA-882)</span>
+                                            <span class="text-zinc-500 text-[11px] block">Trip completed • Cleared in wallet</span>
                                         </div>
                                     </div>
                                     <div class="text-right">
@@ -781,7 +788,7 @@
                                         <i class="fa-solid fa-arrow-down text-emerald-400 text-xs"></i>
                                         <div>
                                             <span class="text-white font-bold">Virtual Account Payment (#KOMODO-301)</span>
-                                            <span class="text-zinc-500 text-[11px] block">Paid via Virtual Account • 48 mins ago</span>
+                                            <span class="text-zinc-500 text-[11px] block">Trip completed • Cleared in wallet</span>
                                         </div>
                                     </div>
                                     <div class="text-right">
@@ -953,7 +960,7 @@
                         <div class="p-3 rounded-xl border border-white/[0.08] bg-[#08090d] space-y-2 text-xs">
                             <div class="flex items-center gap-2 text-emerald-400 font-bold">
                                 <i class="fa-solid fa-paper-plane text-xs"></i>
-                                <span>Sent Instantly on Payment</span>
+                                <span>Emailed on Payment</span>
                             </div>
                             <div class="font-mono text-[10px] text-zinc-400 truncate">
                                 partner@divecenter.id · Booking Details Attached
@@ -996,7 +1003,7 @@
                                 {{ __('Payouts, 0% cut. Direct Bank Settlements') }}
                             </h3>
                             <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                                {{ __('Nothing taken from your ticket. You keep 100% of the listed price. Direct payouts to your Indonesian bank account, with a small 5% platform fee paid by the guest at checkout.') }}
+                                {{ __('Nothing taken from your ticket. You keep 100% of the listed price. Funds are held safely until the trip date, then paid out to your Indonesian bank account upon request, with a :fee platform fee added at checkout.', ['fee' => $guestFeeSummary]) }}
                             </p>
                         </div>
 
@@ -1007,7 +1014,7 @@
                                 <div class="text-[9px] text-zinc-500">Auto-Confirmed</div>
                             </div>
                             <div class="p-2.5 rounded-lg border border-white/[0.08] bg-[#08090d] space-y-0.5">
-                                <div class="font-bold text-emerald-400 text-[11px]">QRIS INSTANT</div>
+                                <div class="font-bold text-emerald-400 text-[11px]">QRIS & EWALLETS</div>
                                 <div class="text-[9px] text-zinc-500">All E-Wallets</div>
                             </div>
                             <div class="p-2.5 rounded-lg border border-white/[0.08] bg-[#08090d] space-y-0.5">
@@ -1187,7 +1194,7 @@
                                             x-text="billing_interval === 'yearly' ? '{{ $plan->isFree() ? __('Free') : 'Rp ' . number_format($priceYearly, 0, ',', '.') }}' : '{{ $plan->isFree() ? __('Free') : 'Rp ' . number_format($priceMonthly, 0, ',', '.') }}'">
                                             {{ $plan->isFree() ? __('Free') : 'Rp ' . number_format($priceMonthly, 0, ',', '.') }}
                                         </span>
-                                        <span class="text-xs text-zinc-500 font-mono" x-show="'{{ !$plan->isFree() }}'" x-text="billing_interval === 'yearly' ? '/year' : '/month'"></span>
+                                        <span class="text-xs text-zinc-500 font-mono" x-show="{{ $plan->isFree() ? 'false' : 'true' }}" x-text="billing_interval === 'yearly' ? '/year' : '/month'"></span>
                                     </div>
                                     <p class="text-[11px] text-zinc-500 font-mono pt-1">
                                         {{ __('0% commission taken from your tickets') }}
@@ -1256,11 +1263,17 @@
 
                             <!-- CTA Button -->
                             <div class="space-y-2">
-                                <a href="{{ route('register') }}"
-                                    class="w-full h-11 rounded-xl flex items-center justify-center text-xs font-bold transition shadow-sm {{ $plan->is_popular ? 'bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black' : 'bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.1]' }}"
-                                    wire:navigate>
-                                    {{ $registrationOpen ? ($plan->isFree() ? __('Start free') : __('Choose Plan')) : __('Coming soon') }}
-                                </a>
+                                @if ($registrationOpen)
+                                    <a href="{{ route('register') }}"
+                                        class="w-full h-11 rounded-xl flex items-center justify-center text-xs font-bold transition shadow-sm {{ $plan->is_popular ? 'bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black' : 'bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.1]' }}"
+                                        wire:navigate>
+                                        {{ $plan->isFree() ? __('Start free') : __('Choose Plan') }}
+                                    </a>
+                                @else
+                                    <div class="w-full h-11 rounded-xl flex items-center justify-center text-xs font-bold border border-white/[0.08] bg-white/[0.02] text-zinc-500">
+                                        {{ __('Coming soon') }}
+                                    </div>
+                                @endif
                                 @if ($plan->isFree())
                                     <div class="text-[10px] text-zinc-500 font-mono text-center">
                                         {{ __('Starter plan, cancel anytime') }}
@@ -1338,7 +1351,7 @@
                         <span>{{ __('The 0% Ticket Commission Guarantee') }}</span>
                     </div>
                     <p class="text-xs text-zinc-400">
-                        {{ __('You keep 100% of the listed price. A 5% platform fee is added at checkout.') }}
+                        {{ __('You keep 100% of the listed price. A :fee platform fee is added at checkout.', ['fee' => $guestFeeSummary]) }}
                     </p>
                 </div>
             </div>
@@ -1397,7 +1410,7 @@
                                 :class="activeAccordion === 1 ? 'rotate-180 text-[#FFEF4D]' : ''"></i>
                         </button>
                         <div x-show="activeAccordion === 1" x-collapse class="px-5 pb-5 text-sm text-zinc-400 leading-relaxed pt-1" style="display: none;">
-                            {{ __('When a guest completes a booking using QRIS, Virtual Accounts, bank transfers, or credit cards, the money goes straight to your operator balance. Once the payment clears, you can withdraw funds directly into your Indonesian bank account anytime — 100% of your listed ticket price.') }}
+                            {{ __('When a guest completes a booking, funds are held safely until the trip date. Once the trip concludes, you can request a payout directly to your Indonesian bank account — keeping 100% of your listed ticket price.') }}
                         </div>
                     </div>
 
@@ -1412,7 +1425,7 @@
                                 :class="activeAccordion === 2 ? 'rotate-180 text-[#FFEF4D]' : ''"></i>
                         </button>
                         <div x-show="activeAccordion === 2" x-collapse class="px-5 pb-5 text-sm text-zinc-400 leading-relaxed pt-1" style="display: none;">
-                            {{ __('Guests see it on the payment screen before they confirm. You keep 100% of the listed price. A 5% platform fee is added at checkout (capped at Rp 250.000). Nothing taken from your ticket.') }}
+                            {{ __('Guests see it on the payment screen before they confirm. You keep 100% of the listed price. A :fee platform fee is added at checkout. Nothing taken from your ticket.', ['fee' => $guestFeeSummary]) }}
                         </div>
                     </div>
 
@@ -1479,16 +1492,18 @@
                 </h2>
 
                 <p class="text-base sm:text-lg text-zinc-400 max-w-xl mx-auto">
-                    {{ __('Your complete website, booking engine, and payment gateway ready in 5 minutes. Direct bank payouts, 0% ticket commission, and zero setup fees.') }}
+                    {{ __('Your complete website, booking engine, and payment gateway. Direct bank payouts upon request, 0% ticket commission, and zero setup fees.') }}
                 </p>
 
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                    <a href="{{ route('register') }}"
-                        class="w-full sm:w-auto h-12 px-8 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                        wire:navigate>
-                        <span>{{ $registrationOpen ? __('Start free') : __('Coming soon') }}</span>
-                        <i class="fa-solid fa-arrow-right text-xs"></i>
-                    </a>
+                    @if ($registrationOpen)
+                        <a href="{{ route('register') }}"
+                            class="w-full sm:w-auto h-12 px-8 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] font-black text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                            wire:navigate>
+                            <span>{{ __('Start free') }}</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </a>
+                    @endif
                     
                     <a href="{{ $demoStorefrontUrl }}" target="_blank" rel="noopener nofollow"
                         class="w-full sm:w-auto h-12 px-6 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.12] font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer">
@@ -1547,7 +1562,9 @@
                     <div class="font-bold text-white uppercase text-[10px] tracking-wider">{{ __('Operators') }}</div>
                     <ul class="space-y-2.5">
                         <li><a href="{{ route('login') }}" class="hover:text-zinc-300 transition block py-0.5" wire:navigate>{{ __('Operator Log in') }}</a></li>
-                        <li><a href="{{ route('register') }}" class="hover:text-zinc-300 transition block py-0.5" wire:navigate>{{ $registrationOpen ? __('Start selling') : __('Coming soon') }}</a></li>
+                        @if ($registrationOpen)
+                            <li><a href="{{ route('register') }}" class="hover:text-zinc-300 transition block py-0.5" wire:navigate>{{ __('Start selling') }}</a></li>
+                        @endif
                         <li><a href="{{ route('legal.terms') }}" class="hover:text-zinc-300 transition block py-0.5">{{ __('Terms') }}</a></li>
                         <li><a href="{{ route('legal.privacy') }}" class="hover:text-zinc-300 transition block py-0.5">{{ __('Privacy') }}</a></li>
                         <li><a href="mailto:{{ \App\Models\PlatformSetting::current()->getOperatorSupportEmail() }}" class="hover:text-zinc-300 transition block py-0.5">{{ __('Support') }}</a></li>
@@ -1610,12 +1627,14 @@
                     {{ __('Keep 100% of price') }}
                 </div>
             </div>
-            <a href="{{ route('register') }}"
-                class="h-9 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] text-xs font-black transition flex items-center gap-1.5 shadow-sm shrink-0"
-                wire:navigate>
-                <span>{{ $registrationOpen ? __('Start free') : __('Coming soon') }}</span>
-                <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </a>
+            @if ($registrationOpen)
+                <a href="{{ route('register') }}"
+                    class="h-9 px-4 rounded-xl bg-[#FFEF4D] hover:bg-[#fae639] text-[#090d16] text-xs font-black transition flex items-center gap-1.5 shadow-sm shrink-0"
+                    wire:navigate>
+                    <span>{{ __('Start free') }}</span>
+                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+            @endif
         </div>
     </div>
 

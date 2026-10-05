@@ -3,14 +3,18 @@
 use App\Enums\ListingStatus;
 use App\Enums\OperatorStatus;
 use App\Enums\OperatorUserRole;
+use App\Enums\ReservationStatus;
 use App\Models\Operator;
 use App\Models\Package;
 use App\Models\Product;
+use App\Models\Reservation;
 use App\Models\User;
+use App\Services\ListingDeletionService;
 use App\Services\MediaStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -525,4 +529,81 @@ test('operator can delete package from inside edit page and index modal', functi
         ->call('deleteConfirmed');
 
     expect(Package::where('id', $package2->id)->exists())->toBeFalse();
+});
+
+test('an activity with an upcoming booking cannot be deleted from the index or edit page', function () {
+    Storage::fake(MediaStore::diskName());
+
+    $product = Product::factory()->create([
+        'operator_id' => $this->operator->id,
+        'cover_photo' => 'operators/'.$this->operator->id.'/products/covers/booked.jpg',
+    ]);
+    Storage::disk(MediaStore::diskName())->put('operators/'.$this->operator->id.'/products/covers/booked.jpg', 'content');
+    Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'product',
+        'bookable_id' => $product->id,
+        'requested_date' => now()->addDays(3)->toDateString(),
+    ]);
+
+    Livewire::test('pages::products.index')
+        ->call('confirmDelete', $product->id, $product->name)
+        ->call('deleteConfirmed')
+        ->assertDispatched('toast', type: 'error');
+
+    Livewire::test('pages::products.edit', ['product' => $product])
+        ->call('delete')
+        ->assertNoRedirect()
+        ->assertDispatched('toast', type: 'error');
+
+    expect(Product::whereKey($product->id)->exists())->toBeTrue();
+    Storage::disk(MediaStore::diskName())->assertExists('operators/'.$this->operator->id.'/products/covers/booked.jpg');
+});
+
+test('an activity bundled in a package with an upcoming booking cannot be deleted', function () {
+    $product = Product::factory()->create(['operator_id' => $this->operator->id]);
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+    $package->products()->attach($product->id, ['quantity_required' => 1]);
+    Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'requested_date' => now()->addDays(3)->toDateString(),
+    ]);
+
+    expect(fn () => app(ListingDeletionService::class)->delete($product))->toThrow(ValidationException::class);
+
+    Livewire::test('pages::packages.edit', ['package' => $package])
+        ->call('delete')
+        ->assertNoRedirect()
+        ->assertDispatched('toast', type: 'error');
+
+    expect(Product::whereKey($product->id)->exists())->toBeTrue()
+        ->and(Package::whereKey($package->id)->exists())->toBeTrue()
+        ->and($package->products()->count())->toBe(1);
+});
+
+test('a listing whose bookings are past or closed can still be deleted', function () {
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+    Reservation::factory()->confirmed()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'requested_date' => now()->subDays(3)->toDateString(),
+    ]);
+    Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'requested_date' => now()->addDays(3)->toDateString(),
+        'status' => ReservationStatus::Cancelled,
+        'hold_expires_at' => null,
+    ]);
+
+    Livewire::test('pages::packages.index')
+        ->call('confirmDelete', $package->id, $package->title)
+        ->call('deleteConfirmed')
+        ->assertDispatched('toast', type: 'success');
+
+    expect(Package::whereKey($package->id)->exists())->toBeFalse();
 });

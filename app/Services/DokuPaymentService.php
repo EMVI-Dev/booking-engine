@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\DokuMode;
 use App\Enums\PaymentStatus;
 use App\Models\Operator;
 use App\Models\Payment;
@@ -29,10 +30,16 @@ class DokuPaymentService
      * Whether the offline payment simulator may be used on this deployment.
      *
      * The simulator confirms reservations without a real payment, so it defaults to
-     * local/testing only and must be opted into explicitly anywhere else.
+     * local/testing only and must be opted into explicitly anywhere else. It is never on in
+     * production or next to live DOKU keys, whatever DOKU_SIMULATOR_ENABLED says: there it would
+     * let anyone mark a booking paid, and accept unsigned webhooks when keys are missing.
      */
     public static function simulatorEnabled(): bool
     {
+        if (app()->isProduction() || DokuClient::mode() === DokuMode::Live) {
+            return false;
+        }
+
         $configured = config('doku.simulator_enabled');
 
         if ($configured !== null) {

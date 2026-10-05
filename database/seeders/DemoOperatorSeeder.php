@@ -76,7 +76,11 @@ class DemoOperatorSeeder extends Seeder
             })
             ->pluck('id');
 
-        $this->wipedOperatorIds = $ids->all();
+        $this->wipedOperatorIds = [];
+
+        foreach ($ids as $id) {
+            $this->wipedOperatorIds[] = (string) $id;
+        }
 
         foreach ($ids as $id) {
             $media->deleteDirectory($media->directoryFor($id));
@@ -744,9 +748,9 @@ class DemoOperatorSeeder extends Seeder
     }
 
     /**
-     * Download or load cached demo photo, resize it, and store it as WebP under the operator folder.
-     * In local / development environments, raw downloaded images are cached locally on disk
-     * (in storage/app/demo-cache/) so subsequent seeds are instant, 100% local, and offline-safe.
+     * Download (or reuse a cached copy of) a demo photo, resize it, and store it as WebP under the operator folder.
+     * Raw downloads are cached in storage/app/demo-cache/ (git-ignored, local disk only, never R2),
+     * so later seeds and the nightly demo refresh skip the download.
      */
     protected function storeDemoImage(Operator $operator, string $url, int $maxWidth = MediaStore::COVER_MAX_WIDTH, string $within = 'catalog'): string
     {
@@ -807,30 +811,33 @@ class DemoOperatorSeeder extends Seeder
         return $cacheDir.'/'.md5($url).'.jpg';
     }
 
+    /**
+     * Keep an admin who was impersonating the old demo shop on the new one after a refresh.
+     * Only admin database sessions are touched, the original start time is kept so the
+     * impersonation still expires on time, and anything unreadable (encrypted or non-JSON
+     * sessions, other drivers) is left alone: User::impersonatedOperator() then just ends it.
+     */
     protected function migrateAdminSessions(Operator $newOperator): void
     {
-        if (empty($this->wipedOperatorIds) || ! Schema::hasTable('sessions')) {
+        if ($this->wipedOperatorIds === [] || config('session.driver') !== 'database' || ! Schema::hasTable('sessions')) {
             return;
         }
 
-        DB::table('sessions')->get()->each(function ($session) use ($newOperator): void {
-            $payload = @base64_decode((string) $session->payload, true);
-            if (! $payload) {
+        $adminIds = User::query()->where('is_admin', true)->pluck('id');
+
+        DB::table('sessions')->whereIn('user_id', $adminIds)->get()->each(function (object $session) use ($newOperator): void {
+            $payload = base64_decode((string) $session->payload, true);
+            $data = $payload === false ? null : json_decode($payload, true);
+
+            if (! is_array($data) || ! in_array($data[User::IMPERSONATION_SESSION_KEY] ?? null, $this->wipedOperatorIds, true)) {
                 return;
             }
 
-            $data = json_decode($payload, true);
-            if (! is_array($data)) {
-                return;
-            }
+            $data[User::IMPERSONATION_SESSION_KEY] = $newOperator->id;
 
-            if (isset($data[User::IMPERSONATION_SESSION_KEY]) && in_array($data[User::IMPERSONATION_SESSION_KEY], $this->wipedOperatorIds, true)) {
-                $data[User::IMPERSONATION_SESSION_KEY] = $newOperator->id;
-                $data[User::IMPERSONATION_STARTED_KEY] = now()->getTimestamp();
-                DB::table('sessions')->where('id', $session->id)->update([
-                    'payload' => base64_encode((string) json_encode($data)),
-                ]);
-            }
+            DB::table('sessions')->where('id', $session->id)->update([
+                'payload' => base64_encode((string) json_encode($data)),
+            ]);
         });
     }
 

@@ -12,6 +12,8 @@
         $cleanPhone = !empty($agent->contact_whatsapp) ? $waService->normalizePhoneNumber($agent->contact_whatsapp) : null;
         $waMessage = __('Hello :name, I have a question about your tours.', ['name' => $agent->name]);
         $waUrl = $cleanPhone ? $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage) : null;
+        $storefrontPages = app(\App\Services\StorefrontPagesService::class)->pagesFor($agent);
+        $hasContact = $storefrontPages['contact'];
     @endphp
     @include('storefront.partials.seo', [
         'agent' => $agent,
@@ -107,7 +109,7 @@
                 </span>
                 <h3 class="text-lg sm:text-xl font-bold text-white">{{ __('Still have questions?') }}</h3>
                 <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                    {{ __('Cannot find the answer you are looking for? Reach out directly to :name on WhatsApp or send us an inquiry.', ['name' => $agent->name]) }}
+                    {{ __('Cannot find the answer you are looking for? Reach out directly to :name on WhatsApp or send us an enquiry.', ['name' => $agent->name]) }}
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3 shrink-0">
@@ -118,11 +120,11 @@
                         <span>{{ __('Chat on WhatsApp') }}</span>
                     </a>
                 @endif
-                @if (app(\App\Services\StorefrontPagesService::class)->has($agent, 'contact'))
+                @if ($hasContact)
                     <a href="{{ route('storefront.contact') }}"
                         class="h-10 px-4 inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 font-bold text-xs transition backdrop-blur-md">
                         <i class="fa-solid fa-envelope-open-text text-xs"></i>
-                        <span>{{ __('Send Inquiry') }}</span>
+                        <span>{{ __('Send Enquiry') }}</span>
                     </a>
                 @endif
             </div>

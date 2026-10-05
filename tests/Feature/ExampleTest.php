@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Plan;
+use App\Services\PlatformSeoService;
 
 test('returns a successful response', function () {
     $response = $this->get(route('home'));
@@ -24,7 +25,6 @@ test('home pricing uses the three public plan names', function () {
         ->assertSee('Payouts, 0% cut')
         ->assertSee('WhatsApp tickets, guest lists, calendar')
         ->assertSee('Your own website address (yourbrand.com)')
-        ->assertSee('Tour website + 24/7 booking')
         ->assertSee('yourname.travelengine.id')
         ->assertSee('Create Booking Link')
         ->assertDontSee('Pay links you send in WhatsApp')
@@ -42,10 +42,11 @@ test('home pricing uses the three public plan names', function () {
         ->assertSee('href="'.route('login').'"', false)
         ->assertSee('http://demo.booking.test/login', false)
         ->assertDontSee('Open a live example')
-        ->assertSee('You keep 100% of the listed price. A 5% platform fee is added at checkout.')
+        ->assertSee('You keep 100% of the listed price. A '.app(PlatformSeoService::class)->guestFeeSummary().' platform fee is added at checkout.')
         ->assertSee('Nothing taken from your ticket')
         ->assertSee('You keep the listed price')
-        ->assertSee('Platform fee at checkout')
+        ->assertSee('Platform fee added at checkout')
+        ->assertDontSee('Paid by guest')
         ->assertSee('Starter plan, cancel anytime')
         ->assertSee('What is the platform fee?')
         ->assertSee('Guests see it on the payment screen before they confirm')

@@ -5,6 +5,8 @@ use App\Models\Operator;
 use App\Models\Product;
 use App\Concerns\ResolvesCurrentOperator;
 use App\Concerns\UsesMediaStore;
+use App\Services\ListingDeletionService;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -39,12 +41,35 @@ new #[Title('Activities & Inventory')] class extends Component {
 
     public ?string $deletingProductId = null;
     public ?string $deletingProductName = null;
+    public bool $deletingProductIsPublished = false;
 
-    public function confirmDelete(string $id, string $name): void
+    public function confirmDelete(string $id, string $name, bool $isPublished = false): void
     {
         $this->deletingProductId = $id;
         $this->deletingProductName = $name;
+        $this->deletingProductIsPublished = $isPublished;
         $this->dispatch('open-modal', 'confirm-product-deletion-index');
+    }
+
+    public function unpublishConfirmed(): void
+    {
+        if (! $this->deletingProductId) {
+            return;
+        }
+
+        $this->authorizeAbility('manageCatalog');
+
+        $product = $this->currentOperator?->products()->findOrFail($this->deletingProductId);
+
+        if ($product) {
+            $product->update(['status' => \App\Enums\ListingStatus::Draft]);
+            $this->dispatch('toast', message: __('Activity item unpublished successfully.'), type: 'success');
+        }
+
+        $this->deletingProductId = null;
+        $this->deletingProductName = null;
+        $this->deletingProductIsPublished = false;
+        $this->dispatch('close-modal', 'confirm-product-deletion-index');
     }
 
     public function deleteConfirmed(): void
@@ -66,9 +91,14 @@ new #[Title('Activities & Inventory')] class extends Component {
         $product = $this->currentOperator?->products()->findOrFail($id);
 
         if ($product) {
-            $this->media()->delete($product->cover_photo);
-            $this->media()->deleteMany($product->gallery ?? []);
-            $product->delete();
+            try {
+                app(ListingDeletionService::class)->delete($product);
+            } catch (ValidationException $e) {
+                $this->dispatch('toast', message: (string) collect($e->errors())->flatten()->first(), type: 'error');
+
+                return;
+            }
+
             $this->dispatch('toast', message: __('Activity item deleted successfully.'), type: 'success');
         }
     }
@@ -190,18 +220,30 @@ new #[Title('Activities & Inventory')] class extends Component {
                             @endif
                         </span>
 
+                        @php
+                            $blockReason = app(\App\Services\ListingDeletionService::class)->blockReason($product);
+                        @endphp
                         <div class="flex items-center gap-1.5">
                             <a href="{{ route('products.edit', $product) }}" wire:navigate
                                 class="h-8 px-2.5 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-zinc-200 border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs inline-flex items-center gap-1.5 transition">
                                 <i class="fa-solid fa-pen text-[10px]" aria-hidden="true"></i>
                                 {{ __('Edit') }}
                             </a>
-                            <button type="button"
-                                wire:click="confirmDelete('{{ $product->id }}', '{{ addslashes($product->name) }}')"
-                                aria-label="{{ __('Delete :name', ['name' => $product->name]) }}"
-                                class="h-8 w-8 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/40 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center cursor-pointer transition">
-                                <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
-                            </button>
+                            @if ($blockReason !== null)
+                                <button type="button"
+                                    disabled
+                                    title="{{ $blockReason }}"
+                                    class="h-8 w-8 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] text-stone-300 dark:text-zinc-600 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center cursor-not-allowed opacity-60">
+                                    <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
+                                </button>
+                            @else
+                                <button type="button"
+                                    wire:click="confirmDelete('{{ $product->id }}', '{{ addslashes($product->name) }}', {{ $product->status === \App\Enums\ListingStatus::Published ? 'true' : 'false' }})"
+                                    aria-label="{{ __('Delete :name', ['name' => $product->name]) }}"
+                                    class="h-8 w-8 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/40 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center cursor-pointer transition">
+                                    <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -284,14 +326,25 @@ new #[Title('Activities & Inventory')] class extends Component {
                                             <i class="fa-solid fa-pen text-[10px]"></i>
                                             <span>{{ __('Edit') }}</span>
                                         </a>
-                                        <button
-                                            type="button"
-                                            wire:click="confirmDelete('{{ $product->id }}', '{{ addslashes($product->name) }}')"
-                                            class="h-7 w-7 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center transition shadow-none cursor-pointer"
-                                            title="{{ __('Delete') }}"
-                                        >
-                                            <i class="fa-solid fa-trash text-xs"></i>
-                                        </button>
+                                        @if ($blockReason !== null)
+                                            <button
+                                                type="button"
+                                                disabled
+                                                class="h-7 w-7 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] text-stone-300 dark:text-zinc-600 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center shadow-none cursor-not-allowed opacity-60"
+                                                title="{{ $blockReason }}"
+                                            >
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        @else
+                                            <button
+                                                type="button"
+                                                wire:click="confirmDelete('{{ $product->id }}', '{{ addslashes($product->name) }}', {{ $product->status === \App\Enums\ListingStatus::Published ? 'true' : 'false' }})"
+                                                class="h-7 w-7 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center transition shadow-none cursor-pointer"
+                                                title="{{ __('Delete') }}"
+                                            >
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -347,6 +400,17 @@ new #[Title('Activities & Inventory')] class extends Component {
                 >
                     {{ __('Cancel') }}
                 </x-button>
+                @if ($deletingProductIsPublished)
+                    <x-button
+                        type="button"
+                        variant="secondary"
+                        wire:click="unpublishConfirmed"
+                        class="font-medium text-xs rounded-[6px]"
+                    >
+                        <i class="fa-solid fa-eye-slash mr-1.5 text-xs"></i>
+                        {{ __('Unpublish Instead') }}
+                    </x-button>
+                @endif
                 <x-button
                     type="button"
                     variant="danger"

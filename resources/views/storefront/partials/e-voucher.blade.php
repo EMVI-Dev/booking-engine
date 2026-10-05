@@ -7,10 +7,16 @@
     $coverUrl = $bookable?->cover_photo_url;
     $venue = filled($bookable?->location) ? $bookable->location : $agent->displayName;
     $isCancelled = $reservation->status === \App\Enums\ReservationStatus::Cancelled;
+    $isDeclined = $reservation->status === \App\Enums\ReservationStatus::Declined;
+    $isCompleted = $reservation->status === \App\Enums\ReservationStatus::Completed;
+    $isRefunded = (bool) ($latestPayment?->isRefunded());
     $isWaiting = $reservation->status === \App\Enums\ReservationStatus::PendingConfirmation && $isPaid;
-    $ticketPaid = $isPaid && ! $isCancelled;
+    $ticketPaid = $isPaid && ! $isCancelled && ! $isDeclined && ! $isRefunded;
 
     $statusLabel = match (true) {
+        $isRefunded => __('Refunded'),
+        $isDeclined => __('Declined'),
+        $isCompleted => __('Completed'),
         $isCancelled => __('Cancelled'),
         $isWaiting => __('Paid • waiting for the team'),
         $ticketPaid => __('Paid and confirmed'),
@@ -20,7 +26,7 @@
 @endphp
 
 <article
-    class="e-voucher {{ $isCancelled ? 'e-voucher--cancelled' : '' }}"
+    class="e-voucher {{ ($isCancelled || $isDeclined || $isRefunded) ? 'e-voucher--cancelled' : '' }}"
     aria-label="{{ $isPage ? __('My ticket') : __('Your e-ticket') }}"
 >
     <div class="e-voucher__top">

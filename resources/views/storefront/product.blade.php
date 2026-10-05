@@ -188,10 +188,42 @@
                     @endif
                 </div>
 
-                <!-- Right Desktop Sticky Booking Box -->
-                <div class="hidden lg:block space-y-6">
-                    <div class="sticky top-24">
-                        <livewire:storefront.booking-box :bookable="$product" :agent="$agent" :key="'desktop-booking-box-' . $product->id" />
+                <!-- Right Desktop Sticky Booking Box / Mobile Bottom Sheet -->
+                <div class="lg:block">
+                    <!-- Mobile Backdrop Overlay -->
+                    <div
+                        x-show="mobileBookingOpen"
+                        x-cloak
+                        x-transition.opacity
+                        @click="mobileBookingOpen = false"
+                        class="fixed inset-0 z-40 bg-slate-900/70 backdrop-blur-xs lg:hidden"
+                    ></div>
+
+                    <div
+                        :class="mobileBookingOpen
+                            ? 'fixed inset-x-0 bottom-0 z-50 p-4 sm:p-6 bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-3xl max-w-lg mx-auto max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 dark:border-zinc-800 block'
+                            : 'hidden lg:block'"
+                        class="lg:static lg:z-auto lg:p-0 lg:max-w-none lg:max-h-none lg:overflow-visible lg:rounded-none lg:border-0 lg:shadow-none lg:bg-transparent lg:space-y-6"
+                    >
+                        <div class="sticky top-24">
+                            <!-- Mobile Sheet Header (Hidden on Desktop) -->
+                            <div class="flex lg:hidden items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-zinc-800">
+                                <div>
+                                    <span class="text-[10px] uppercase font-bold text-slate-400 block leading-none">{{ __('Instant Hold') }}</span>
+                                    <h3 class="font-black text-base text-slate-900 dark:text-white mt-0.5">{{ __('Select Date & Units') }}</h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="mobileBookingOpen = false"
+                                    class="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
+                                    title="{{ __('Close') }}"
+                                >
+                                    <i class="fa-solid fa-xmark text-sm"></i>
+                                </button>
+                            </div>
+
+                            <livewire:storefront.booking-box :bookable="$product" :agent="$agent" :key="'booking-box-' . $product->id" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -216,46 +248,6 @@
                 <i class="fa-solid fa-calendar-check text-xs"></i>
                 <span>{{ __('Book Now') }}</span>
             </button>
-        </div>
-
-        <!-- Mobile Slide-over Bottom Sheet Booking Modal -->
-        <div
-            x-show="mobileBookingOpen"
-            x-cloak
-            x-transition:enter="transition ease-out duration-250"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-xs lg:hidden"
-        >
-            <div
-                x-transition:enter="transition ease-out duration-300 transform"
-                x-transition:enter-start="translate-y-full sm:scale-95"
-                x-transition:enter-end="translate-y-0 sm:scale-100"
-                x-transition:leave="transition ease-in duration-200 transform"
-                x-transition:leave-start="translate-y-0 sm:scale-100"
-                x-transition:leave-end="translate-y-full sm:scale-95"
-                class="w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-white dark:bg-zinc-900 p-4 sm:p-6 max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl border border-slate-200 dark:border-zinc-800"
-            >
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                    <div>
-                        <span class="text-[10px] uppercase font-bold text-slate-400 block leading-none">{{ __('Instant Hold') }}</span>
-                        <h3 class="font-black text-base text-slate-900 dark:text-white mt-0.5">{{ __('Select Date & Units') }}</h3>
-                    </div>
-                    <button
-                        type="button"
-                        @click="mobileBookingOpen = false"
-                        class="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
-                        title="{{ __('Close') }}"
-                    >
-                        <i class="fa-solid fa-xmark text-sm"></i>
-                    </button>
-                </div>
-
-                <livewire:storefront.booking-box :bookable="$product" :agent="$agent" :key="'mobile-booking-box-' . $product->id" />
-            </div>
         </div>
 
         @livewireScripts

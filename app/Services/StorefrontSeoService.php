@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\DomainStatus;
+use App\Enums\DomainType;
 use App\Models\Operator;
 use App\Models\OperatorGalleryPhoto;
 use App\Models\Package;
@@ -575,5 +577,28 @@ class StorefrontSeoService
         $plain = trim(preg_replace('/\s+/', ' ', strip_tags($text)) ?? '');
 
         return Str::limit($plain, $limit);
+    }
+
+    /**
+     * Build the canonical URL for a storefront page, preferring the active custom domain.
+     */
+    public function canonicalUrl(Operator $operator, ?string $url = null): string
+    {
+        $targetUrl = $url ?: url()->current();
+
+        $activeCustomDomain = $operator->domains()
+            ->where('status', DomainStatus::Active)
+            ->where('type', DomainType::Custom)
+            ->first();
+
+        if (! $activeCustomDomain) {
+            return $targetUrl;
+        }
+
+        $parts = parse_url($targetUrl);
+        $path = $parts['path'] ?? '/';
+        $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+
+        return 'https://'.$activeCustomDomain->domain.$path.$query;
     }
 }

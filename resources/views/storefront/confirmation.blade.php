@@ -29,7 +29,7 @@
     @php
         $waService = app(\App\Services\WhatsAppDispatchService::class);
         $cleanPhone = $waService->normalizePhoneNumber($agent->contact_whatsapp);
-        $waMessage = 'Hello ' . ($agent->name ?? 'Agent') . ', I have an inquiry for booking #' . $reservationCode . ' (' . $reservation->guest_name . ')';
+        $waMessage = 'Hello ' . ($agent->name ?? 'Agent') . ', I have an enquiry for booking #' . $reservationCode . ' (' . $reservation->guest_name . ')';
         $waUrl = $cleanPhone !== '' ? $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage) : '#';
         $isExpired = $reservation->hold_expires_at && $reservation->hold_expires_at->isPast();
         $minutesLeft = $reservation->hold_expires_at && $reservation->hold_expires_at->isFuture()
@@ -39,7 +39,28 @@
 
     <div class="w-full max-w-md space-y-5">
         <div class="no-print space-y-1 text-center">
-            @if ($reservation->status === \App\Enums\ReservationStatus::Cancelled)
+            @if ($latestPayment?->isRefunded())
+                <h1 class="text-balance text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                    {{ __('Booking Refunded') }}
+                </h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ __('This payment was refunded to your original payment method. Contact :agent if you have any questions.', ['agent' => $agent->name]) }}
+                </p>
+            @elseif ($reservation->status === \App\Enums\ReservationStatus::Declined)
+                <h1 class="text-balance text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                    {{ __('Booking Declined') }}
+                </h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ __('This booking was declined by :agent. If you made a payment, it has been refunded.', ['agent' => $agent->name]) }}
+                </p>
+            @elseif ($reservation->status === \App\Enums\ReservationStatus::Completed)
+                <h1 class="text-balance text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                    {{ __('Trip Completed') }}
+                </h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ __('Thank you for joining this experience with :agent! We hope you had a great trip.', ['agent' => $agent->name]) }}
+                </p>
+            @elseif ($reservation->status === \App\Enums\ReservationStatus::Cancelled)
                 <h1 class="text-balance text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl">
                     {{ __('This booking is cancelled') }}
                 </h1>
@@ -77,7 +98,7 @@
         @include('storefront.partials.e-voucher')
 
         <div class="no-print space-y-2.5">
-            @if (! $isPaid && ! $isExpired && $reservation->status !== \App\Enums\ReservationStatus::Cancelled)
+            @if (! $isPaid && ! $isExpired && ! $latestPayment?->isRefunded() && ! in_array($reservation->status, [\App\Enums\ReservationStatus::Cancelled, \App\Enums\ReservationStatus::Declined, \App\Enums\ReservationStatus::Completed], true))
                 <a
                     href="{{ route('storefront.reservation.pay', $reservation) }}"
                     class="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-brand-600 text-sm font-black text-brand-foreground transition hover:bg-brand-700 active:bg-brand-800"
@@ -177,11 +198,24 @@
             @endif
 
             @error('reservation')
-                <p class="text-[11px] font-semibold text-rose-600 dark:text-rose-400">{{ $message }}</p>
+                <div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 flex items-start gap-2.5" role="alert">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5 text-rose-500 shrink-0 text-sm" aria-hidden="true"></i>
+                    <span>{{ $message }}</span>
+                </div>
             @enderror
 
+            @if (session('error'))
+                <div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 flex items-start gap-2.5" role="alert">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5 text-rose-500 shrink-0 text-sm" aria-hidden="true"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+
             @if (session('success'))
-                <p class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">{{ session('success') }}</p>
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300 flex items-start gap-2.5" role="status">
+                    <i class="fa-solid fa-circle-check mt-0.5 text-emerald-500 shrink-0 text-sm" aria-hidden="true"></i>
+                    <span>{{ session('success') }}</span>
+                </div>
             @endif
 
             <p class="text-[11px] text-slate-400">

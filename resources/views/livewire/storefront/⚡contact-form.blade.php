@@ -81,17 +81,7 @@ new class extends Component {
     }
 }; ?>
 
-<section id="contact" class="space-y-5 pt-6 border-t border-slate-200/80 dark:border-zinc-800" aria-label="{{ __('Contact us') }}">
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-        <div>
-            <h2 class="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-                {{ __('Contact & Group Enquiries') }}
-            </h2>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Have a question or planning a private trip? Send us your details and we will reply directly on WhatsApp.') }}
-            </p>
-        </div>
-    </div>
+<section id="contact" class="space-y-5" aria-label="{{ __('Contact us') }}">
 
     @if ($sent)
         <div class="rounded-2xl sm:rounded-3xl border border-emerald-200/80 dark:border-emerald-800/80 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/50 dark:from-emerald-950/30 dark:via-zinc-900 dark:to-zinc-900 p-8 sm:p-10 text-center space-y-4 shadow-xs">
@@ -227,7 +217,7 @@ new class extends Component {
                     {{ __('Your Message') }} <span class="text-rose-500">*</span>
                 </label>
                 <textarea wire:model="message" rows="4"
-                    placeholder="{{ $type === \App\Models\Enquiry::TYPE_PRIVATE_GROUP ? __('Tell us about your group, preferred destinations, activities, and any special requirements...') : __('Please write your question or inquiry here...') }}"
+                    placeholder="{{ $type === \App\Models\Enquiry::TYPE_PRIVATE_GROUP ? __('Tell us about your group, preferred destinations, activities, and any special requirements...') : __('Please write your question or enquiry here...') }}"
                     class="w-full rounded-xl sm:rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 p-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition leading-relaxed"></textarea>
                 @error('message') <p class="text-xs text-rose-600 font-medium">{{ $message }}</p> @enderror
             </div>

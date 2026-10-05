@@ -1,6 +1,8 @@
 # Booking Engine Platform — V1 Spec (Rev. 25)
 
-_Last reviewed: 2026-10-02_
+_Last reviewed: 2026-10-05_
+
+Start at [overview.md](overview.md) for the summary and the map of every doc.
 
 ## Vision & Audience
 
@@ -36,6 +38,7 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
 - **Vendors & Suppliers (`vendors`)**:
     - Manage external suppliers, dedicated `reservation_email` dispatch inboxes, contact persons, phone/WhatsApp, and payout bank accounts.
     - Inline vendor creation directly inside the activity creation and editing workflow.
+- **Deleting a listing**: An activity or package cannot be deleted while it has an upcoming open booking (awaiting payment, awaiting confirmation or confirmed, dated today or later). For an activity, this includes bookings of any package that bundles it. The operator unpublishes it instead. Rule: `ListingDeletionService`.
 
 ### 2. Operator Portal & Daily Operations
 - **1-Click Direct Booking & Payment Link Generator**:
@@ -46,8 +49,12 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - **Capacity Density Heatmap**: Monthly color-coded density calendar showing sold-out, high-occupancy, and open days (Agency).
     - **Print-Perfect Daily Manifest**: High-contrast A4 printable run-sheet with check-in pen tick-boxes (`[ ] Check`), passenger details, notes, and a 3-part ground crew sign-off block (Tour Guide, Driver/Vehicle ID, Dispatch Officer).
 - **Streamlined Navigation & Sidebar**:
-    - Clean hierarchy: *Dashboard, Reservations, Calendar, Tour Packages, Single Activities, Coupons & Discounts, Storefront Settings, Subscription & Billing*.
-    - Storefront Settings tabs are **Brand & Identity**, **Storefront & Policies**, and **Reviews**. Reviews is not a sidebar item and not a desk page.
+    - Main items: *Dashboard, Bookings, Calendar, Tour Packages, Single Activities, Vendors & Suppliers, Guest CRM, Enquiries, Coupons & Discounts, Storefront Settings, Wallet & Payouts, Subscription & Billing, Team*.
+    - Storefront Settings tabs are **Brand & Identity**, **Storefront & Policies**, **Reviews**, **Gallery**, **FAQ** and **Contact**. Reviews is not a sidebar item and not a desk page. Gallery, FAQ and Contact are one page (`/settings/website?tab=…`).
+- **Enquiries (`/enquiries`)**:
+    - Inbox for the storefront contact form (questions and private / group trip requests), with an unread badge in the sidebar, **Reply on WhatsApp**, mark as read and delete. Teammates with `manageReservations`. Details: [storefront website](../features/storefront-website.md).
+- **Team (`/settings/team`)**:
+    - Roles: **Owner**, **Admin**, **Reservations** and **Finance**. Team size follows the plan (see [plans and pricing](../commercial/plans-and-pricing.md)).
 - **Coupons & Dedicated Performance Reports (`/coupons`, `/coupons/{coupon}/report`)**:
     - Manage storefront promotional discounts with scope isolation (`PlatformCoupon::forGuest()`) preventing interference from platform subscription discounts.
     - Dedicated analytics report page with 5 financial KPIs (Total Uses, Discounts Given, Gross Volume, Net Revenue, AOV), status/search filters, itemized bookings table, and CSV download.
@@ -69,7 +76,14 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - Default: `slug.travelengine.id`, served by the `*.travelengine.id` wildcard on Laravel Cloud.
     - Custom Domain (Agency): saved in Brand settings, added to Laravel Cloud through its API. The operator adds the records shown (A on a bare domain, CNAME on a subdomain, plus any certificate records). Cloud issues the padlock. Full flow: [custom domains](../features/custom-domains.md).
 - **Segmented Storefront Navigation**:
-    - Direct access to *Catalog (Home)*, *Tour Packages*, *Single Activities*, and *Terms & Policies*.
+    - Direct access to *Catalog (Home)*, *Tour Packages*, *Single Activities*, *Gallery*, *FAQ*, *Contact*, *Find Booking* and *Terms & Policies*. A list page shows only when it has something in it.
+- **Website pages: Gallery, FAQ, Contact** ([storefront website](../features/storefront-website.md)):
+    - **Gallery** (`/gallery`, every plan): photo limit per plan, stored as WebP. Hidden while empty.
+    - **FAQ** (`/faq`, every plan): answers generated from the operator's own settings, which they can hide, plus up to 15 of their own. The only page with FAQ search markup.
+    - **Contact** (`/contact`): WhatsApp, plus the contact and private / group enquiry form on paid plans when the operator turns it on. Optional email copy. Spam is stopped with a hidden field, a minimum fill time and a rate limit (no CAPTCHA).
+    - A page with nothing to show returns 404 and is left out of the menus, sitemap and `llms.txt`.
+- **Cookie notice**:
+    - Shown only on pages with a tracker (operator GA, GTM or Meta Pixel, or the platform's GA on marketing pages). Trackers load only after **Accept**; the choice lasts 180 days and can be changed from the footer.
 - **Direct Checkout & 30-Minute Hold Recovery**:
     - Date picker with real-time capacity validation and instant 30-minute hold countdown.
     - Payment resumption, receipt, and e-ticket use `/reservations/{public_token}/…`. The reservation record id is never exposed to guests.
@@ -150,6 +164,14 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
     - `VendorBookingCancelledMail`: Automated cancellation notice sent when a paid reservation is cancelled.
 - **1-Click WhatsApp Dispatch Center**:
     - Pre-formatted messages for Payment Hold Recovery, E-Voucher Delivery, 24-Hour Departure Reminders, and Meeting Point Pins.
+
+### 7. Platform Admin & Demo Shop
+- **Platform admin (`/admin`, platform domain only, separate login)**:
+    - Dashboard, Operators (approve, suspend, manage), Plans (prices, limits, features, gallery limit), Subscriptions, Announcements, Platform coupons, Payouts, Platform settings (fee rate and cap, maintenance, Slack webhook), Admins and the audit log.
+    - An admin can **manage a shop** as its operator for up to 2 hours. Every start and stop is logged. A managing admin cannot request payouts or change the payout bank.
+- **Demo shop (`demo.travelengine.id`)**:
+    - A public demo operator with sample trips, bookings and gallery. Checkout is switched off and search engines are told not to index it.
+    - Rebuilt every night (`demo:refresh`, 03:30 WITA) without touching plans. Seeding and refresh steps: [production launch](../engineering/production-launch.md).
 
 ---
 

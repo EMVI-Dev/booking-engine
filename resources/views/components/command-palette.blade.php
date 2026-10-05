@@ -1,4 +1,12 @@
-@props(['storefrontUrl' => '#', 'canManageTeam' => false])
+@props([
+    'storefrontUrl' => '#',
+    'canManageCatalog' => false,
+    'canManageReservations' => false,
+    'canManageWallet' => false,
+    'canManageBilling' => false,
+    'canManageTeam' => false,
+    'canManageSettings' => false,
+])
 
 <div
     x-show="commandPaletteOpen"
@@ -25,24 +33,38 @@
             search: '',
             selectedIndex: 0,
             items: [
-                { title: '{{ __('Create Booking & Payment Link') }}', cat: '{{ __('Quick Actions') }}', icon: 'fa-solid fa-plus text-[#FFEF4D]', action: 'create-link' },
+                @if ($canManageReservations)
+                    { title: '{{ __('Create Booking & Payment Link') }}', cat: '{{ __('Quick Actions') }}', icon: 'fa-solid fa-plus text-[#FFEF4D]', action: 'create-link' },
+                @endif
                 { title: '{{ __('Open Live Storefront') }}', cat: '{{ __('Quick Actions') }}', icon: 'fa-solid fa-store text-[#FFEF4D]', url: '{{ $storefrontUrl }}', external: true },
                 { title: '{{ __('Dashboard Overview') }}', cat: '{{ __('Overview & Schedule') }}', icon: 'fa-solid fa-gauge-high text-[#FFEF4D]', url: '{{ route('dashboard') }}' },
-                { title: '{{ __('Bookings & Reservations') }}', cat: '{{ __('Overview & Schedule') }}', icon: 'fa-solid fa-calendar-check text-[#FFEF4D]', url: '{{ route('reservations.index') }}' },
+                @if ($canManageReservations)
+                    { title: '{{ __('Bookings & Reservations') }}', cat: '{{ __('Overview & Schedule') }}', icon: 'fa-solid fa-calendar-check text-[#FFEF4D]', url: '{{ route('reservations.index') }}' },
+                @endif
                 { title: '{{ __('Calendar & Departures') }}', cat: '{{ __('Overview & Schedule') }}', icon: 'fa-solid fa-calendar-days text-[#FFEF4D]', url: '{{ route('calendar.index') }}' },
-                { title: '{{ __('Wallet & Payout Settlements') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-wallet text-[#FFEF4D]', url: '{{ route('wallet.index') }}' },
-                { title: '{{ __('Guest CRM Directory') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-address-book text-[#FFEF4D]', url: '{{ route('guests.index') }}' },
-                { title: '{{ __('Single Activities') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-compass text-[#FFEF4D]', url: '{{ route('products.index') }}' },
-                { title: '{{ __('Tours & Package Listings') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-cubes text-[#FFEF4D]', url: '{{ route('packages.index') }}' },
-                { title: '{{ __('Coupons & Promo Codes') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-ticket text-[#FFEF4D]', url: '{{ route('coupons.index') }}' },
-                { title: '{{ __('Brand Logo & Custom Theme') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-palette text-[#FFEF4D]', url: '{{ route('brand.edit') }}' },
-                { title: '{{ __('Storefront & Policy Setup') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-sliders text-[#FFEF4D]', url: '{{ route('storefront-settings.edit') }}' },
+                @if ($canManageWallet)
+                    { title: '{{ __('Wallet & Payout Settlements') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-wallet text-[#FFEF4D]', url: '{{ route('wallet.index') }}' },
+                @endif
+                @if ($canManageReservations)
+                    { title: '{{ __('Guest CRM Directory') }}', cat: '{{ __('Revenue & Customers') }}', icon: 'fa-solid fa-address-book text-[#FFEF4D]', url: '{{ route('guests.index') }}' },
+                @endif
+                @if ($canManageCatalog)
+                    { title: '{{ __('Single Activities') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-compass text-[#FFEF4D]', url: '{{ route('products.index') }}' },
+                    { title: '{{ __('Tours & Package Listings') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-cubes text-[#FFEF4D]', url: '{{ route('packages.index') }}' },
+                    { title: '{{ __('Coupons & Promo Codes') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-ticket text-[#FFEF4D]', url: '{{ route('coupons.index') }}' },
+                @endif
+                @if ($canManageSettings)
+                    { title: '{{ __('Brand Logo & Custom Theme') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-palette text-[#FFEF4D]', url: '{{ route('brand.edit') }}' },
+                    { title: '{{ __('Storefront & Policy Setup') }}', cat: '{{ __('Storefront & Catalog') }}', icon: 'fa-solid fa-sliders text-[#FFEF4D]', url: '{{ route('storefront-settings.edit') }}' },
+                @endif
                 @if ($canManageTeam)
                     { title: '{{ __('Team') }}', cat: '{{ __('Account & Billing') }}', icon: 'fa-solid fa-users text-[#FFEF4D]', url: '{{ route('settings.team') }}' },
                 @endif
-                { title: '{{ __('Your plan') }}', cat: '{{ __('Account & Billing') }}', icon: 'fa-solid fa-crown text-[#FFEF4D]', url: '{{ route('settings.plan') }}' },
-                { title: '{{ __('Payout bank account') }}', cat: '{{ __('Account & Billing') }}', icon: 'fa-solid fa-building-columns text-[#FFEF4D]', url: '{{ route('payments.edit') }}' },
-                { title: '{{ __('Billing Details & Invoices') }}', cat: '{{ __('Account & Billing') }}', icon: 'fa-solid fa-file-invoice-dollar text-[#FFEF4D]', url: '{{ route('settings.billing') }}' },
+                @if ($canManageBilling)
+                    { title: '{{ __('Your plan') }}', cat: '{{ __('Account & Billing') }}', icon: 'fa-solid fa-crown text-[#FFEF4D]', url: '{{ route('settings.plan') }}' },
+                    { title: '{{ __('Payout bank account') }}', cat: '{{ __('Account & Billing') }}', icon: 'fa-solid fa-building-columns text-[#FFEF4D]', url: '{{ route('payments.edit') }}' },
+                    { title: '{{ __('Billing Details & Invoices') }}', cat: '{{ __('Account & Billing') }}', icon: 'fa-solid fa-file-invoice-dollar text-[#FFEF4D]', url: '{{ route('settings.billing') }}' },
+                @endif
                 { title: '{{ __('Profile & Account Details') }}', cat: '{{ __('Account & Settings') }}', icon: 'fa-solid fa-user-gear text-slate-400', url: '{{ route('profile.edit') }}' },
                 { title: '{{ __('Security & Passkeys') }}', cat: '{{ __('Account & Settings') }}', icon: 'fa-solid fa-shield-halved text-slate-400', url: '{{ route('security.edit') }}' },
                 { title: '{{ __('Appearance & Theme Mode') }}', cat: '{{ __('Account & Settings') }}', icon: 'fa-solid fa-circle-half-stroke text-slate-400', url: '{{ route('appearance.edit') }}' },

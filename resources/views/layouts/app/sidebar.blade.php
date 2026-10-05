@@ -50,7 +50,13 @@
         $showEnquiries = $currentOperator && ($currentOperator->hasFeature('contact_form') || $currentOperator->enquiries()->exists());
         $operatorSupportEmail = \App\Models\PlatformSetting::current()->getOperatorSupportEmail();
         $availableBalance = $currentOperator ? $currentOperator->getAvailableBalance() : 0;
-        $canManageTeam = $currentOperator && auth()->user()?->roleOn($currentOperator)?->allows('manageTeam');
+        $user = auth()->user();
+        $canManageCatalog = $user?->canOperate($currentOperator, 'manageCatalog') ?? false;
+        $canManageReservations = $user?->canOperate($currentOperator, 'manageReservations') ?? false;
+        $canManageWallet = $user?->canOperate($currentOperator, 'manageWallet') ?? false;
+        $canManageBilling = $user?->canOperate($currentOperator, 'manageBilling') ?? false;
+        $canManageTeam = $user?->canOperate($currentOperator, 'manageTeam') ?? false;
+        $canManageSettings = $user?->canOperate($currentOperator, 'manageSettings') ?? false;
         $operatorPlan = $currentOperator?->getPlan();
         $walletBadge = $availableBalance > 0
             ? ($availableBalance >= 1_000_000
@@ -128,86 +134,102 @@
             </div>
 
             <nav class="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4 select-none">
-                <div>
-                    @if (request()->routeIs('reservations.*'))
-                        <x-button type="button" @click="$dispatch('open-create-booking-link')" class="w-full">
-                            <i class="fa-solid fa-plus text-xs"></i>
-                            <span>{{ __('Create Booking Link') }}</span>
-                        </x-button>
-                    @else
-                        <x-button :href="route('reservations.index', ['create' => 1])" class="w-full" wire:navigate>
-                            <i class="fa-solid fa-plus text-xs"></i>
-                            <span>{{ __('Create Booking Link') }}</span>
-                        </x-button>
-                    @endif
-                </div>
+                @if ($canManageReservations)
+                    <div>
+                        @if (request()->routeIs('reservations.*'))
+                            <x-button type="button" @click="$dispatch('open-create-booking-link')" class="w-full">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                                <span>{{ __('Create Booking Link') }}</span>
+                            </x-button>
+                        @else
+                            <x-button :href="route('reservations.index', ['create' => 1])" class="w-full" wire:navigate>
+                                <i class="fa-solid fa-plus text-xs"></i>
+                                <span>{{ __('Create Booking Link') }}</span>
+                            </x-button>
+                        @endif
+                    </div>
+                @endif
 
                 <x-nav-section :title="__('Operations')">
                     <x-nav-link :href="route('dashboard')" icon="fa-gauge-high" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('reservations.index')" icon="fa-calendar-check" :active="request()->routeIs('reservations.*')" :badge="$reservationsCount">
-                        {{ __('Bookings') }}
-                    </x-nav-link>
-
-                    @if ($showEnquiries)
-                        <x-nav-link :href="route('enquiries.index')" icon="fa-envelope-open-text" :active="request()->routeIs('enquiries.*')" :badge="$enquiriesUnread ?: null" :title="__('Website enquiries')">
-                            {{ __('Enquiries') }}
+                    @if ($canManageReservations)
+                        <x-nav-link :href="route('reservations.index')" icon="fa-calendar-check" :active="request()->routeIs('reservations.*')" :badge="$reservationsCount">
+                            {{ __('Bookings') }}
                         </x-nav-link>
+
+                        @if ($showEnquiries)
+                            <x-nav-link :href="route('enquiries.index')" icon="fa-envelope-open-text" :active="request()->routeIs('enquiries.*')" :badge="$enquiriesUnread ?: null" :title="__('Website enquiries')">
+                                {{ __('Enquiries') }}
+                            </x-nav-link>
+                        @endif
                     @endif
 
                     <x-nav-link :href="route('calendar.index')" icon="fa-calendar-days" :active="request()->routeIs('calendar.*')" :title="__('Calendar & Schedule')">
                         {{ __('Calendar') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('wallet.index')" icon="fa-wallet" :active="request()->routeIs('wallet.*')" :badge="$walletBadge" badge-tone="success" :title="__('Wallet & Payouts')">
-                        {{ __('Wallet') }}
-                    </x-nav-link>
-                </x-nav-section>
-
-                <x-nav-section :title="__('Catalog & Marketing')">
-                    <x-nav-link :href="route('products.index')" icon="fa-compass" :active="request()->routeIs('products.*')" :badge="$productsCount" :title="__('Single Activities')">
-                        {{ __('Activities') }}
-                    </x-nav-link>
-
-                    <x-nav-link :href="route('packages.index')" icon="fa-cubes" :active="request()->routeIs('packages.*')" :badge="$packagesCount" :title="__('Tour Packages')">
-                        {{ __('Packages') }}
-                    </x-nav-link>
-
-                    <x-nav-link :href="route('coupons.index')" icon="fa-ticket" :active="request()->routeIs('coupons.*')" :badge="$couponsCount" :title="__('Coupons & Discounts')">
-                        {{ __('Coupons') }}
-                    </x-nav-link>
-
-                    <x-nav-link :href="route('vendors.index')" icon="fa-handshake" :active="request()->routeIs('vendors.*')" :badge="$vendorsCount" :title="__('Vendors & Suppliers')">
-                        {{ __('Vendors') }}
-                    </x-nav-link>
-                </x-nav-section>
-
-                <x-nav-section :title="__('Business & Settings')">
-                    <x-nav-link :href="route('guests.index')" icon="fa-address-book" :active="request()->routeIs('guests.*')">
-                        {{ __('Guest CRM') }}
-                        @if ($currentOperator && ! $currentOperator->hasFeature('guest_crm'))
-                            <x-slot:meta>
-                                <x-plan-badge title="{{ __('Upgrade to Growth to unlock Guest CRM & lifetime spend analytics') }}" />
-                            </x-slot:meta>
-                        @endif
-                    </x-nav-link>
-
-                    @if ($canManageTeam)
-                        <x-nav-link :href="route('settings.team')" icon="fa-users" :active="request()->routeIs('settings.team')" :title="__('Team')">
-                            {{ __('Team') }}
+                    @if ($canManageWallet)
+                        <x-nav-link :href="route('wallet.index')" icon="fa-wallet" :active="request()->routeIs('wallet.*')" :badge="$walletBadge" badge-tone="success" :title="__('Wallet & Payouts')">
+                            {{ __('Wallet') }}
                         </x-nav-link>
                     @endif
-
-                    <x-nav-link :href="route('brand.edit')" icon="fa-sliders" :active="request()->routeIs('brand.edit', 'storefront-settings.edit', 'review-settings.edit', 'website-settings.edit', 'gallery-settings.edit', 'faq-settings.edit', 'contact-settings.edit')" :title="__('Storefront Settings')">
-                        {{ __('Storefront') }}
-                    </x-nav-link>
-
-                    <x-nav-link :href="route('settings.billing')" icon="fa-file-invoice-dollar" :active="request()->routeIs('settings.billing', 'payments.edit', 'settings.plan', 'settings.plan.checkout')" :title="__('Subscription & Billing')">
-                        {{ __('Billing') }}
-                    </x-nav-link>
                 </x-nav-section>
+
+                @if ($canManageCatalog)
+                    <x-nav-section :title="__('Catalog & Marketing')">
+                        <x-nav-link :href="route('products.index')" icon="fa-compass" :active="request()->routeIs('products.*')" :badge="$productsCount" :title="__('Single Activities')">
+                            {{ __('Activities') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('packages.index')" icon="fa-cubes" :active="request()->routeIs('packages.*')" :badge="$packagesCount" :title="__('Tour Packages')">
+                            {{ __('Packages') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('coupons.index')" icon="fa-ticket" :active="request()->routeIs('coupons.*')" :badge="$couponsCount" :title="__('Coupons & Discounts')">
+                            {{ __('Coupons') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('vendors.index')" icon="fa-handshake" :active="request()->routeIs('vendors.*')" :badge="$vendorsCount" :title="__('Vendors & Suppliers')">
+                            {{ __('Vendors') }}
+                        </x-nav-link>
+                    </x-nav-section>
+                @endif
+
+                @if ($canManageReservations || $canManageTeam || $canManageSettings || $canManageBilling)
+                    <x-nav-section :title="__('Business & Settings')">
+                        @if ($canManageReservations)
+                            <x-nav-link :href="route('guests.index')" icon="fa-address-book" :active="request()->routeIs('guests.*')">
+                                {{ __('Guest CRM') }}
+                                @if ($currentOperator && ! $currentOperator->hasFeature('guest_crm'))
+                                    <x-slot:meta>
+                                        <x-plan-badge title="{{ __('Upgrade to Growth to unlock Guest CRM & lifetime spend analytics') }}" />
+                                    </x-slot:meta>
+                                @endif
+                            </x-nav-link>
+                        @endif
+
+                        @if ($canManageTeam)
+                            <x-nav-link :href="route('settings.team')" icon="fa-users" :active="request()->routeIs('settings.team')" :title="__('Team')">
+                                {{ __('Team') }}
+                            </x-nav-link>
+                        @endif
+
+                        @if ($canManageSettings)
+                            <x-nav-link :href="route('brand.edit')" icon="fa-sliders" :active="request()->routeIs('brand.edit', 'storefront-settings.edit', 'review-settings.edit', 'website-settings.edit', 'gallery-settings.edit', 'faq-settings.edit', 'contact-settings.edit')" :title="__('Storefront Settings')">
+                                {{ __('Storefront') }}
+                            </x-nav-link>
+                        @endif
+
+                        @if ($canManageBilling)
+                            <x-nav-link :href="route('settings.billing')" icon="fa-file-invoice-dollar" :active="request()->routeIs('settings.billing', 'payments.edit', 'settings.plan', 'settings.plan.checkout')" :title="__('Subscription & Billing')">
+                                {{ __('Billing') }}
+                            </x-nav-link>
+                        @endif
+                    </x-nav-section>
+                @endif
             </nav>
 
             <div class="relative z-20 shrink-0 p-3">
@@ -283,20 +305,22 @@
                 </a>
 
                 <div class="flex items-center gap-2 shrink-0">
-                    @if (request()->routeIs('reservations.*'))
-                        <button type="button" @click="$dispatch('open-create-booking-link')"
-                            class="h-8 px-2.5 inline-flex items-center gap-1 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium shadow-none cursor-pointer"
-                            title="{{ __('Create Booking & Payment Link') }}">
-                            <i class="fa-solid fa-plus text-[10px]"></i>
-                            <span>{{ __('Link') }}</span>
-                        </button>
-                    @else
-                        <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
-                            class="h-8 px-2.5 inline-flex items-center gap-1 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium shadow-none cursor-pointer"
-                            title="{{ __('Create Booking & Payment Link') }}">
-                            <i class="fa-solid fa-plus text-[10px]"></i>
-                            <span>{{ __('Link') }}</span>
-                        </a>
+                    @if ($canManageReservations)
+                        @if (request()->routeIs('reservations.*'))
+                            <button type="button" @click="$dispatch('open-create-booking-link')"
+                                class="h-8 px-2.5 inline-flex items-center gap-1 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium shadow-none cursor-pointer"
+                                title="{{ __('Create Booking & Payment Link') }}">
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                                <span>{{ __('Link') }}</span>
+                            </button>
+                        @else
+                            <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
+                                class="h-8 px-2.5 inline-flex items-center gap-1 rounded-[6px] bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-xs font-medium shadow-none cursor-pointer"
+                                title="{{ __('Create Booking & Payment Link') }}">
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                                <span>{{ __('Link') }}</span>
+                            </a>
+                        @endif
                     @endif
 
                     @if ($currentOperator)
@@ -507,91 +531,98 @@
                         @endif
 
                         <!-- Secondary Navigation Grid (2x2) -->
-                        <div class="grid grid-cols-2 gap-2.5 pt-1">
-                            <!-- Single Activities -->
-                            <a href="{{ route('products.index') }}" wire:navigate
-                                x-on:click="mobileMenuOpen = false"
-                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
-                                <div class="flex items-center justify-between">
-                                    <span
-                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                        <i class="fa-solid fa-compass"></i>
-                                    </span>
-                                    @if ($productsCount > 0)
-                                        <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
-                                            {{ $productsCount }}
-                                        </span>
-                                    @endif
-                                </div>
-                                <span
-                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Single Activities') }}</span>
-                                <span
-                                    class="text-[10px] text-slate-400 block">{{ __('Daily sessions & items') }}</span>
-                            </a>
+                        @if ($canManageCatalog || $canManageWallet)
+                            <div class="grid grid-cols-2 gap-2.5 pt-1">
+                                @if ($canManageCatalog)
+                                    <!-- Single Activities -->
+                                    <a href="{{ route('products.index') }}" wire:navigate
+                                        x-on:click="mobileMenuOpen = false"
+                                        class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
+                                        <div class="flex items-center justify-between">
+                                            <span
+                                                class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                                <i class="fa-solid fa-compass"></i>
+                                            </span>
+                                            @if ($productsCount > 0)
+                                                <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                                                    {{ $productsCount }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Single Activities') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('Daily sessions & items') }}</span>
+                                    </a>
 
-                            <!-- Tour Packages -->
-                            <a href="{{ route('packages.index') }}" wire:navigate
-                                x-on:click="mobileMenuOpen = false"
-                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
-                                <div class="flex items-center justify-between">
-                                    <span
-                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                        <i class="fa-solid fa-cubes"></i>
-                                    </span>
-                                    @if ($packagesCount > 0)
-                                        <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
-                                            {{ $packagesCount }}
-                                        </span>
-                                    @endif
-                                </div>
-                                <span
-                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Tour Packages') }}</span>
-                                <span class="text-[10px] text-slate-400 block">{{ __('Curated packages') }}</span>
-                            </a>
+                                    <!-- Tour Packages -->
+                                    <a href="{{ route('packages.index') }}" wire:navigate
+                                        x-on:click="mobileMenuOpen = false"
+                                        class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
+                                        <div class="flex items-center justify-between">
+                                            <span
+                                                class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                                <i class="fa-solid fa-cubes"></i>
+                                            </span>
+                                            @if ($packagesCount > 0)
+                                                <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                                                    {{ $packagesCount }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Tour Packages') }}</span>
+                                        <span class="text-[10px] text-slate-400 block">{{ __('Curated packages') }}</span>
+                                    </a>
+                                @endif
 
-                            <!-- Wallet & Payouts -->
-                            <a href="{{ route('wallet.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
-                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
-                                <div class="flex items-center justify-between">
-                                    <span
-                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                        <i class="fa-solid fa-wallet"></i>
-                                    </span>
-                                    @if ($availableBalance > 0)
-                                        <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
-                                            Rp {{ number_format($availableBalance / 1000, 0) }}k
-                                        </span>
-                                    @endif
-                                </div>
-                                <span
-                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Wallet & Payouts') }}</span>
-                                <span
-                                    class="text-[10px] text-slate-400 block">{{ __('Balance & settlements') }}</span>
-                            </a>
+                                @if ($canManageWallet)
+                                    <!-- Wallet & Payouts -->
+                                    <a href="{{ route('wallet.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                        class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
+                                        <div class="flex items-center justify-between">
+                                            <span
+                                                class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                                <i class="fa-solid fa-wallet"></i>
+                                            </span>
+                                            @if ($availableBalance > 0)
+                                                <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                                                    Rp {{ number_format($availableBalance / 1000, 0) }}k
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Wallet & Payouts') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('Balance & settlements') }}</span>
+                                    </a>
+                                @endif
 
-                            <!-- Vendors & Suppliers -->
-                            <a href="{{ route('vendors.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
-                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
-                                <div class="flex items-center justify-between">
-                                    <span
-                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                        <i class="fa-solid fa-handshake"></i>
-                                    </span>
-                                    @if ($vendorsCount > 0)
-                                        <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
-                                            {{ $vendorsCount }}
-                                        </span>
-                                    @endif
-                                </div>
-                                <span
-                                    class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Vendors') }}</span>
-                                <span
-                                    class="text-[10px] text-slate-400 block">{{ __('Activity suppliers') }}</span>
-                            </a>
+                                @if ($canManageCatalog)
+                                    <!-- Vendors & Suppliers -->
+                                    <a href="{{ route('vendors.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                        class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-stone-300 dark:hover:border-zinc-600 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 transition space-y-1 block">
+                                        <div class="flex items-center justify-between">
+                                            <span
+                                                class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                                <i class="fa-solid fa-handshake"></i>
+                                            </span>
+                                            @if ($vendorsCount > 0)
+                                                <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                                                    {{ $vendorsCount }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Vendors') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('Activity suppliers') }}</span>
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
 
-                        </div>
-
-                        @if ($showEnquiries)
+                        @if ($showEnquiries && $canManageReservations)
                             <!-- Enquiries -->
                             <a href="{{ route('enquiries.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
                                 class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
@@ -610,50 +641,54 @@
                             </a>
                         @endif
 
-                        <!-- Guest CRM -->
-                        <a href="{{ route('guests.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
-                            class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
-                            <div class="flex items-center gap-2.5">
-                                <span
-                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                    <i class="fa-solid fa-address-book"></i>
-                                </span>
-                                <div>
+                        @if ($canManageReservations)
+                            <!-- Guest CRM -->
+                            <a href="{{ route('guests.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                                <div class="flex items-center gap-2.5">
                                     <span
-                                        class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest CRM') }}</span>
-                                    <span
-                                        class="text-[10px] text-slate-400 block">{{ __('Contacts, notes, lifetime spend') }}</span>
+                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-address-book"></i>
+                                    </span>
+                                    <div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Guest CRM') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('Contacts, notes, lifetime spend') }}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            @if ($currentOperator && !$currentOperator->hasFeature('guest_crm'))
-                                <span
-                                    title="{{ __('Upgrade to Growth to unlock Guest CRM & lifetime spend analytics') }}"
-                                    class="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase bg-brand-400 text-brand-foreground flex items-center gap-1">
-                                    <i class="fa-solid fa-lock text-[8px]"></i>
-                                    <span>{{ __('Growth') }}</span>
-                                </span>
-                            @else
-                                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
-                            @endif
-                        </a>
+                                @if ($currentOperator && !$currentOperator->hasFeature('guest_crm'))
+                                    <span
+                                        title="{{ __('Upgrade to Growth to unlock Guest CRM & lifetime spend analytics') }}"
+                                        class="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase bg-brand-400 text-brand-foreground flex items-center gap-1">
+                                        <i class="fa-solid fa-lock text-[8px]"></i>
+                                        <span>{{ __('Growth') }}</span>
+                                    </span>
+                                @else
+                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                                @endif
+                            </a>
+                        @endif
 
-                        <!-- Coupons & Discounts Link -->
-                        <a href="{{ route('coupons.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
-                            class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
-                            <div class="flex items-center gap-2.5">
-                                <span
-                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                    <i class="fa-solid fa-ticket"></i>
-                                </span>
-                                <div>
+                        @if ($canManageCatalog)
+                            <!-- Coupons & Discounts Link -->
+                            <a href="{{ route('coupons.index') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                                <div class="flex items-center gap-2.5">
                                     <span
-                                        class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Coupons & Discounts') }}</span>
-                                    <span
-                                        class="text-[10px] text-slate-400 block">{{ __('Promo codes & seasonal discounts') }}</span>
+                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-ticket"></i>
+                                    </span>
+                                    <div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Coupons & Discounts') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('Promo codes & seasonal discounts') }}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
-                        </a>
+                                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                            </a>
+                        @endif
 
                         @if ($canManageTeam)
                             <a href="{{ route('settings.team') }}" wire:navigate x-on:click="mobileMenuOpen = false"
@@ -674,65 +709,69 @@
                             </a>
                         @endif
 
-                        <!-- Storefront Settings Link -->
-                        <a href="{{ route('brand.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
-                            class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
-                            <div class="flex items-center gap-2.5">
-                                <span
-                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                    <i class="fa-solid fa-sliders"></i>
-                                </span>
-                                <div>
+                        @if ($canManageSettings)
+                            <!-- Storefront Settings Link -->
+                            <a href="{{ route('brand.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                                <div class="flex items-center gap-2.5">
                                     <span
-                                        class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Storefront Settings') }}</span>
+                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-sliders"></i>
+                                    </span>
+                                    <div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Storefront Settings') }}</span>
                                         <span
                                             class="text-[10px] text-slate-400 block">{{ __('Branding, policies, guest page') }}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
-                        </a>
-
-                        <a href="{{ route('payments.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
-                            class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
-                            <div class="flex items-center gap-2.5">
-                                <span
-                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                    <i class="fa-solid fa-building-columns"></i>
-                                </span>
-                                <div>
-                                    <span
-                                        class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Payout bank account') }}</span>
-                                    <span
-                                        class="text-[10px] text-slate-400 block">{{ __('Where we send your money') }}</span>
-                                </div>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
-                        </a>
-
-                        <!-- Subscription & Billing Link -->
-                        <a href="{{ route('settings.billing') }}" wire:navigate x-on:click="mobileMenuOpen = false"
-                            class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
-                            <div class="flex items-center gap-2.5">
-                                <span
-                                    class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
-                                    <i class="fa-solid fa-crown"></i>
-                                </span>
-                                <div>
-                                    <span
-                                        class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Subscription & Billing') }}</span>
-                                    <span
-                                        class="text-[10px] text-slate-400 block">{{ __('Plan, payout bank & invoices') }}</span>
-                                </div>
-                            </div>
-                            @if ($operatorPlan)
-                                <span
-                                    class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-zinc-300 shrink-0">
-                                    {{ $operatorPlan->name }}
-                                </span>
-                            @else
                                 <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
-                            @endif
-                        </a>
+                            </a>
+                        @endif
+
+                        @if ($canManageBilling)
+                            <a href="{{ route('payments.edit') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                                <div class="flex items-center gap-2.5">
+                                    <span
+                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-building-columns"></i>
+                                    </span>
+                                    <div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Payout bank account') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('Where we send your money') }}</span>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                            </a>
+
+                            <!-- Subscription & Billing Link -->
+                            <a href="{{ route('settings.billing') }}" wire:navigate x-on:click="mobileMenuOpen = false"
+                                class="p-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 hover:bg-stone-100 dark:hover:bg-zinc-800 flex items-center justify-between transition">
+                                <div class="flex items-center gap-2.5">
+                                    <span
+                                        class="p-1.5 rounded-lg bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400 text-xs">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </span>
+                                    <div>
+                                        <span
+                                            class="font-bold text-xs text-slate-800 dark:text-slate-200 block">{{ __('Subscription & Billing') }}</span>
+                                        <span
+                                            class="text-[10px] text-slate-400 block">{{ __('Plan, payout bank & invoices') }}</span>
+                                    </div>
+                                </div>
+                                @if ($operatorPlan)
+                                    <span
+                                        class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-zinc-300 shrink-0">
+                                        {{ $operatorPlan->name }}
+                                    </span>
+                                @else
+                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                                @endif
+                            </a>
+                        @endif
 
                         <!-- User Account & Logout Footer -->
                         <div
@@ -789,28 +828,30 @@
                 {{ __('Dashboard') }}
             </x-mobile-nav-item>
 
-            <x-mobile-nav-item :href="route('reservations.index')" icon="fa-calendar-check" :active="request()->routeIs('reservations.*')" :badge="$reservationsCount">
-                {{ __('Bookings') }}
-            </x-mobile-nav-item>
+            @if ($canManageReservations)
+                <x-mobile-nav-item :href="route('reservations.index')" icon="fa-calendar-check" :active="request()->routeIs('reservations.*')" :badge="$reservationsCount">
+                    {{ __('Bookings') }}
+                </x-mobile-nav-item>
 
-            <!-- Center Raised Action: Create Booking Link -->
-            <div class="relative flex flex-col items-center">
-                @if (request()->routeIs('reservations.*'))
-                    <button type="button" @click="$dispatch('open-create-booking-link')"
-                        class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] hover:bg-[#F3E13A] active:scale-95 text-[#12181E] shadow-none flex items-center justify-center -mt-3.5 transition-all cursor-pointer border border-[#12181E]/10"
-                        title="{{ __('Create Booking Link') }}">
-                        <i class="fa-solid fa-plus text-sm"></i>
-                    </button>
-                @else
-                    <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
-                        class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] hover:bg-[#F3E13A] active:scale-95 text-[#12181E] shadow-none flex items-center justify-center -mt-3.5 transition-all cursor-pointer border border-[#12181E]/10"
-                        title="{{ __('Create Booking Link') }}">
-                        <i class="fa-solid fa-plus text-sm"></i>
-                    </a>
-                @endif
-                <span
-                    class="text-[9px] font-extrabold text-slate-800 dark:text-zinc-300 tracking-tight mt-0.5">{{ __('New Link') }}</span>
-            </div>
+                <!-- Center Raised Action: Create Booking Link -->
+                <div class="relative flex flex-col items-center">
+                    @if (request()->routeIs('reservations.*'))
+                        <button type="button" @click="$dispatch('open-create-booking-link')"
+                            class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] hover:bg-[#F3E13A] active:scale-95 text-[#12181E] shadow-none flex items-center justify-center -mt-3.5 transition-all cursor-pointer border border-[#12181E]/10"
+                            title="{{ __('Create Booking Link') }}">
+                            <i class="fa-solid fa-plus text-sm"></i>
+                        </button>
+                    @else
+                        <a href="{{ route('reservations.index', ['create' => 1]) }}" wire:navigate
+                            class="w-10 h-10 rounded-[8px] bg-[#FFEF4D] hover:bg-[#F3E13A] active:scale-95 text-[#12181E] shadow-none flex items-center justify-center -mt-3.5 transition-all cursor-pointer border border-[#12181E]/10"
+                            title="{{ __('Create Booking Link') }}">
+                            <i class="fa-solid fa-plus text-sm"></i>
+                        </a>
+                    @endif
+                    <span
+                        class="text-[9px] font-extrabold text-slate-800 dark:text-zinc-300 tracking-tight mt-0.5">{{ __('New Link') }}</span>
+                </div>
+            @endif
 
             <x-mobile-nav-item :href="route('calendar.index')" icon="fa-calendar-days" :active="request()->routeIs('calendar.*')">
                 {{ __('Calendar') }}
@@ -824,7 +865,15 @@
             </button>
         </nav>
 
-        <x-command-palette :storefrontUrl="$storefrontUrl" :canManageTeam="$canManageTeam" />
+        <x-command-palette
+            :storefrontUrl="$storefrontUrl"
+            :canManageCatalog="$canManageCatalog"
+            :canManageReservations="$canManageReservations"
+            :canManageWallet="$canManageWallet"
+            :canManageBilling="$canManageBilling"
+            :canManageTeam="$canManageTeam"
+            :canManageSettings="$canManageSettings"
+        />
         @livewireScripts
 </body>
 

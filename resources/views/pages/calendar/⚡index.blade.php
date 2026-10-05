@@ -319,14 +319,17 @@ new #[Layout('layouts.app')] #[Title('Booking Calendar & Operations')] class ext
                         </button>
                     </div>
                     @if (auth()->user()?->canOperate($this->currentOperator, 'manageCatalog'))
-                        <button
-                            type="button"
-                            wire:click="regenerateFeedUrl"
-                            wire:confirm="{{ __('Calendars using the current link will stop updating. Continue?') }}"
-                            class="mt-2 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
-                        >
-                            {{ __('Create a new link (stops the old one)') }}
-                        </button>
+                        <div class="pt-1">
+                            <button
+                                type="button"
+                                wire:click="regenerateFeedUrl"
+                                wire:confirm="{{ __('Calendars using the current link will stop updating. Continue?') }}"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50 transition cursor-pointer"
+                            >
+                                <i class="fa-solid fa-arrows-rotate text-[11px]" aria-hidden="true"></i>
+                                <span>{{ __('Create a new link (stops the old one)') }}</span>
+                            </button>
+                        </div>
                     @endif
                 </div>
 

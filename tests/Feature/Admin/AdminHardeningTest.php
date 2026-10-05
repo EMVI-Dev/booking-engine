@@ -122,6 +122,17 @@ test('managing a shop is logged, expires, and can be stopped', function () {
         ->and(AdminAuditLog::where('action', 'operator.manage_stopped')->count())->toBe(1);
 });
 
+test('managing a shop that no longer exists ends quietly', function () {
+    $this->actingAs($this->admin);
+    app(OperatorAccountService::class)->startManaging($this->operator);
+
+    $this->operator->forceDelete();
+
+    expect($this->admin->currentOperator())->toBeNull()
+        ->and(session()->has(User::IMPERSONATION_SESSION_KEY))->toBeFalse()
+        ->and(session()->has(User::IMPERSONATION_STARTED_KEY))->toBeFalse();
+});
+
 test('a managing admin cannot request payouts or change the payout bank', function () {
     creditOperator($this->operator, 2000000);
     $this->actingAs($this->admin);

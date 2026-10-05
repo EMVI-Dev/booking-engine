@@ -5,7 +5,9 @@ use App\Models\Operator;
 use App\Models\Product;
 use App\Concerns\ResolvesCurrentOperator;
 use App\Concerns\UsesMediaStore;
+use App\Services\ListingDeletionService;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Locked;
@@ -300,17 +302,39 @@ new #[Title('Edit Activity Item')] class extends Component {
             abort(403);
         }
 
-        $this->media()->delete($this->product->cover_photo);
-        $this->media()->deleteMany($this->product->gallery ?? []);
-
         $name = $this->product->name;
-        $this->product->delete();
+
+        try {
+            app(ListingDeletionService::class)->delete($this->product);
+        } catch (ValidationException $e) {
+            $this->dispatch('close-modal', 'confirm-product-deletion');
+            $this->dispatch('toast', message: (string) collect($e->errors())->flatten()->first(), type: 'error');
+
+            return;
+        }
 
         session()->flash('success', __('Activity item ":name" deleted successfully.', ['name' => $name]));
         $this->redirect(route('products.index'), navigate: true);
     }
+
+    public function unpublish(): void
+    {
+        $this->authorizeAbility('manageCatalog');
+
+        if (! $this->currentOperator || $this->product->operator_id !== $this->currentOperator->id) {
+            abort(403);
+        }
+
+        $this->product->update(['status' => \App\Enums\ListingStatus::Draft]);
+        $this->status = 'draft';
+        $this->dispatch('close-modal', 'confirm-product-deletion');
+        $this->dispatch('toast', message: __('Activity item unpublished successfully.'), type: 'success');
+    }
 }; ?>
 
+@php
+    $blockReason = app(\App\Services\ListingDeletionService::class)->blockReason($product);
+@endphp
 <div class="space-y-6 w-full">
     <div class="space-y-6">
 
@@ -331,12 +355,21 @@ new #[Title('Edit Activity Item')] class extends Component {
             >
                 <x-slot:actions>
                     <div class="hidden sm:flex flex-wrap items-center gap-2">
-                        <x-button type="button" variant="danger" x-data=""
-                            x-on:click.prevent="$dispatch('open-modal', 'confirm-product-deletion')"
-                            class="font-semibold text-xs shadow-xs" title="{{ __('Delete Item') }}">
-                            <i class="fa-solid fa-trash mr-1.5 text-xs"></i>
-                            {{ __('Delete') }}
-                        </x-button>
+                        @if ($blockReason !== null)
+                            <button type="button" disabled
+                                class="h-8 px-3 rounded-[6px] bg-rose-50 dark:bg-rose-950/20 text-rose-300 dark:text-rose-900 border border-rose-200 dark:border-rose-900/40 font-semibold text-xs opacity-60 cursor-not-allowed inline-flex items-center gap-1.5"
+                                title="{{ $blockReason }}">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                                <span>{{ __('Delete') }}</span>
+                            </button>
+                        @else
+                            <x-button type="button" variant="danger" x-data=""
+                                x-on:click.prevent="$dispatch('open-modal', 'confirm-product-deletion')"
+                                class="font-semibold text-xs shadow-xs" title="{{ __('Delete Item') }}">
+                                <i class="fa-solid fa-trash mr-1.5 text-xs"></i>
+                                {{ __('Delete') }}
+                            </x-button>
+                        @endif
                         <x-button :href="route('products.index')" variant="secondary" wire:navigate class="font-semibold text-xs">
                             {{ __('Cancel') }}
                         </x-button>
@@ -689,12 +722,21 @@ new #[Title('Edit Activity Item')] class extends Component {
                     </p>
                 </div>
 
-                <x-button type="button" variant="danger" x-data=""
-                    x-on:click.prevent="$dispatch('open-modal', 'confirm-product-deletion')"
-                    class="shrink-0 font-semibold text-xs shadow-xs">
-                    <i class="fa-solid fa-trash mr-1.5 text-xs"></i>
-                    {{ __('Delete Item') }}
-                </x-button>
+                @if ($blockReason !== null)
+                    <button type="button" disabled
+                        class="shrink-0 h-9 px-4 rounded-[8px] bg-rose-200 dark:bg-rose-950/40 text-rose-400 dark:text-rose-700 font-semibold text-xs opacity-60 cursor-not-allowed inline-flex items-center gap-1.5"
+                        title="{{ $blockReason }}">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                        <span>{{ __('Delete Item') }}</span>
+                    </button>
+                @else
+                    <x-button type="button" variant="danger" x-data=""
+                        x-on:click.prevent="$dispatch('open-modal', 'confirm-product-deletion')"
+                        class="shrink-0 font-semibold text-xs shadow-xs">
+                        <i class="fa-solid fa-trash mr-1.5 text-xs"></i>
+                        {{ __('Delete Item') }}
+                    </x-button>
+                @endif
             </div>
 
             <!-- Actions Bar -->
@@ -732,6 +774,13 @@ new #[Title('Edit Activity Item')] class extends Component {
                         class="font-semibold text-xs">
                         {{ __('Cancel') }}
                     </x-button>
+                    @if ($product->status === \App\Enums\ListingStatus::Published)
+                        <x-button type="button" variant="secondary" wire:click="unpublish"
+                            class="font-semibold text-xs">
+                            <i class="fa-solid fa-eye-slash mr-1.5 text-xs"></i>
+                            {{ __('Unpublish Instead') }}
+                        </x-button>
+                    @endif
                     <x-button type="button" variant="danger" wire:click="delete"
                         class="font-semibold text-xs shadow-xs">
                         <i class="fa-solid fa-trash mr-1.5 text-xs"></i>

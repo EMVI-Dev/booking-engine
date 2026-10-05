@@ -16,8 +16,8 @@
     @endphp
     @include('storefront.partials.seo', [
         'agent' => $agent,
-        'title' => __('Contact & Inquiries').' · '.$agent->name,
-        'description' => __('Send an inquiry or contact :name directly regarding tours, custom trips, and private charters.', ['name' => $agent->name]),
+        'title' => __('Contact & Enquiries').' · '.$agent->name,
+        'description' => __('Send an enquiry or contact :name directly regarding tours, custom trips, and private charters.', ['name' => $agent->name]),
         'url' => route('storefront.contact'),
         'type' => 'website',
         'share' => $share,
@@ -53,7 +53,7 @@
                         <span>{{ __('Get in Touch') }}</span>
                     </div>
                     <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                        {{ __('Contact & Group Inquiries') }}
+                        {{ __('Contact & Group Enquiries') }}
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
                         {{ __('Have a question, need a custom itinerary, or planning a private charter? Send a message or chat with us directly.') }}

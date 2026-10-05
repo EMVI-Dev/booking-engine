@@ -10,7 +10,7 @@ test('platform homepage has canonical share tags and software schema', function 
     $this->get(route('home'))
         ->assertOk()
         ->assertSee('<link rel="canonical" href="'.url('/').'" />', false)
-        ->assertSee('<meta property="og:image" content="'.url('/images/hero-cover.jpg').'" />', false)
+        ->assertSee('<meta property="og:image" content="'.url('/images/og-image.jpg').'" />', false)
         ->assertSee('<meta name="twitter:card" content="summary_large_image" />', false)
         ->assertSee('Guests book themselves. You keep the listed price.', false)
         ->assertSee('you keep 100% of the listed price', false)

@@ -42,3 +42,6 @@ No seeding or model saves from Blade (welcome once called Plan::seedDefaultPlans
 
 ## Platform analytics only on marketing and auth pages
 partials.head loads platform GA unless platformTracking is false (operator desk and admin layouts pass false) and only on the platform root host. PLATFORM_GOOGLE_ANALYTICS_ID has no default.
+
+## design-taste-frontend skill: our stack overrides its defaults
+The skill (.agents/skills and .claude/skills) assumes React/Next.js, Motion, React icon packages, shadcn and other design-system installs. Here: Blade + Livewire 4 (no Volt) + Alpine + Tailwind v4 only, Font Awesome icons as used today, CSS/Alpine transitions only (no GSAP, no Motion, no new npm or composer packages without approval). Keep the existing desk design tokens and the storefront brand theme (brand-* colours, sf-canvas). Use it to polish existing pages, never to redesign a whole area; do not apply its "redesign audit" to the desk. No picsum or external placeholder images in shipped views.

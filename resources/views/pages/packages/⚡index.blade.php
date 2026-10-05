@@ -6,6 +6,8 @@ use App\Models\Package;
 use App\Models\Product;
 use App\Concerns\ResolvesCurrentOperator;
 use App\Concerns\UsesMediaStore;
+use App\Services\ListingDeletionService;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -41,12 +43,35 @@ new #[Title('Tour Packages & Combos')] class extends Component {
 
     public ?string $deletingPackageId = null;
     public ?string $deletingPackageTitle = null;
+    public bool $deletingPackageIsPublished = false;
 
-    public function confirmDelete(string $id, string $title): void
+    public function confirmDelete(string $id, string $title, bool $isPublished = false): void
     {
         $this->deletingPackageId = $id;
         $this->deletingPackageTitle = $title;
+        $this->deletingPackageIsPublished = $isPublished;
         $this->dispatch('open-modal', 'confirm-package-deletion-index');
+    }
+
+    public function unpublishConfirmed(): void
+    {
+        if (! $this->deletingPackageId) {
+            return;
+        }
+
+        $this->authorizeAbility('manageCatalog');
+
+        $package = $this->currentOperator?->packages()->findOrFail($this->deletingPackageId);
+
+        if ($package) {
+            $package->update(['status' => \App\Enums\ListingStatus::Draft]);
+            $this->dispatch('toast', message: __('Tour package unpublished successfully.'), type: 'success');
+        }
+
+        $this->deletingPackageId = null;
+        $this->deletingPackageTitle = null;
+        $this->deletingPackageIsPublished = false;
+        $this->dispatch('close-modal', 'confirm-package-deletion-index');
     }
 
     public function deleteConfirmed(): void
@@ -68,9 +93,14 @@ new #[Title('Tour Packages & Combos')] class extends Component {
         $package = $this->currentOperator?->packages()->findOrFail($id);
 
         if ($package) {
-            $this->media()->delete($package->cover_photo);
-            $this->media()->deleteMany($package->gallery ?? []);
-            $package->delete();
+            try {
+                app(ListingDeletionService::class)->delete($package);
+            } catch (ValidationException $e) {
+                $this->dispatch('toast', message: (string) collect($e->errors())->flatten()->first(), type: 'error');
+
+                return;
+            }
+
             $this->dispatch('toast', message: __('Tour package deleted successfully.'), type: 'success');
         }
     }
@@ -215,18 +245,30 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                             {{ trans_choice(':count bundled activity|:count bundled activities', $package->products->count(), ['count' => $package->products->count()]) }}
                         </span>
 
+                        @php
+                            $blockReason = app(\App\Services\ListingDeletionService::class)->blockReason($package);
+                        @endphp
                         <div class="flex items-center gap-1.5">
                             <a href="{{ route('packages.edit', $package) }}" wire:navigate
                                 class="h-8 px-2.5 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-zinc-200 border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs inline-flex items-center gap-1.5 transition">
                                 <i class="fa-solid fa-pen text-[10px]" aria-hidden="true"></i>
                                 {{ __('Edit') }}
                             </a>
-                            <button type="button"
-                                wire:click="confirmDelete('{{ $package->id }}', '{{ addslashes($package->title) }}')"
-                                aria-label="{{ __('Delete :title', ['title' => $package->title]) }}"
-                                class="h-8 w-8 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/40 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center cursor-pointer transition">
-                                <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
-                            </button>
+                            @if ($blockReason !== null)
+                                <button type="button"
+                                    disabled
+                                    title="{{ $blockReason }}"
+                                    class="h-8 w-8 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] text-stone-300 dark:text-zinc-600 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center cursor-not-allowed opacity-60">
+                                    <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
+                                </button>
+                            @else
+                                <button type="button"
+                                    wire:click="confirmDelete('{{ $package->id }}', '{{ addslashes($package->title) }}', {{ $package->status === \App\Enums\ListingStatus::Published ? 'true' : 'false' }})"
+                                    aria-label="{{ __('Delete :title', ['title' => $package->title]) }}"
+                                    class="h-8 w-8 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/40 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center cursor-pointer transition">
+                                    <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -308,14 +350,25 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                                             <i class="fa-solid fa-pen text-[10px]"></i>
                                             <span>{{ __('Edit') }}</span>
                                         </a>
-                                        <button
-                                            type="button"
-                                            wire:click="confirmDelete('{{ $package->id }}', '{{ addslashes($package->title) }}')"
-                                            class="h-7 w-7 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center transition shadow-none cursor-pointer"
-                                            title="{{ __('Delete') }}"
-                                        >
-                                            <i class="fa-solid fa-trash text-xs"></i>
-                                        </button>
+                                        @if ($blockReason !== null)
+                                            <button
+                                                type="button"
+                                                disabled
+                                                class="h-7 w-7 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] text-stone-300 dark:text-zinc-600 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center shadow-none cursor-not-allowed opacity-60"
+                                                title="{{ $blockReason }}"
+                                            >
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        @else
+                                            <button
+                                                type="button"
+                                                wire:click="confirmDelete('{{ $package->id }}', '{{ addslashes($package->title) }}', {{ $package->status === \App\Enums\ListingStatus::Published ? 'true' : 'false' }})"
+                                                class="h-7 w-7 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-rose-50 dark:hover:bg-rose-950/50 text-[#5A6578] hover:text-rose-600 dark:text-[#9DA4B2] dark:hover:text-rose-400 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center transition shadow-none cursor-pointer"
+                                                title="{{ __('Delete') }}"
+                                            >
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -371,6 +424,17 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                 >
                     {{ __('Cancel') }}
                 </x-button>
+                @if ($deletingPackageIsPublished)
+                    <x-button
+                        type="button"
+                        variant="secondary"
+                        wire:click="unpublishConfirmed"
+                        class="font-medium text-xs rounded-[6px]"
+                    >
+                        <i class="fa-solid fa-eye-slash mr-1.5 text-xs"></i>
+                        {{ __('Unpublish Instead') }}
+                    </x-button>
+                @endif
                 <x-button
                     type="button"
                     variant="danger"

@@ -2,4 +2,4 @@
 
 Tour-operator booking product by **EMVI Technologies**.
 
-Product and stack notes live in [docs/](docs/README.md).
+**Start here: [docs/product/overview.md](docs/product/overview.md).** It describes the product and links every other doc.

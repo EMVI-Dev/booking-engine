@@ -425,3 +425,77 @@ test('stored media paths on catalog and brand forms cannot be changed from the b
     expect(fn () => Livewire::test('pages::settings.brand')->set('existing_logo_path', 'operators/other/brand/x.webp'))
         ->toThrow(CannotUpdateLockedPropertyException::class);
 });
+
+// ── 2026-10-05 review: billing invoices, simulator, expired pay links ────────
+
+test('billing never opens another shop invoice', function () {
+    $otherOperator = Operator::factory()->create();
+    $otherInvoice = SubscriptionPayment::create([
+        'operator_id' => $otherOperator->id,
+        'plan_id' => Plan::factory()->create()->id,
+        'invoice_number' => 'SUB-OTHER-1',
+        'type' => 'subscription_upgrade',
+        'billing_interval' => 'monthly',
+        'gross_amount' => 299000,
+        'prorated_credit' => 0,
+        'net_amount_paid' => 299000,
+        'status' => 'paid',
+        'gateway' => 'doku',
+    ]);
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::settings.billing')
+        ->call('viewInvoice', $otherInvoice->id)
+        ->assertSet('selected_invoice_id', null)
+        ->assertSet('show_invoice_modal', false);
+
+    expect(fn () => Livewire::test('pages::settings.billing')->set('selected_invoice_id', $otherInvoice->id))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+});
+
+test('the payment simulator stays off in production and next to live keys', function () {
+    config(['doku.simulator_enabled' => true, 'doku.mode' => 'sandbox']);
+    expect(DokuPaymentService::simulatorEnabled())->toBeTrue();
+
+    config(['doku.mode' => 'live']);
+    expect(DokuPaymentService::simulatorEnabled())->toBeFalse();
+
+    config(['doku.mode' => 'sandbox']);
+    app()->detectEnvironment(fn () => 'production');
+    expect(DokuPaymentService::simulatorEnabled())->toBeFalse();
+
+    app()->detectEnvironment(fn () => 'testing');
+    config(['doku.simulator_enabled' => null]);
+});
+
+test('an unsigned webhook is refused with live mode and missing keys, even if the simulator flag is on', function () {
+    config([
+        'doku.simulator_enabled' => true,
+        'doku.mode' => 'live',
+        'doku.live.client_id' => '',
+        'doku.live.secret_key' => '',
+    ]);
+
+    $this->postJson(route('doku.webhook'), [
+        'order' => ['invoice_number' => 'INV-ANY', 'amount' => 1],
+        'transaction' => ['status' => 'SUCCESS'],
+    ])->assertUnauthorized();
+
+    config(['doku.simulator_enabled' => null, 'doku.mode' => 'sandbox']);
+});
+
+test('an expired pay link sends the guest back to the receipt with the reason', function () {
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $this->package->id,
+        'requested_date' => now()->addDays(5)->format('Y-m-d'),
+        'status' => ReservationStatus::PaymentPending,
+        'hold_expires_at' => now()->subMinute(),
+    ]);
+
+    $this->get(route('storefront.reservation.pay', $reservation))
+        ->assertRedirect(route('storefront.reservation.receipt', $reservation))
+        ->assertSessionHas('error');
+});

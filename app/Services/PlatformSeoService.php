@@ -15,7 +15,7 @@ class PlatformSeoService
         $name = $this->platformName();
 
         return [
-            'url' => url('/images/hero-cover.jpg'),
+            'url' => url('/images/og-image.jpg'),
             'alt' => $name,
             'card' => 'summary_large_image',
             'width' => 1200,

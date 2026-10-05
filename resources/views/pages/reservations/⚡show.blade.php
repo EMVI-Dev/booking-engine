@@ -215,6 +215,7 @@ new #[Title('Reservation Details')] class extends Component {
         $appliedCouponCode = $res->terms_snapshot['coupon_code'] ?? ($latestPayment?->split_details['coupon_code'] ?? null);
         $couponDiscount = (float) ($res->terms_snapshot['discount_amount'] ?? ($latestPayment?->split_details['discount_amount'] ?? 0));
         $originalSubtotal = (float) ($res->terms_snapshot['subtotal'] ?? ($frozenPrice * $res->pax_count));
+        $canManageReservations = auth()->user()?->canOperate($this->currentOperator, 'manageReservations') ?? false;
     @endphp
 
     <!-- Top Breadcrumb & Quick Actions Header -->
@@ -267,40 +268,34 @@ new #[Title('Reservation Details')] class extends Component {
             </x-button>
 
             <!-- Status Controls -->
-            @if (in_array($res->status, [ReservationStatus::PaymentPending, ReservationStatus::PendingConfirmation], true))
-                <x-button type="button" variant="success" wire:click="confirmStatusTransition('confirmed')" size="sm">
-                    <i class="fa-solid fa-check mr-1.5 text-xs"></i>
-                    {{ __('Confirm Booking') }}
-                </x-button>
+            @if ($canManageReservations)
+                @if ($res->status->canOperatorTransitionTo(ReservationStatus::Confirmed))
+                    <x-button type="button" variant="success" wire:click="confirmStatusTransition('confirmed')" size="sm">
+                        <i class="fa-solid fa-check mr-1.5 text-xs"></i>
+                        {{ __('Confirm Booking') }}
+                    </x-button>
+                @endif
 
-                @if (!$isPaid)
-                    <x-button type="button" variant="danger" wire:click="confirmStatusTransition('declined')"
-                        size="sm">
+                @if (!$isPaid && $res->status->canOperatorTransitionTo(ReservationStatus::Declined))
+                    <x-button type="button" variant="danger" wire:click="confirmStatusTransition('declined')" size="sm">
                         <i class="fa-solid fa-ban mr-1.5 text-xs"></i>
                         {{ __('Decline') }}
                     </x-button>
                 @endif
-            @endif
 
-            @if (
-                $res->status === ReservationStatus::Confirmed &&
-                    ($res->requested_date->isToday() || $res->requested_date->isPast()))
-                <x-button type="button" variant="primary" wire:click="confirmStatusTransition('completed')" size="sm">
-                    <i class="fa-solid fa-flag-checkered mr-1.5 text-xs"></i>
-                    {{ __('Mark Completed') }}
-                </x-button>
-            @endif
+                @if ($res->status->canOperatorTransitionTo(ReservationStatus::Completed) && ($res->requested_date->isToday() || $res->requested_date->isPast()))
+                    <x-button type="button" variant="primary" wire:click="confirmStatusTransition('completed')" size="sm">
+                        <i class="fa-solid fa-flag-checkered mr-1.5 text-xs"></i>
+                        {{ __('Mark Completed') }}
+                    </x-button>
+                @endif
 
-            @if (
-                !in_array(
-                    $res->status,
-                    [ReservationStatus::Cancelled, ReservationStatus::Declined, ReservationStatus::Completed],
-                    true))
-                <x-button type="button" variant="danger" wire:click="confirmStatusTransition('cancelled')"
-                    size="sm">
-                    <i class="fa-solid fa-xmark mr-1.5 text-xs"></i>
-                    {{ __('Cancel Booking') }}
-                </x-button>
+                @if ($res->status->canOperatorTransitionTo(ReservationStatus::Cancelled))
+                    <x-button type="button" variant="danger" wire:click="confirmStatusTransition('cancelled')" size="sm">
+                        <i class="fa-solid fa-xmark mr-1.5 text-xs"></i>
+                        {{ __('Cancel Booking') }}
+                    </x-button>
+                @endif
             @endif
         </div>
     </div>

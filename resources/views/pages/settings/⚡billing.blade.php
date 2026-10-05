@@ -6,6 +6,7 @@ use App\Models\SubscriptionPayment;
 use Carbon\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -14,6 +15,7 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
     use ResolvesCurrentOperator;
     use WithPagination;
 
+    #[Locked]
     public ?string $selected_invoice_id = null;
     public bool $show_invoice_modal = false;
 
@@ -114,11 +116,15 @@ new #[Title('Billing & Invoices')] #[Layout('layouts.app')] class extends Compon
     #[Computed]
     public function selectedInvoice(): ?SubscriptionPayment
     {
-        if (!$this->selected_invoice_id) {
+        $operator = auth()->user()?->currentOperator();
+
+        if (!$this->selected_invoice_id || !$operator) {
             return null;
         }
 
-        return SubscriptionPayment::with(['plan', 'operator'])->find($this->selected_invoice_id);
+        return SubscriptionPayment::with(['plan', 'operator'])
+            ->where('operator_id', $operator->id)
+            ->find($this->selected_invoice_id);
     }
 
     /**

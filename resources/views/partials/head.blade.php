@@ -42,13 +42,13 @@
     <meta property="og:url" content="{{ url()->current() }}" />
     <meta property="og:title" content="{{ $fallbackTitle }}" />
     <meta property="og:description" content="{{ $fallbackSeo->homeDescription() }}" />
-    <meta property="og:image" content="{{ url('/images/hero-cover.jpg') }}" />
+    <meta property="og:image" content="{{ url('/images/og-image.jpg') }}" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="{{ $fallbackTitle }}" />
     <meta name="twitter:description" content="{{ $fallbackSeo->homeDescription() }}" />
-    <meta name="twitter:image" content="{{ url('/images/hero-cover.jpg') }}" />
+    <meta name="twitter:image" content="{{ url('/images/og-image.jpg') }}" />
 
     @if ($portalFavicon)
         <link rel="icon" href="{{ $portalFavicon }}">

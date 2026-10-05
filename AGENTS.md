@@ -1,3 +1,7 @@
+# TravelEngine
+
+**Start here: [docs/product/overview.md](docs/product/overview.md).** It describes the product, lists what ships, and maps every doc. Read it before planning work, then the doc it points to for the area you touch.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 

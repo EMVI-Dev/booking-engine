@@ -1,14 +1,29 @@
+@php
+    $operator = app()->bound('current_operator') ? app('current_operator') : null;
+    $pageTitle = $operator
+        ? ($operator->showsPlatformBranding() ? $operator->name . ' • ' . config('app.name', 'TravelEngine') : $operator->name)
+        : config('app.name', 'TravelEngine');
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>@yield('title', __('Error')) - {{ config('app.name', 'TravelEngine') }}</title>
+    <title>@yield('title', __('Error')) - {{ $pageTitle }}</title>
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="icon" href="/favicon.ico" sizes="any">
-    <link rel="icon" href="/favicon.png" type="image/png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    @if ($operator && $operator->logo_url)
+        <link rel="icon" href="{{ $operator->logo_url }}">
+        <link rel="apple-touch-icon" href="{{ $operator->logo_url }}">
+    @else
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        <link rel="icon" href="/favicon.ico" sizes="any">
+        <link rel="icon" href="/favicon.png" type="image/png">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    @endif
+
+    @if ($operator)
+        @include('storefront.partials.brand-theme', ['agent' => $operator])
+    @endif
 
     <!-- Automated System Dark / Light Theme Sync -->
     <script>
@@ -45,29 +60,47 @@
 <body class="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-[#FFEF4D] selection:text-[#101730] transition-colors duration-200">
     <div class="flex min-h-svh flex-col items-center justify-center p-4 sm:p-8">
         <div class="w-full max-w-lg space-y-6">
-            <!-- Platform Brand Header -->
-            <a href="{{ url('/') }}" class="flex items-center justify-center gap-3 font-semibold group">
-                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E] shadow-md text-lg group-hover:scale-105 transition-transform duration-200 font-black">
-                    <i class="fa-solid fa-compass"></i>
-                </span>
-                <div class="flex flex-col text-start">
-                    <span class="text-base font-bold tracking-tight text-slate-900 dark:text-white">{{ config('app.name', 'TravelEngine') }}</span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">{{ __('For tour operators') }}</span>
-                </div>
-            </a>
+            <!-- Platform / Operator Brand Header -->
+            @if ($operator)
+                <a href="{{ url('/') }}" class="flex items-center justify-center gap-3 font-semibold group">
+                    @if ($operator->logo_url)
+                        <img src="{{ $operator->logo_url }}" alt="{{ $operator->name }}" class="h-10 w-10 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform duration-200">
+                    @else
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-brand-foreground shadow-md text-lg group-hover:scale-105 transition-transform duration-200 font-black">
+                            {{ strtoupper(substr($operator->name, 0, 1)) }}
+                        </span>
+                    @endif
+                    <div class="flex flex-col text-start">
+                        <span class="text-base font-bold tracking-tight text-slate-900 dark:text-white">{{ $operator->name }}</span>
+                        @if ($operator->showsPlatformBranding())
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">{{ __('Powered by :app', ['app' => config('app.name', 'TravelEngine')]) }}</span>
+                        @endif
+                    </div>
+                </a>
+            @else
+                <a href="{{ url('/') }}" class="flex items-center justify-center gap-3 font-semibold group">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEF4D] text-[#12181E] shadow-md text-lg group-hover:scale-105 transition-transform duration-200 font-black">
+                        <i class="fa-solid fa-compass"></i>
+                    </span>
+                    <div class="flex flex-col text-start">
+                        <span class="text-base font-bold tracking-tight text-slate-900 dark:text-white">{{ config('app.name', 'TravelEngine') }}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">{{ __('For tour operators') }}</span>
+                    </div>
+                </a>
+            @endif
 
             <!-- Error Container Card -->
             <div class="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-black/40 border border-slate-200/80 dark:border-zinc-800 text-center space-y-6">
                 <!-- Status Badge -->
                 <div class="flex justify-center">
-                    <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#FFEF4D]/15 text-amber-900 dark:bg-[#FFEF4D]/10 dark:text-[#FFEF4D] border border-[#FFEF4D]/40 dark:border-[#FFEF4D]/30">
+                    <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider {{ $operator ? 'bg-brand-500/15 text-brand-800 dark:bg-brand-400/10 dark:text-brand-300 border border-brand-500/30' : 'bg-[#FFEF4D]/15 text-amber-900 dark:bg-[#FFEF4D]/10 dark:text-[#FFEF4D] border border-[#FFEF4D]/40 dark:border-[#FFEF4D]/30' }}">
                         <i class="@yield('icon', 'fa-solid fa-circle-exclamation') text-xs"></i>
                         <span>@yield('code', 'Error')</span>
                     </span>
                 </div>
 
                 <!-- Icon Illustration Circle -->
-                <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#FFEF4D]/15 text-[#8a7808] dark:bg-[#FFEF4D]/10 dark:text-[#FFEF4D] border border-[#FFEF4D]/40 dark:border-[#FFEF4D]/30 text-3xl">
+                <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl {{ $operator ? 'bg-brand-500/15 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300 border border-brand-500/30' : 'bg-[#FFEF4D]/15 text-[#8a7808] dark:bg-[#FFEF4D]/10 dark:text-[#FFEF4D] border border-[#FFEF4D]/40 dark:border-[#FFEF4D]/30' }} text-3xl">
                     <i class="@yield('icon', 'fa-solid fa-circle-exclamation')"></i>
                 </div>
 
@@ -86,11 +119,19 @@
                     @hasSection('actions')
                         @yield('actions')
                     @else
-                        <a href="{{ url('/') }}"
-                           class="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-sm font-bold transition duration-150 shadow-sm">
-                            <i class="fa-solid fa-house text-xs"></i>
-                            {{ __('Back home') }}
-                        </a>
+                        @if ($operator)
+                            <a href="{{ url('/') }}"
+                               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-brand-600 hover:bg-brand-700 text-brand-foreground text-sm font-bold transition duration-150 shadow-sm">
+                                <i class="fa-solid fa-house text-xs"></i>
+                                {{ __('Back home') }}
+                            </a>
+                        @else
+                            <a href="{{ url('/') }}"
+                               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#FFEF4D] hover:bg-[#F3E13A] text-[#12181E] text-sm font-bold transition duration-150 shadow-sm">
+                                <i class="fa-solid fa-house text-xs"></i>
+                                {{ __('Back home') }}
+                            </a>
+                        @endif
                         <button type="button"
                                 onclick="window.history.length > 1 ? window.history.back() : window.location.href='{{ url('/') }}'"
                                 class="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-slate-300 text-sm font-semibold transition duration-150">
@@ -106,9 +147,14 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400">
                     {{ __('Need assistance?') }}
                     <a href="{{ url('/') }}" class="font-medium text-slate-700 dark:text-slate-300 hover:underline">
-                        {{ __('Return to overview') }}
+                        {{ $operator ? __('Return to :name', ['name' => $operator->name]) : __('Return to overview') }}
                     </a>
                 </p>
+                @if ($operator && $operator->showsPlatformBranding())
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-2">
+                        {{ __('Powered by :app', ['app' => config('app.name', 'TravelEngine')]) }}
+                    </p>
+                @endif
             </div>
         </div>
     </div>

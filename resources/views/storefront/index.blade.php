@@ -13,7 +13,7 @@
         'agent' => $agent,
         'title' => $seo->homeTitle($agent),
         'description' => $seo->homeDescription($agent),
-        'url' => url()->current(),
+        'url' => $seo->canonicalUrl($agent, url()->current()),
         'share' => $share,
         'schema' => $seo->homeGraph($agent, $packages),
     ])
@@ -137,6 +137,13 @@
         </div>
     </section>
 
+    @php
+        $packageLimit = $standaloneProducts->isEmpty() ? 12 : 6;
+        $productLimit = $packages->isEmpty() ? 12 : 6;
+        $displayedPackages = $packages->take($packageLimit);
+        $displayedProducts = $standaloneProducts->take($productLimit);
+    @endphp
+
     <!-- Category Filter Tabs Bar -->
     @if ($packages->isNotEmpty() || $standaloneProducts->isNotEmpty())
         <div
@@ -148,7 +155,7 @@
                         :class="activeTab === 'all' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
                             'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
                         <i class="fa-solid fa-layer-group mr-1.5 text-[11px]"></i>
-                        {{ __('Top Featured (:count)', ['count' => min(5, $packages->count()) + min(5, $standaloneProducts->count())]) }}
+                        {{ __('Top Featured (:count)', ['count' => $displayedPackages->count() + $displayedProducts->count()]) }}
                     </button>
 
                     @if ($packages->isNotEmpty())
@@ -199,13 +206,13 @@
                             {{ __('New experiences coming soon') }}
                         </h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                            {{ __('We are currently updating our seasonal tours and activities. Please check back soon or contact :agent directly for inquiries and custom bookings.', ['agent' => $agent->name]) }}
+                            {{ __('We are currently updating our seasonal tours and activities. Please check back soon or contact :agent directly for enquiries and custom bookings.', ['agent' => $agent->name]) }}
                         </p>
                     </div>
                     @if ($agent->contact_whatsapp)
                         @php
                             $waService = app(\App\Services\WhatsAppDispatchService::class);
-                            $comingSoonWaUrl = $waService->buildWhatsAppUrl($agent->contact_whatsapp, __('Hello :name, I would like to inquire about upcoming tour availability.', ['name' => $agent->name]));
+                            $comingSoonWaUrl = $waService->buildWhatsAppUrl($agent->contact_whatsapp, __('Hello :name, I would like to enquire about upcoming tour availability.', ['name' => $agent->name]));
                         @endphp
                         <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
                             <a href="{{ $comingSoonWaUrl }}"
@@ -247,17 +254,17 @@
                         </p>
                     </div>
 
-                    @if ($packages->count() > 3)
+                    @if ($packages->count() > $packageLimit)
                         <a href="{{ route('storefront.packages') }}"
                             class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-800 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-400 transition shrink-0">
-                            <span>{{ __('See All :count Packages', ['count' => $packages->count()]) }}</span>
+                            <span>{{ __('See all tours (:count)', ['count' => $packages->count()]) }}</span>
                             <i class="fa-solid fa-arrow-right text-[10px]"></i>
                         </a>
                     @endif
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-                    @foreach ($packages->take(6) as $index => $pkg)
+                    @foreach ($displayedPackages as $index => $pkg)
                         <!-- Card: 3 items on mobile, 5 on desktop -->
                         <div
                             class="group flex flex-col justify-between rounded-2xl sm:rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-xl hover:border-brand-400 dark:hover:border-brand-600 transition-all duration-200 overflow-hidden {{ $index >= 3 ? 'hidden sm:flex' : 'flex' }}">
@@ -367,12 +374,12 @@
                 </div>
 
                 <!-- See More Button on Mobile & Desktop -->
-                @if ($packages->count() > 3)
+                @if ($packages->count() > $packageLimit)
                     <div class="text-center pt-2">
                         <a href="{{ route('storefront.packages') }}"
                             class="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-brand-400 dark:hover:border-brand-600 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-xs hover:shadow-md transition">
                             <i class="fa-solid fa-cubes text-brand-700 dark:text-brand-400"></i>
-                            <span>{{ __('Explore All :count Packages', ['count' => $packages->count()]) }}</span>
+                            <span>{{ __('See all :count tours & packages', ['count' => $packages->count()]) }}</span>
                             <i class="fa-solid fa-arrow-right text-[10px] ml-1"></i>
                         </a>
                     </div>
@@ -394,17 +401,17 @@
                         </p>
                     </div>
 
-                    @if ($standaloneProducts->count() > 3)
+                    @if ($standaloneProducts->count() > $productLimit)
                         <a href="{{ route('storefront.products') }}"
                             class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-800 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-400 transition shrink-0">
-                            <span>{{ __('See All :count Items', ['count' => $standaloneProducts->count()]) }}</span>
+                            <span>{{ __('See all services (:count)', ['count' => $standaloneProducts->count()]) }}</span>
                             <i class="fa-solid fa-arrow-right text-[10px]"></i>
                         </a>
                     @endif
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    @foreach ($standaloneProducts->take(5) as $index => $prod)
+                    @foreach ($displayedProducts as $index => $prod)
                         <!-- Card: 3 items on mobile, 5 on desktop -->
                         <div
                             class="group flex flex-col justify-between rounded-2xl sm:rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-xl hover:border-brand-400 dark:hover:border-brand-600 transition-all duration-200 overflow-hidden {{ $index >= 3 ? 'hidden sm:flex' : 'flex' }}">
@@ -474,12 +481,12 @@
                 </div>
 
                 <!-- See More Standalone Items Button -->
-                @if ($standaloneProducts->count() > 3)
+                @if ($standaloneProducts->count() > $productLimit)
                     <div class="text-center pt-2">
                         <a href="{{ route('storefront.products') }}"
                             class="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-brand-400 dark:hover:border-brand-600 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-xs hover:shadow-md transition">
                             <i class="fa-solid fa-compass text-sky-500"></i>
-                            <span>{{ __('Explore All :count Single Activities', ['count' => $standaloneProducts->count()]) }}</span>
+                            <span>{{ __('See all :count activities & services', ['count' => $standaloneProducts->count()]) }}</span>
                             <i class="fa-solid fa-arrow-right text-[10px] ml-1"></i>
                         </a>
                     </div>

@@ -3,7 +3,7 @@
     $agent = $agent ?? ($operator ?? null);
     $waService = app(\App\Services\WhatsAppDispatchService::class);
     $cleanPhone = !empty($agent?->contact_whatsapp) ? $waService->normalizePhoneNumber($agent->contact_whatsapp) : null;
-    $waMessage = "Hello {$agent?->name}, I am browsing your tour catalog and have an inquiry.";
+    $waMessage = "Hello {$agent?->name}, I am browsing your tour catalog and have an enquiry.";
     $waUrl = $cleanPhone ? $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage) : null;
 
     if ($agent) {
@@ -125,13 +125,13 @@
             @endif
 
             @if ($hasContact)
-            <a
-                href="{{ route('storefront.contact') }}"
-                class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.contact') ? $navActive : $navIdle }}"
-            >
-                <i class="fa-solid fa-envelope-open-text text-[11px]"></i>
-                <span>{{ __('Contact') }}</span>
-            </a>
+                <a
+                    href="{{ route('storefront.contact') }}"
+                    class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 {{ request()->routeIs('storefront.contact') ? $navActive : $navIdle }}"
+                >
+                    <i class="fa-solid fa-envelope-open-text text-[11px]"></i>
+                    <span>{{ __('Contact') }}</span>
+                </a>
             @endif
 
             <a
@@ -271,17 +271,17 @@
             @endif
 
             @if ($hasContact)
-            @php $contactActive = request()->routeIs('storefront.contact'); @endphp
-            <a
-                href="{{ route('storefront.contact') }}"
-                class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ $contactActive ? $drawerActive : $drawerIdle }}"
-            >
-                <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-envelope-open-text w-4 text-center {{ $contactActive ? '' : 'text-brand-800 dark:text-brand-400' }}"></i>
-                    <span>{{ __('Contact Us') }}</span>
-                </div>
-                <i class="fa-solid fa-chevron-right text-[10px] {{ $contactActive ? 'text-brand-foreground/70' : 'text-slate-400' }}"></i>
-            </a>
+                @php $contactActive = request()->routeIs('storefront.contact'); @endphp
+                <a
+                    href="{{ route('storefront.contact') }}"
+                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ $contactActive ? $drawerActive : $drawerIdle }}"
+                >
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-envelope-open-text w-4 text-center {{ $contactActive ? '' : 'text-brand-800 dark:text-brand-400' }}"></i>
+                        <span>{{ __('Contact Us') }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[10px] {{ $contactActive ? 'text-brand-foreground/70' : 'text-slate-400' }}"></i>
+                </a>
             @endif
 
             <a
