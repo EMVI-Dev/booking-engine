@@ -3,63 +3,36 @@
         /** @var \App\Models\Operator|null $operator */
         $operator = auth()->user()?->currentOperator();
 
-        $packagesCount = $operator ? $operator->packages()->count() : 0;
-        $productsCount = $operator ? $operator->products()->count() : 0;
-        $reservationsCount = $operator ? $operator->reservations()->count() : 0;
+        $summary = $operator ? app(\App\Services\OperatorDashboardService::class)->summary($operator) : null;
 
-        $pendingConfirmationCount = $operator
-            ? $operator->reservations()->where('status', \App\Enums\ReservationStatus::PendingConfirmation)->count()
-            : 0;
+        $earningsThisMonth = $summary['earnings_this_month'] ?? 0.0;
+        $earningsChange = $summary['earnings_change_pct'] ?? null;
+        $earningsHint = match (true) {
+            $earningsChange !== null => ($earningsChange >= 0 ? '+' : '').round($earningsChange).'% '.__('vs same days last month'),
+            $earningsThisMonth > 0 => __('New this month'),
+            default => __('No earnings last month'),
+        };
 
-        $todayDepartures = $operator
-            ? $operator
-                ->reservations()
-                ->with(['bookable', 'latestPayment'])
-                ->whereDate('requested_date', now()->toDateString())
-                ->whereIn('status', [
-                    \App\Enums\ReservationStatus::Confirmed,
-                    \App\Enums\ReservationStatus::PendingConfirmation,
-                ])
-                ->get()
-            : collect();
+        $upcomingGuests7Days = $summary['upcoming_guests_7d'] ?? 0;
+        $upcomingTrips7Days = $summary['upcoming_trips_7d'] ?? 0;
 
-        $upcomingDepartures = $operator
-            ? $operator
-                ->reservations()
-                ->with(['bookable', 'latestPayment'])
-                ->whereDate('requested_date', '>=', now()->toDateString())
-                ->whereDate('requested_date', '<=', now()->addDays(7)->toDateString())
-                ->whereIn('status', [
-                    \App\Enums\ReservationStatus::Confirmed,
-                    \App\Enums\ReservationStatus::PendingConfirmation,
-                ])
-                ->orderBy('requested_date', 'asc')
-                ->take(5)
-                ->get()
-            : collect();
+        $waitingConfirmationCount = $summary['pending_confirmation_count'] ?? 0;
+        $waitingPaymentCount = $summary['open_pay_links_count'] ?? 0;
+        $totalWaitingCount = $summary['awaiting_action'] ?? 0;
+        $waitingHint = match (true) {
+            $waitingConfirmationCount > 0 && $waitingPaymentCount > 0 => __(':conf to confirm, :pay open links', ['conf' => $waitingConfirmationCount, 'pay' => $waitingPaymentCount]),
+            $waitingConfirmationCount > 0 => trans_choice(':count booking to confirm|:count bookings to confirm', $waitingConfirmationCount, ['count' => $waitingConfirmationCount]),
+            $waitingPaymentCount > 0 => trans_choice(':count open pay link|:count open pay links', $waitingPaymentCount, ['count' => $waitingPaymentCount]),
+            default => __('All caught up'),
+        };
 
-        $recentBookings = $operator
-            ? $operator
-                ->reservations()
-                ->with(['bookable', 'latestPayment'])
-                ->latest('created_at')
-                ->take(6)
-                ->get()
-            : collect();
-
-        $totalRevenue = $operator ? $operator->paidGuestPaymentsTotal() : 0.0;
-
-        $totalPaxServed = $operator
-            ? (int) $operator
-                ->reservations()
-                ->whereIn('status', [\App\Enums\ReservationStatus::Confirmed, \App\Enums\ReservationStatus::Completed])
-                ->sum('pax_count')
-            : 0;
-
-        $totalGuestsCount = $operator ? $operator->guests()->count() : 0;
+        $availableBalance = $summary['available_balance'] ?? 0.0;
+        $todayDepartures = $summary['today_departures'] ?? collect();
+        $upcomingDepartures = $summary['upcoming_departures'] ?? collect();
+        $recentBookings = $summary['recent_bookings'] ?? collect();
+        $sevenDayStrip = collect($summary['seven_day_schedule'] ?? []);
 
         $storefrontIsPublic = $operator?->isStorefrontPublic() ?? false;
-
         $platformDomain = app(\App\Services\DomainResolverService::class)->getPlatformDomain();
         $storefrontUrl = $operator ? request()->getScheme().'://'.$operator->slug.'.'.$platformDomain : '#';
         $isManualConfirmation = $operator?->isManualConfirmationEnabled() ?? false;
@@ -68,11 +41,11 @@
     @endphp
 
     <div class="animate-fade-in space-y-5" x-data="{ copied: false, board: '{{ $defaultBoard }}' }">
-        @if ($pendingConfirmationCount > 0)
+        @if ($waitingConfirmationCount > 0)
             <div class="flex flex-col gap-3 rounded-[12px] border border-amber-300 bg-amber-50/60 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-amber-800/80 dark:bg-amber-950/30">
                 <div class="min-w-0">
                     <p class="text-sm font-medium text-op-ink">
-                        {{ __(':count booking(s) waiting for confirmation', ['count' => $pendingConfirmationCount]) }}
+                        {{ __(':count booking(s) waiting for confirmation', ['count' => $waitingConfirmationCount]) }}
                     </p>
                     <p class="mt-0.5 text-xs text-op-subtle">
                         {{ __('Guests have paid and are waiting for you to confirm their slots.') }}
@@ -112,44 +85,39 @@
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <x-metric-card
-                :label="__('Direct Revenue')"
-                :value="'Rp '.number_format($totalRevenue, 0, ',', '.')"
+                :label="__('Earnings this month')"
+                :value="'Rp '.number_format($earningsThisMonth, 0, ',', '.')"
+                :hint="$earningsHint"
                 icon="fa-rupiah-sign"
                 tone="featured"
                 :href="route('wallet.index')"
-            >
-                <x-slot:meta>
-                    <span class="op-metric-chip inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[10px] font-medium">
-                        {{ __(':count bookings', ['count' => $reservationsCount]) }}
-                    </span>
-                </x-slot:meta>
-            </x-metric-card>
+            />
 
             <x-metric-card
-                :label="__('Today\'s trips')"
-                :value="$todayDepartures->count()"
-                :suffix="'('.((int) $todayDepartures->sum('pax_count')).' pax)'"
-                :hint="now()->format('M d')"
-                icon="fa-calendar-day"
+                :label="__('Upcoming guests (7 days)')"
+                :value="$upcomingGuests7Days"
+                :suffix="__('pax')"
+                :hint="__(':count trips planned', ['count' => $upcomingTrips7Days])"
+                icon="fa-calendar-week"
                 :href="route('calendar.index')"
             />
 
             <x-metric-card
-                :label="__('Guests served')"
-                :value="number_format($totalPaxServed)"
-                :suffix="__('pax')"
-                :hint="__(':count profiles', ['count' => $totalGuestsCount])"
-                icon="fa-person-walking-luggage"
-                :href="route('guests.index')"
+                :label="__('Waiting for you')"
+                :value="$totalWaitingCount"
+                :hint="$waitingHint"
+                icon="fa-inbox"
+                :tone="$totalWaitingCount > 0 ? 'accent' : 'default'"
+                :href="route('reservations.index')"
             />
 
             <x-metric-card
-                :label="__('Live catalog')"
-                :value="$packagesCount"
-                :suffix="__('packages')"
-                :hint="__(':count activities', ['count' => $productsCount])"
-                icon="fa-cubes"
-                :href="route('packages.index')"
+                :label="__('Available to pay out')"
+                :value="'Rp '.number_format($availableBalance, 0, ',', '.')"
+                :hint="__('Ready for withdrawal')"
+                icon="fa-wallet"
+                :tone="$availableBalance > 0 ? 'featured' : 'default'"
+                :href="route('wallet.index')"
             />
         </div>
 
@@ -260,24 +228,37 @@
                 @endif
 
                 <div class="op-card p-4 sm:p-5">
-                    <p class="mb-3 text-xs font-medium uppercase tracking-wider text-op-subtle">{{ __('Shortcuts') }}</p>
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-xs font-medium uppercase tracking-wider text-op-subtle">{{ __('7-Day Schedule') }}</p>
+                        <a href="{{ route('calendar.index') }}" class="text-xs font-medium text-op-subtle hover:text-op-ink" wire:navigate>
+                            {{ __('Open calendar') }}
+                        </a>
+                    </div>
                     <div class="divide-y divide-op-line">
-                        <a href="{{ route('packages.create') }}" class="flex items-center justify-between py-2.5 text-sm font-medium text-op-ink first:pt-0" wire:navigate>
-                            {{ __('Create package') }}
-                            <i class="fa-solid fa-chevron-right text-[10px] text-op-subtle"></i>
-                        </a>
-                        <a href="{{ route('products.create') }}" class="flex items-center justify-between py-2.5 text-sm font-medium text-op-ink" wire:navigate>
-                            {{ __('Add activity') }}
-                            <i class="fa-solid fa-chevron-right text-[10px] text-op-subtle"></i>
-                        </a>
-                        <a href="{{ route('calendar.index') }}" class="flex items-center justify-between py-2.5 text-sm font-medium text-op-ink" wire:navigate>
-                            {{ __('Availability') }}
-                            <i class="fa-solid fa-chevron-right text-[10px] text-op-subtle"></i>
-                        </a>
-                        <a href="{{ route('guests.index') }}" class="flex items-center justify-between py-2.5 text-sm font-medium text-op-ink last:pb-0" wire:navigate>
-                            {{ __('Guest CRM') }}
-                            <i class="fa-solid fa-chevron-right text-[10px] text-op-subtle"></i>
-                        </a>
+                        @foreach ($sevenDayStrip as $day)
+                            <div class="flex items-center justify-between py-2 text-xs first:pt-0 last:pb-0">
+                                <div class="flex items-center gap-2">
+                                    <span @class([
+                                        'w-7 text-center font-bold text-[11px] rounded px-1 py-0.5',
+                                        'bg-[#FFEF4D] text-[#12181E]' => $day['isToday'],
+                                        'text-op-subtle' => ! $day['isToday'],
+                                    ])>
+                                        {{ $day['date']->format('D') }}
+                                    </span>
+                                    <span class="text-op-ink font-medium">{{ $day['date']->format('M d') }}</span>
+                                </div>
+                                <div>
+                                    @if ($day['pax'] > 0)
+                                        <span class="inline-flex items-center gap-1 rounded bg-op-muted px-1.5 py-0.5 font-medium text-op-ink text-[11px]">
+                                            <i class="fa-solid fa-users text-[10px] text-op-subtle"></i>
+                                            {{ __(':pax pax', ['pax' => $day['pax']]) }}
+                                        </span>
+                                    @else
+                                        <span class="text-op-subtle text-[11px]">{{ __('Open') }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
 

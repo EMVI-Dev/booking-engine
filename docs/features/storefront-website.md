@@ -26,6 +26,11 @@ None of these pages exist on the platform root.
 
 `llms.txt` links the pages a shop has, and `llms-full.txt` includes the FAQ answers (Agency plan, as before).
 
+**Promises on the shop home:** `StorefrontPagesService::trustFacts()` is the only source for what the home page may promise guests.
+- `free_cancel_hours` is the shortest free-cancellation window across published packages and standalone activities. It is `null` when any of them has none, or nothing is published; then the home page makes no free-cancellation promise.
+- `hold_minutes` is how long seats are held while the guest pays (the platform setting).
+- Never hard-code a cancellation window or hold length in the storefront.
+
 , in three tabs: **Gallery**, **FAQ** and **Contact**. They are one page (`settings/website?tab=gallery|faq|contact`), and `settings/gallery`, `settings/faq` and `settings/contact` redirect to the matching tab. Plan limits are in [`../commercial/plans-and-pricing.md`](../commercial/plans-and-pricing.md).
 
 ## Gallery

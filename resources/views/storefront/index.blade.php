@@ -26,29 +26,37 @@
     @livewireStyles
 </head>
 
-<body x-data="{ activeTab: 'all', mobileMenuOpen: false }"
+<body x-data="{ mobileMenuOpen: false }"
     class="min-h-screen flex flex-col sf-canvas text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-600 selection:text-brand-foreground overflow-x-clip w-full max-w-full">
     @include('storefront.partials.navbar')
 
     <!-- Hero Section (Responsive 2-Column Banner on Desktop) -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
-        <div
-            class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-brand-950 to-slate-900 p-6 sm:p-10 lg:p-12 text-white shadow-2xl border border-slate-800/60">
-            <div
-                class="absolute right-0 top-0 -mt-20 -mr-20 w-96 h-96 rounded-full bg-brand-500/20 blur-3xl pointer-events-none">
-            </div>
+        @php
+            $storefrontSettings = $agent->settings['storefront'] ?? [];
+            $heroHeadline = filled($storefrontSettings['hero_headline'] ?? null)
+                ? $storefrontSettings['hero_headline']
+                : $agent->name;
+            $heroTagline = filled($storefrontSettings['hero_tagline'] ?? null)
+                ? $storefrontSettings['hero_tagline']
+                : ($agent->bio ?: ($packages->isNotEmpty()
+                    ? __('Explore our curated packages and standalone activities. Book online with instant confirmation and transparent pricing.')
+                    : __('Explore our activities and book online with instant confirmation and transparent pricing.')));
+            $heroImage = $agent->banner_url ?: ($packages->first()?->cover_photo_url ?: $standaloneProducts->first()?->cover_photo_url);
 
-            @php
-                $storefrontSettings = $agent->settings['storefront'] ?? [];
-                $heroHeadline = filled($storefrontSettings['hero_headline'] ?? null)
-                    ? $storefrontSettings['hero_headline']
-                    : $agent->name;
-                $heroTagline = filled($storefrontSettings['hero_tagline'] ?? null)
-                    ? $storefrontSettings['hero_tagline']
-                    : ($agent->bio ?: ($packages->isNotEmpty()
-                        ? __('Explore our curated packages and standalone activities. Book online with instant confirmation and transparent pricing.')
-                        : __('Explore our activities and book online with instant confirmation and transparent pricing.')));
-            @endphp
+            $minCancellationHours = app(\App\Services\StorefrontPagesService::class)->trustFacts($agent)['free_cancel_hours'];
+            $allAllowCancellation = $minCancellationHours !== null;
+        @endphp
+
+        <div class="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-10 lg:p-12 text-white shadow-2xl border border-slate-800/60">
+            @if ($heroImage)
+                <img src="{{ $heroImage }}" alt="{{ $agent->name }}" class="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-luminosity scale-105 pointer-events-none" />
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/70 pointer-events-none"></div>
+            @else
+                <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-brand-950 to-slate-900 pointer-events-none"></div>
+                <div class="absolute right-0 top-0 -mt-20 -mr-20 w-96 h-96 rounded-full bg-brand-500/20 blur-3xl pointer-events-none"></div>
+            @endif
+
             <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <!-- Left: Hero Headline & Description -->
                 <div class="lg:col-span-7 space-y-4">
@@ -68,11 +76,13 @@
 
                     <!-- Highlights Pill Row -->
                     <div class="pt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-300">
-                        <span
-                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10">
-                            <i class="fa-solid fa-clock text-sky-400 text-xs"></i>
-                            {{ __('Instant Reservation') }}
-                        </span>
+                        @if (! $agent->isManualConfirmationEnabled())
+                            <span
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10">
+                                <i class="fa-solid fa-clock text-sky-400 text-xs"></i>
+                                {{ __('Instant Reservation') }}
+                            </span>
+                        @endif
                         <span
                             class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10">
                             <i class="fa-solid fa-wallet text-emerald-400 text-xs"></i>
@@ -96,40 +106,47 @@
                                     class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                                     <i class="fa-solid fa-shield-halved text-base"></i>
                                 </span>
-                                <div>
+                                <div class="min-w-0">
                                     <p class="font-bold text-xs sm:text-sm text-white">
-                                        {{ __('100% Secure Checkout') }}
+                                        {{ __('Secure checkout (QRIS, bank transfer, card)') }}
                                     </p>
                                     <p class="text-[11px] text-slate-400">
-                                        {{ __('Automated settlement via Central Payment Gateway') }}</p>
+                                        {{ __('Official direct payment portal') }}
+                                    </p>
                                 </div>
                             </div>
 
                             <div class="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
                                 <span
                                     class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-                                    <i class="fa-solid fa-bolt text-base"></i>
+                                    <i class="fa-solid fa-clock text-base"></i>
                                 </span>
-                                <div>
+                                <div class="min-w-0">
                                     <p class="font-bold text-xs sm:text-sm text-white">
-                                        {{ __('Instant 30-Min Locked Rate') }}</p>
+                                        {{ __('Your seats are held while you pay') }}
+                                    </p>
                                     <p class="text-[11px] text-slate-400">
-                                        {{ __('Hold your departure slots immediately before completing payment') }}</p>
+                                        {{ __('Departure spots locked during checkout') }}
+                                    </p>
                                 </div>
                             </div>
 
-                            <div class="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
-                                <span
-                                    class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
-                                    <i class="fa-solid fa-rotate-left text-base"></i>
-                                </span>
-                                <div>
-                                    <p class="font-bold text-xs sm:text-sm text-white">
-                                        {{ __('Free Cancellation Window') }}</p>
-                                    <p class="text-[11px] text-slate-400">
-                                        {{ __('Full refund if cancelled up to 24h before departure') }}</p>
+                            @if ($allAllowCancellation)
+                                <div class="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
+                                    <span
+                                        class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                                        <i class="fa-solid fa-rotate-left text-base"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-xs sm:text-sm text-white">
+                                            {{ __('Free cancellation') }}
+                                        </p>
+                                        <p class="text-[11px] text-slate-400 leading-normal break-words">
+                                            {{ __('Full refund if cancelled up to :hours hours before departure', ['hours' => $minCancellationHours]) }}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -143,55 +160,6 @@
         $displayedPackages = $packages->take($packageLimit);
         $displayedProducts = $standaloneProducts->take($productLimit);
     @endphp
-
-    <!-- Category Filter Tabs Bar -->
-    @if ($packages->isNotEmpty() || $standaloneProducts->isNotEmpty())
-        <div
-            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sticky top-16 z-30 bg-slate-50/95 dark:bg-zinc-950/95 backdrop-blur-md pb-2">
-            <div class="flex items-center justify-between gap-3 overflow-x-auto pb-1 no-scrollbar">
-                <div class="flex items-center gap-2">
-                    <button type="button" @click="activeTab = 'all'"
-                        class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                        :class="activeTab === 'all' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
-                            'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
-                        <i class="fa-solid fa-layer-group mr-1.5 text-[11px]"></i>
-                        {{ __('Top Featured (:count)', ['count' => $displayedPackages->count() + $displayedProducts->count()]) }}
-                    </button>
-
-                    @if ($packages->isNotEmpty())
-                        <button type="button" @click="activeTab = 'packages'"
-                            class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                            :class="activeTab === 'packages' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
-                                'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
-                            <i class="fa-solid fa-cubes mr-1.5 text-[11px]"></i>
-                            {{ __('Packages (:count)', ['count' => $packages->count()]) }}
-                        </button>
-                    @endif
-
-                    @if ($standaloneProducts->isNotEmpty())
-                        <button type="button" @click="activeTab = 'products'"
-                            class="h-10 px-5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
-                            :class="activeTab === 'products' ? 'bg-brand-600 text-brand-foreground shadow-sm' :
-                                'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700'">
-                            <i class="fa-solid fa-compass mr-1.5 text-[11px]"></i>
-                            {{ __('Single Activities (:count)', ['count' => $standaloneProducts->count()]) }}
-                        </button>
-                    @endif
-                </div>
-
-                <!-- Fast Link to Full Catalog -->
-                @if ($packages->count() > 3 || $standaloneProducts->count() > 3)
-                    <div class="hidden sm:flex items-center gap-2 shrink-0">
-                        <a href="{{ $packages->isNotEmpty() ? route('storefront.packages') : route('storefront.products') }}"
-                            class="text-xs font-bold text-brand-800 dark:text-brand-400 hover:underline flex items-center gap-1">
-                            <span>{{ __('Browse Full Catalog') }}</span>
-                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                        </a>
-                    </div>
-                @endif
-            </div>
-        </div>
-    @endif
 
     <!-- Main Listings Section -->
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-10 sm:space-y-12">
@@ -242,7 +210,7 @@
 
         <!-- Packages Section (3 on mobile, 5 on desktop) -->
         @if ($packages->isNotEmpty())
-            <section x-show="activeTab === 'all' || activeTab === 'packages'" class="space-y-5">
+            <section class="space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                     <div>
                         <h2
@@ -281,26 +249,23 @@
                                     </div>
                                 @endif
 
-                                <!-- Floating Badges on Media -->
-                                <div
-                                    class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
-                                    <span
-                                        class="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-white/90 dark:bg-zinc-900/90 text-brand-700 dark:text-brand-300 backdrop-blur-md shadow-xs">
-                                        {{ $pkg->category ?? __('Package') }}
-                                    </span>
-                                    @if ($pkg->free_cancellation_hours > 0)
-                                        <span
-                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-500/90 text-white backdrop-blur-md shadow-xs flex items-center gap-1">
-                                            <i class="fa-solid fa-rotate-left text-[9px]"></i>
-                                            {{ $pkg->free_cancellation_hours }}h Free Cancel
-                                        </span>
-                                    @endif
-                                </div>
+
                             </div>
 
                             <!-- Card Content -->
                             <div class="p-4 sm:p-6 space-y-3 flex-1 flex flex-col justify-between">
                                 <div class="space-y-2">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                                            {{ $pkg->category ?? __('Package') }}
+                                        </span>
+                                        @if ($pkg->free_cancellation_hours > 0)
+                                            <span class="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center gap-1">
+                                                <i class="fa-solid fa-rotate-left text-[9px]"></i>
+                                                {{ $pkg->free_cancellation_hours }}h Free Cancel
+                                            </span>
+                                        @endif
+                                    </div>
                                     <div>
                                         <h3
                                             class="font-black text-base sm:text-lg text-slate-900 dark:text-white group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors leading-snug">
@@ -389,7 +354,7 @@
 
         <!-- Activities & Standalone Products Section (3 on mobile, 5 on desktop) -->
         @if ($standaloneProducts->isNotEmpty())
-            <section x-show="activeTab === 'all' || activeTab === 'products'" class="space-y-5">
+            <section class="space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                     <div>
                         <h2
@@ -428,18 +393,17 @@
                                     </div>
                                 @endif
 
-                                <!-- Floating Badges on Media -->
-                                <div class="absolute top-2.5 left-2.5 pointer-events-none">
-                                    <span
-                                        class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/90 dark:bg-zinc-900/90 text-slate-700 dark:text-slate-300 backdrop-blur-md shadow-xs">
-                                        {{ $prod->category ?? __('Service') }}
-                                    </span>
-                                </div>
+
                             </div>
 
                             <!-- Card Content -->
                             <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
                                 <div class="space-y-1.5">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                                            {{ $prod->category ?? __('Service') }}
+                                        </span>
+                                    </div>
                                     <h4
                                         class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors">
                                         <a href="{{ route('storefront.product', $prod->slug) }}"

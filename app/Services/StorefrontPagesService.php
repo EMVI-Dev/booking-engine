@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\ListingStatus;
 use App\Models\Operator;
+use App\Models\PlatformSetting;
 
 /**
  * Which optional storefront pages a shop has: Gallery, FAQ and Contact.
@@ -55,5 +57,39 @@ class StorefrontPagesService
     public function hasAny(Operator $operator): bool
     {
         return in_array(true, $this->pagesFor($operator), true);
+    }
+
+    /**
+     * Facts the shop home may promise guests, true for every trip a guest can book there.
+     *
+     * - free_cancel_hours: the shortest free-cancellation window across published packages and
+     *   standalone activities. Null when any trip has none, or nothing is published: then the
+     *   storefront must not promise free cancellation at all.
+     * - hold_minutes: how long seats are held while the guest pays (platform setting).
+     *
+     * @return array{free_cancel_hours: int|null, hold_minutes: int}
+     */
+    public function trustFacts(Operator $operator): array
+    {
+        return [
+            'free_cancel_hours' => $this->shortestFreeCancellationHours($operator),
+            'hold_minutes' => PlatformSetting::current()->getBookingHoldMinutes(),
+        ];
+    }
+
+    private function shortestFreeCancellationHours(Operator $operator): ?int
+    {
+        $windows = $operator->packages()
+            ->where('status', ListingStatus::Published)
+            ->pluck('free_cancellation_hours')
+            ->merge($operator->products()
+                ->where('status', ListingStatus::Published)
+                ->where('sellable_standalone', true)
+                ->pluck('free_cancellation_hours'))
+            ->map(fn (mixed $hours): int => (int) $hours);
+
+        $shortest = $windows->min();
+
+        return $shortest === null || $shortest <= 0 ? null : $shortest;
     }
 }

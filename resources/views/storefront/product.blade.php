@@ -86,7 +86,7 @@
                                     <span
                                         class="text-[10px] text-slate-400 uppercase font-bold block leading-none">{{ __('Cancellation') }}</span>
                                     <span
-                                        class="text-xs font-black text-slate-900 dark:text-white truncate mt-0.5 block">{{ __('Free up to :hours hrs', ['hours' => $product->free_cancellation_hours ?? 24]) }}</span>
+                                        class="text-xs font-black text-slate-900 dark:text-white mt-0.5 block leading-tight break-words">{{ __('Free up to :hours hrs', ['hours' => $product->free_cancellation_hours ?? 24]) }}</span>
                                 </div>
                             </div>
 
@@ -240,14 +240,28 @@
                 </div>
             </div>
 
-            <button
-                type="button"
-                @click="mobileBookingOpen = true"
-                class="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-black text-xs sm:text-sm shadow-md shadow-brand-500/25 transition cursor-pointer shrink-0"
-            >
-                <i class="fa-solid fa-calendar-check text-xs"></i>
-                <span>{{ __('Book Now') }}</span>
-            </button>
+            @if (\App\Models\PlatformSetting::current()->isPlatformMaintenance())
+                <button type="button" disabled
+                    class="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold text-xs sm:text-sm cursor-not-allowed shrink-0 border border-amber-500/30">
+                    <i class="fa-solid fa-lock text-xs"></i>
+                    <span>{{ __('Bookings paused') }}</span>
+                </button>
+            @elseif ($agent?->isDemo())
+                <button type="button" disabled
+                    class="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 font-bold text-xs sm:text-sm cursor-not-allowed shrink-0 border border-slate-300 dark:border-zinc-700">
+                    <i class="fa-solid fa-lock text-xs"></i>
+                    <span>{{ __('Checkout disabled') }}</span>
+                </button>
+            @else
+                <button
+                    type="button"
+                    @click="mobileBookingOpen = true"
+                    class="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-brand-foreground font-black text-xs sm:text-sm shadow-md shadow-brand-500/25 transition cursor-pointer shrink-0"
+                >
+                    <i class="fa-solid fa-calendar-check text-xs"></i>
+                    <span>{{ __('Book Now') }}</span>
+                </button>
+            @endif
         </div>
 
         @livewireScripts

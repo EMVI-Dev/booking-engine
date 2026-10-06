@@ -240,7 +240,7 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
                 @if ($this->isPlatformMaintenance)
                     <div class="flex items-center gap-2">
                         <span class="h-1.5 w-1.5 rounded-full bg-[#F59E0B] shrink-0"></span>
-                        <span>{{ __('Maintenance mode is active — public storefront transactions are paused.') }}</span>
+                        <span>{{ __('Maintenance mode is active. Public storefront transactions are paused.') }}</span>
                         <a href="{{ route('admin.platform.edit') }}" wire:navigate class="font-medium text-[#856404] dark:text-[#FFEF4D] hover:underline">
                             {{ __('Settings') }} &rarr;
                         </a>
@@ -270,16 +270,102 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
         </div>
     @endif
 
-    {{-- Top 4 Key Metric Cards (Radix / Laravel Cloud Flat Aesthetic) --}}
+    {{-- Top Row: Platform Money & Escrow (The Money That Matters) --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {{-- Card 1: Featured MRR --}}
+        {{-- Card 1: Platform Fee Revenue --}}
+        <div class="op-metric op-metric-featured block rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1e2433] hover:border-[#FFEF4D] p-5 shadow-none transition relative overflow-hidden">
+            <div class="flex items-center justify-between gap-2">
+                <span class="op-metric-label text-[12px] font-normal text-[#60646C] dark:text-slate-400">
+                    {{ __('Platform fee revenue (month)') }}
+                </span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium bg-[#FFEF4D]/30 text-[#856404] dark:text-[#FFEF4D] border border-[#FFEF4D]/40">
+                    {{ __('Fee revenue') }}
+                </span>
+            </div>
+            <div class="mt-2 flex items-baseline">
+                <p class="op-metric-value text-[24px] font-medium leading-none text-[#1C2024] dark:text-white">
+                    Rp {{ number_format($this->guestFeeRevenue, 0, ',', '.') }}
+                </p>
+            </div>
+            <p class="op-metric-hint text-[12px] text-[#60646C] dark:text-slate-400 mt-3 flex items-center gap-1.5">
+                <span class="h-1.5 w-1.5 rounded-full bg-[#FFEF4D]"></span>
+                <span>{{ __('Guest service fees collected') }}</span>
+            </p>
+        </div>
+
+        {{-- Card 2: Bookings Value --}}
+        <div class="op-card op-metric block rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1e2433] hover:border-[#D1D5DB] dark:hover:border-slate-700 p-5 shadow-none transition">
+            <div class="flex items-center justify-between gap-2">
+                <span class="op-metric-label text-[12px] font-normal text-[#60646C] dark:text-slate-400">
+                    {{ __('Bookings value (month)') }}
+                </span>
+                <i class="fa-solid fa-chart-line text-[11px] text-[#8B8D98]"></i>
+            </div>
+            <div class="mt-2 flex items-baseline">
+                <p class="op-metric-value text-[24px] font-medium leading-none text-[#1C2024] dark:text-white">
+                    Rp {{ number_format($this->grossBookingValue, 0, ',', '.') }}
+                </p>
+            </div>
+            <p class="op-metric-hint text-[12px] text-[#60646C] dark:text-slate-400 mt-3 flex items-center gap-1.5">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                <span>{{ __('Gross booking value (GMV)') }}</span>
+            </p>
+        </div>
+
+        {{-- Card 3: Held in Escrow --}}
+        <div class="op-card op-metric block rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1e2433] hover:border-[#D1D5DB] dark:hover:border-slate-700 p-5 shadow-none transition">
+            <div class="flex items-center justify-between gap-2">
+                <span class="op-metric-label text-[12px] font-normal text-[#60646C] dark:text-slate-400">
+                    {{ __('Held in escrow') }}
+                </span>
+                <i class="fa-solid fa-shield-halved text-[11px] text-[#8B8D98]"></i>
+            </div>
+            <div class="mt-2 flex items-baseline">
+                <p class="op-metric-value text-[24px] font-medium leading-none text-[#1C2024] dark:text-white">
+                    Rp {{ number_format($this->escrowLiability, 0, ',', '.') }}
+                </p>
+            </div>
+            <p class="op-metric-hint text-[12px] text-[#60646C] dark:text-slate-400 mt-3 flex items-center gap-1.5">
+                <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+                <span>{{ __('Operator funds held until departure') }}</span>
+            </p>
+        </div>
+
+        {{-- Card 4: Open Disputes --}}
+        <div class="op-card op-metric block rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1e2433] hover:border-[#D1D5DB] dark:hover:border-slate-700 p-5 shadow-none transition">
+            <div class="flex items-center justify-between gap-2">
+                <span class="op-metric-label text-[12px] font-normal text-[#60646C] dark:text-slate-400">
+                    {{ __('Open disputes') }}
+                </span>
+                <i class="fa-solid fa-triangle-exclamation text-[11px] text-[#8B8D98]"></i>
+            </div>
+            <div class="mt-2 flex items-baseline">
+                <p class="op-metric-value text-[24px] font-medium leading-none text-[#1C2024] dark:text-white">
+                    Rp {{ number_format($this->openDisputeHolds, 0, ',', '.') }}
+                </p>
+            </div>
+            <p class="op-metric-hint text-[12px] text-[#60646C] dark:text-slate-400 mt-3 flex items-center gap-1.5">
+                @if ($this->openDisputeHolds > 0)
+                    <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+                    <span class="text-rose-600 dark:text-rose-400 font-medium">{{ __('Disputed funds on hold') }}</span>
+                @else
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                    <span>{{ __('No active dispute holds') }}</span>
+                @endif
+            </p>
+        </div>
+    </div>
+
+    {{-- Second Row: Subscriptions & Operator Accounts --}}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {{-- Card 1: MRR --}}
         <a href="{{ route('admin.plans.index') }}" wire:navigate
-            class="op-metric op-metric-featured group block rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1e2433] hover:border-[#FFEF4D] p-5 shadow-none transition relative overflow-hidden">
+            class="op-card op-metric group block rounded-[12px] bg-white dark:bg-[#10141d] border border-[#E4E5E9] dark:border-[#1e2433] hover:border-[#D1D5DB] dark:hover:border-slate-700 p-5 shadow-none transition">
             <div class="flex items-center justify-between gap-2">
                 <span class="op-metric-label text-[12px] font-normal text-[#60646C] dark:text-slate-400">
                     {{ __('Plan fees this month') }}
                 </span>
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium bg-[#FFEF4D]/30 text-[#856404] dark:text-[#FFEF4D] border border-[#FFEF4D]/40">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                     {{ __('MRR') }}
                 </span>
             </div>
@@ -289,7 +375,7 @@ new #[Title('Dashboard')] #[Layout('layouts.admin')] class extends Component
                 </p>
             </div>
             <p class="op-metric-hint text-[12px] text-[#60646C] dark:text-slate-400 mt-3 flex items-center gap-1.5">
-                <span class="h-1.5 w-1.5 rounded-full bg-[#FFEF4D]"></span>
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                 <span>{{ __('Monthly recurring plan revenue') }}</span>
             </p>
         </a>

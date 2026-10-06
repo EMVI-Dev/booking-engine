@@ -115,10 +115,11 @@
                             <h3 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate">
                                 {{ $agent->name }}
                             </h3>
-                            <div class="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold leading-none mt-0.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>{{ __('Verified Operator') }}</span>
-                            </div>
+                            @if ($agent->location)
+                                <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
+                                    {{ $agent->location }}
+                                </div>
+                            @endif
                         </div>
                     </div>
 

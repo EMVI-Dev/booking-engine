@@ -29,7 +29,7 @@
     </div>
 @elseif ($agent?->isDemo())
     <div class="bg-slate-900 text-center text-xs sm:text-sm font-bold px-4 py-2 text-white flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-        <span>{{ __('Demo storefront — checkout is off. Catalog resets every day.') }}</span>
+        <span>{{ __('Demo storefront. Checkout is off. Catalog resets every day.') }}</span>
         <a href="{{ $operatorLoginUrl }}" class="underline decoration-white/40 underline-offset-2 hover:decoration-white">
             {{ __('Try the operator desk') }}
         </a>
@@ -51,14 +51,9 @@
                 <span class="font-black text-sm sm:text-base tracking-tight text-slate-900 dark:text-white truncate group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors">
                     {{ $agent?->name ?? config('app.name') }}
                 </span>
-                <div class="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold leading-none mt-0.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>{{ __('Verified Operator') }}</span>
-                    @if ($agent?->location)
-                        <span class="text-slate-300 dark:text-zinc-600">&bull;</span>
-                        <span class="text-slate-500 dark:text-slate-400 font-normal truncate max-w-[120px] sm:max-w-none">{{ $agent->location }}</span>
-                    @endif
-                </div>
+                @if ($agent?->location)
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 font-normal truncate max-w-[140px] sm:max-w-none">{{ $agent->location }}</span>
+                @endif
             </div>
         </a>
 

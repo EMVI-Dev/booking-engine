@@ -118,17 +118,16 @@
                                 </div>
                             @endif
 
-                            <!-- Floating Badges on Media -->
-                            <div class="absolute top-2.5 left-2.5 pointer-events-none">
-                                <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/90 dark:bg-zinc-900/90 text-slate-700 dark:text-slate-300 backdrop-blur-md shadow-xs">
-                                    {{ $prod->category ?? __('Service') }}
-                                </span>
-                            </div>
                         </div>
 
                         <!-- Card Content -->
                         <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
                             <div class="space-y-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                                        {{ $prod->category ?? __('Service') }}
+                                    </span>
+                                </div>
                                 <h4 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors">
                                     <a href="{{ route('storefront.product', $prod->slug) }}" class="focus:outline-none">
                                         {{ $prod->name }}

@@ -120,23 +120,22 @@
                                 </div>
                             @endif
 
-                            <!-- Floating Badges on Media -->
-                            <div class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
-                                <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-white/90 dark:bg-zinc-900/90 text-brand-700 dark:text-brand-300 backdrop-blur-md shadow-xs">
-                                    {{ $pkg->category ?? __('Package') }}
-                                </span>
-                                @if ($pkg->free_cancellation_hours > 0)
-                                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-500/90 text-white backdrop-blur-md shadow-xs flex items-center gap-1">
-                                        <i class="fa-solid fa-rotate-left text-[9px]"></i>
-                                        {{ $pkg->free_cancellation_hours }}h Free Cancel
-                                    </span>
-                                @endif
-                            </div>
                         </div>
 
                         <!-- Card Content -->
                         <div class="p-4 sm:p-6 space-y-3 flex-1 flex flex-col justify-between">
                             <div class="space-y-2">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
+                                        {{ $pkg->category ?? __('Package') }}
+                                    </span>
+                                    @if ($pkg->free_cancellation_hours > 0)
+                                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center gap-1">
+                                            <i class="fa-solid fa-rotate-left text-[9px]"></i>
+                                            {{ $pkg->free_cancellation_hours }}h Free Cancel
+                                        </span>
+                                    @endif
+                                </div>
                                 <div>
                                     <h3 class="font-black text-base sm:text-lg text-slate-900 dark:text-white group-hover:text-brand-800 dark:group-hover:text-brand-400 transition-colors leading-snug">
                                         <a href="{{ route('storefront.package', $pkg->slug) }}" class="focus:outline-none">

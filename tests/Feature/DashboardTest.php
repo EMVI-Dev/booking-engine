@@ -176,10 +176,12 @@ test('operator dashboard uses quiet chrome and yellow primary actions', function
         ->assertSee('op-card')
         ->assertSee('Bookings')
         ->assertSee('Wallet')
-        ->assertSee(__('Create package'))
-        ->assertSee(__('Add activity'))
+        ->assertSee(__('Earnings this month'))
+        ->assertSee(__('Upcoming guests (7 days)'))
+        ->assertSee(__('Available to pay out'))
         ->assertSee(__('Upcoming'))
         ->assertSee(__('Recent bookings'))
-        ->assertSee(__('Shortcuts'))
+        ->assertSee(__('7-Day Schedule'))
+        ->assertDontSee(__('Shortcuts'))
         ->assertDontSee('bg-[#FFEF4D] text-[#090d16] font-black shadow-xs', false);
 });

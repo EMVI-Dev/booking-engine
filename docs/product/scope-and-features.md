@@ -48,6 +48,11 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - **Resource Timeline**: Weekly matrix of daily capacity usage across all activities.
     - **Capacity Density Heatmap**: Monthly color-coded density calendar showing sold-out, high-occupancy, and open days (Agency).
     - **Print-Perfect Daily Manifest**: High-contrast A4 printable run-sheet with check-in pen tick-boxes (`[ ] Check`), passenger details, notes, and a 3-part ground crew sign-off block (Tour Guide, Driver/Vehicle ID, Dispatch Officer).
+- **Dashboard numbers** (`OperatorDashboardService`):
+    - **Earnings this month** come from the wallet ledger: booking earnings minus refunds and booking reversals. The guest platform fee is never included. The change is compared with the same days of last month.
+    - **Upcoming guests** counts people on confirmed or awaiting-confirmation bookings in the next 7 days.
+    - **Waiting for you** is bookings to confirm plus pay links whose hold is still open.
+    - **Available to pay out** is the cleared wallet balance.
 - **Streamlined Navigation & Sidebar**:
     - Main items: *Dashboard, Bookings, Calendar, Tour Packages, Single Activities, Vendors & Suppliers, Guest CRM, Enquiries, Coupons & Discounts, Storefront Settings, Wallet & Payouts, Subscription & Billing, Team*.
     - Storefront Settings tabs are **Brand & Identity**, **Storefront & Policies**, **Reviews**, **Gallery**, **FAQ** and **Contact**. Reviews is not a sidebar item and not a desk page. Gallery, FAQ and Contact are one page (`/settings/website?tab=…`).

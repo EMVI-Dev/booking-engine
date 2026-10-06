@@ -27,7 +27,7 @@
 @endphp
 
 <footer
-    class="mt-auto border-t border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md select-none py-8 px-4 text-center">
+    class="mt-auto border-t border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md select-none pt-8 pb-16 lg:pb-20 px-4 text-center">
     <div class="max-w-4xl mx-auto space-y-4 text-xs text-slate-500 dark:text-slate-400">
         <!-- Minimal Links Pill Row -->
         <div class="flex flex-wrap items-center justify-center gap-1.5 text-xs">
