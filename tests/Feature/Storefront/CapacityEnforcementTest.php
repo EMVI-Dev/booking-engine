@@ -204,6 +204,81 @@ test('sequential checkouts cannot push a date past its daily capacity', function
         ->and($this->capacity->remainingCapacity($this->product, $this->date))->toBe(0);
 });
 
+test('the guest must pick the trip date themselves', function () {
+    Livewire::test('storefront.booking-box', [
+        'bookable' => $this->product,
+        'operator' => $this->operator,
+    ])
+        ->assertSet('requested_date', '')
+        ->assertSee('Choose trip departure date...')
+        ->set('guest_name', 'Guest')
+        ->set('guest_contact', '081234567890')
+        ->set('agreed_terms', true)
+        ->call('submitBooking')
+        ->assertHasErrors(['requested_date' => 'required'])
+        ->assertSee('Please choose your trip date.');
+
+    expect(Reservation::where('bookable_id', $this->product->id)->count())->toBe(0);
+});
+
+test('picking a date clears the choose-a-date message', function () {
+    Livewire::test('storefront.booking-box', [
+        'bookable' => $this->product,
+        'operator' => $this->operator,
+    ])
+        ->set('guest_name', 'Guest')
+        ->set('guest_contact', '081234567890')
+        ->set('agreed_terms', true)
+        ->call('submitBooking')
+        ->assertHasErrors('requested_date')
+        ->set('requested_date', $this->date)
+        ->assertHasNoErrors('requested_date')
+        ->assertDontSee('Please choose your trip date.');
+});
+
+test('the guest counter reads naturally for one guest', function () {
+    Livewire::test('storefront.booking-box', [
+        'bookable' => $this->product,
+        'operator' => $this->operator,
+    ])
+        ->assertSee('1 guest')
+        ->assertDontSee('1 guests')
+        ->set('pax_count', 2)
+        ->assertSee('2 guests');
+});
+
+test('date shortcuts only offer days the guest can actually book', function () {
+    $this->travelTo(now()->setTime(12, 0));
+
+    $this->product->update(['advance_booking_hours' => 40]);
+
+    Livewire::test('storefront.booking-box', ['bookable' => $this->product->fresh(), 'operator' => $this->operator])
+        ->assertDontSee('data-date-preset="0"', false)
+        ->assertDontSee('data-date-preset="1"', false)
+        ->assertSee('data-date-preset="2"', false);
+
+    $this->product->update(['advance_booking_hours' => 0]);
+
+    Livewire::test('storefront.booking-box', ['bookable' => $this->product->fresh(), 'operator' => $this->operator])
+        ->assertSee('data-date-preset="0"', false)
+        ->assertSee('data-date-preset="1"', false);
+});
+
+test('a too-short phone number is explained in guest words', function () {
+    Livewire::test('storefront.booking-box', [
+        'bookable' => $this->product,
+        'operator' => $this->operator,
+    ])
+        ->set('requested_date', $this->date)
+        ->set('guest_name', 'Guest')
+        ->set('guest_contact', '123')
+        ->set('agreed_terms', true)
+        ->call('submitBooking')
+        ->assertHasErrors('guest_contact')
+        ->assertSee('Please enter your full WhatsApp number, for example 0812 3456 7890.')
+        ->assertDontSee('guest contact');
+});
+
 test('the booking box reports remaining availability to the guest', function () {
     bookSeats($this->operator, $this->product, $this->date, 7);
 

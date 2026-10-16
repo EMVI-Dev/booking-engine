@@ -29,8 +29,7 @@
     @php
         $waService = app(\App\Services\WhatsAppDispatchService::class);
         $cleanPhone = $waService->normalizePhoneNumber($agent->contact_whatsapp);
-        $waMessage = 'Hello ' . ($agent->name ?? 'Agent') . ', I have an enquiry for booking #' . $reservationCode . ' (' . $reservation->guest_name . ')';
-        $waUrl = $cleanPhone !== '' ? $waService->buildWhatsAppUrl($agent->contact_whatsapp, $waMessage) : '#';
+        $waUrl = $cleanPhone !== '' ? $waService->getGuestEnquiryUrl($reservation) : '#';
         $isExpired = $reservation->hold_expires_at && $reservation->hold_expires_at->isPast();
         $minutesLeft = $reservation->hold_expires_at && $reservation->hold_expires_at->isFuture()
             ? max(1, (int) now()->diffInMinutes($reservation->hold_expires_at))
@@ -92,6 +91,11 @@
                         {{ __('Spot held for :minutes more minutes. Pay with QRIS, bank transfer, or card to lock in your trip.', ['minutes' => $minutesLeft]) }}
                     @endif
                 </p>
+                @if (! $isExpired && $latestPayment?->status === \App\Enums\PaymentStatus::Failed)
+                    <p class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300" role="alert">
+                        {{ __('Your last payment did not go through. No money was taken. You can try again below.') }}
+                    </p>
+                @endif
             @endif
         </div>
 
@@ -125,11 +129,6 @@
                     $calendarDetails = "Booking Code: #" . $reservationCode . "\nGuest: " . $reservation->guest_name . " (" . $reservation->pax_count . " Persons)\nProvider: " . $agent->name . "\nPhone/WA: " . ($agent->contact_whatsapp ?? '-');
                     $calendarLocation = $agent->name;
                     $googleCalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' . urlencode($tripTitle) . '&dates=' . $calendarStart . '/' . $calendarEnd . '&details=' . urlencode($calendarDetails) . '&location=' . urlencode($calendarLocation);
-                    $calendarProduct = $agent->showsPlatformBranding()
-                        ? (string) config('app.name')
-                        : preg_replace('/[^A-Za-z0-9 ]+/', '', (string) $agent->name);
-                    $icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//" . $calendarProduct . "//Booking Engine//EN\r\nBEGIN:VEVENT\r\nSUMMARY:" . addcslashes($tripTitle, ",;") . "\r\nDESCRIPTION:" . addcslashes($calendarDetails, ",;\n") . "\r\nLOCATION:" . addcslashes($calendarLocation, ",;") . "\r\nDTSTART:" . $calendarStart . "\r\nDTEND:" . $calendarEnd . "\r\nSTATUS:CONFIRMED\r\nEND:VEVENT\r\nEND:VCALENDAR";
-                    $icsDataUri = 'data:text/calendar;charset=utf8,' . rawurlencode($icsContent);
                 @endphp
 
                 <div class="grid grid-cols-2 gap-2">
@@ -143,8 +142,7 @@
                         <span>{{ __('Google') }}</span>
                     </a>
                     <a
-                        href="{{ $icsDataUri }}"
-                        download="tour-booking-{{ $reservationCode }}.ics"
+                        href="{{ route('storefront.reservation.calendar', $reservation) }}"
                         class="inline-flex h-10 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 text-xs font-bold text-slate-800 transition hover:bg-slate-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-slate-200 dark:hover:bg-zinc-700"
                     >
                         <i class="fa-brands fa-apple text-xs text-slate-700 dark:text-slate-300" aria-hidden="true"></i>

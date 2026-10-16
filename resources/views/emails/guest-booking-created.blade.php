@@ -8,7 +8,7 @@
     $payUrl = route('storefront.reservation.pay', $reservation);
 
     $waService = app(\App\Services\WhatsAppDispatchService::class);
-    $waUrl = $agent->contact_whatsapp ? $waService->getPaymentHoldLinkUrl($reservation) : null;
+    $waUrl = $agent->contact_whatsapp ? $waService->getGuestEnquiryUrl($reservation) : null;
     $amountDue = $payment ? (float) $payment->amount : ($reservation->pax_count * (float) ($reservation->bookable?->price ?? 0));
 @endphp
 <!DOCTYPE html>

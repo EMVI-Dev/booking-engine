@@ -23,6 +23,14 @@
         ! empty($isExpired) => __('Hold Expired'),
         default => __('Payment due'),
     };
+
+    $amountLabel = match (true) {
+        $isRefunded => __('Refunded'),
+        $ticketPaid => __('Paid'),
+        $isCancelled || $isDeclined || ! empty($isExpired) => __('Total'),
+        default => __('Due'),
+    };
+    $canCheckIn = $ticketPaid && ! $isCompleted;
 @endphp
 
 <article
@@ -59,7 +67,7 @@
                 <dd>{{ $venue }}</dd>
             </div>
             <div>
-                <dt>{{ $ticketPaid ? __('Paid') : __('Due') }}</dt>
+                <dt>{{ $amountLabel }}</dt>
                 <dd>Rp {{ number_format($totalAmount, 0, ',', '.') }}</dd>
             </div>
         </dl>
@@ -72,8 +80,10 @@
 
     <div class="e-voucher__bottom">
         <p class="e-voucher__id">{{ __('Booking ID') }} — #{{ $reservationCode }}</p>
-        <p class="e-voucher__hint">
-            {{ $isPage ? __('Show this page at check-in') : __('Show this code at check-in') }}
-        </p>
+        @if ($canCheckIn)
+            <p class="e-voucher__hint">
+                {{ $isPage ? __('Show this page at check-in') : __('Show this code at check-in') }}
+            </p>
+        @endif
     </div>
 </article>

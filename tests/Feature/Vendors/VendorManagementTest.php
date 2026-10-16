@@ -142,3 +142,20 @@ test('vendor dispatch service can send test notification', function () {
             && $mail->isTest === true;
     });
 });
+
+test('vendor saves confirm with a toast on the same page', function () {
+    $component = Livewire::test('pages::vendors.index')
+        ->set('name', 'Gili Boat Co')
+        ->set('reservation_email', 'boats@example.com')
+        ->call('save')
+        ->assertDispatched('toast', message: 'Vendor created successfully.', type: 'success');
+
+    $vendor = Vendor::where('name', 'Gili Boat Co')->firstOrFail();
+
+    $component->call('editVendor', $vendor->id)
+        ->set('name', 'Gili Boat Company')
+        ->call('save')
+        ->assertDispatched('toast', message: 'Vendor updated successfully.', type: 'success');
+
+    expect(session()->has('success'))->toBeFalse();
+});

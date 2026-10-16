@@ -36,7 +36,7 @@ test('new operators see a welcome toast cue and clickable setup steps', function
         ->get(route('dashboard'))
         ->assertOk()
         ->assertSee('Finish setup to take bookings')
-        ->assertSee('Guests cannot pay you until these are done.')
+        ->assertSee('Your page is closed to guests until these are done.')
         ->assertSee('Continue')
         ->assertSee('Page is closed')
         ->assertSee('Add an activity')
@@ -111,7 +111,8 @@ test('setup banner refreshes immediately when setup progress is updated', functi
     ]);
 
     $banner->dispatch('setup-progress-updated')
-        ->assertSee('One step left before guests can book')
+        ->assertSee('One step left to finish your shop')
+        ->assertSee('Guests can already book. These finish how your page looks.')
         ->assertSee('8 of 9 done')
         ->assertSee('Add an activity')
         ->assertDontSee('Short bio');
@@ -140,7 +141,8 @@ test('setup banner with one step left shows only the primary button', function (
     $response = $this->actingAs($user)->get(route('dashboard'));
 
     $response->assertOk()
-        ->assertSee('One step left before guests can book')
+        ->assertSee('One step left to finish your shop')
+        ->assertSee('Guests can already book. These finish how your page looks.')
         ->assertSee('8 of 9 done')
         ->assertSee('Add an activity')
         ->assertDontSee('Short bio')

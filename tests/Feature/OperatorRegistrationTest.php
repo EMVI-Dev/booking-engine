@@ -73,6 +73,7 @@ test('operator registration requires terms acceptance', function () {
         'password' => 'SecurePass123!',
         'password_confirmation' => 'SecurePass123!',
         'agency_name' => 'Bali Ocean Treks',
+        'contact_whatsapp' => '081234567890',
     ]);
 
     $response->assertSessionHasErrors('terms');
@@ -92,6 +93,7 @@ test('taken page address errors stay on the business step', function () {
             'agency_name' => 'Bali Ocean Treks',
             'slug' => 'baliocean',
             'terms' => '1',
+            'contact_whatsapp' => '081234567890',
         ])
         ->assertOk()
         ->assertSee('That page address is already taken')
@@ -107,6 +109,7 @@ test('operator registration auto generates slug when not provided', function () 
         'password_confirmation' => 'SecurePass123!',
         'agency_name' => 'Lombok Coral Dive',
         'terms' => '1',
+        'contact_whatsapp' => '081234567890',
     ]);
 
     $operator = Operator::where('name', 'Lombok Coral Dive')->first();
@@ -124,6 +127,7 @@ test('reserved platform addresses cannot be claimed as a shop slug', function ()
             'agency_name' => 'Admin Tours',
             'slug' => 'admin',
             'terms' => '1',
+            'contact_whatsapp' => '081234567890',
         ])
         ->assertSessionHasErrors('slug');
 
@@ -138,7 +142,65 @@ test('an auto generated slug skips reserved addresses', function () {
         'password_confirmation' => 'SecurePass123!',
         'agency_name' => 'WWW',
         'terms' => '1',
+        'contact_whatsapp' => '081234567890',
     ]);
 
     expect(Operator::where('name', 'WWW')->value('slug'))->toBe('www-1');
+});
+
+test('a WhatsApp number is required at sign-up because the page cannot open without one', function () {
+    $this->from(route('register'))
+        ->post(route('register.store'), [
+            'name' => 'Wayan Sudarma',
+            'email' => 'wayan-nowa@balitours.com',
+            'password' => 'SecurePass123!',
+            'password_confirmation' => 'SecurePass123!',
+            'agency_name' => 'Bali Ocean Treks',
+            'slug' => 'balinowa',
+            'terms' => '1',
+        ])
+        ->assertSessionHasErrors(['contact_whatsapp' => 'Please add your WhatsApp number. Guests use it to reach you, and your page needs it to open.']);
+
+    expect(Operator::where('slug', 'balinowa')->exists())->toBeFalse();
+
+    $this->get(route('register'))
+        ->assertDontSee('Optional. Guests can message you from your page.');
+});
+
+test('an operator missing WhatsApp sees it as the setup step that keeps the page closed', function () {
+    $operator = Operator::factory()->create(['bio' => 'We run snorkel trips.', 'contact_whatsapp' => null]);
+
+    $step = collect($operator->salesReadinessChecklist())->firstWhere('key', 'brand');
+
+    expect($step['done'])->toBeFalse()
+        ->and($step['label'])->toBe('WhatsApp number')
+        ->and($step['url'])->toEndWith('#setup-whatsapp')
+        ->and($operator->missingStorefrontSetupLabels())->toContain('WhatsApp number');
+});
+
+test('the add activity page names exactly what is missing instead of a vague warning', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->create(['bio' => 'We run snorkel trips.', 'contact_whatsapp' => null]);
+    $operator->users()->attach($user->id, ['role' => OperatorUserRole::Owner]);
+
+    $this->actingAs($user)
+        ->get(route('products.create'))
+        ->assertOk()
+        ->assertSee('Add these before you can add activities:')
+        ->assertSee('WhatsApp number')
+        ->assertSessionMissing('warning');
+});
+
+test('brand settings will not save without a WhatsApp number', function () {
+    $user = User::factory()->create();
+    $operator = Operator::factory()->create();
+    $operator->users()->attach($user->id, ['role' => OperatorUserRole::Owner]);
+
+    Livewire\Livewire::actingAs($user)
+        ->test('pages::settings.brand')
+        ->set('contact_whatsapp', '')
+        ->call('updateBrandSettings')
+        ->assertHasErrors(['contact_whatsapp' => 'required']);
+
+    expect($operator->fresh()->contact_whatsapp)->not->toBeEmpty();
 });

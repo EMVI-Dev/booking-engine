@@ -1,6 +1,6 @@
 # Vendor Management & Automated Dispatch Specification
 
-_Last reviewed: 2026-10-03_
+_Last reviewed: 2026-10-16_
 
 ## Overview
 
@@ -43,6 +43,7 @@ The **Vendor Management & Automated Dispatch** system allows operators to:
 * Create, edit, delete, and toggle active status.
 * Manage optional payout account details.
 * **Test Email Dispatch**: Operators can trigger a test dispatch copy (with `[TEST]` subject and test banner) directly from table row actions or the edit modal to verify vendor inbox deliverability.
+* **Sender**: vendor emails are sent from the platform address (`MAIL_FROM_ADDRESS`) with the operator's name, and replies go to the operator's booking inbox. They are never sent from the operator's own address, which would fail SPF/DMARC.
 
 ### Inline Vendor Creation during Activity Setup
 * Inside [`resources/views/pages/products/⚡create.blade.php`](../../resources/views/pages/products/⚡create.blade.php) and [`⚡edit.blade.php`](../../resources/views/pages/products/⚡edit.blade.php):

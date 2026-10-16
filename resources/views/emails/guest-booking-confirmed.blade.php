@@ -9,7 +9,7 @@
     $ticketUrl = route('storefront.reservation.ticket', $reservation);
 
     $waService = app(\App\Services\WhatsAppDispatchService::class);
-    $waUrl = $agent->contact_whatsapp ? $waService->getConfirmationUrl($reservation) : null;
+    $waUrl = $agent->contact_whatsapp ? $waService->getGuestEnquiryUrl($reservation) : null;
 @endphp
 <!DOCTYPE html>
 <html lang="en">

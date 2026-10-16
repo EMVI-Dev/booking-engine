@@ -85,6 +85,7 @@ test('new operator sign-ups must verify their email and the link opens on their 
         'agency_name' => 'Ketut Treks',
         'slug' => 'ketut-treks',
         'terms' => '1',
+        'contact_whatsapp' => '081234567890',
     ]);
 
     $user = User::where('email', 'ketut@example.com')->firstOrFail();

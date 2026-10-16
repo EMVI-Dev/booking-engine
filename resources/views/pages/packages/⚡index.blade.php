@@ -35,10 +35,21 @@ new #[Title('Tour Packages & Combos')] class extends Component {
 
         return $this->currentOperator->packages()
             ->with('products')
-            ->when($this->search, fn ($q) => $q->where('title', 'like', "%{$this->search}%")->orWhere('category', 'like', "%{$this->search}%"))
+            ->when($this->search, fn ($q) => $q->where(fn ($sub) => $sub->where('title', 'like', "%{$this->search}%")->orWhere('category', 'like', "%{$this->search}%")))
             ->when($this->statusFilter !== 'all', fn ($q) => $q->where('status', $this->statusFilter))
             ->latest()
             ->get();
+    }
+
+    /**
+     * Why each listed package cannot be deleted (null when it can), keyed by id.
+     *
+     * @return array<string, string|null>
+     */
+    #[Computed]
+    public function deleteBlockReasons(): array
+    {
+        return app(ListingDeletionService::class)->blockReasons($this->packages);
     }
 
     public ?string $deletingPackageId = null;
@@ -245,19 +256,16 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                             {{ trans_choice(':count bundled activity|:count bundled activities', $package->products->count(), ['count' => $package->products->count()]) }}
                         </span>
 
-                        @php
-                            $blockReason = app(\App\Services\ListingDeletionService::class)->blockReason($package);
-                        @endphp
                         <div class="flex items-center gap-1.5">
                             <a href="{{ route('packages.edit', $package) }}" wire:navigate
                                 class="h-8 px-2.5 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] hover:bg-[#E4E5E9] dark:hover:bg-[#1E2433] text-[#12181E] dark:text-zinc-200 border border-[#E4E5E9] dark:border-[#1E2433] font-medium text-xs inline-flex items-center gap-1.5 transition">
                                 <i class="fa-solid fa-pen text-[10px]" aria-hidden="true"></i>
                                 {{ __('Edit') }}
                             </a>
-                            @if ($blockReason !== null)
+                            @if ($this->deleteBlockReasons[$package->id] !== null)
                                 <button type="button"
                                     disabled
-                                    title="{{ $blockReason }}"
+                                    title="{{ $this->deleteBlockReasons[$package->id] }}"
                                     class="h-8 w-8 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] text-stone-300 dark:text-zinc-600 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center cursor-not-allowed opacity-60">
                                     <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
                                 </button>
@@ -350,12 +358,12 @@ new #[Title('Tour Packages & Combos')] class extends Component {
                                             <i class="fa-solid fa-pen text-[10px]"></i>
                                             <span>{{ __('Edit') }}</span>
                                         </a>
-                                        @if ($blockReason !== null)
+                                        @if ($this->deleteBlockReasons[$package->id] !== null)
                                             <button
                                                 type="button"
                                                 disabled
                                                 class="h-7 w-7 rounded-[6px] bg-[#F8F9FA] dark:bg-[#151a26] text-stone-300 dark:text-zinc-600 border border-[#E4E5E9] dark:border-[#1E2433] inline-flex items-center justify-center shadow-none cursor-not-allowed opacity-60"
-                                                title="{{ $blockReason }}"
+                                                title="{{ $this->deleteBlockReasons[$package->id] }}"
                                             >
                                                 <i class="fa-solid fa-trash text-xs"></i>
                                             </button>

@@ -78,6 +78,21 @@ test('a phone typed in international format still matches', function () {
         ->assertRedirect(route('storefront.reservation.ticket', $this->reservation));
 });
 
+test('a code copied as shown on the receipt still matches', function (string $typedCode) {
+    $this->post('http://bali-sea.booking.test/find-booking', [
+        'code' => str_replace('CODE', $this->reservation->code, $typedCode),
+        'contact' => 'sarah@example.com',
+    ], $this->headers)
+        ->assertRedirect(route('storefront.reservation.ticket', $this->reservation));
+})->with(['#CODE', ' # CODE ', 'CODE.']);
+
+test('the find booking page asks only for email or phone', function () {
+    $this->get('http://bali-sea.booking.test/find-booking', $this->headers)
+        ->assertOk()
+        ->assertSee('plus the email or phone used at checkout.')
+        ->assertDontSee('plus the name, email, or phone');
+});
+
 test('a guest name or a fragment of the phone no longer opens the e-ticket', function (string $contact) {
     $this->from('http://bali-sea.booking.test/find-booking')
         ->post('http://bali-sea.booking.test/find-booking', [

@@ -28,6 +28,19 @@ class WhatsAppDispatchService
     }
 
     /**
+     * Chat the guest opens with the operator about their booking (from guest emails and the receipt).
+     */
+    public function getGuestEnquiryUrl(Reservation $reservation): string
+    {
+        $operator = $reservation->operator;
+        $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
+
+        $msg = 'Hello '.($operator->name ?? 'Agent').", I have an enquiry for booking #{$code} ({$reservation->guest_name})";
+
+        return $this->buildWhatsAppUrl((string) $operator->contact_whatsapp, $msg);
+    }
+
+    /**
      * Generate 1-Click Voucher & Booking Confirmation WhatsApp message URL.
      */
     public function getConfirmationUrl(Reservation $reservation): string

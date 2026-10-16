@@ -30,6 +30,7 @@ new class extends Component {
         $otherRemaining = $remaining->slice(1)->values();
         $hasOtherSteps = $otherRemaining->isNotEmpty();
         $remainingCount = $remaining->count();
+        $guestsCanBook = (bool) $operator?->isStorefrontPublic();
     @endphp
 
     @if ($operator && $remaining->isNotEmpty())
@@ -51,14 +52,18 @@ new class extends Component {
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-op-ink">
-                                @if ($remainingCount === 1)
-                                    {{ __('One step left before guests can book') }}
+                                @if ($guestsCanBook)
+                                    {{ $remainingCount === 1 ? __('One step left to finish your shop') : __('Finish setting up your shop') }}
                                 @else
-                                    {{ __('Finish setup to take bookings') }}
+                                    {{ $remainingCount === 1 ? __('One step left before guests can book') : __('Finish setup to take bookings') }}
                                 @endif
                             </p>
                             <p class="mt-0.5 text-xs leading-relaxed text-op-subtle">
-                                {{ __('Guests cannot pay you until these are done.') }}
+                                @if ($guestsCanBook)
+                                    {{ __('Guests can already book. These finish how your page looks.') }}
+                                @else
+                                    {{ __('Your page is closed to guests until these are done.') }}
+                                @endif
                             </p>
                         </div>
                         <p class="shrink-0 rounded-[4px] border border-[#E4E5E9] bg-[#F7F8F9] px-2 py-0.5 text-[11px] font-medium tabular-nums text-op-ink dark:border-[#1E2433] dark:bg-[#151a26]">

@@ -29,6 +29,7 @@ test('new operator accounts can be created when maintenance is off', function ()
         'password_confirmation' => 'SecurePass123!',
         'agency_name' => 'Bali Ocean Treks',
         'terms' => '1',
+        'contact_whatsapp' => '081234567890',
     ]);
 
     $response->assertSessionHasNoErrors();

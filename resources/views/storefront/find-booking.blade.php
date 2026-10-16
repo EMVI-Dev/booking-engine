@@ -25,7 +25,7 @@
                     {{ __('Find your booking') }}
                 </h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">
-                    {{ __('Enter the booking code from your email or WhatsApp message, plus the name, email, or phone used at checkout.') }}
+                    {{ __('Enter the booking code from your email or WhatsApp message, plus the email or phone used at checkout.') }}
                 </p>
             </div>
 

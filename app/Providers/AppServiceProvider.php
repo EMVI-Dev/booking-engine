@@ -146,7 +146,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Date::use(CarbonImmutable::class);
 
-        Model::preventLazyLoading(app()->isLocal());
+        Model::preventLazyLoading(app()->isLocal() || app()->runningUnitTests());
 
         Relation::morphMap([
             'package' => Package::class,

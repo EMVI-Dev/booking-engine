@@ -154,10 +154,10 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
         if ($this->editing_id) {
             $vendor = $operator->vendors()->findOrFail($this->editing_id);
             $vendor->update($data);
-            session()->flash('success', __('Vendor updated successfully.'));
+            $this->dispatch('toast', message: __('Vendor updated successfully.'), type: 'success');
         } else {
             $operator->vendors()->create($data);
-            session()->flash('success', __('Vendor created successfully.'));
+            $this->dispatch('toast', message: __('Vendor created successfully.'), type: 'success');
         }
 
         $this->show_modal = false;
@@ -179,7 +179,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
         $vendor = $operator->vendors()->findOrFail($id);
         $vendor->update(['is_active' => !$vendor->is_active]);
 
-        session()->flash('success', $vendor->is_active ? __('Vendor activated.') : __('Vendor deactivated.'));
+        $this->dispatch('toast', message: $vendor->is_active ? __('Vendor activated.') : __('Vendor deactivated.'), type: 'success');
     }
 
     /**
@@ -218,7 +218,7 @@ new #[Layout('layouts.app.sidebar')] #[Title('Vendors & Suppliers - Operator Por
 
         $this->confirming_delete_id = null;
         $this->confirming_delete_name = null;
-        session()->flash('success', __('Vendor deleted successfully.'));
+        $this->dispatch('toast', message: __('Vendor deleted successfully.'), type: 'success');
         $this->resetPage();
     }
 

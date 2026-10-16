@@ -20,6 +20,14 @@
         : 'border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-purple-600 focus:ring-purple-600/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-purple-400 dark:focus:ring-purple-400/10';
 
     $classes = "{$baseClasses} {$stateClasses}";
+
+    $blackoutLookup = array_is_list($blackoutDates ?? []) ? array_flip($blackoutDates ?? []) : ($blackoutDates ?? []);
+    $presetOptions = collect([0 => __('Today'), 1 => __('Tomorrow'), 2 => __('+2 Days')])
+        ->filter(function (string $label, int $daysFromNow) use ($minDate, $maxDate, $blackoutLookup): bool {
+            $date = today()->addDays($daysFromNow)->format('Y-m-d');
+
+            return $date >= $minDate && $date <= $maxDate && ! isset($blackoutLookup[$date]);
+        });
 @endphp
 
 <div x-data="{
@@ -258,20 +266,18 @@
         </div>
 
         <!-- Quick Presets -->
-        @if ($presets)
+        @if ($presets && $presetOptions->isNotEmpty())
             <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[10px]">
-                <button type="button" x-on:click="setPreset(0)"
-                    class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold transition cursor-pointer shrink-0">
-                    {{ __('Today') }}
-                </button>
-                <button type="button" x-on:click="setPreset(1)"
-                    class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold transition cursor-pointer shrink-0">
-                    {{ __('Tomorrow') }}
-                </button>
-                <button type="button" x-on:click="setPreset(2)"
-                    class="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 font-bold transition cursor-pointer shrink-0">
-                    {{ __('+2 Days') }}
-                </button>
+                @foreach ($presetOptions as $daysFromNow => $label)
+                    <button type="button" x-on:click="setPreset({{ $daysFromNow }})" data-date-preset="{{ $daysFromNow }}"
+                        @class([
+                            'px-2 py-1 rounded-lg font-bold transition cursor-pointer shrink-0',
+                            'bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300' => $daysFromNow === 2,
+                            'bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300' => $daysFromNow !== 2,
+                        ])>
+                        {{ $label }}
+                    </button>
+                @endforeach
             </div>
         @endif
 

@@ -485,6 +485,40 @@ class Operator extends Model
     }
 
     /**
+     * The same blocking steps in the operator's words, naming the bio and WhatsApp separately.
+     *
+     * @return list<string>
+     */
+    public function missingStorefrontSetupLabels(): array
+    {
+        $labels = [];
+
+        foreach ($this->missingStorefrontSetupSteps() as $step) {
+            if ($step === 'brand') {
+                if (! filled($this->bio)) {
+                    $labels[] = __('Short bio');
+                }
+
+                if (! filled($this->contact_whatsapp)) {
+                    $labels[] = __('WhatsApp number');
+                }
+
+                continue;
+            }
+
+            $labels[] = match ($step) {
+                'terms' => __('Guest booking terms'),
+                'bank' => __('Payout bank account'),
+                'billing' => __('Billing email'),
+                'notifications' => __('Booking notification email'),
+                default => $step,
+            };
+        }
+
+        return $labels;
+    }
+
+    /**
      * Steps to finish before taking guest payments.
      *
      * @return list<array{key: string, done: bool, label: string, url: string}>
@@ -501,11 +535,12 @@ class Operator extends Model
                 'label' => __('Logo'),
                 'url' => route('brand.edit').'#setup-logo',
             ],
+            // The page also needs WhatsApp; once the bio is in, this step points there instead.
             [
                 'key' => 'brand',
-                'done' => filled($this->bio),
-                'label' => __('Short bio'),
-                'url' => route('brand.edit').'#setup-bio',
+                'done' => filled($this->bio) && filled($this->contact_whatsapp),
+                'label' => filled($this->bio) ? __('WhatsApp number') : __('Short bio'),
+                'url' => route('brand.edit').(filled($this->bio) ? '#setup-whatsapp' : '#setup-bio'),
             ],
             [
                 'key' => 'hero',

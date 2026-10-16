@@ -479,3 +479,28 @@ test('holding money for a card fight reduces available balance and can be given 
         ->and($walletService->outstandingDisputeHold($reservation->fresh()))->toBe(0.0)
         ->and($this->operator->getAvailableBalance())->toBe(1500000.00);
 });
+
+test('the wallet counts each guest service fee once and shows it as paid by the guest', function () {
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => Package::class,
+        'bookable_id' => $this->package->id,
+        'status' => ReservationStatus::Confirmed,
+    ]);
+    $payment = Payment::factory()->paid()->create([
+        'reservation_id' => $reservation->id,
+        'amount' => 525000.00,
+        'split_details' => ['agent_amount' => 500000.00, 'platform_commission' => 25000.00],
+    ]);
+    app(WalletService::class)->creditBookingPayment($payment);
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::wallet.index')
+        ->assertSet('metrics.total_fees', 25000.0)
+        ->assertSee('Guest service fees: Rp 25.000')
+        ->assertSee('paid by guest')
+        ->assertDontSee('Platform Fees: Rp 50.000');
+
+    expect(substr_count(Livewire::test('pages::wallet.index')->html(), '-Rp 25.000'))->toBe(1);
+});

@@ -16,6 +16,7 @@ use App\Services\CapacityService;
 use App\Services\DokuPaymentService;
 use App\Services\DomainResolverService;
 use App\Services\EnquiryService;
+use App\Services\GoogleCalendarService;
 use App\Services\PlatformSeoService;
 use App\Services\ReservationLifecycleService;
 use App\Services\StorefrontFaqService;
@@ -533,6 +534,28 @@ class StorefrontController extends Controller
     }
 
     /**
+     * The guest's paid trip as a calendar file. Served from a real address (not a data: link)
+     * so iPhone Safari offers "Add to Calendar".
+     */
+    public function downloadCalendarFile(Request $request, Reservation $reservation, GoogleCalendarService $calendar): Response
+    {
+        $this->guardReservationBelongsToCurrentStorefront($request, $reservation);
+
+        $reservation->load(['operator', 'bookable', 'latestPayment']);
+
+        abort_unless($reservation->hasValidTicket(), 404);
+
+        $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
+
+        return response($calendar->generateGuestBookingFile($reservation), 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'inline; filename="tour-booking-'.$code.'.ics"',
+            'Cache-Control' => 'no-store',
+            'X-Robots-Tag' => 'noindex, nofollow',
+        ]);
+    }
+
+    /**
      * Resume or initiate payment for a pending reservation hold.
      */
     public function payReservation(Request $request, Reservation $reservation, DokuPaymentService $paymentService): RedirectResponse
@@ -657,9 +680,12 @@ class StorefrontController extends Controller
             'contact' => ['required', 'string', 'max:255'],
         ]);
 
+        // Guests often copy the code as printed ("#RSV-…"), so keep only the code's own characters.
+        $code = preg_replace('/[^A-Z0-9-]/', '', strtoupper($validated['code']));
+
         $reservation = Reservation::query()
             ->where('operator_id', $agent->id)
-            ->where('code', strtoupper(trim($validated['code'])))
+            ->where('code', $code)
             ->first();
 
         if ($reservation && ! $reservation->matchesGuestContact($validated['contact'])) {

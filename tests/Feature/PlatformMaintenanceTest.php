@@ -56,6 +56,7 @@ test('maintenance blocks operator sign-up but still allows operator log in', fun
         'password_confirmation' => 'SecurePass123!',
         'agency_name' => 'Quiet Harbor Tours',
         'terms' => '1',
+        'contact_whatsapp' => '081234567890',
     ])->assertForbidden();
 
     expect(User::query()->where('email', 'made@quietharbor.com')->exists())->toBeFalse();

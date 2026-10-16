@@ -131,13 +131,6 @@ new #[Title('Create Activity Item')] class extends Component {
         return $defaults;
     }
 
-    public function mount(): void
-    {
-        if (!$this->isProfileComplete) {
-            session()->flash('warning', __('Please complete your business profile and payout settings before creating inventory items.'));
-        }
-    }
-
     public function updatedCoverPhoto(): void
     {
         $this->validate([
@@ -170,7 +163,7 @@ new #[Title('Create Activity Item')] class extends Component {
         $this->authorizeAbility('manageCatalog');
 
         if (!$this->isProfileComplete) {
-            $this->addError('profile', __('You must complete your business profile, WhatsApp contact, payout reference, and terms & conditions in settings before creating items.'));
+            $this->addError('profile', __('Add these before you can add activities: :steps.', ['steps' => implode(', ', $this->currentOperator?->missingStorefrontSetupLabels() ?? [])]));
             return;
         }
 
@@ -295,6 +288,21 @@ new #[Title('Create Activity Item')] class extends Component {
 
             <!-- Main Create Form -->
             <form wire:submit="save" class="space-y-6">
+                @if (! $this->isProfileComplete && ! $errors->has('profile'))
+                    <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2.5" role="status">
+                        <i class="fa-solid fa-circle-exclamation text-amber-500 mt-0.5"></i>
+                        <div class="space-y-1.5">
+                            <p class="font-semibold">{{ __('Add these before you can add activities:') }}</p>
+                            <ul class="list-disc pl-4 space-y-0.5">
+                                @foreach ($this->currentOperator?->missingStorefrontSetupLabels() ?? [] as $missingStep)
+                                    <li>{{ $missingStep }}</li>
+                                @endforeach
+                            </ul>
+                            <a href="{{ route('brand.edit') }}" wire:navigate class="inline-block font-semibold underline">{{ __('Open settings') }}</a>
+                        </div>
+                    </div>
+                @endif
+
                 @if ($errors->has('profile'))
                     <div
                         class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center gap-2.5">

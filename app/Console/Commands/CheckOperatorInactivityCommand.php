@@ -35,7 +35,7 @@ class CheckOperatorInactivityCommand extends Command
         $operators = Operator::query()
             ->where('status', OperatorStatus::Approved)
             ->where('is_demo', false)
-            ->with(['users'])
+            ->with(['users', 'plan'])
             ->get();
 
         $remindedCount = 0;

@@ -46,9 +46,6 @@ new class extends Component {
         $resolved = $operator ?? $agent ?? $bookable->getOperator();
         $this->operator = $resolved;
         $this->agent = $resolved;
-
-        // Default requested trip date to 2 days ahead
-        $this->requested_date = now()->addDays(2)->format('Y-m-d');
     }
 
     /**
@@ -239,6 +236,7 @@ new class extends Component {
      */
     public function updatedRequestedDate(): void
     {
+        $this->resetErrorBag('requested_date');
         unset($this->remainingCapacity, $this->isSoldOut);
 
         $remaining = $this->remainingCapacity;
@@ -286,7 +284,16 @@ new class extends Component {
             'agreed_terms' => ['accepted'],
         ], [
             'agreed_terms.accepted' => __('You must agree to the booking and cancellation policy to proceed.'),
+            'guest_contact.min' => __('Please enter your full WhatsApp number, for example 0812 3456 7890.'),
+            'requested_date.required' => __('Please choose your trip date.'),
             'requested_date.after_or_equal' => __('Please choose a date at least :hours hours in advance.', ['hours' => $this->bookable->getAdvanceBookingHours()]),
+        ], [
+            'requested_date' => __('trip date'),
+            'pax_count' => __('number of guests'),
+            'guest_name' => __('lead guest name'),
+            'guest_contact' => __('WhatsApp number'),
+            'guest_email' => __('email address'),
+            'notes' => __('special requests'),
         ]);
 
         if (! $this->bookable->isSellable()) {
@@ -402,7 +409,7 @@ new class extends Component {
             <x-label :value="__('Number of guests')" required />
             <div class="flex items-center justify-between p-2 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/80">
                 <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 pl-2">
-                    {{ __(':count guests', ['count' => $pax_count]) }}
+                    {{ trans_choice(':count guest|:count guests', $pax_count, ['count' => $pax_count]) }}
                 </span>
                 <div class="flex items-center gap-2">
                     <button

@@ -36,7 +36,7 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
             'business_name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:64', 'alpha_dash', Rule::notIn(Operator::RESERVED_SLUGS), Rule::unique('operators', 'slug')],
-            'contact_whatsapp' => ['nullable', 'string', 'max:30'],
+            'contact_whatsapp' => ['required', 'string', 'min:8', 'max:30'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'bank_account_ref' => ['nullable', 'string', 'max:100'],
             'terms' => ['accepted'],
@@ -45,6 +45,8 @@ class CreateNewUser implements CreatesNewUsers
             'slug.unique' => 'That page address is already taken. Please choose another.',
             'slug.not_in' => 'That page address is reserved. Please choose another.',
             'terms.accepted' => 'Please agree to the terms before creating your account.',
+            'contact_whatsapp.required' => 'Please add your WhatsApp number. Guests use it to reach you, and your page needs it to open.',
+            'contact_whatsapp.min' => 'Please enter your full WhatsApp number, for example 0812 3456 7890.',
         ])->validate();
 
         $result = $this->onboardingService->registerOperator([

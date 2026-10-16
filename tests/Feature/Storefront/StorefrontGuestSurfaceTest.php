@@ -227,9 +227,49 @@ test('agency guest mail and calendar file do not credit the platform', function 
     expect($html)->toContain('Sent by Whitebox Reef Tours')
         ->and($html)->not->toContain('via '.config('app.name'));
 
-    $this->get($this->host.'/reservations/'.$reservation->public_token.'/receipt', $this->headers)
+    $this->get($this->host.'/reservations/'.$reservation->public_token.'/calendar.ics', $this->headers)
         ->assertOk()
-        ->assertDontSee('PRODID:-//'.config('app.name'), false);
+        ->assertDontSee('PRODID:-//'.config('app.name'), false)
+        ->assertSee('PRODID:-//Whitebox Reef Tours', false);
+});
+
+test('a paid guest gets their trip as a calendar file their phone can open', function () {
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $this->package->id,
+        'guest_name' => 'Rina, Guest; Two',
+        'code' => 'RSV-CALFILE1',
+        'requested_date' => '2026-10-25',
+        'status' => ReservationStatus::Confirmed,
+    ]);
+    Payment::factory()->paid()->create(['reservation_id' => $reservation->id, 'amount' => 750000]);
+
+    $receipt = $this->get($this->host.'/reservations/'.$reservation->public_token.'/receipt', $this->headers)->assertOk();
+    $receipt->assertSee($this->host.'/reservations/'.$reservation->public_token.'/calendar.ics', false)
+        ->assertDontSee('data:text/calendar', false);
+
+    $file = $this->get($this->host.'/reservations/'.$reservation->public_token.'/calendar.ics', $this->headers)
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/calendar; charset=utf-8');
+
+    expect($file->headers->get('Content-Disposition'))->toContain('tour-booking-RSV-CALFILE1.ics')
+        ->and($file->getContent())->toContain("BEGIN:VCALENDAR\r\n")
+        ->toContain('DTSTART:20261025T080000')
+        ->toContain('UID:guest-booking-'.$reservation->id)
+        ->toContain('Rina\\, Guest\\; Two');
+});
+
+test('an unpaid booking has no calendar file', function () {
+    $reservation = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $this->package->id,
+        'status' => ReservationStatus::PaymentPending,
+    ]);
+
+    $this->get($this->host.'/reservations/'.$reservation->public_token.'/calendar.ics', $this->headers)
+        ->assertNotFound();
 });
 
 test('agency booking mail uses the operator as the from name', function (string $mailable) {

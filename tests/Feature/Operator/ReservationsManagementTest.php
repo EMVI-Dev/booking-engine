@@ -606,3 +606,29 @@ test('reservations with promo coupon calculate net operator earning correctly an
         ->assertSee('99.000')
         ->assertSee('100.000');
 });
+
+test('the bookings list shows refunded and failed payments instead of no payment', function () {
+    $this->actingAs($this->user);
+    $package = Package::factory()->create(['operator_id' => $this->operator->id]);
+
+    $refunded = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'status' => ReservationStatus::Cancelled,
+    ]);
+    Payment::factory()->create(['reservation_id' => $refunded->id, 'status' => PaymentStatus::Refunded, 'amount' => 945000]);
+
+    $failed = Reservation::factory()->create([
+        'operator_id' => $this->operator->id,
+        'bookable_type' => 'package',
+        'bookable_id' => $package->id,
+        'status' => ReservationStatus::PaymentPending,
+    ]);
+    Payment::factory()->create(['reservation_id' => $failed->id, 'status' => PaymentStatus::Failed, 'amount' => 210000]);
+
+    Livewire::test('pages::reservations.index')
+        ->assertSeeInOrder(['Refunded', 'Rp 945.000'])
+        ->assertSeeInOrder(['Payment failed', 'Rp 210.000'])
+        ->assertDontSee('No Payment');
+});

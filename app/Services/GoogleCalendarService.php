@@ -138,6 +138,54 @@ class GoogleCalendarService
     }
 
     /**
+     * One guest's paid trip as an iCal file (Apple Calendar, Outlook), matching the Google calendar link.
+     *
+     * The producer name is the operator on white-label plans, otherwise the platform.
+     */
+    public function generateGuestBookingFile(Reservation $reservation): string
+    {
+        $operator = $reservation->operator;
+        $code = $reservation->code ?: strtoupper(substr($reservation->id, -8));
+        $bookableTitle = $reservation->bookable instanceof Bookable
+            ? $reservation->bookable->getTitle()
+            : 'Tour Experience';
+        $producer = $operator->showsPlatformBranding()
+            ? (string) config('app.name')
+            : (string) preg_replace('/[^A-Za-z0-9 ]+/', '', (string) $operator->name);
+        $platformDomain = app(DomainResolverService::class)->getPlatformDomain();
+
+        $summary = $this->escapeIcalText("{$bookableTitle} - {$operator->name}");
+        $description = $this->escapeIcalText(
+            "Booking Code: #{$code}\n"
+            ."Guest: {$reservation->guest_name} ({$reservation->pax_count} Persons)\n"
+            ."Provider: {$operator->name}\n"
+            .'Phone/WA: '.($operator->contact_whatsapp ?? '-')
+        );
+
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            $this->foldIcalLine("PRODID:-//{$producer}//Booking Engine//EN"),
+            'METHOD:PUBLISH',
+            'BEGIN:VEVENT',
+            $this->foldIcalLine("UID:guest-booking-{$reservation->id}@{$platformDomain}"),
+            'DTSTAMP:'.now()->utc()->format('Ymd\THis\Z'),
+            'DTSTART:'.$reservation->requested_date->copy()->setTime(8, 0)->format('Ymd\THis'),
+            'DTEND:'.$reservation->requested_date->copy()->setTime(17, 0)->format('Ymd\THis'),
+            $this->foldIcalLine("SUMMARY:{$summary}"),
+            $this->foldIcalLine("DESCRIPTION:{$description}"),
+            $this->foldIcalLine('LOCATION:'.$this->escapeIcalText((string) $operator->name)),
+            $this->foldIcalLine('URL:'.route('storefront.reservation.receipt', $reservation)),
+            'STATUS:CONFIRMED',
+            'END:VEVENT',
+            'END:VCALENDAR',
+            '',
+        ];
+
+        return implode("\r\n", $lines);
+    }
+
+    /**
      * Fold lines to maximum 75 octets as specified in RFC 5545 Section 3.1.
      */
     protected function foldIcalLine(string $line): string

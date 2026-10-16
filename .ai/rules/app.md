@@ -53,3 +53,6 @@ Gallery: StorefrontGalleryService (MediaStore WebP in operators/{id}/gallery, pl
 
 ## Seeding is idempotent and checks storage
 DatabaseSeeder skips plans, the admin and the demo shop when they exist (never resets the admin password or Admin → Plans edits). Plans are created with Plan::ensureDefaultPlans() (only when none exist); seedDefaultPlans() is only for the explicit admin reset. DemoOperatorSeeder (and demo:refresh) calls MediaStore::verifyWritable() before wiping or uploading anything.
+
+## Lazy loading is an error locally and in tests
+AppServiceProvider calls Model::preventLazyLoading(app()->isLocal() || app()->runningUnitTests()). Production allows lazy loads, so an N+1 there is only slow; tests must catch it. Eager-load relations (with()) or batch per list (e.g. ListingDeletionService::blockReasons) instead of calling per-row services that touch relations. Do not turn the test flag off to make a test pass.

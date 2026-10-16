@@ -187,3 +187,20 @@ test('vendor receives cancellation email when paid booking is cancelled', functi
             && in_array('Sunrise 4WD Jeep', $mail->activities, true);
     });
 });
+
+test('supplier emails come from the platform address with the operator name and replies go to the operator', function (string $mailable) {
+    config(['mail.from.address' => 'no-reply@travelengine.test']);
+
+    $vendor = Vendor::factory()->create(['operator_id' => $this->operator->id]);
+    $reservation = Reservation::factory()->create(['operator_id' => $this->operator->id]);
+
+    $mail = new $mailable($reservation, $vendor);
+
+    $mail->assertFrom('no-reply@travelengine.test', 'John Bali Guide')
+        ->assertHasReplyTo('john@baliguide.com', 'John Bali Guide');
+
+    expect($mail->hasFrom('john@baliguide.com'))->toBeFalse();
+})->with([
+    'booking copy' => [VendorBookingNotificationMail::class],
+    'cancellation copy' => [VendorBookingCancelledMail::class],
+]);

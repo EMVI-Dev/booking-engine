@@ -2,6 +2,7 @@
 
 use App\Enums\PayoutStatus;
 use App\Enums\WalletTransactionStatus;
+use App\Enums\WalletTransactionType;
 use App\Models\Operator;
 use App\Models\PayoutRequest;
 use App\Models\WalletTransaction;
@@ -72,7 +73,11 @@ new #[Title('Wallet & Payouts')] class extends Component {
             ];
         }
 
-        $totalFees = (float) $agent->walletTransactions()->where('status', '!=', WalletTransactionStatus::Cancelled)->sum('fee_amount');
+        // A booking's fee sits on its earning row; the platform-commission row only mirrors it.
+        $totalFees = (float) $agent->walletTransactions()
+            ->where('status', '!=', WalletTransactionStatus::Cancelled)
+            ->where('type', '!=', WalletTransactionType::PlatformCommission)
+            ->sum('fee_amount');
 
         return [
             'available' => $agent->getAvailableBalance(),
@@ -291,7 +296,7 @@ new #[Title('Wallet & Payouts')] class extends Component {
         <x-metric-card
             :label="__('Total Gross Sales')"
             :value="'Rp ' . number_format($this->metrics['gross_sales'], 0, ',', '.')"
-            :hint="__('Platform Fees: Rp :fees', ['fees' => number_format($this->metrics['total_fees'], 0, ',', '.')])"
+            :hint="__('Guest service fees: Rp :fees', ['fees' => number_format($this->metrics['total_fees'], 0, ',', '.')])"
             icon="fa-chart-line"
             tone="info"
         />
@@ -460,7 +465,12 @@ new #[Title('Wallet & Payouts')] class extends Component {
                                     </td>
 
                                     <td class="py-3 px-4 whitespace-nowrap font-medium text-rose-600 dark:text-rose-400">
-                                        @if ($trx->fee_amount > 0)
+                                        @if ($trx->type === WalletTransactionType::PlatformCommission && $trx->fee_amount > 0)
+                                            <span class="text-[#5A6578] dark:text-[#9DA4B2]">
+                                                Rp {{ number_format((float) $trx->fee_amount, 0, ',', '.') }}
+                                                <span class="block text-[10px]">{{ __('paid by guest') }}</span>
+                                            </span>
+                                        @elseif ($trx->fee_amount > 0)
                                             -Rp {{ number_format((float) $trx->fee_amount, 0, ',', '.') }}
                                         @else
                                             <span class="text-[#5A6578] dark:text-[#9DA4B2]">&mdash;</span>

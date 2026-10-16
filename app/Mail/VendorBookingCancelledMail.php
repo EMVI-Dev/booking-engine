@@ -32,13 +32,14 @@ class VendorBookingCancelledMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         $operator = $this->reservation->operator;
-        $operatorName = $operator?->name ?? config('app.name', 'Booking');
-        $operatorEmail = $operator?->email ?: (string) config('mail.from.address');
+        $operatorName = $operator->name ?? config('app.name', 'Booking');
+        // Send from the platform address (an operator's own Gmail would fail SPF/DMARC); replies go to the operator.
+        $replyTo = $operator->outboundMailReplyToAddress();
         $code = $this->reservation->code ?: strtoupper(substr($this->reservation->id, -8));
 
         return new Envelope(
-            from: new Address($operatorEmail, $operatorName),
-            replyTo: $operatorEmail ? [new Address($operatorEmail, $operatorName)] : [],
+            from: new Address((string) config('mail.from.address'), $operatorName),
+            replyTo: $replyTo !== null ? [new Address($replyTo, $operatorName)] : [],
             subject: "Booking Cancelled - {$operatorName} #{$code}",
         );
     }

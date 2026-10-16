@@ -223,7 +223,7 @@ class ReservationLifecycleService
             ]);
         }
 
-        $this->cancel($reservation, 'Guest cancelled before the free-cancel cutoff', errorKey: 'reservation');
+        $this->cancel($reservation, 'Guest cancelled before the free-cancel cutoff', errorKey: 'reservation', cancelledByGuest: true);
 
         return $reservation->fresh() ?? $reservation;
     }
@@ -231,7 +231,8 @@ class ReservationLifecycleService
     // ── Shared transitions ────────────────────────────────────────────────────
 
     /**
-     * Cancel a booking: refund the guest if paid, reverse the operator's earning, tell vendors.
+     * Cancel a booking: refund the guest if paid, reverse the operator's earning, tell vendors, and
+     * email the guest (plus the operator, when the guest cancelled) about a paid or confirmed booking.
      *
      * Serialised per booking so two clicks can never send two refunds.
      *
@@ -239,7 +240,7 @@ class ReservationLifecycleService
      *
      * @throws ValidationException
      */
-    public function cancel(Reservation $reservation, string $reason, string $errorKey = 'status'): array
+    public function cancel(Reservation $reservation, string $reason, string $errorKey = 'status', bool $cancelledByGuest = false): array
     {
         $lock = Cache::lock('reservation-cancel:'.$reservation->id, 60);
 
@@ -274,6 +275,10 @@ class ReservationLifecycleService
             }
 
             $this->closeAsCancelled($reservation, $reason, notifyVendors: $wasPaid || $wasActive);
+
+            if ($wasPaid || $wasActive) {
+                $this->notifications->cancellationConfirmed($reservation, $cancelledByGuest, $refundAmount);
+            }
 
             return ['refunded' => $wasPaid, 'refund_amount' => $refundAmount];
         } finally {

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Mail\GuestBookingCancelledMail;
 use App\Mail\GuestBookingConfirmedMail;
 use App\Mail\GuestBookingCreatedMail;
+use App\Mail\OperatorBookingCancelledMail;
 use App\Mail\OperatorNewBookingNotificationMail;
 use App\Models\Reservation;
 use Illuminate\Support\Facades\Mail;
@@ -58,6 +60,27 @@ class BookingNotificationService
     public function bookingCancelled(Reservation $reservation): void
     {
         $this->deliver(fn () => $this->vendors->dispatchBookingCancellation($reservation));
+    }
+
+    /**
+     * A paid or confirmed booking was cancelled: the guest hears what happens to their money, and
+     * the operator is told when the guest cancelled it themselves (an operator already knows).
+     */
+    public function cancellationConfirmed(Reservation $reservation, bool $cancelledByGuest, float $refundAmount): void
+    {
+        if (! empty($reservation->guest_email)) {
+            $this->deliver(fn () => Mail::to($reservation->guest_email)->queue(new GuestBookingCancelledMail($reservation, $cancelledByGuest, $refundAmount)));
+        }
+
+        if (! $cancelledByGuest) {
+            return;
+        }
+
+        $recipient = $reservation->operator?->bookingNotificationRecipient();
+
+        if ($recipient !== null) {
+            $this->deliver(fn () => Mail::to($recipient)->queue(new OperatorBookingCancelledMail($reservation, $refundAmount)));
+        }
     }
 
     private function deliver(callable $send): void

@@ -43,6 +43,7 @@ Route::middleware(EnsureStorefrontTransactionsAllowed::class)->group(function ()
 });
 Route::get('/reservations/{reservation}/receipt', [StorefrontController::class, 'showReceipt'])->name('storefront.reservation.receipt');
 Route::get('/reservations/{reservation}/e-ticket', [StorefrontController::class, 'showTicket'])->name('storefront.reservation.ticket');
+Route::get('/reservations/{reservation}/calendar.ics', [StorefrontController::class, 'downloadCalendarFile'])->name('storefront.reservation.calendar');
 Route::get('/find-booking', [StorefrontController::class, 'findBooking'])->name('storefront.find-booking');
 Route::post('/find-booking', [StorefrontController::class, 'lookupBooking'])
     ->middleware('throttle:10,1')

@@ -788,6 +788,24 @@ new #[Title('Bookings & Reservations')] class extends Component {
                                                 <span>{{ $res->terms_snapshot['coupon_code'] }}</span>
                                             </span>
                                         @endif
+                                    @elseif ($latestPayment?->isRefunded())
+                                        <span
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[11px] font-medium bg-op-muted text-op-subtle border border-op-line">
+                                            <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                                            {{ __('Refunded') }}
+                                        </span>
+                                        <p class="font-medium text-xs text-op-subtle line-through">
+                                            Rp {{ number_format((float) $latestPayment->amount, 0, ',', '.') }}
+                                        </p>
+                                    @elseif ($latestPayment?->status === \App\Enums\PaymentStatus::Failed)
+                                        <span
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[11px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                            <i class="fa-solid fa-circle-xmark text-[10px]"></i>
+                                            {{ __('Payment failed') }}
+                                        </span>
+                                        <p class="font-medium text-xs text-op-subtle">
+                                            Rp {{ number_format((float) $latestPayment->amount, 0, ',', '.') }}
+                                        </p>
                                     @else
                                         <span
                                             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[11px] font-medium bg-op-muted text-op-subtle border border-op-line">

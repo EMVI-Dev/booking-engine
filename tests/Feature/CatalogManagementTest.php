@@ -11,8 +11,10 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\Services\ListingDeletionService;
 use App\Services\MediaStore;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -581,6 +583,67 @@ test('an activity bundled in a package with an upcoming booking cannot be delete
     expect(Product::whereKey($product->id)->exists())->toBeTrue()
         ->and(Package::whereKey($package->id)->exists())->toBeTrue()
         ->and($package->products()->count())->toBe(1);
+});
+
+test('activity and package lists check delete blocks for every row in a fixed number of queries', function () {
+    Model::preventLazyLoading();
+
+    $bookedProduct = Product::factory()->create(['operator_id' => $this->operator->id, 'name' => 'Booked Snorkel']);
+    $bundledProduct = Product::factory()->create(['operator_id' => $this->operator->id, 'name' => 'Bundled Boat']);
+    Product::factory()->count(3)->create(['operator_id' => $this->operator->id]);
+    $bookedPackage = Package::factory()->create(['operator_id' => $this->operator->id]);
+    $bookedPackage->products()->attach($bundledProduct->id, ['quantity_required' => 1]);
+    Package::factory()->count(3)->create(['operator_id' => $this->operator->id]);
+
+    foreach ([[$bookedProduct, 'product'], [$bookedPackage, 'package']] as [$listing, $type]) {
+        Reservation::factory()->create([
+            'operator_id' => $this->operator->id,
+            'bookable_type' => $type,
+            'bookable_id' => $listing->id,
+            'requested_date' => now()->addDays(3)->toDateString(),
+        ]);
+    }
+
+    $blocked = trans_choice('This listing has :count upcoming booking, so it cannot be deleted. Unpublish it to stop new bookings instead.|This listing has :count upcoming bookings, so it cannot be deleted. Unpublish it to stop new bookings instead.', 1, ['count' => 1]);
+
+    $reasons = app(ListingDeletionService::class)->blockReasons($this->operator->products()->get());
+    expect($reasons[$bookedProduct->id])->toBe($blocked)
+        ->and($reasons[$bundledProduct->id])->toBe($blocked)
+        ->and(array_filter($reasons))->toHaveCount(2);
+
+    Livewire::test('pages::products.index')->assertOk()->assertSee($blocked);
+
+    DB::enableQueryLog();
+    Livewire::test('pages::products.index')->assertOk();
+    $productListQueries = count(DB::getQueryLog());
+
+    Product::factory()->count(5)->create(['operator_id' => $this->operator->id]);
+    DB::flushQueryLog();
+    Livewire::test('pages::products.index')->assertOk();
+    expect(count(DB::getQueryLog()))->toBe($productListQueries);
+    DB::disableQueryLog();
+
+    Livewire::test('pages::packages.index')->assertOk()->assertSee($blocked);
+
+    Model::preventLazyLoading(false);
+});
+
+test('activity and package search only finds the operator\'s own listings', function () {
+    $otherOperator = Operator::factory()->create();
+    Product::factory()->create(['operator_id' => $this->operator->id, 'name' => 'Our Reef Snorkel', 'category' => 'Snorkeling']);
+    Product::factory()->create(['operator_id' => $otherOperator->id, 'name' => 'Rival Reef Dive', 'category' => 'Snorkeling']);
+    Package::factory()->create(['operator_id' => $this->operator->id, 'title' => 'Our Island Day', 'category' => 'Island Tour']);
+    Package::factory()->create(['operator_id' => $otherOperator->id, 'title' => 'Rival Island Day', 'category' => 'Island Tour']);
+
+    Livewire::test('pages::products.index')
+        ->set('search', 'Snorkel')
+        ->assertSee('Our Reef Snorkel')
+        ->assertDontSee('Rival Reef Dive');
+
+    Livewire::test('pages::packages.index')
+        ->set('search', 'Island')
+        ->assertSee('Our Island Day')
+        ->assertDontSee('Rival Island Day');
 });
 
 test('a listing whose bookings are past or closed can still be deleted', function () {

@@ -29,6 +29,7 @@ test('new users can register', function () {
         'password_confirmation' => 'password',
         'agency_name' => 'John Doe Tours',
         'terms' => '1',
+        'contact_whatsapp' => '081234567890',
     ]);
 
     $response->assertSessionHasNoErrors();

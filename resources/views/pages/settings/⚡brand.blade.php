@@ -212,7 +212,7 @@ new #[Title('Brand Settings')] class extends Component {
         $validated = $this->validate([
             'agency_name' => ['required', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:1000'],
-            'contact_whatsapp' => ['nullable', 'string', 'max:30'],
+            'contact_whatsapp' => ['required', 'string', 'min:8', 'max:30'],
             'whatsapp_prefilled_message' => ['nullable', 'string', 'max:255'],
             'whatsapp_schedule_mode' => ['required', 'string', 'in:schedule,always'],
             'whatsapp_timezone' => ['required', 'string', 'max:100'],
@@ -233,6 +233,9 @@ new #[Title('Brand Settings')] class extends Component {
             'booking_notification_email' => ['required', 'email', 'max:255'],
             'billing_email' => ['required', 'email', 'max:255'],
             'custom_domain' => ['nullable', 'string', 'max:255'],
+        ], [
+            'contact_whatsapp.required' => __('Please add your WhatsApp number. Guests use it to reach you, and your page needs it to open.'),
+            'contact_whatsapp.min' => __('Please enter your full WhatsApp number, for example 0812 3456 7890.'),
         ]);
 
         /** @var Operator|null $operator */
@@ -617,7 +620,7 @@ new #[Title('Brand Settings')] class extends Component {
 
                 <!-- Basic WhatsApp Details -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                    <div id="setup-whatsapp" class="scroll-mt-24">
                         <x-label for="contact_whatsapp" :value="__('WhatsApp Contact Number')" required />
                         <x-input id="contact_whatsapp" wire:model="contact_whatsapp" type="text"
                             placeholder="+62 812 3456 7890" :error="$errors->has('contact_whatsapp')" />

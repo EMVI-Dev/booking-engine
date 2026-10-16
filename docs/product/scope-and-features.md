@@ -1,6 +1,6 @@
 # Booking Engine Platform — V1 Spec (Rev. 25)
 
-_Last reviewed: 2026-10-05_
+_Last reviewed: 2026-10-16_
 
 Start at [overview.md](overview.md) for the summary and the map of every doc.
 
@@ -72,6 +72,7 @@ Unlike complex legacy software that assumes enterprise hotel or multi-day vehicl
     - Authenticating on apex domain seamlessly signs the operator into their branded subdomain desk (`{slug}.travelengine.id/auth/login-handoff`).
     - New sign-ups must verify their email before using the desk. The verification link opens on their slug host. Team invitees are verified when they set their password from the emailed link.
     - Shop addresses are unique, and reserved platform names (`admin`, `www`, `api`, `mail`, `demo`, …) cannot be claimed.
+    - A WhatsApp number is required at sign-up and in Brand settings: the public page cannot open without one. When a blocking step is missing, the setup checklist and the Add activity page name it (`Operator::missingStorefrontSetupLabels`).
 - **Native Mobile Navigation Bar & Mobile Card Lists (`md:hidden`)**:
     - Sticky glassmorphism mobile bottom navigation bar (`lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16`) for 1-thumb operations.
     - All data tables convert into responsive mobile cards on smartphone screens (`< 768px`).
@@ -161,9 +162,13 @@ Go-live facts from DOKU (Sep 2026). Do not invent other rates. Call the account 
     - `GuestBookingCreatedMail`: Hold confirmation with countdown and payment link.
     - `GuestBookingConfirmedMail`: Verified payment receipt with digital e-ticket voucher.
     - `GuestDepartureReminderMail`: Day-before trip reminder.
+    - `GuestBookingCancelledMail`: Sent when a paid or confirmed booking is cancelled, by the guest or the operator. Says who cancelled and how much is refunded. Dropping an unpaid hold sends nothing.
+    - Every guest email's WhatsApp button opens a chat with the operator (`WhatsAppDispatchService::getGuestEnquiryUrl`).
     - `GuestReviewRequestMail`: Post-trip review request (Growth and Agency). Agency with a connected Google listing uses that listing. Every other case uses the Review Platform URL from the Reviews tab. CTA stays "Leave a review".
 - **Operator notification (`OperatorNewBookingNotificationMail`)**:
     - Instant email alert on paid booking capture. Agency uses the operator as the From name.
+- **Operator cancellation notice (`OperatorBookingCancelledMail`)**:
+    - Sent when a guest cancels a paid or confirmed booking from their receipt. Not sent when the operator cancelled it themselves.
 - **Vendor notification lifecycle (`VendorDispatchService`)**:
     - `VendorBookingNotificationMail`: Automated booking dispatch copy sent to the supplier's `reservation_email` with operator (Booker) details, guest attendance manifest, and 1-click tokenized dispatch view. Supports single activities and multi-vendor packages.
     - `VendorBookingCancelledMail`: Automated cancellation notice sent when a paid reservation is cancelled.

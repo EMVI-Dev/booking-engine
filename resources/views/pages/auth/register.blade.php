@@ -286,18 +286,19 @@
                 </div>
 
                 <div>
-                    <x-label for="contact_whatsapp" :value="__('WhatsApp number')" class="text-zinc-300 font-mono text-xs" />
+                    <x-label for="contact_whatsapp" :value="__('WhatsApp number')" required class="text-zinc-300 font-mono text-xs" />
                     <x-input
                         id="contact_whatsapp"
                         name="contact_whatsapp"
                         :value="old('contact_whatsapp')"
                         type="tel"
                         autocomplete="tel"
+                        required
                         placeholder="{{ __('Your WhatsApp number') }}"
                         :error="$errors->has('contact_whatsapp')"
                     />
                     <p class="mt-1 text-[11px] text-zinc-500 font-mono">
-                        {{ __('Optional. Guests can message you from your page.') }}
+                        {{ __('Guests message you here. Your page needs it to open.') }}
                     </p>
                     <x-input-error :messages="$errors->get('contact_whatsapp')" />
                 </div>

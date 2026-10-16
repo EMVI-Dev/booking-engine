@@ -62,6 +62,21 @@ test('guest mail includes the operator logo and brand colour', function (string 
     GuestReviewRequestMail::class,
 ]);
 
+test('guest mail WhatsApp button opens a chat with the operator, not the guest', function (string $mailable) {
+    $this->operator->update(['contact_whatsapp' => '081200000001']);
+    $this->reservation->update(['guest_contact' => '081299990001', 'code' => 'RSV-WABUTTON']);
+
+    $mail = new $mailable($this->reservation->fresh());
+
+    $mail->assertSeeInHtml('https://wa.me/6281200000001?text=', false)
+        ->assertSeeInHtml(urlencode('#RSV-WABUTTON'), false)
+        ->assertDontSeeInHtml('https://wa.me/6281299990001', false);
+})->with([
+    GuestBookingCreatedMail::class,
+    GuestBookingConfirmedMail::class,
+    GuestDepartureReminderMail::class,
+]);
+
 test('platform mail to the operator uses platform colour and logo', function () {
     $mail = new OperatorNewBookingNotificationMail($this->reservation);
 
